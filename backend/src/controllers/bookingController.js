@@ -1017,22 +1017,24 @@ exports.createBooking = async (req, res, next) => {
       performedByAdminId: req.user ? req.user.id : null
     });
 
-    // Trigger simulated email confirmation log automatically on booking creation
-    try {
-      const { sendEmail, templates } = require('../lib/email');
-      const templateData = templates.confirmation(booking);
-      await sendEmail({
-        to: booking.email || 'info@youthcamping.com',
-        subject: templateData.subject,
-        html: templateData.html,
-        type: 'confirmation',
-        bookingId: booking.id,
-        prisma,
-        attachments: []
-      });
-      console.log(`📧 Automatically logged booking confirmation email for booking ${booking.bookingId}`);
-    } catch (emailErr) {
-      console.error('Failed to trigger automatic booking confirmation email:', emailErr.message);
+    // Trigger simulated email confirmation log automatically on booking creation ONLY if confirmed
+    if (booking.status === 'Confirmed' || booking.status === 'confirmed' || booking.paymentStatus === 'Paid' || booking.paymentStatus === 'paid') {
+      try {
+        const { sendEmail, templates } = require('../lib/email');
+        const templateData = templates.confirmation(booking);
+        await sendEmail({
+          to: booking.email || 'info@youthcamping.com',
+          subject: templateData.subject,
+          html: templateData.html,
+          type: 'confirmation',
+          bookingId: booking.id,
+          prisma,
+          attachments: []
+        });
+        console.log(`📧 Automatically logged booking confirmation email for booking ${booking.bookingId}`);
+      } catch (emailErr) {
+        console.error('Failed to trigger automatic booking confirmation email:', emailErr.message);
+      }
     }
 
     res.status(201).json({ success: true, data: booking, message: 'Booking created successfully' });
@@ -1687,22 +1689,24 @@ exports.submitBookingForm = async (req, res, next) => {
       path: `/api/bookings/lookup/${booking.bookingId}`
     });
 
-    // Trigger simulated email confirmation log automatically on booking submission
-    try {
-      const { sendEmail, templates } = require('../lib/email');
-      const templateData = templates.confirmation(booking);
-      await sendEmail({
-        to: booking.email || 'info@youthcamping.com',
-        subject: templateData.subject,
-        html: templateData.html,
-        type: 'confirmation',
-        bookingId: booking.id,
-        prisma,
-        attachments: []
-      });
-      console.log(`📧 Automatically logged booking confirmation email for booking ${booking.bookingId}`);
-    } catch (emailErr) {
-      console.error('Failed to trigger automatic booking confirmation email:', emailErr.message);
+    // Trigger simulated email confirmation log automatically on booking submission ONLY if confirmed
+    if (booking.status === 'Confirmed' || booking.status === 'confirmed' || booking.paymentStatus === 'Paid' || booking.paymentStatus === 'paid') {
+      try {
+        const { sendEmail, templates } = require('../lib/email');
+        const templateData = templates.confirmation(booking);
+        await sendEmail({
+          to: booking.email || 'info@youthcamping.com',
+          subject: templateData.subject,
+          html: templateData.html,
+          type: 'confirmation',
+          bookingId: booking.id,
+          prisma,
+          attachments: []
+        });
+        console.log(`📧 Automatically logged booking confirmation email for booking ${booking.bookingId}`);
+      } catch (emailErr) {
+        console.error('Failed to trigger automatic booking confirmation email:', emailErr.message);
+      }
     }
 
     res.status(201).json({ success: true, data: booking });
