@@ -7,8 +7,8 @@ console.log("⚙️  BREVO API CONFIG LOADED:", {
 });
 
 const sendBookingEmail = async (req, res) => {
-  const { bookingId, type, amount, includeTicket } = req.body;
-  console.log('📡 [Backend] Incoming email request:', { bookingId, type, amount, includeTicket });
+  const { bookingId, type, amount, includeTicket, ticketFile, ticketFileName } = req.body;
+  console.log('📡 [Backend] Incoming email request:', { bookingId, type, amount, includeTicket, ticketFileName });
 
   try {
     if (!bookingId) {
@@ -48,6 +48,15 @@ const sendBookingEmail = async (req, res) => {
       } catch (pdfErr) {
         console.error('❌ [Backend] PDF Generation failed:', pdfErr);
       }
+    }
+
+    // Attach manual ticket file if uploaded from client PC
+    if (ticketFile && ticketFileName) {
+      attachments.push({
+        content: ticketFile,
+        name: ticketFileName
+      });
+      console.log(`📄 [Backend] Manual ticket file attached: ${ticketFileName}`);
     }
 
     switch (type) {
