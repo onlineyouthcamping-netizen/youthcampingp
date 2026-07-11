@@ -138,7 +138,7 @@ const sendEmail = async ({ to, subject, html, type, bookingId, prisma, attachmen
 };
 
 const templates = {
-  confirmation: (booking) => {
+  confirmation: (booking, includeTicket = false) => {
     const trip = booking.tripRef || {};
     const departureDate = booking.departureDate 
       ? new Date(booking.departureDate)
@@ -422,7 +422,9 @@ const templates = {
               <div style="margin-top: 1px; color: #1e293b;">+91${booking.mobile || booking.phone}</div>
 
               <div style="font-weight: 800; color: #64748b; margin-top: 12px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Ticket Status</div>
-              <div style="font-weight: 700; color: #2b9b91; text-transform: uppercase;">${booking.trainTicketStatus || (booking.passengers?.details?.ticketStatus) || 'NOT BOOKED'}</div>
+              <div style="font-weight: 700; color: #2b9b91; text-transform: uppercase;">
+                ${includeTicket ? (booking.trainTicketStatus || (booking.passengers?.details?.ticketStatus) || 'CONFIRMED') : 'SELF BOOKED'}
+              </div>
             </div>
           </td>
         </tr>
