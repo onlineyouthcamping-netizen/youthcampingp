@@ -7,8 +7,8 @@ console.log("⚙️  BREVO API CONFIG LOADED:", {
 });
 
 const sendBookingEmail = async (req, res) => {
-  const { bookingId, type, amount } = req.body;
-  console.log('📡 [Backend] Incoming email request:', { bookingId, type, amount });
+  const { bookingId, type, amount, includeTicket } = req.body;
+  console.log('📡 [Backend] Incoming email request:', { bookingId, type, amount, includeTicket });
 
   try {
     if (!bookingId) {
@@ -52,7 +52,7 @@ const sendBookingEmail = async (req, res) => {
 
     switch (type) {
       case 'confirmation':
-        templateData = templates.confirmation(booking);
+        templateData = templates.confirmation(booking, includeTicket);
         break;
       case 'payment':
         templateData = templates.payment(booking, amount || 0);
