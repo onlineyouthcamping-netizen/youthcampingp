@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="24" fill="#F0F7F4"/>
+  <!-- Central person (captain) -->
+  <circle cx="100" cy="68" r="16" fill="#1B2A4A"/>
+  <path d="M78 120 C78 98 88 90 100 90 C112 90 122 98 122 120" fill="#1B2A4A"/>
+  <!-- Captain hat -->
+  <rect x="84" y="52" width="32" height="6" rx="3" fill="#C4DAD2"/>
+  <rect x="90" y="48" width="20" height="6" rx="2" fill="#C4DAD2"/>
+  <!-- Left person (smaller) -->
+  <circle cx="55" cy="82" r="12" fill="#1B2A4A" opacity="0.5"/>
+  <path d="M38 118 C38 102 46 96 55 96 C64 96 72 102 72 118" fill="#1B2A4A" opacity="0.5"/>
+  <!-- Right person (smaller) -->
+  <circle cx="145" cy="82" r="12" fill="#1B2A4A" opacity="0.5"/>
+  <path d="M128 118 C128 102 136 96 145 96 C154 96 162 102 162 118" fill="#1B2A4A" opacity="0.5"/>
+  <!-- Star badge on captain -->
+  <polygon points="100,98 103,104 110,105 105,110 106,117 100,114 94,117 95,110 90,105 97,104" fill="#FFD700"/>
+  <!-- Ground line -->
+  <line x1="35" y1="135" x2="165" y2="135" stroke="#C4DAD2" stroke-width="3" stroke-linecap="round"/>
+  <!-- Dots -->
+  <circle cx="40" cy="55" r="2.5" fill="#1B2A4A" opacity="0.2"/>
+  <circle cx="160" cy="60" r="2" fill="#1B2A4A" opacity="0.15"/>
+</svg>

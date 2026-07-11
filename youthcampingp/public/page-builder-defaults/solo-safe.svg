@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="24" fill="#F0F7F4"/>
+  <!-- Shield -->
+  <path d="M100 40 L140 60 V110 C140 140 100 160 100 160 C100 160 60 140 60 110 V60 Z" fill="#C4DAD2" stroke="#1B2A4A" stroke-width="3"/>
+  <!-- Person silhouette inside shield -->
+  <circle cx="100" cy="88" r="14" fill="#1B2A4A"/>
+  <path d="M80 125 C80 108 90 100 100 100 C110 100 120 108 120 125" fill="#1B2A4A"/>
+  <!-- Checkmark -->
+  <path d="M88 110 L96 118 L114 98" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Small stars -->
+  <circle cx="52" cy="48" r="3" fill="#1B2A4A" opacity="0.3"/>
+  <circle cx="148" cy="52" r="2.5" fill="#1B2A4A" opacity="0.25"/>
+  <circle cx="45" cy="140" r="2" fill="#1B2A4A" opacity="0.2"/>
+  <circle cx="155" cy="135" r="3" fill="#1B2A4A" opacity="0.2"/>
+</svg>

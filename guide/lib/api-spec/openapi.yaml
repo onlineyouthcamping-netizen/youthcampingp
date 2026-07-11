@@ -1,0 +1,828 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: API specification for Guide Reporting App
+servers:
+  - url: /api
+    description: Base API path
+security:
+  - bearerAuth: []
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      security: []
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      description: Authenticates a guide or admin by phone number and role
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+        "404":
+          description: User not found
+  /trips/active:
+    get:
+      operationId: getActiveTrip
+      tags: [trips]
+      summary: Get active trip
+      description: Returns the currently active trip for the logged-in guide
+      responses:
+        "200":
+          description: Active trip found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "204":
+          description: No active trip currently assigned
+  /attendance/today:
+    get:
+      operationId: getTodayAttendance
+      tags: [attendance]
+      summary: Get today's attendance
+      description: Returns today's check-in/check-out log for the logged-in guide
+      responses:
+        "200":
+          description: Today's attendance details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendance"
+        "204":
+          description: Not checked in yet today
+  /attendance/check-in:
+    post:
+      operationId: checkIn
+      tags: [attendance]
+      summary: Check in
+      description: Submits today's check-in GPS location and selfie
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                latitude:
+                  type: number
+                longitude:
+                  type: number
+                locationName:
+                  type: string
+                selfie:
+                  type: string
+                  format: binary
+              required: [latitude, longitude, locationName, selfie]
+      responses:
+        "200":
+          description: Checked in successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendance"
+        "400":
+          description: Already checked in or bad request
+  /attendance/check-out:
+    post:
+      operationId: checkOut
+      tags: [attendance]
+      summary: Check out
+      description: Submits today's check-out GPS location and selfie
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                latitude:
+                  type: number
+                longitude:
+                  type: number
+                locationName:
+                  type: string
+                selfie:
+                  type: string
+                  format: binary
+              required: [latitude, longitude, locationName, selfie]
+      responses:
+        "200":
+          description: Checked out successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendance"
+        "400":
+          description: Not checked in today, already checked out, or bad request
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Get admin dashboard metrics
+      description: Returns overview statistics for the admin dashboard
+      responses:
+        "200":
+          description: Dashboard metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+  /admin/guides:
+    get:
+      operationId: getAdminGuides
+      tags: [admin]
+      summary: Get admin guides monitoring list
+      description: Returns list of guides with status and active trips
+      responses:
+        "200":
+          description: List of guides
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminGuide"
+  /admin/attendance-logs:
+    get:
+      operationId: getAdminAttendanceLogs
+      tags: [admin]
+      summary: Get all attendance logs
+      description: Returns a detailed list of attendance records for verification
+      responses:
+        "200":
+          description: List of attendance logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAttendanceLog"
+  /admin/verify-attendance:
+    post:
+      operationId: verifyAttendance
+      tags: [admin]
+      summary: Verify an attendance log
+      description: Approves or rejects a guide's attendance record for a day
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyAttendanceRequest"
+      responses:
+        "200":
+          description: Attendance log verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendance"
+  /admin/reports:
+    get:
+      operationId: getAdminReports
+      tags: [admin]
+      summary: Get admin payroll and attendance reports
+      description: Returns aggregated attendance stats and payable amounts per guide
+      responses:
+        "200":
+          description: Payroll and attendance report per guide
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminReport"
+  /admin/trips:
+    get:
+      operationId: getAdminTrips
+      tags: [admin]
+      summary: Get all trips
+      description: Returns a list of all trips, including completed and inactive ones, with guide names
+      responses:
+        "200":
+          description: List of all trips
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminTrip"
+    post:
+      operationId: createGuide
+      tags: [admin]
+      summary: Create a new guide
+      description: Creates a new guide user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGuideRequest"
+      responses:
+        "201":
+          description: Guide created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Bad request
+  /admin/guides/{id}:
+    put:
+      operationId: updateGuide
+      tags: [admin]
+      summary: Update a guide
+      description: Updates an existing guide's details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGuideRequest"
+      responses:
+        "200":
+          description: Guide updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Bad request
+        "404":
+          description: Guide not found
+  /admin/assignments:
+    get:
+      operationId: getAssignments
+      tags: [admin]
+      summary: List all assignments
+      description: Returns all assignments with guide and trip names
+      responses:
+        "200":
+          description: List of assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assignment"
+    post:
+      operationId: createAssignment
+      tags: [admin]
+      summary: Create an assignment
+      description: Creates a new guide-trip assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssignmentRequest"
+      responses:
+        "201":
+          description: Assignment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+        "400":
+          description: Bad request
+  /admin/assignments/{id}:
+    put:
+      operationId: updateAssignment
+      tags: [admin]
+      summary: Update an assignment
+      description: Updates an existing assignment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAssignmentRequest"
+      responses:
+        "200":
+          description: Assignment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+        "400":
+          description: Bad request
+        "404":
+          description: Assignment not found
+    delete:
+      operationId: deleteAssignment
+      tags: [admin]
+      summary: Delete an assignment
+      description: Deletes an existing assignment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Assignment deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: Assignment not found
+  /admin/payroll:
+    get:
+      operationId: getPayroll
+      tags: [admin]
+      summary: Get payroll summary
+      description: Returns guide-wise and trip-wise payment summary based on approved attendance
+      responses:
+        "200":
+          description: Payroll summary
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PayrollSummary"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    LoginRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [guide, admin]
+      required:
+        - phone
+        - role
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        phone:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [guide, admin]
+        dailyRate:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - phone
+        - name
+        - role
+        - dailyRate
+        - createdAt
+    Trip:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        leadGuideId:
+          type: integer
+        status:
+          type: string
+          enum: [active, completed, cancelled]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - location
+        - startDate
+        - endDate
+        - leadGuideId
+        - status
+        - createdAt
+    Attendance:
+      type: object
+      properties:
+        id:
+          type: integer
+        guideId:
+          type: integer
+        tripId:
+          type: integer
+        date:
+          type: string
+        checkInTime:
+          type: string
+          format: date-time
+          nullable: true
+        checkInLatitude:
+          type: number
+          nullable: true
+        checkInLongitude:
+          type: number
+          nullable: true
+        checkInLocationName:
+          type: string
+          nullable: true
+        checkInSelfieUrl:
+          type: string
+          nullable: true
+        checkInDistance:
+          type: integer
+          nullable: true
+        checkOutTime:
+          type: string
+          format: date-time
+          nullable: true
+        checkOutLatitude:
+          type: number
+          nullable: true
+        checkOutLongitude:
+          type: number
+          nullable: true
+        checkOutLocationName:
+          type: string
+          nullable: true
+        checkOutSelfieUrl:
+          type: string
+          nullable: true
+        checkOutDistance:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, approved, rejected, location_mismatch, incomplete]
+        verifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+        verifiedBy:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - guideId
+        - tripId
+        - date
+        - status
+        - createdAt
+    AdminDashboard:
+      type: object
+      properties:
+        activeTrips:
+          type: integer
+        totalGuides:
+          type: integer
+        todayCheckIns:
+          type: integer
+        missingCheckIns:
+          type: integer
+        locationMismatchFlags:
+          type: integer
+      required: [activeTrips, totalGuides, todayCheckIns, missingCheckIns, locationMismatchFlags]
+    AdminGuide:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        activeTripName:
+          type: string
+          nullable: true
+        todayStatus:
+          type: string
+          enum: [checked_in, checked_out, missing, idle]
+        lastCheckInTime:
+          type: string
+          format: date-time
+          nullable: true
+        flagged:
+          type: boolean
+        daysLogged:
+          type: integer
+      required: [id, name, phone, activeTripName, todayStatus, lastCheckInTime, flagged, daysLogged]
+    AdminAttendanceLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        guideName:
+          type: string
+        tripName:
+          type: string
+        date:
+          type: string
+        checkInTime:
+          type: string
+          format: date-time
+          nullable: true
+        checkInLatitude:
+          type: number
+          nullable: true
+        checkInLongitude:
+          type: number
+          nullable: true
+        checkInLocationName:
+          type: string
+          nullable: true
+        checkInSelfieUrl:
+          type: string
+          nullable: true
+        checkInDistance:
+          type: integer
+          nullable: true
+        checkOutTime:
+          type: string
+          format: date-time
+          nullable: true
+        checkOutLatitude:
+          type: number
+          nullable: true
+        checkOutLongitude:
+          type: number
+          nullable: true
+        checkOutLocationName:
+          type: string
+          nullable: true
+        checkOutSelfieUrl:
+          type: string
+          nullable: true
+        checkOutDistance:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, approved, rejected, location_mismatch, incomplete]
+      required: [id, guideName, tripName, date, status]
+    VerifyAttendanceRequest:
+      type: object
+      properties:
+        attendanceId:
+          type: integer
+        status:
+          type: string
+          enum: [approved, rejected]
+      required: [attendanceId, status]
+    AdminReport:
+      type: object
+      properties:
+        guideId:
+          type: integer
+        guideName:
+          type: string
+        tripName:
+          type: string
+          nullable: true
+        totalTripDays:
+          type: integer
+        approvedDays:
+          type: integer
+        rejectedDays:
+          type: integer
+        pendingDays:
+          type: integer
+        incompleteDays:
+          type: integer
+        locationMismatchDays:
+          type: integer
+        payableAmount:
+          type: integer
+      required: [guideId, guideName, tripName, totalTripDays, approvedDays, rejectedDays, pendingDays, incompleteDays, locationMismatchDays, payableAmount]
+    AdminTrip:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        leadGuideId:
+          type: integer
+        leadGuideName:
+          type: string
+        status:
+          type: string
+          enum: [active, completed, cancelled]
+      required: [id, name, location, startDate, endDate, leadGuideId, leadGuideName, status]
+    CreateGuideRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        dailyRate:
+          type: integer
+        emergencyContact:
+          type: string
+          nullable: true
+        isActive:
+          type: string
+          enum: [active, inactive]
+      required: [name, phone]
+    UpdateGuideRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        dailyRate:
+          type: integer
+        emergencyContact:
+          type: string
+          nullable: true
+        isActive:
+          type: string
+          enum: [active, inactive]
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: integer
+        guideId:
+          type: integer
+        guideName:
+          type: string
+        tripId:
+          type: integer
+        tripName:
+          type: string
+        departureDate:
+          type: string
+          format: date
+        role:
+          type: string
+          enum: [guide, coordinator, captain]
+        perDayAmount:
+          type: integer
+        allowedLatitude:
+          type: number
+          nullable: true
+        allowedLongitude:
+          type: number
+          nullable: true
+        allowedRadius:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, guideId, tripId, departureDate, role, perDayAmount, allowedRadius, createdAt]
+    CreateAssignmentRequest:
+      type: object
+      properties:
+        guideId:
+          type: integer
+        tripId:
+          type: integer
+        departureDate:
+          type: string
+          format: date
+        role:
+          type: string
+          enum: [guide, coordinator, captain]
+        perDayAmount:
+          type: integer
+        allowedLatitude:
+          type: number
+          nullable: true
+        allowedLongitude:
+          type: number
+          nullable: true
+        allowedRadius:
+          type: integer
+      required: [guideId, tripId, departureDate, role, perDayAmount]
+    UpdateAssignmentRequest:
+      type: object
+      properties:
+        guideId:
+          type: integer
+        tripId:
+          type: integer
+        departureDate:
+          type: string
+          format: date
+        role:
+          type: string
+          enum: [guide, coordinator, captain]
+        perDayAmount:
+          type: integer
+        allowedLatitude:
+          type: number
+          nullable: true
+        allowedLongitude:
+          type: number
+          nullable: true
+        allowedRadius:
+          type: integer
+    PayrollSummary:
+      type: object
+      properties:
+        guideId:
+          type: integer
+        guideName:
+          type: string
+        dailyRate:
+          type: integer
+        approvedDays:
+          type: integer
+        payableAmount:
+          type: integer
+        tripBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/PayrollTripBreakdown"
+      required: [guideId, guideName, dailyRate, approvedDays, payableAmount, tripBreakdown]
+    PayrollTripBreakdown:
+      type: object
+      properties:
+        tripName:
+          type: string
+        approvedDays:
+          type: integer
+        amount:
+          type: integer
+      required: [tripName, approvedDays, amount]

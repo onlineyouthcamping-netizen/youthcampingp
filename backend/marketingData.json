@@ -1,0 +1,356 @@
+{
+  "ideas": [
+    {
+      "id": "idea_1",
+      "title": "Snowfall Reel - Manali",
+      "description": "Experience the magic of snowfall",
+      "trip": "Manali Kasol Amritsar (MKA)",
+      "category": "Reel",
+      "priority": "High",
+      "status": "Script Writing",
+      "assignedTo": "Vidhi Patel",
+      "addedOn": "22 Jul 2026"
+    },
+    {
+      "id": "idea_2",
+      "title": "Monsoon Offer Poster",
+      "description": "Special offer for MKA Monsoon",
+      "trip": "MKA",
+      "category": "Poster",
+      "priority": "Medium",
+      "status": "Waiting Approval",
+      "assignedTo": "Vidhi Patel",
+      "addedOn": "21 Jul 2026"
+    },
+    {
+      "id": "idea_3",
+      "title": "Spiti Valley Road Trip - Reel",
+      "description": "Adventure through the mountains",
+      "trip": "Spiti Valley (SPT)",
+      "category": "Reel",
+      "priority": "High",
+      "status": "Script Done",
+      "assignedTo": "Neeki Sharma",
+      "addedOn": "20 Jul 2026"
+    },
+    {
+      "id": "idea_4",
+      "title": "Packing List Carousel",
+      "description": "What to pack for your trip",
+      "trip": "All Trips",
+      "category": "Carousel",
+      "priority": "Low",
+      "status": "New Idea",
+      "assignedTo": "Vidhi Patel",
+      "addedOn": "19 Jul 2026"
+    },
+    {
+      "id": "idea_5",
+      "title": "Leh Ladakh Bike Trip - Teaser",
+      "description": "Coming Soon",
+      "trip": "Leh Ladakh (LAD)",
+      "category": "Teaser",
+      "priority": "High",
+      "status": "Script Writing",
+      "assignedTo": "Neeki Sharma",
+      "addedOn": "19 Jul 2026"
+    },
+    {
+      "id": "idea_6",
+      "title": "Travel Tips - Altitude Sickness",
+      "description": "Important tips for high altitude",
+      "trip": "All High Altitude Trips",
+      "category": "Carousel",
+      "priority": "Medium",
+      "status": "New Idea",
+      "assignedTo": "Parth Shah",
+      "addedOn": "18 Jul 2026"
+    },
+    {
+      "id": "idea_7",
+      "title": "Group Trip Highlights - MKA",
+      "description": "Memories from last week's trip",
+      "trip": "MKA",
+      "category": "Reel",
+      "priority": "Low",
+      "status": "Waiting Approval",
+      "assignedTo": "Vidhi Patel",
+      "addedOn": "18 Jul 2026"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "campaign_1",
+      "name": "MKA Monsoon Campaign 1",
+      "period": "01 Jul - 20 Jul 2026",
+      "platform": "Meta",
+      "spend": 1845000,
+      "leads": 1642,
+      "bookings": 128,
+      "revenue": 2176000,
+      "roas": 11.80,
+      "status": "Completed"
+    },
+    {
+      "id": "campaign_2",
+      "name": "MKA Monsoon Campaign 2",
+      "period": "21 Jul - 10 Aug 2026",
+      "platform": "Meta",
+      "spend": 1520000,
+      "leads": 1395,
+      "bookings": 104,
+      "revenue": 1781000,
+      "roas": 11.00,
+      "status": "Completed"
+    },
+    {
+      "id": "campaign_3",
+      "name": "MKA Monsoon Campaign 3",
+      "period": "11 Aug - 31 Aug 2026",
+      "platform": "Meta",
+      "spend": 1080000,
+      "leads": 1086,
+      "bookings": 82,
+      "revenue": 1315000,
+      "roas": 12.18,
+      "status": "Completed"
+    },
+    {
+      "id": "campaign_4",
+      "name": "MKA Monsoon Campaign 4",
+      "period": "01 Sep - 30 Sep 2026",
+      "platform": "Meta",
+      "spend": 689500,
+      "leads": 700,
+      "bookings": 48,
+      "revenue": 976000,
+      "roas": 14.17,
+      "status": "Active"
+    }
+  ],
+  "learnings": {
+    "campaign_2": {
+      "campaignInfo": {
+        "name": "MKA Monsoon Campaign 2",
+        "objective": "Leads",
+        "buyingType": "Auction",
+        "budget": "₹25,000,000",
+        "startDate": "21 Jul 2026",
+        "endDate": "10 Aug 2026",
+        "status": "Completed",
+        "createdBy": "Hemal Patel",
+        "createdOn": "11 Aug 2026"
+      },
+      "metrics": {
+        "spend": 1845000,
+        "spendChange": -6.2,
+        "leads": 1642,
+        "leadsChange": 18.7,
+        "bookings": 128,
+        "bookingsChange": 21.5,
+        "revenue": 2176000,
+        "revenueChange": 28.3,
+        "roas": 11.80,
+        "roasChange": 1.9,
+        "costPerBooking": 14414,
+        "costPerBookingChange": -11.3
+      },
+      "whatWorked": [
+        "Snowfall thumbnail had highest CTR (2.84%)",
+        "Gujarati hook performed better than English (31% more leads)",
+        "15-second reels outperformed 30+ second reels",
+        "Couple-focused creatives generated more inquiries",
+        "Story ads had lowest CPL (₹7.21)",
+        "Retargeting ads converted better in last 3 days of campaign"
+      ],
+      "whatDidntWork": [
+        "Long captions reduced engagement",
+        "Campfire reel had poor watch time (avg 4.2 sec)",
+        "Broad audience increased CPL by 38%",
+        "Static image ads underperformed",
+        "Night posting after 10 PM had poor results",
+        "Audience saturation after ₹12,000,000 spend"
+      ],
+      "ideasNextSeason": [
+        "Shoot drone footage in snowfall",
+        "Test family-focused campaign",
+        "Create female solo traveller reel",
+        "Launch campaign 20 days earlier",
+        "Try WhatsApp click campaign",
+        "Create series of short reels (3-5 part)"
+      ],
+      "competitorObservations": [
+        {
+          "competitor": "WanderOn",
+          "observation": "Emotional storytelling in reels",
+          "whatTheyDid": "Used traveller emotions + journey transformation",
+          "shouldTry": "Yes",
+          "notes": "Worked well for them in monsoon"
+        },
+        {
+          "competitor": "Capture A Trip",
+          "observation": "Strong couple-focused hooks",
+          "whatTheyDid": "Used couple adventure angle in most reels",
+          "shouldTry": "Yes",
+          "notes": "Their engagement is high"
+        },
+        {
+          "competitor": "JustWravel",
+          "observation": "Heavy user-generated content",
+          "whatTheyDid": "Shared a lot of UGC stories & reviews",
+          "shouldTry": "Maybe",
+          "notes": "Needs more testing"
+        },
+        {
+          "competitor": "Thrillophilia",
+          "observation": "Discount-driven campaigns",
+          "whatTheyDid": "Focused on offers and price drops",
+          "shouldTry": "No",
+          "notes": "Low quality leads"
+        }
+      ],
+      "importantNotes": [
+        "Avoid running campaigns during IPL finals.",
+        "Audience from Ahmedabad performed better than Surat.",
+        "Never use green CTA buttons.",
+        "Voiceover by Vidhi consistently improves watch time.",
+        "Keep first 2 seconds very strong in reels."
+      ],
+      "aiSuggestions": [
+        "Based on last 8 campaigns, reels between 10-15 sec perform best.",
+        "Snowfall thumbnail increases CTR by avg 34%.",
+        "Couple angle creatives generate 27% more bookings.",
+        "Best posting time for your audience: 7 PM - 10 PM."
+      ],
+      "driveLinks": {
+        "creatives": "https://drive.google.com/drive/folders/1Qp_mock1",
+        "adCopies": "https://drive.google.com/document/d/1cZ_mock2",
+        "rawVideos": "https://drive.google.com/file/d/1aX_mock3",
+        "thumbnails": "https://drive.google.com/drive/folders/1Qp_mock4",
+        "screenshots": "https://drive.google.com/drive/folders/1Qp_mock5"
+      },
+      "bestCreatives": [
+        { "id": "reel_03", "name": "Reel 03", "leads": 342, "bookings": 28, "videoUrl": "" },
+        { "id": "reel_07", "name": "Reel 07", "leads": 261, "bookings": 21, "videoUrl": "" },
+        { "id": "story_02", "name": "Story 02", "leads": 217, "bookings": 18, "videoUrl": "" },
+        { "id": "reel_11", "name": "Reel 11", "leads": 186, "bookings": 16, "videoUrl": "" }
+      ]
+    }
+  },
+  "assets": {
+    "campaign_2": [
+      {
+        "name": "Snowfall Reel Thumbnail 01",
+        "type": "Image",
+        "link": "drive.google.com/drive/folders/1Qp...x9L",
+        "addedOn": "22 Jul 2026"
+      },
+      {
+        "name": "Manali Monsoon Reel 1",
+        "type": "Video",
+        "link": "drive.google.com/file/d/1aX...m2N",
+        "addedOn": "23 Jul 2026"
+      },
+      {
+        "name": "Monsoon Offer Poster",
+        "type": "Image",
+        "link": "drive.google.com/file/d/1bY...k3P",
+        "addedOn": "23 Jul 2026"
+      },
+      {
+        "name": "Ad Copy - Variation A",
+        "type": "Document",
+        "link": "drive.google.com/document/d/1cZ...p7Q",
+        "addedOn": "22 Jul 2026"
+      },
+      {
+        "name": "Voiceover - Reel 1",
+        "type": "Audio",
+        "link": "drive.google.com/file/d/1dA...r9T",
+        "addedOn": "23 Jul 2026"
+      },
+      {
+        "name": "Shorts - Behind the Scenes",
+        "type": "Video",
+        "link": "drive.google.com/file/d/1eB...s8V",
+        "addedOn": "24 Jul 2026"
+      },
+      {
+        "name": "Campaign Brief - Monsoon 2026",
+        "type": "Document",
+        "link": "drive.google.com/presentation/d/1fC...t6H",
+        "addedOn": "21 Jul 2026"
+      },
+      {
+        "name": "Ad Headlines - Variations",
+        "type": "Document",
+        "link": "drive.google.com/spreadsheets/d/1gD...n5K",
+        "addedOn": "21 Jul 2026"
+      },
+      {
+        "name": "User Generated Content - Set 1",
+        "type": "Image",
+        "link": "drive.google.com/drive/folders/1hE...q2M",
+        "addedOn": "24 Jul 2026"
+      }
+    ]
+  },
+  "reports": [
+    {
+      "season": "Summer 2025",
+      "period": "Mar 2025 - Jun 2025",
+      "duration": 4,
+      "campaigns": 4,
+      "spend": 2845600,
+      "leads": 2842,
+      "bookings": 248,
+      "revenue": 3462400,
+      "roas": 12.16,
+      "costPerBooking": 114734,
+      "conversionRate": 8.72,
+      "icon": "sun"
+    },
+    {
+      "season": "Monsoon 2025",
+      "period": "Jul 2025 - Sep 2025",
+      "duration": 3,
+      "campaigns": 3,
+      "spend": 1845000,
+      "leads": 1642,
+      "bookings": 128,
+      "revenue": 2176000,
+      "roas": 11.80,
+      "costPerBooking": 144141,
+      "conversionRate": 7.79,
+      "icon": "cloud-rain"
+    },
+    {
+      "season": "Diwali 2025",
+      "period": "Oct 2025 - Nov 2025",
+      "duration": 2,
+      "campaigns": 2,
+      "spend": 1420000,
+      "leads": 1256,
+      "bookings": 102,
+      "revenue": 1698000,
+      "roas": 11.96,
+      "costPerBooking": 139216,
+      "conversionRate": 8.12,
+      "icon": "sparkles"
+    },
+    {
+      "season": "Winter 2025-26",
+      "period": "Dec 2025 - Feb 2026",
+      "duration": 3,
+      "campaigns": 3,
+      "spend": 2280000,
+      "leads": 2105,
+      "bookings": 186,
+      "revenue": 2735000,
+      "roas": 11.98,
+      "costPerBooking": 122581,
+      "conversionRate": 8.84,
+      "icon": "snowflake"
+    }
+  ]
+}

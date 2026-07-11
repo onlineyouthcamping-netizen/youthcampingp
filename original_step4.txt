@@ -1,0 +1,350 @@
+854:               {currentStep === 4 && (
+855:                 <motion.div
+856:                   key="step4"
+857:                   initial={{ opacity: 0, x: -10 }}
+858:                   animate={{ opacity: 1, x: 0 }}
+859:                   exit={{ opacity: 0, x: 10 }}
+860:                   className="space-y-6"
+861:                 >
+862:                   <div className="bg-white border border-slate-200/80 rounded-[2rem] p-8 md:p-10 space-y-6 shadow-sm">
+863:                     <div className="flex items-center gap-3">
+864:                       <div className="w-10 h-10 bg-[#FF5B00]/10 rounded-2xl flex items-center justify-center text-[#FF5B00]">
+865:                         <ShieldCheck size={20} />
+866:                       </div>
+867:                       <div>
+868:                         <h2 className="text-xl font-bold capitalize tracking-tight text-slate-900">Terms & Verification</h2>
+869:                         <p className="text-[10px] text-slate-400 font-bold capitalize tracking-wider">Confirm final submission</p>
+870:                       </div>
+871:                     </div>
+872: 
+873:                     <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 space-y-4 text-xs font-medium text-slate-500 leading-relaxed">
+874:                       <p>
+875:                         By placing this booking, you verify that all traveler names, mobile numbers, and personal details match Government-issued photo IDs.
+876:                       </p>
+877:                       <p>
+878:                         Cancellations, transfers, and refunds are managed strictly under the YouthCamping standard trip reservation agreement.
+879:                       </p>
+880:                     </div>
+881: 
+882:                     {/* Complete Booking Summary */}
+883:                     <div className="bg-slate-50 border border-slate-150 rounded-[2rem] p-6 space-y-6">
+884:                       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+885:                         <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500">Booking Summary</h4>
+886:                         <span className="text-[9px] bg-[#FF5B00]/10 text-[#FF5B00] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Please Review</span>
+887:                       </div>
+888: 
+889:                       {/* Section 1: Lead Contact Details */}
+890:                       <div className="bg-white border border-slate-205 rounded-2xl p-4.5 space-y-3 shadow-sm">
+891:                         <div className="flex justify-between items-center">
+892:                           <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">1. Lead Contact</h5>
+893:                           <button
+894:                             type="button"
+895:                             onClick={() => setCurrentStep(1)}
+896:                             className="text-[10px] text-[#FF5B00] hover:text-[#E65200] font-bold flex items-center gap-1 transition-all"
+897:                           >
+898:                             Edit
+899:                           </button>
+900:                         </div>
+901:                         <div className="grid grid-cols-2 gap-3 text-xs">
+902:                           <div>
+903:                             <p className="text-[9px] text-slate-400 uppercase font-medium">Name</p>
+904:                             <p className="font-bold text-slate-800 capitalize">{formData.name}</p>
+905:                           </div>
+906:                           <div>
+907:                             <p className="text-[9px] text-slate-400 uppercase font-medium">Phone</p>
+908:                             <p className="font-bold text-slate-800">{formData.phone}</p>
+909:                           </div>
+910:                           <div>
+911:                             <p className="text-[9px] text-slate-400 uppercase font-medium">Email</p>
+912:                             <p className="font-bold text-slate-800">{formData.email || 'N/A'}</p>
+913:                           </div>
+914:                           <div>
+915:                             <p className="text-[9px] text-slate-400 uppercase font-medium">City/State</p>
+916:                             <p className="font-bold text-slate-800 capitalize">{formData.cityState}</p>
+917:                           </div>
+918:                         </div>
+919:                       </div>
+920: 
+921:                       {/* Section 2: Trip & Joining details */}
+922:                       <div className="bg-white border border-slate-205 rounded-2xl p-4.5 space-y-3 shadow-sm">
+923:                         <div className="flex justify-between items-center">
+924:                           <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">2. Trip Details</h5>
+925:                           <button
+926:                             type="button"
+927:                             onClick={() => setCurrentStep(2)}
+928:                             className="text-[10px] text-[#FF5B00] hover:text-[#E65200] font-bold flex items-center gap-1 transition-all"
+929:                           >
+930:                             Edit
+931:                           </button>
+932:                         </div>
+933:                         <div className="grid grid-cols-2 gap-3 text-xs">
+934:                           <div className="col-span-2">
+935:                             <p className="text-[9px] text-slate-400 uppercase font-medium">Trip Name</p>
+936:                             <p className="font-extrabold text-slate-900 capitalize text-sm">{initialParams.tripName || tripData?.title || 'Expedition'}</p>
+937:                           </div>
+938:                           <div>
+939:                             <p className="text-[9px] text-slate-400 uppercase font-medium">Departure Date</p>
+940:                             <p className="font-bold text-slate-850 flex items-center gap-1"><Calendar size={12} className="text-[#FF5B00]" /> {initialParams.date || 'Flexible'}</p>
+941:                           </div>
+942:                           <div className="col-span-2">
+943:                             <p className="text-[9px] text-slate-400 uppercase font-medium">Joining Point</p>
+944:                             <div className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100/80 text-slate-800 rounded-xl text-xs font-bold border border-slate-200 capitalize">
+945:                               <MapPin size={12} className="text-[#FF5B00]" />
+946:                               {selectedCity?.cityName || 'Delhi'} {selectedCity?.pickupPoint ? `(${selectedCity.pickupPoint})` : ''}
+947:                             </div>
+948:                           </div>
+949:                         </div>
+950:                       </div>
+951: 
+952:                       {/* Section 3: Traveler Details */}
+953:                       <div className="bg-white border border-slate-205 rounded-2xl p-4.5 space-y-3 shadow-sm">
+954:                         <div className="flex justify-between items-center">
+955:                           <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">3. Traveler Details ({formData.participants})</h5>
+956:                           <button
+957:                             type="button"
+958:                             onClick={() => setCurrentStep(2)}
+959:                             className="text-[10px] text-[#FF5B00] hover:text-[#E65200] font-bold flex items-center gap-1 transition-all"
+960:                           >
+961:                             Edit
+962:                           </button>
+963:                         </div>
+964:                         <div className="space-y-2">
+965:                           {formData.participantsList.map((t, i) => (
+966:                             <div key={i} className="flex flex-col md:flex-row md:items-center justify-between border border-slate-100 bg-slate-50/50 rounded-xl px-4 py-3 gap-2">
+967:                               <div>
+968:                                 <p className="text-xs font-bold text-slate-800 capitalize">{t.name || `Traveler ${i+1}`}</p>
+969:                                 <p className="text-[10px] text-slate-400 font-medium">Mobile: {t.phone} • {t.gender} • Age {t.age || 'N/A'}</p>
+970:                               </div>
+971:                               <div className="text-left md:text-right shrink-0">
+972:                                 <span className="inline-block text-[9px] font-bold text-slate-500 bg-white border border-slate-200/60 px-2 py-0.5 rounded mr-1 capitalize">{t.roomSharing}</span>
+973:                                 <span className="inline-block text-[9px] font-bold text-slate-500 bg-white border border-slate-200/60 px-2 py-0.5 rounded capitalize">{t.trainOption}</span>
+974:                               </div>
+975:                             </div>
+976:                           ))}
+977:                         </div>
+978:                       </div>
+979: 
+980:                       {/* Section 4: Payment Details */}
+981:                       <div className="bg-white border border-slate-205 rounded-2xl p-4.5 space-y-3 shadow-sm">
+982:                         <div className="flex justify-between items-center">
+983:                           <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">4. Payment Details</h5>
+984:                           <button
+985:                             type="button"
+986:                             onClick={() => setCurrentStep(3)}
+987:                             className="text-[10px] text-[#FF5B00] hover:text-[#E65200] font-bold flex items-center gap-1 transition-all"
+988:                           >
+989:                             Edit
+990:                           </button>
+991:                         </div>
+992:                         <div className="space-y-2 text-xs">
+993:                           <div className="flex justify-between">
+994:                             <span className="text-slate-500">Base Price</span>
+995:                             <span className="font-bold text-slate-800">₹{pricing.originalTotalBase.toLocaleString()}</span>
+996:                           </div>
+997:                           <div className="flex justify-between">
+998:                             <span className="text-slate-500">GST @ {tripData?.gstPercentage ?? 5}%</span>
+999:                             <span className="font-bold text-slate-800">+₹{pricing.gstAmount.toLocaleString()}</span>
+1000:                           </div>
+1001:                           <div className="flex justify-between items-center">
+1002:                             <span className="text-slate-500">Payment Plan</span>
+1003:                             <span className="font-bold text-amber-605 capitalize bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded text-[10px]">{paymentMode}</span>
+1004:                           </div>
+1005:                           <div className="flex justify-between bg-[#FF5B00]/5 rounded-xl p-3 -mx-1">
+1006:                             <span className="font-bold text-slate-900">Total Payable Amount Due Now</span>
+1007:                             <span className="font-extrabold text-[#FF5B00] text-base">₹{pricing.finalTotal.toLocaleString()}</span>
+1008:                           </div>
+1009:                         </div>
+1010:                       </div>
+1011:                     </div>
+1012: 
+1013:                     {/* Step 4: Mandatory T&C + optional WhatsApp opt-in checkboxes */}
+1014:                     <div className="space-y-4 pt-2">
+1015:                       <label className="flex items-start gap-3 cursor-pointer text-xs select-none">
+1016:                         <input
+1017:                           type="checkbox"
+1018:                           className="mt-1 accent-[#FF5B00] rounded focus:ring-offset-slate-950"
+1019:                           checked={acceptTerms}
+1020:                           onChange={(e) => setAcceptTerms(e.target.checked)}
+1021:                         />
+1022:                         <span className={cn("font-bold text-slate-700", !acceptTerms && "text-slate-500")}>
+1023:                           I agree to the terms and conditions and trip reservation guidelines * (Mandatory)
+1024:                         </span>
+1025:                       </label>
+1026: 
+1027:                       <label className="flex items-start gap-3 cursor-pointer text-xs select-none">
+1028:                         <input
+1029:                           type="checkbox"
+1030:                           className="mt-1 accent-[#FF5B00] rounded focus:ring-offset-slate-950"
+1031:                           checked={whatsappOptIn}
+1032:                           onChange={(e) => setWhatsappOptIn(e.target.checked)}
+1033:                         />
+1034:                         <span className="font-bold text-slate-700">
+1035:                           Opt-in to receive booking updates and itinerary information directly on WhatsApp (Optional)
+1036:                         </span>
+1037:                       </label>
+1038:                     </div>
+1039: 
+1040:                   </div>
+1041:                 </motion.div>
+1042:               )}
+1043:             </AnimatePresence>
+1044: 
+1045:             {/* Error Message */}
+1046:             {error && (
+1047:               <div className="bg-red-500/10 border border-red-500/25 p-5 rounded-2xl text-red-600 text-xs font-bold flex items-center gap-2">
+1048:                 <AlertCircle size={16} />
+1049:                 <span>{error}</span>
+1050:               </div>
+1051:             )}
+1052: 
+1053:             {/* Nav buttons */}
+1054:             <div className="flex justify-between items-center gap-4">
+1055:               {currentStep > 1 && (
+1056:                 <button
+1057:                   onClick={handlePrev}
+1058:                   type="button"
+1059:                   className="bg-white border border-slate-200 text-slate-700 rounded-2xl py-4.5 px-8 font-bold capitalize tracking-widest text-[10px] flex items-center gap-2 hover:bg-slate-50"
+1060:                 >
+1061:                   <ChevronLeft size={14} /> Back
+1062:                 </button>
+1063:               )}
+1064:               {currentStep < 4 ? (
+1065:                 <button
+1066:                   onClick={handleNext}
+1067:                   type="button"
+1068:                   className="ml-auto bg-[#FF5B00] hover:bg-[#E65200] text-white rounded-2xl py-4.5 px-8 font-bold capitalize tracking-widest text-[10px] flex items-center gap-2 shadow-lg shadow-[#FF5B00]/20"
+1069:                 >
+1070:                   Continue <ChevronRight size={14} />
+1071:                 </button>
+1072:               ) : (
+1073:                 <button
+1074:                   onClick={handleFinalSubmit}
+1075:                   disabled={loading}
+1076:                   type="button"
+1077:                   className="ml-auto bg-[#FF5B00] hover:bg-[#E65200] text-white rounded-2xl py-5 px-10 font-bold capitalize tracking-widest text-xs flex items-center gap-2 shadow-lg shadow-[#FF5B00]/30 disabled:opacity-50"
+1078:                 >
+1079:                   {loading ? <Loader2 className="animate-spin" /> : <ShieldCheck size={14} />}
+1080:                   {loading ? 'Processing...' : 'Confirm & Place Booking'}
+1081:                 </button>
+1082:               )}
+1083:             </div>
+1084:           </div>
+1085: 
+1086:           {/* Right Area: Sticky Desktop Summary Sidebar */}
+1087:           <div className="lg:col-span-5">
+1088:             <div className="sticky top-10 space-y-6">
+1089:               
+1090:               {/* Summary Card */}
+1091:               <div className="bg-white border border-slate-200/80 rounded-[2.5rem] overflow-hidden shadow-md">
+1092:                 <div className="p-8 space-y-6">
+1093:                   
+1094:                   <div className="space-y-2">
+1095:                     <span className="text-[9px] text-[#FF5B00] font-bold capitalize tracking-widest flex items-center gap-1.5">
+1096:                       <Sparkles size={10} /> Live Expedition Summary
+1097:                     </span>
+1098:                     <h3 className="text-xl font-black capitalize tracking-tight text-slate-900 leading-tight">
+1099:                       {initialParams.tripName || 'Trip Checkout'}
+1100:                     </h3>
+1101:                     <div className="flex flex-wrap gap-2 pt-1">
+1102:                       <span className="flex items-center gap-1 px-2.5 py-1 bg-[#FF5B00]/10 text-[#FF5B00] rounded-lg text-[10px] font-bold">
+1103:                         <Calendar size={11} /> Departure Date: {initialParams.date || 'Flexible'}
+1104:                       </span>
+1105:                       <span className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold border border-slate-200">
+1106:                         <Users size={11} /> {formData.participants} Travelers
+1107:                       </span>
+1108:                     </div>
+1109:                   </div>
+1110: 
+1111:                   <div className="h-px bg-slate-100" />
+1112: 
+1113:                   {/* Calculations breakdown */}
+1114:                   <div className="space-y-3.5 text-xs">
+1115:                     <div className="flex justify-between items-center text-slate-500">
+1116:                       <span>Package Base Total</span>
+1117:                       <span className="font-bold text-slate-900">₹{pricing.originalTotalBase.toLocaleString()}</span>
+1118:                     </div>
+1119: 
+1120:                     {/* Per-traveler options breakdown */}
+1121:                     {formData.participantsList.map((t, i) => {
+1122:                       const trainOpts = tripData?.travelOptions?.length > 0 ? tripData.travelOptions : [
+1123:                         { label: 'Sleeper', priceDelta: 0 }, { label: '3AC', priceDelta: 2000 }, { label: 'No Train', priceDelta: -1500 }
+1124:                       ];
+1125:                       const roomOpts = tripData?.roomOptions?.length > 0 ? tripData.roomOptions : [
+1126:                         { label: 'Triple Sharing', priceDelta: 0 }, { label: 'Double Sharing', priceDelta: 1500 }, { label: 'Quad Sharing', priceDelta: -500 }
+1127:                       ];
+1128:                       const trainDelta = isDirectJoin ? 0 : (trainOpts.find((o: any) => o.label === t.trainOption)?.priceDelta || 0);
+1129:                       const roomDelta = roomOpts.find((o: any) => o.label === t.roomSharing)?.priceDelta || 0;
+1130:                       if (trainDelta === 0 && roomDelta === 0) return null;
+1131:                       return (
+1132:                         <div key={i} className="text-[10px] text-slate-400 pl-2 border-l-2 border-slate-100 space-y-0.5">
+1133:                           <span className="font-bold capitalize text-slate-500">Traveler {i+1}</span>
+1134:                           {roomDelta !== 0 && <div className="flex justify-between"><span>{t.roomSharing}</span><span className={roomDelta > 0 ? 'text-slate-700' : 'text-emerald-600'}>{roomDelta > 0 ? '+' : ''}₹{roomDelta.toLocaleString()}</span></div>}
+1135:                           {!isDirectJoin && trainDelta !== 0 && <div className="flex justify-between"><span>{t.trainOption}</span><span className={trainDelta > 0 ? 'text-slate-700' : 'text-emerald-600'}>{trainDelta > 0 ? '+' : ''}₹{trainDelta.toLocaleString()}</span></div>}
+1136:                         </div>
+1137:                       );
+1138:                     })}
+1139: 
+1140:                     <div className="flex flex-col gap-1.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200/60">
+1141:                       <span className="text-[9px] font-bold text-slate-450 uppercase tracking-wider block">Joining Point</span>
+1142:                       <div className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800 capitalize">
+1143:                         <MapPin size={12} className="text-[#FF5B00]" />
+1144:                         {selectedCity?.cityName || 'Delhi'} {selectedCity?.pickupPoint ? `(${selectedCity.pickupPoint})` : ''}
+1145:                       </div>
+1146:                     </div>
+1147: 
+1148:                     {selectedCity?.deductionAmount > 0 && (
+1149:                       <div className="flex justify-between items-center text-emerald-600">
+1150:                         <span>Pickup City Discount</span>
+1151:                         <span className="font-bold">-₹{(selectedCity.deductionAmount * formData.participants).toLocaleString()}</span>
+1152:                       </div>
+1153:                     )}
+1154: 
+1155: 
+1156:                     <div className="flex justify-between items-center text-slate-500">
+1157:                       <span>GST @ {tripData?.gstPercentage ?? 5}%</span>
+1158:                       <span className="font-bold text-slate-900">+₹{pricing.gstAmount.toLocaleString()}</span>
+1159:                     </div>
+1160: 
+1161:                     <div className="h-px bg-slate-100 my-2" />
+1162: 
+1163:                     {/* Plan description */}
+1164:                     <div className="bg-slate-50 p-4 rounded-xl space-y-1.5 border border-slate-200/60">
+1165:                       <div className="flex items-center justify-between">
+1166:                         <span className="text-[9px] font-bold capitalize text-slate-400 tracking-wider">Plan Selected</span>
+1167:                         <span className="text-[9px] font-extrabold text-amber-600 bg-amber-50 border border-amber-250 px-2 py-0.5 rounded uppercase tracking-wider">{paymentMode}</span>
+1168:                       </div>
+1169:                       <p className="text-[10px] text-slate-500 font-bold leading-tight capitalize">
+1170:                         {paymentMode === 'Full Payment' ? 'Immediate full checkout' : `Reserve at deposit of ₹${(customDepositPerPax && customDepositPerPax > 0 ? customDepositPerPax : 2000).toLocaleString()}/pax. Balance due before trip start.`}
+1171:                       </p>
+1172:                     </div>
+1173: 
+1174:                     {/* Grand Total */}
+1175:                     <div className="bg-[#FF5B00] bg-gradient-to-br from-[#FF5B00] to-[#FF8A00] p-6 rounded-2xl flex flex-col justify-between text-white shadow-xl shadow-[#FF5B00]/10">
+1176:                       <span className="text-[9px] font-bold capitalize tracking-wider opacity-70">Total Amount Due Now</span>
+1177:                       <div className="flex items-end justify-between mt-1">
+1178:                         <span className="text-3xl font-bold tracking-tighter">₹{pricing.finalTotal.toLocaleString()}</span>
+1179:                         <span className="text-[9px] font-bold opacity-60">Inclusive of GST</span>
+1180:                       </div>
+1181:                     </div>
+1182: 
+1183:                     {paymentMode === 'Partial Payment' && (
+1184:                       <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold capitalize tracking-widest pt-1">
+1185:                         <span>Remaining Balance Later</span>
+1186:                         <span className="text-slate-800">₹{pricing.remainingBalance.toLocaleString()}</span>
+1187:                       </div>
+1188:                     )}
+1189:                   </div>
+1190:                 </div>
+1191:               </div>
+1192: 
+1193:               {/* Badges footer */}
+1194:               <div className="grid grid-cols-2 gap-3 text-center">
+1195:                 <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center gap-1 shadow-sm">
+1196:                   <ShieldCheck className="text-[#FF5B00]" size={16} />
+1197:                   <span className="text-[9px] font-bold capitalize tracking-wider text-slate-700">100% Secured</span>
+1198:                 </div>
+1199:                 <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center gap-1 shadow-sm">
+1200:                   <Lock className="text-[#FF5B00]" size={16} />
+1201:                   <span className="text-[9px] font-bold capitalize tracking-wider text-slate-700">SSL Checkout</span>
+1202:                 </div>
+1203:               </div>

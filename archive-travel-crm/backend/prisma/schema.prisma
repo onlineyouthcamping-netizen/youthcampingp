@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  role      String    @default("AGENT")
+  inquiries Inquiry[] @relation("AssignedAdmin")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Traveler {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  phone     String?
+  password  String
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Trip {
+  id          String    @id @default(uuid())
+  title       String
+  slug        String    @unique
+  description String
+  price       Float
+  duration    String
+  location    String
+  images      String    // JSON array of Cloudinary URLs
+  inclusions  String    // JSON array
+  exclusions  String    // JSON array
+  itinerary   String    // JSON array of day objects
+  inquiries   Inquiry[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Inquiry {
+  id          String        @id @default(uuid())
+  tripId      String
+  trip        Trip          @relation(fields: [tripId], references: [id])
+  name        String
+  phone       String
+  email       String
+  travelDate  DateTime
+  pax         Int
+  status      String      @default("NEW")
+  assignedTo  String?
+  admin       User?         @relation("AssignedAdmin", fields: [assignedTo], references: [id])
+  notes       String?       // JSON array of note objects: { author, text, date }
+  source      String        @default("website")
+  booking     Booking?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  inquiryId     String        @unique
+  inquiry       Inquiry       @relation(fields: [inquiryId], references: [id])
+  travelerId    String?
+  traveler      Traveler?     @relation(fields: [travelerId], references: [id])
+  totalAmount   Float
+  paymentStatus String        @default("PENDING")
+  travelers     String        // JSON array of traveler details for this booking
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}

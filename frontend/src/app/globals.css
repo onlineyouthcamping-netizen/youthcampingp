@@ -1,0 +1,703 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Dancing+Script:wght@700&family=Great+Vibes&family=Pacifico&family=Oswald:wght@700&family=Playball&family=Rubik+Mono+One&family=Satisfy&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+.force-single-line {
+  white-space: nowrap !important;
+  text-wrap: nowrap !important;
+}
+
+@theme inline {
+  --font-montserrat: var(--font-montserrat);
+  --color-primary-orange: var(--primary);
+  --color-navy: var(--secondary);
+  --color-charcoal: #1F2937;
+  --color-light-orange: var(--light-orange);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-heading);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-card: var(--radius-card);
+  --radius-button: var(--radius-button);
+}
+
+:root {
+  /* Youthcamping Premium Theme (Klook Color Philosophy Inspired) */
+  --primary: #FF5B00;
+  --secondary: #1F2937;
+  --background: #FFFFFF;
+  --foreground: #1F2937;
+  
+  --button-bg: #FF5B00;
+  --button-hover: #E65100;
+  --button-text: #FFFFFF;
+  --radius-button: 12px;
+  
+  --card: #FFFFFF;
+  --radius-card: 24px;
+  --shadow-card: 0 10px 40px rgba(0,0,0,0.03);
+  
+  --border: #E5E7EB;
+  --border-width: 1px;
+  
+  --font-primary: 'Montserrat', sans-serif;
+  --font-heading: 'Montserrat', sans-serif;
+  --font-body: 'Montserrat', sans-serif;
+  
+  --h1-size: clamp(2.5rem, 5vw + 1rem, 4rem);
+  --h2-size: clamp(2rem, 4vw + 1rem, 3rem);
+  --h3-size: clamp(1.5rem, 3vw + 0.5rem, 2.25rem);
+  --heading-weight: 300;
+  --h2-weight: 800;
+  --heading-line-height: 1.15;
+  --heading-letter-spacing: -0.02em;
+
+  --text-base: clamp(1rem, 1vw + 0.5rem, 1.125rem);
+  --text-heading: var(--h1-size);
+  --text-h2: var(--h2-size);
+  --text-h3: var(--h3-size);
+  --text-h4: clamp(1.125rem, 2vw + 0.25rem, 1.5rem);
+  --navbar-font-size: 0.95rem;
+  
+  --container-width: 1280px;
+  --spacing-unit: 4px;
+ 
+  --foreground-rgb: 31, 41, 55;
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 255, 255, 255;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: #EF4444;
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Hero */
+  --hero-height: 100svh;
+  --hero-height-fallback: 100vh;
+  --hero-overlay: 60;
+  
+  /* Navbar */
+  --navbar-height: 80px;
+  --navbar-logo-size: 150px;
+  --navbar-active-color: #FF5B00;
+  --navbar-hover-color: #FF5B00;
+  --navbar-spacing: 24px;
+  --mobile-navbar-height: 64px;
+  
+  /* Card Extended */
+  --card-height: 380px !important;
+  --card-width: 332px !important;
+  --card-overlay: 50;
+  --card-brightness: 100%;
+  --card-title-size: 16px !important;
+  --card-price-color: #FF5B00;
+  --card-badge-bg: #FFFFFF;
+  --card-badge-text: #1F2937;
+  --card-image-height: 60% !important;
+  --card-content-height: 40% !important;
+  
+  /* Button Extended */
+  --button-padding-x: 24px;
+  --button-padding-y: 12px;
+  --button-shadow: none;
+  --button-text-transform: uppercase;
+  --button-letter-spacing: 0.08em;
+  --button-font-size: 0.9rem;
+  --button-secondary-bg: #1F2937;
+  --button-secondary-text: #FFFFFF;
+  
+  /* Typography Extended */
+  --font-weight-heading: 300;
+  --font-weight-section: 400;
+  --font-weight-card: 500;
+  --font-weight-nav: 600;
+  --font-weight-button: 500;
+  --heading-letter-spacing: -0.03em;
+  --heading-text-transform: capitalize;
+  --body-line-height: 1.6;
+  --body-letter-spacing: normal;
+  --title-size-multiplier: 1;
+  
+  /* Layout Extended */
+  --section-spacing: var(--section-spacing-dynamic, 80px);
+  --accent-color: #FF5B00;
+  --light-orange: #FFF4EC;
+  
+  /* Mobile */
+  --mobile-font-base: 14px;
+  --mobile-font-heading: 28px;
+  --mobile-hero-height: 100svh;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Tablet sizes (1024px) */
+@media (max-width: 1024px) {
+  :root {
+    --section-spacing: var(--section-spacing-dynamic, 80px);
+  }
+}
+
+/* Mobile overrides & heavy effect disable (768px) */
+@media (max-width: 768px) {
+  :root {
+    --hero-height: var(--mobile-hero-height, 100svh);
+    --navbar-height: var(--mobile-navbar-height, 64px);
+    --section-spacing: var(--section-spacing-dynamic, 80px) !important;
+    --card-width: 270px !important;
+    --card-height: 335px !important;
+    --title-size-multiplier: 0.78;
+    --card-image-height: 60% !important;
+    --card-content-height: 40% !important;
+    --card-title-size: 13.5px !important;
+  }
+
+
+
+  /* Disable heavy filters, glass blurs, shadow/scale effects on mobile */
+  [class*="backdrop-blur"],
+  [class*="backdrop-filter"],
+  .backdrop-blur,
+  .backdrop-blur-sm,
+  .backdrop-blur-md,
+  .backdrop-blur-lg,
+  .backdrop-blur-xl,
+  .heavy-effect {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+  }
+
+  /* Limit box shadows to prevent frame rendering lag */
+  .shadow-2xl,
+  .shadow-xl,
+  .shadow-lg,
+  [class*="shadow-"] {
+    box-shadow: none !important;
+  }
+
+  /* Disable parallax or scaling animations — exclude hero video elements */
+  .ken-burns {
+    animation: none !important;
+    transform: none !important;
+  }
+  [class*="hover:scale-"]:not(.hero-video-wrapper *):not(.hero-video-iframe),
+  [class*="active:scale-"]:not(.hero-video-wrapper *):not(.hero-video-iframe) {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .hero-container {
+    height: auto !important;
+    aspect-ratio: 16 / 10 !important;
+    min-height: 310px !important;
+    overflow: hidden !important;
+  }
+
+  .section-heading.force-single-line {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    text-wrap: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .hero-video-wrapper {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .hero-video-iframe {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    pointer-events: none !important;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    font-style: normal !important;
+  }
+
+  img, video, iframe {
+    border: none !important;
+    outline: none !important;
+  }
+  
+  /* Dynamic transitions controlled by admin panel variables */
+  a, button, select, input, textarea, .card, .trip-card, .btn, .button, [class*="hover:"] {
+    transition: transform var(--transition-speed, 300ms) var(--transition-easing, ease-in-out),
+                opacity var(--transition-speed, 300ms) var(--transition-easing, ease-in-out),
+                background-color var(--transition-speed, 300ms) var(--transition-easing, ease-in-out),
+                border-color var(--transition-speed, 300ms) var(--transition-easing, ease-in-out),
+                color var(--transition-speed, 300ms) var(--transition-easing, ease-in-out),
+                box-shadow var(--transition-speed, 300ms) var(--transition-easing, ease-in-out);
+  }
+
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+  }
+
+  main, #__next {
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  html, body, main, #__next {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-overflow-scrolling: touch;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    letter-spacing: normal;
+  }
+  h1 {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    font-size: var(--text-heading);
+    font-weight: var(--heading-weight, 300) !important;
+    line-height: var(--heading-line-height, 1.1) !important;
+    letter-spacing: var(--heading-letter-spacing, -0.03em) !important;
+    text-wrap: balance !important;
+  }
+  h2 {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    font-size: var(--text-h2);
+    font-weight: var(--h2-weight, 600) !important;
+    line-height: var(--heading-line-height, 1.1) !important;
+    letter-spacing: var(--heading-letter-spacing, -0.03em) !important;
+  }
+  h3 {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    font-size: var(--text-h3);
+    font-weight: var(--heading-weight, 300) !important;
+    line-height: var(--heading-line-height, 1.1) !important;
+    letter-spacing: var(--heading-letter-spacing, -0.03em) !important;
+  }
+  h4 {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    font-size: var(--text-h4);
+    font-weight: var(--heading-weight, 300) !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    @apply tracking-tight;
+    font-style: normal !important;
+  }
+  p {
+    @apply leading-relaxed;
+  }
+
+  /* ─── Premium Luxury Hero Heading ─── */
+  .hero-title {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    font-weight: 800 !important;
+    font-size: clamp(1.1rem, 5vw, 1.45rem) !important;
+    line-height: var(--heading-line-height, 1.1) !important;
+    letter-spacing: var(--heading-letter-spacing, -0.03em) !important;
+    text-wrap: balance !important;
+    max-width: fit-content !important;
+    width: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    text-align: center !important;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.25);
+  }
+
+  @media (min-width: 768px) {
+    .hero-title {
+      font-size: var(--title-size-desktop, var(--text-heading)) !important;
+      font-weight: 800 !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero-title {
+      font-weight: 800 !important;
+      max-width: fit-content !important;
+      width: auto !important;
+      line-height: var(--heading-line-height, 1.1) !important;
+    }
+  }
+
+  .hero-subheadline {
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    letter-spacing: 0.02em;
+  }
+  @media (min-width: 768px) {
+    .hero-subheadline {
+      font-size: var(--subheadline-size-desktop, clamp(1.2rem, 2.5vw, 1.875rem)) !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  .hero-btn {
+    padding: 8px 18px !important;
+    font-size: 0.75rem !important;
+  }
+  @media (min-width: 768px) {
+    .hero-btn {
+      padding: var(--btn-padding, var(--button-padding-y) var(--button-padding-x)) !important;
+      font-size: var(--btn-font-size, var(--button-font-size)) !important;
+    }
+  }
+
+  /* ─── Premium Luxury Section Headings ─── */
+  .section-heading {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    font-weight: var(--h2-weight, 600) !important;
+    font-size: clamp(1.35rem, 5.8vw, var(--text-h2)) !important;
+    text-wrap: balance !important;
+    letter-spacing: var(--heading-letter-spacing, -0.03em) !important;
+    line-height: var(--heading-line-height, 1.1) !important;
+    text-transform: capitalize;
+    display: block;
+    width: 100%;
+  }
+
+  .main-heading {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    font-weight: var(--heading-weight, 300) !important;
+    font-size: var(--text-heading);
+    letter-spacing: var(--heading-letter-spacing, -0.03em) !important;
+    line-height: var(--heading-line-height, 1.1) !important;
+    text-transform: capitalize;
+  }
+  
+  .card-title {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    font-weight: var(--heading-weight, 300) !important;
+    font-size: var(--text-h3);
+    letter-spacing: var(--heading-letter-spacing, -0.03em) !important;
+    line-height: var(--heading-line-height, 1.1) !important;
+    text-transform: capitalize;
+  }
+  
+  .normal-text {
+    @apply text-base font-normal;
+  }
+  
+  .small-text {
+    @apply text-sm font-normal;
+  }
+  
+  .section-label {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    font-size: 0.7rem !important;
+    letter-spacing: 0.12em !important;
+    font-weight: 500 !important;
+    text-transform: uppercase !important;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  .nav-link {
+    font-family: 'Montserrat', var(--font-montserrat), sans-serif;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: capitalize !important;
+  }
+
+  .section-wrapper {
+    @apply px-4 sm:px-6 md:px-10 lg:px-12;
+    padding-top: 60px !important;
+    padding-bottom: 60px !important;
+  }
+
+  @media (max-width: 1024px) {
+    .section-wrapper {
+      padding-top: 44px !important;
+      padding-bottom: 44px !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .section-wrapper {
+      padding-top: 32px !important;
+      padding-bottom: 32px !important;
+    }
+  }
+
+  /* Fix subpixel white line gaps between adjacent content sections on mobile and desktop */
+  .page-section-wrapper + .page-section-wrapper {
+    margin-top: -3px !important;
+  }
+
+  /* Specific section overrides */
+  .reviews-section {
+    padding-top: 20px !important;
+  }
+  @media (max-width: 768px) {
+    .reviews-section {
+      padding-top: 16px !important;
+    }
+  }
+
+  /* Container max-width overrides */
+  .max-w-7xl,
+  .max-w-\[1440px\] {
+    max-width: 1440px !important;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .ken-burns {
+    animation: kenburns 20s ease-in-out infinite alternate;
+  }
+
+  @keyframes kenburns {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.15); }
+  }
+
+  .brush-underline {
+    @apply relative inline-block;
+  }
+  .brush-underline::after {
+    content: "";
+    @apply absolute -bottom-2 left-0 w-full h-1 bg-primary rounded-full;
+    transform: skewX(-15deg);
+  }
+  
+  .wavy-edge {
+    mask-image: radial-gradient(circle at 10px 100%, transparent 10px, white 11px);
+    mask-size: 20px 100%;
+  }
+
+  /* GPU Acceleration for ultra smooth scrolling & transitions */
+  .hero-title, 
+  .hero-content, 
+  .trip-card, 
+  .card, 
+  .slider, 
+  .marquee, 
+  .animated-card,
+  .gpu-accelerated {
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* ─── Hero Container — GPU-stable, flicker-free ─── */
+  .hero-container {
+    position: relative;
+    width: 100%;
+    height: var(--hero-height);
+    min-height: 400px;
+    overflow: hidden;
+    transform: scale(1.001);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    /* On desktop, pull hero up behind fixed navbar for immersive full-bleed */
+    margin-top: calc(-1 * var(--navbar-height, 80px));
+  }
+
+  /* On mobile, hero should NOT overlap navbar — stay below it */
+  @media (max-width: 768px) {
+    .hero-container {
+      margin-top: 0 !important;
+    }
+  }
+
+  .hero-video-wrapper {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .hero-video-iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    border: none;
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* 3D Avian Card Layout for Upcoming Trips */
+.avian-card {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+/* Floating Photo Container */
+.avian-photo-container {
+  border-radius: 24px !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15) !important;
+  z-index: 20 !important;
+  position: relative !important;
+  width: 95% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Inset Content Card */
+.avian-content-container {
+  background-color: #ffffff !important;
+  border: 1px solid rgba(228, 228, 231, 0.6) !important;
+  border-radius: 0 0 24px 24px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.04) !important;
+  margin-left: 14px !important;
+  margin-right: 14px !important;
+  margin-top: -16px !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  padding-top: 24px !important;
+  padding-bottom: 14px !important;
+  position: relative !important;
+  z-index: 10 !important;
+  flex: 1 1 auto !important;
+}
+
+/* Professional Print Styles */
+@media print {
+    @page {
+        size: A4;
+        margin: 15mm;
+    }
+    .no-print { display: none !important; }
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        background: white !important;
+        color: black !important;
+    }
+    section { page-break-inside: avoid !important; margin-bottom: 20mm !important; }
+    img { max-width: 100% !important; border-radius: 8px !important; }
+}

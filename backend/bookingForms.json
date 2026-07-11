@@ -1,0 +1,29 @@
+[
+  {
+    "id": "form_1778562474636",
+    "tripName": "Winter Spiti Road Trip",
+    "date": "2026-06-13",
+    "tripId": "WSP1",
+    "formUrl": "https://forms.gle/mock-url-1778562474636",
+    "sheetUrl": "https://docs.google.com/spreadsheets/d/mock-id-1778562474636",
+    "createdAt": "2026-05-12T05:07:54.636Z"
+  },
+  {
+    "id": "form_1778562702752",
+    "tripName": "Jannat-e-Kashmir",
+    "date": "2026-05-30",
+    "tripId": "JK1",
+    "formUrl": "https://forms.gle/mock-url-1778562702752",
+    "sheetUrl": "https://docs.google.com/spreadsheets/d/mock-id-1778562702752",
+    "createdAt": "2026-05-12T05:11:42.752Z"
+  },
+  {
+    "id": "form_1778563337686",
+    "tripName": "Manali Kasol Amritsar Backpacking Trip",
+    "date": "2026-06-20",
+    "tripId": "MKA2",
+    "formUrl": "https://forms.gle/mock-url-1778563337686",
+    "sheetUrl": "https://docs.google.com/spreadsheets/d/mock-id-1778563337686",
+    "createdAt": "2026-05-12T05:22:17.686Z"
+  }
+]

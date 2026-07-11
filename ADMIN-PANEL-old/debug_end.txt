@@ -1,0 +1,13 @@
+order-t border-slate-100 flex items-center justify-end gap-2">
+            <Button size="sm" variant="outline" onClick={() => setShowAddSop(false)} className="text-xs font-semibold">Cancel</Button>
+            <Button size="sm" onClick={handleSaveSop} className="text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 h-9">Save SOP Template</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+          </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

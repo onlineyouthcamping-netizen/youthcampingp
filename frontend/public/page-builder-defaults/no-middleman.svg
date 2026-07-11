@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="24" fill="#F0F7F4"/>
+  <!-- Direct connection line -->
+  <line x1="60" y1="100" x2="140" y2="100" stroke="#C4DAD2" stroke-width="4" stroke-linecap="round" stroke-dasharray="8 6"/>
+  <!-- Left person (you) -->
+  <circle cx="60" cy="75" r="14" fill="#1B2A4A"/>
+  <path d="M42 115 C42 100 50 92 60 92 C70 92 78 100 78 115" fill="#1B2A4A"/>
+  <!-- Right person (us) -->
+  <circle cx="140" cy="75" r="14" fill="#4CAF50"/>
+  <path d="M122 115 C122 100 130 92 140 92 C150 92 158 100 158 115" fill="#4CAF50"/>
+  <!-- Crossed-out middleman (center) -->
+  <circle cx="100" cy="80" r="10" fill="#ccc" opacity="0.4"/>
+  <path d="M88 120 C88 108 93 103 100 103 C107 103 112 108 112 120" fill="#ccc" opacity="0.4"/>
+  <!-- X mark over middleman -->
+  <line x1="90" y1="72" x2="110" y2="92" stroke="#E53935" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="110" y1="72" x2="90" y2="92" stroke="#E53935" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Heart connection -->
+  <path d="M95 138 C95 132 100 128 100 128 C100 128 105 132 105 138 C105 142 100 148 100 148 C100 148 95 142 95 138Z" fill="#E53935" opacity="0.6"/>
+  <!-- Dots -->
+  <circle cx="45" cy="50" r="2.5" fill="#1B2A4A" opacity="0.2"/>
+  <circle cx="155" cy="50" r="3" fill="#4CAF50" opacity="0.2"/>
+</svg>

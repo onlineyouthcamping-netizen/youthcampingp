@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="24" fill="#F0F7F4"/>
+  <!-- Flag pole -->
+  <line x1="72" y1="40" x2="72" y2="160" stroke="#1B2A4A" stroke-width="4" stroke-linecap="round"/>
+  <!-- Flag -->
+  <path d="M72 45 L140 60 L72 80 Z" fill="#4CAF50"/>
+  <path d="M72 50 L130 63 L72 76 Z" fill="#66BB6A" opacity="0.7"/>
+  <!-- Checkmark on flag -->
+  <path d="M92 58 L100 66 L116 52" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Ground -->
+  <ellipse cx="72" cy="160" rx="20" ry="5" fill="#C4DAD2"/>
+  <!-- Leaf accents -->
+  <path d="M130 120 Q140 105 150 115 Q140 125 130 120Z" fill="#4CAF50" opacity="0.4"/>
+  <path d="M135 130 Q142 118 150 126 Q142 134 135 130Z" fill="#66BB6A" opacity="0.3"/>
+  <!-- Small dots -->
+  <circle cx="48" cy="55" r="3" fill="#4CAF50" opacity="0.25"/>
+  <circle cx="155" cy="80" r="2.5" fill="#1B2A4A" opacity="0.2"/>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="24" fill="#F0F7F4"/>
+  <!-- Music note / headphones -->
+  <path d="M65 85 C65 65 80 50 100 50 C120 50 135 65 135 85" stroke="#1B2A4A" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <rect x="58" y="82" width="14" height="22" rx="7" fill="#1B2A4A"/>
+  <rect x="128" y="82" width="14" height="22" rx="7" fill="#1B2A4A"/>
+  <!-- Checkmark badge -->
+  <circle cx="100" cy="110" r="22" fill="#C4DAD2" stroke="#1B2A4A" stroke-width="2.5"/>
+  <path d="M89 110 L96 118 L112 100" stroke="#1B2A4A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Music notes -->
+  <g fill="#1B2A4A" opacity="0.35">
+    <circle cx="48" cy="65" r="4"/>
+    <line x1="52" y1="65" x2="52" y2="48" stroke="#1B2A4A" stroke-width="2"/>
+    <path d="M52 48 L60 44 L60 50" fill="#1B2A4A"/>
+  </g>
+  <g fill="#1B2A4A" opacity="0.25">
+    <circle cx="152" cy="60" r="3.5"/>
+    <line x1="155.5" y1="60" x2="155.5" y2="45" stroke="#1B2A4A" stroke-width="2"/>
+    <path d="M155.5 45 L162 42 L162 47" fill="#1B2A4A"/>
+  </g>
+  <!-- Sparkles -->
+  <circle cx="55" cy="130" r="2" fill="#1B2A4A" opacity="0.2"/>
+  <circle cx="145" cy="125" r="2.5" fill="#1B2A4A" opacity="0.15"/>
+  <!-- Equalizer bars -->
+  <rect x="80" y="145" width="4" height="12" rx="2" fill="#1B2A4A" opacity="0.3"/>
+  <rect x="88" y="140" width="4" height="17" rx="2" fill="#1B2A4A" opacity="0.35"/>
+  <rect x="96" y="142" width="4" height="15" rx="2" fill="#1B2A4A" opacity="0.3"/>
+  <rect x="104" y="138" width="4" height="19" rx="2" fill="#1B2A4A" opacity="0.35"/>
+  <rect x="112" y="144" width="4" height="13" rx="2" fill="#1B2A4A" opacity="0.3"/>
+</svg>
