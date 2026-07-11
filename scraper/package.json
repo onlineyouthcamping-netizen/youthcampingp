@@ -1,0 +1,37 @@
+{
+  "name": "youthcamping-scraper",
+  "version": "1.0.0",
+  "description": "Production-ready web scraper for youthcamping.in - Extract trip data with Playwright",
+  "main": "index.js",
+  "scripts": {
+    "scrape": "node index.js",
+    "scrape:demo": "node index.js --max 5",
+    "scrape:resume": "node index.js --resume",
+    "scrape:fast": "node index.js --concurrency 5",
+    "clean": "rm -rf data/",
+    "logs": "tail -f data/errors.json"
+  },
+  "keywords": [
+    "scraper",
+    "playwright",
+    "webscraping",
+    "youthcamping",
+    "travel",
+    "tourism"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "playwright": "^1.59.1",
+    "slugify": "^1.6.9"
+  },
+  "devDependencies": {
+    "mongoose": "^9.4.1"
+  }
+}
+

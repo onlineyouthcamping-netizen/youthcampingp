@@ -1,0 +1,392 @@
+{
+  "notifications": [
+    {
+      "id": "notif_1",
+      "title": "New Inquiry: Rohan Sharma",
+      "message": "A new lead for Manali Kasol Amritsar has been received.",
+      "priority": "Low",
+      "module": "Sales",
+      "link": "/admin/inquiries",
+      "read": true,
+      "createdAt": "2026-07-08T10:15:00Z"
+    },
+    {
+      "id": "notif_2",
+      "title": "Quote QT-2026-004 Opened by Client",
+      "message": "Client Rohan Sharma is active and reading your quotation.",
+      "priority": "Medium",
+      "module": "Sales",
+      "link": "/admin/quotations",
+      "read": false,
+      "createdAt": "2026-07-08T09:30:00Z"
+    },
+    {
+      "id": "notif_3",
+      "title": "Booking BK-2026-001 Confirmed!",
+      "message": "Advance payment verified. Roster update triggered.",
+      "priority": "High",
+      "module": "Sales",
+      "link": "/admin/bookings",
+      "read": false,
+      "createdAt": "2026-07-08T09:10:00Z"
+    },
+    {
+      "id": "notif_4",
+      "title": "Reimbursement Claim: ₹1,550",
+      "message": "Suresh Chaudhary submitted local transport receipt.",
+      "priority": "Low",
+      "module": "Finance",
+      "link": "/admin/accounting?tab=office_expenses",
+      "read": false,
+      "createdAt": "2026-07-08T08:15:00Z"
+    },
+    {
+      "id": "notif_5",
+      "title": "Salary Approval Required for July 2026",
+      "message": "Please confirm monthly pay scales draft.",
+      "priority": "High",
+      "module": "Finance",
+      "link": "/admin/payroll",
+      "read": false,
+      "createdAt": "2026-07-07T11:00:00Z"
+    },
+    {
+      "id": "notif_6",
+      "title": "Leave Request: Zeel Panchal",
+      "message": "Submitted Casual Leave request for next week.",
+      "priority": "Medium",
+      "module": "People",
+      "link": "/admin/hr?tab=leaves",
+      "read": false,
+      "createdAt": "2026-07-08T06:00:00Z"
+    },
+    {
+      "id": "notif_7",
+      "title": "Reel Waiting for Approval",
+      "message": "Vidhi Patel submitted Manali Snowfall script.",
+      "priority": "Medium",
+      "module": "Marketing",
+      "link": "/admin/marketing/content-studio",
+      "read": false,
+      "createdAt": "2026-07-08T05:30:00Z"
+    },
+    {
+      "id": "notif_8",
+      "title": "Refund Request: ₹12,000 for BK-4019",
+      "message": "Requires superadmin override approval.",
+      "priority": "High",
+      "module": "Admin",
+      "link": "/admin/approvals-hub",
+      "read": false,
+      "createdAt": "2026-07-08T04:45:00Z"
+    }
+  ],
+  "documents": [
+    {
+      "id": "doc_2",
+      "name": "PAN Card",
+      "identifier": "AABCY1234D",
+      "category": "PAN",
+      "type": "PDF",
+      "uploadedBy": "Suresh Bhai",
+      "uploadedDate": "12 May 2026 09:15 AM",
+      "expiryDate": "—",
+      "status": "Active",
+      "size": "1.2 MB"
+    },
+    {
+      "id": "doc_3",
+      "name": "Trade License",
+      "identifier": "TL/2025/AHM/2398",
+      "category": "Trade License",
+      "type": "PDF",
+      "uploadedBy": "Zeel Shah",
+      "uploadedDate": "05 Apr 2026 02:30 PM",
+      "expiryDate": "04 Apr 2027",
+      "status": "Active",
+      "size": "4.8 MB"
+    },
+    {
+      "id": "doc_4",
+      "name": "MSME Certificate",
+      "identifier": "UDYAM-GJ-01-1234567",
+      "category": "MSME",
+      "type": "PDF",
+      "uploadedBy": "Suresh Bhai",
+      "uploadedDate": "18 Mar 2026 10:05 AM",
+      "expiryDate": "17 Mar 2029",
+      "status": "Active",
+      "size": "3.1 MB"
+    },
+    {
+      "id": "doc_5",
+      "name": "Insurance Policy",
+      "identifier": "Policy No: IC-2026-78910",
+      "category": "Insurance",
+      "type": "PDF",
+      "uploadedBy": "Parth",
+      "uploadedDate": "22 Feb 2026 04:45 PM",
+      "expiryDate": "21 Feb 2027",
+      "status": "Active",
+      "size": "8.5 MB"
+    },
+    {
+      "id": "doc_6",
+      "name": "Office Rent Agreement",
+      "identifier": "Agreement_2026_25",
+      "category": "Office Agreement",
+      "type": "PDF",
+      "uploadedBy": "Suresh Bhai",
+      "uploadedDate": "01 Jan 2026 12:10 PM",
+      "expiryDate": "31 Dec 2026",
+      "status": "Active",
+      "size": "12.4 MB"
+    },
+    {
+      "id": "doc_7",
+      "name": "Vendor Agreement - TaxiWale",
+      "identifier": "Vendor_TaxiWale_Agreement",
+      "category": "Vendor Agreements",
+      "type": "DOCX",
+      "uploadedBy": "Neeki Sharma",
+      "uploadedDate": "15 Jun 2026 03:20 PM",
+      "expiryDate": "14 Jun 2027",
+      "status": "Active",
+      "size": "1.8 MB"
+    },
+    {
+      "id": "doc_8",
+      "name": "Employee Offer Letter - Rahul",
+      "identifier": "Offer_Rahul_Verma",
+      "category": "Employee Documents",
+      "type": "PDF",
+      "uploadedBy": "Vibhuti Mehta",
+      "uploadedDate": "20 May 2026 10:00 AM",
+      "expiryDate": "—",
+      "status": "Active",
+      "size": "2.1 MB"
+    },
+    {
+      "id": "doc_9",
+      "name": "Brand Logo - YouthCamping",
+      "identifier": "YC_Logo_2026",
+      "category": "Brand Assets",
+      "type": "PNG",
+      "uploadedBy": "Parth",
+      "uploadedDate": "02 Jan 2026 11:30 AM",
+      "expiryDate": "—",
+      "status": "Active",
+      "size": "4.2 MB"
+    },
+    {
+      "id": "doc_10",
+      "name": "Brand Guidelines",
+      "identifier": "Brand_Guidelines_v2.0",
+      "category": "Brand Assets",
+      "type": "PDF",
+      "uploadedBy": "Parth",
+      "uploadedDate": "02 Jan 2026 11:35 AM",
+      "expiryDate": "—",
+      "status": "Active",
+      "size": "15.6 MB"
+    }
+  ],
+  "recurringTasks": [
+    {
+      "id": "rec_1",
+      "title": "Review Hotel Rates",
+      "schedule": "Weekly",
+      "dayOfWeek": "Monday",
+      "department": "Operations",
+      "nextOccurrence": "2026-07-20",
+      "status": "Pending",
+      "assignedTo": "Neeki Sharma"
+    },
+    {
+      "id": "rec_2",
+      "title": "Post Instagram Reel",
+      "schedule": "Weekly",
+      "dayOfWeek": "Tuesday",
+      "department": "Marketing",
+      "nextOccurrence": "2026-07-14",
+      "status": "Pending",
+      "assignedTo": "Vidhi Patel"
+    },
+    {
+      "id": "rec_3",
+      "title": "Vendor Payment Review",
+      "schedule": "Weekly",
+      "dayOfWeek": "Friday",
+      "department": "Finance",
+      "nextOccurrence": "2026-07-10",
+      "status": "Pending",
+      "assignedTo": "Suresh Bhai"
+    },
+    {
+      "id": "rec_4",
+      "title": "Salary Processing",
+      "schedule": "Monthly",
+      "dayOfMonth": 31,
+      "department": "People",
+      "nextOccurrence": "2026-07-31",
+      "status": "Pending",
+      "assignedTo": "Hemal Patel"
+    },
+    {
+      "id": "rec_5",
+      "title": "Trip Cost Verification",
+      "schedule": "Monthly",
+      "dayOfMonth": 31,
+      "department": "Finance",
+      "nextOccurrence": "2026-07-31",
+      "status": "Pending",
+      "assignedTo": "Suresh Bhai"
+    },
+    {
+      "id": "rec_6",
+      "title": "SEO Review",
+      "schedule": "Monthly",
+      "dayOfMonth": 31,
+      "department": "Marketing",
+      "nextOccurrence": "2026-07-31",
+      "status": "Pending",
+      "assignedTo": "Parth Shah"
+    }
+  ],
+  "mistakes": [
+    {
+      "id": "mist_1",
+      "employeeId": "EMP-004",
+      "employeeName": "Vidhi Thummar",
+      "date": "2026-07-02",
+      "severity": "Minor",
+      "description": "Arrived late for check-in twice in a week",
+      "actionTaken": "Verbal Warning",
+      "managerComment": "Arrived at 9:55 AM without notifying the manager."
+    },
+    {
+      "id": "mist_2",
+      "employeeId": "EMP-003",
+      "employeeName": "Zeel Panchal",
+      "date": "2026-06-28",
+      "severity": "Major",
+      "description": "Sent incorrect price quotation to MKA client",
+      "actionTaken": "Sent corrected quote & warning email",
+      "managerComment": "Please double check Base Price rules before hitting send."
+    }
+  ],
+  "timelines": {
+    "BK-2026-001": [
+      {
+        "time": "09:15 AM",
+        "user": "System",
+        "action": "Inquiry Created",
+        "comments": "Rohan Sharma submitted inquiry form"
+      },
+      {
+        "time": "09:20 AM",
+        "user": "Suresh Bhai",
+        "action": "Assigned to Sales",
+        "comments": "Assigned to Sales Executive Vidhi"
+      },
+      {
+        "time": "09:45 AM",
+        "user": "Vidhi",
+        "action": "Quotation Sent",
+        "comments": "Sent QT-2026-004 to client"
+      },
+      {
+        "time": "10:30 AM",
+        "user": "Rohan Sharma",
+        "action": "Customer Opened Quote",
+        "comments": "Quotation viewed via link"
+      },
+      {
+        "time": "11:15 AM",
+        "user": "System",
+        "action": "Advance Payment Received",
+        "comments": "₹5,000 received via UPI"
+      },
+      {
+        "time": "11:30 AM",
+        "user": "Suresh Bhai",
+        "action": "Booking Confirmed",
+        "comments": "Booking record status set to Confirmed"
+      },
+      {
+        "time": "12:10 PM",
+        "user": "Rohan Sharma",
+        "action": "Documents Uploaded",
+        "comments": "Aadhaar Card and Medical Form uploaded"
+      },
+      {
+        "time": "02:20 PM",
+        "user": "Neeki Sharma",
+        "action": "Guide Assigned",
+        "comments": "EMP-002 Suresh Chaudhary assigned"
+      }
+    ],
+    "customer_rohan": [
+      {
+        "date": "2026-05-10",
+        "type": "Sales",
+        "action": "Instagram Lead",
+        "notes": "Clicked ad link"
+      },
+      {
+        "date": "2026-05-11",
+        "type": "Sales",
+        "action": "Inquiry Submitted",
+        "notes": "Trip: Manali (MKA)"
+      },
+      {
+        "date": "2026-05-12",
+        "type": "Sales",
+        "action": "Quotation Sent",
+        "notes": "QT-2026-004 sent by Vidhi"
+      },
+      {
+        "date": "2026-05-12",
+        "type": "Sales",
+        "action": "Quotation Opened",
+        "notes": "Viewed twice"
+      },
+      {
+        "date": "2026-05-15",
+        "type": "Sales",
+        "action": "Booking Confirmed",
+        "notes": "BK-2026-001"
+      },
+      {
+        "date": "2026-05-15",
+        "type": "Finance",
+        "action": "Advance Paid",
+        "notes": "₹5,000 via UPI"
+      },
+      {
+        "date": "2026-06-01",
+        "type": "Finance",
+        "action": "Balance Paid",
+        "notes": "₹9,000 bank transfer"
+      },
+      {
+        "date": "2026-06-15",
+        "type": "Operations",
+        "action": "Travel Completed",
+        "notes": "Manali 9D/8N Departure"
+      },
+      {
+        "date": "2026-06-16",
+        "type": "Marketing",
+        "action": "Feedback Submitted",
+        "notes": "Rated 5/5 stars"
+      },
+      {
+        "date": "2026-06-18",
+        "type": "Marketing",
+        "action": "Google Review Posted",
+        "notes": "Left review on official profile"
+      }
+    ]
+  }
+}

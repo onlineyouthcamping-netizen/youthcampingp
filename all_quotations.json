@@ -1,0 +1,77 @@
+﻿{
+    "success":  true,
+    "data":  [
+                 {
+                     "travelDates":  {
+                                         "from":  "2026-05-27",
+                                         "to":  "2026-05-20"
+                                     },
+                     "_id":  "69f49b71c3c998971c07b143",
+                     "id":  "28844b43-e8ab-4587-9ca5-739175edb8ae",
+                     "__v":  0,
+                     "clientName":  "ppp",
+                     "createdAt":  "2026-05-01T12:24:18.182Z",
+                     "data":  {
+                                  "lowLevelHotels":  [
+                                                         {
+                                                             "id":  "53d65379-c735-49f9-9726-1993792e5df6",
+                                                             "name":  "",
+                                                             "location":  "",
+                                                             "rating":  3,
+                                                             "description":  "",
+                                                             "roomType":  "",
+                                                             "photos":  ""
+                                                         }
+                                                     ],
+                                  "highLevelHotels":  [
+                                                          {
+                                                              "id":  "b4df3c4b-f4f8-4797-803e-796de2680b02",
+                                                              "name":  "",
+                                                              "location":  "",
+                                                              "rating":  5,
+                                                              "description":  "",
+                                                              "roomType":  "",
+                                                              "photos":  ""
+                                                          }
+                                                      ],
+                                  "itinerary":  [
+                                                    {
+                                                        "id":  "e31de315-dd3f-413c-ab58-32dfc06ae8b4",
+                                                        "day":  1,
+                                                        "title":  "",
+                                                        "description":  "",
+                                                        "activities":  "",
+                                                        "photos":  ""
+                                                    },
+                                                    {
+                                                        "id":  "1d49f814-3e6d-4884-8c69-066cb0a13bfd",
+                                                        "day":  2,
+                                                        "title":  "",
+                                                        "description":  "",
+                                                        "activities":  "",
+                                                        "photos":  ""
+                                                    }
+                                                ],
+                                  "customSections":  [
+
+                                                     ],
+                                  "experiencePhotos":  [
+
+                                                       ],
+                                  "expert":  {
+                                                 "name":  "",
+                                                 "whatsapp":  "",
+                                                 "designation":  ""
+                                             }
+                              },
+                     "destination":  "pppp",
+                     "duration":  "",
+                     "highLevelPrice":  24999,
+                     "lowLevelPrice":  19999,
+                     "pax":  2,
+                     "slug":  "pppp-28844",
+                     "status":  "Draft",
+                     "updatedAt":  "2026-05-01T12:35:09.500Z"
+                 }
+             ]
+}

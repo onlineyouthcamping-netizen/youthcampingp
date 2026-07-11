@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Output & Data
+data/
+*.json
+!package.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary
+.env
+.env.local
+temp/
+tmp/
+
+# Browser artifacts
+.playwright/
+.chromium/
+
+# Node
+.node_modules/

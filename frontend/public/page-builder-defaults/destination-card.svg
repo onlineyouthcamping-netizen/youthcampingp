@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560" fill="none">
+  <rect width="400" height="560" fill="#E2EBE5"/>
+  <!-- Sky gradient -->
+  <rect width="400" height="280" fill="#D4DFD8"/>
+  <!-- Sun -->
+  <circle cx="320" cy="80" r="35" fill="#FFD54F" opacity="0.5"/>
+  <!-- Far mountains -->
+  <polygon points="0,320 80,200 160,280 240,180 320,260 400,160 400,340 0,340" fill="#B8CCBF" opacity="0.6"/>
+  <!-- Near mountains -->
+  <polygon points="0,380 100,260 200,340 300,240 400,300 400,400 0,400" fill="#9AB8A6" opacity="0.55"/>
+  <!-- Ground -->
+  <rect y="380" width="400" height="180" fill="#C4DAD2" opacity="0.5"/>
+  <!-- Subtle trees -->
+  <ellipse cx="80" cy="360" rx="20" ry="30" fill="#8AAF96" opacity="0.4"/>
+  <ellipse cx="140" cy="370" rx="16" ry="24" fill="#8AAF96" opacity="0.35"/>
+  <ellipse cx="310" cy="355" rx="22" ry="32" fill="#8AAF96" opacity="0.38"/>
+  <ellipse cx="360" cy="368" rx="14" ry="22" fill="#8AAF96" opacity="0.32"/>
+  <!-- Water reflection -->
+  <rect x="60" y="440" width="280" height="4" rx="2" fill="#A8C5B8" opacity="0.3"/>
+  <rect x="100" y="460" width="200" height="3" rx="1.5" fill="#A8C5B8" opacity="0.2"/>
+  <rect x="130" y="475" width="140" height="2" rx="1" fill="#A8C5B8" opacity="0.15"/>
+</svg>
