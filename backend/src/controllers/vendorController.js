@@ -7,8 +7,17 @@ const { prisma } = require('../lib/prisma');
  */
 exports.createVendor = async (req, res, next) => {
   try {
+    const { name, type, email, phone, location, isActive } = req.body;
     const vendor = await prisma.vendor.create({
-      data: { ...req.body, tenantId: req.user.tenantId }
+      data: {
+        name,
+        type,
+        email: email || null,
+        phone: phone || null,
+        location: location || null,
+        isActive: isActive !== false,
+        tenantId: req.user.tenantId
+      }
     });
     res.status(201).json({ success: true, data: vendor });
   } catch (error) {
@@ -107,9 +116,18 @@ exports.getVendor = async (req, res, next) => {
  */
 exports.updateVendor = async (req, res, next) => {
   try {
+    const { name, type, email, phone, location, isActive } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (type !== undefined) updateData.type = type;
+    if (email !== undefined) updateData.email = email || null;
+    if (phone !== undefined) updateData.phone = phone || null;
+    if (location !== undefined) updateData.location = location || null;
+    if (isActive !== undefined) updateData.isActive = isActive !== false;
+
     const vendor = await prisma.vendor.updateMany({
       where: { id: req.params.id, tenantId: req.user.tenantId },
-      data: req.body
+      data: updateData
     });
     if (vendor.count === 0) return res.status(404).json({ success: false, message: 'Vendor not found' });
     res.json({ success: true, message: 'Vendor updated' });

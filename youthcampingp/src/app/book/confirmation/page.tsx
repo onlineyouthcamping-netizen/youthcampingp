@@ -10,9 +10,20 @@ function ConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const bookingId = searchParams.get('bookingId');
+  const queryTripName = searchParams.get('tripName');
+  const queryDate = searchParams.get('date');
+  const queryCity = searchParams.get('city');
+
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<any>(null);
   const [error, setError] = useState('');
+
+  const formatDepartureDate = (dateVal: any) => {
+    if (!dateVal) return 'Flexible Date';
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return String(dateVal);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
   const [upiRef, setUpiRef] = useState('');
   const [isPaying, setIsPaying] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -29,6 +40,7 @@ function ConfirmationContent() {
       const res = await fetch(`${API_BASE_URL}/bookings/${booking?.id || bookingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ upi_reference: upiRef })
       });
       const data = await res.json();
@@ -56,7 +68,9 @@ function ConfirmationContent() {
     const fetchBooking = async () => {
       try {
         // Use public lookup endpoint (no auth required)
-        const res = await fetch(`${API_BASE_URL}/bookings/lookup/${bookingId}`);
+        const res = await fetch(`${API_BASE_URL}/bookings/lookup/${bookingId}`, {
+          credentials: 'include'
+        });
         const data = await res.json();
         if (data.success && data.data) {
           setBooking(data.data);
@@ -87,9 +101,9 @@ function ConfirmationContent() {
   const displayBooking = booking || {
     bookingId: bookingId || 'YC-PROCESSING',
     status: 'Confirmed & Received',
-    tripName: 'YouthCamping Expedition',
-    departureDate: null,
-    pickupCity: 'Selected Location',
+    tripName: queryTripName || 'YouthCamping Expedition',
+    departureDate: queryDate || null,
+    pickupCity: queryCity || 'Selected Location',
     passengers: []
   };
 
@@ -109,14 +123,14 @@ function ConfirmationContent() {
           </motion.div>
           
           <div className="space-y-2 max-w-2xl mx-auto">
-            <span className="inline-flex items-center px-3.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
-              Booking Received
+            <span className="inline-flex items-center px-3.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
+              Booking Request Pending Verification
             </span>
             <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-white pt-1 leading-tight">
               Thanks for booking your journey with YouthCamping!
             </h1>
             <p className="text-slate-300 text-sm md:text-base font-medium leading-relaxed pt-1">
-              Your booking request has been received successfully! Our team will verify your details and contact you on WhatsApp/phone shortly.
+              Your booking request has been received. Please note that your reservation is currently pending and will be officially confirmed once our team verifies your payment. A confirmation email has been logged to your email address.
             </p>
           </div>
         </div>
@@ -143,7 +157,7 @@ function ConfirmationContent() {
               </span>
               <h2 className="text-2xl font-bold capitalize tracking-tight text-white">{displayBooking.tripName}</h2>
               <div className="flex flex-wrap gap-6 text-xs text-slate-400 pt-2 font-medium">
-                <div>DEPARTURE DATE: <span className="font-bold text-white">{displayBooking.departureDate ? new Date(displayBooking.departureDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Flexible Date'}</span></div>
+                <div>DEPARTURE DATE: <span className="font-bold text-white">{formatDepartureDate(displayBooking.departureDate)}</span></div>
                 <div className="hidden md:block w-px h-4 bg-slate-800" />
                 <div>JOINING CITY: <span className="font-bold text-white capitalize">{displayBooking.pickupCity || 'Delhi (Direct Join)'}</span></div>
                 <div className="hidden md:block w-px h-4 bg-slate-800" />

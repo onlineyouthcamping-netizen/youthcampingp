@@ -4,9 +4,9 @@ const { prisma } = require('../lib/prisma');
 const sha256 = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
 const generateToken = () => {
-  // 256-bit token -> hex (64 chars)
-  const token = crypto.randomBytes(32).toString('hex');
-  return { token, tokenPrefix: token.slice(0, 8) };
+  // 12 random bytes -> 16 URL safe base64 characters (e.g. Vc9Gx4Nq7Kt2Pm8R)
+  const token = crypto.randomBytes(12).toString('base64url');
+  return { token, tokenPrefix: token.slice(0, 4) };
 };
 
 const getBaseUrl = () => {
@@ -154,11 +154,16 @@ exports.createBookingLink = async (req, res, next) => {
         customTime: customTime || null,
         headerTitle: headerTitle || null,
         headerSubtitle: headerSubtitle || null,
+        customerName: customerName || null,
+        customerPhone: customerPhone || null,
+        customerEmail: customerEmail || null,
+        travelerCount: travelerCount !== undefined && travelerCount !== null ? Number(travelerCount) : null,
+        internalNote: internalNote || null,
         expiresAt: finalExpiresAt,
         status: 'active',
         tokenHash,
         tokenPrefix,
-        shareUrl: `${getBaseUrl()}/book/link/${token}?p=${encodeURIComponent(signedMetadata.payload)}&s=${encodeURIComponent(signedMetadata.signature)}`,
+        shareUrl: `${getBaseUrl()}/b/${token}`,
       },
     });
 
@@ -410,11 +415,11 @@ exports.resolveBookingLink = async (req, res, next) => {
         headerTitle: link.headerTitle,
         headerSubtitle: link.headerSubtitle,
         expiresAt: link.expiresAt ? link.expiresAt.toISOString() : null,
-        customerName: signedMetadata?.customerName || null,
-        customerPhone: signedMetadata?.customerPhone || null,
-        customerEmail: signedMetadata?.customerEmail || null,
-        travelerCount: signedMetadata?.travelerCount || null,
-        internalNote: signedMetadata?.internalNote || null,
+        customerName: link.customerName || signedMetadata?.customerName || null,
+        customerPhone: link.customerPhone || signedMetadata?.customerPhone || null,
+        customerEmail: link.customerEmail || signedMetadata?.customerEmail || null,
+        travelerCount: link.travelerCount !== undefined && link.travelerCount !== null ? link.travelerCount : (signedMetadata?.travelerCount || null),
+        internalNote: link.internalNote || signedMetadata?.internalNote || null,
         status: link.status,
       },
     });
