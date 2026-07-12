@@ -10,8 +10,15 @@ const {
 
 const { authenticate, requirePermission } = require('../middleware/auth');
 
+const rateLimit = require('express-rate-limit');
+const resolveLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { success: false, message: "Too many requests. Please try again later." }
+});
+
 // ── PUBLIC: resolve link token → customer snapshot ──
-router.get('/resolve', resolveBookingLink);
+router.get('/resolve', resolveLimiter, resolveBookingLink);
 
 // ── ADMIN/Sales: booking link management ──
 router.get('/analytics', authenticate, requirePermission('bookings.view'), getBookingLinksAnalytics);

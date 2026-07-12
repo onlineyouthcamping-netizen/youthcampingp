@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Phone, Mail, Users, Bed, Train, 
-  ChevronRight, ChevronLeft, Calendar, MapPin, CheckCircle2,
+  ChevronRight, ChevronLeft, ChevronDown, Calendar, MapPin, CheckCircle2,
   Loader2, AlertCircle, Info, Navigation, ShieldCheck, Star, 
   Headset, Lock, Check, Sparkles, AlertTriangle, CreditCard, Building,
   Tag, ArrowLeft
@@ -153,6 +153,8 @@ function BookingForm() {
   const [tripData, setTripData] = useState<any>(null);
   const [basePrice, setBasePrice] = useState(initialParams.basePrice || 13999);
   const [travelerAutoFilled, setTravelerAutoFilled] = useState(false);
+  const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
+  const [isMobileTermsOpen, setIsMobileTermsOpen] = useState(false);
 
   // Dynamic joining points loaded from tripData or fallback
   const joiningPoints = useMemo(() => {
@@ -495,23 +497,7 @@ function BookingForm() {
 
 
 
-  useEffect(() => {
-    if (currentStep === 3) {
-      const handleScroll = () => {
-        const footerEl = document.querySelector('footer');
-        if (footerEl) {
-          const rect = footerEl.getBoundingClientRect();
-          if (rect.top <= window.innerHeight) {
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
-            if (document.documentElement) document.documentElement.scrollTop = 0;
-            if (document.body) document.body.scrollTop = 0;
-          }
-        }
-      };
-      window.addEventListener('scroll', handleScroll);
-      return () => window.removeEventListener('scroll', handleScroll);
-    }
-  }, [currentStep]);
+
 
   // Step-by-Step validation
   const validateStep = () => {
@@ -564,17 +550,27 @@ function BookingForm() {
     }
     
     setCurrentStep(prev => prev + 1);
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
-    if (document.documentElement) document.documentElement.scrollTop = 0;
-    if (document.body) document.body.scrollTop = 0;
+    setTimeout(() => {
+      const container = document.getElementById('booking-form-container');
+      if (container) {
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      }
+    }, 50);
   };
 
   const handlePrev = () => {
     setError('');
     setCurrentStep(prev => prev - 1);
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
-    if (document.documentElement) document.documentElement.scrollTop = 0;
-    if (document.body) document.body.scrollTop = 0;
+    setTimeout(() => {
+      const container = document.getElementById('booking-form-container');
+      if (container) {
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      }
+    }, 50);
   };
 
   // Submit Final Booking Data to /api/bookings/create
@@ -643,7 +639,7 @@ function BookingForm() {
       const data = await res.json();
       const bId = data?.data?.bookingId || data?.data?.id || data?.data?._id || 'YC-SUCCESS';
       if (res.ok || data.success) {
-        router.push(`/book/confirmation?bookingId=${bId}`);
+        router.push(`/book/confirmation?bookingId=${bId}&tripName=${encodeURIComponent(initialParams.tripName || '')}&date=${encodeURIComponent(initialParams.date || '')}&city=${encodeURIComponent(selectedCity?.cityName || 'Delhi')}`);
       } else {
         if (data.errors && Array.isArray(data.errors)) {
           const detailMsgs = data.errors.map((e: any) => `${e.field}: ${e.message}`).join(', ');
@@ -659,138 +655,192 @@ function BookingForm() {
     }
   };
 
+  const renderSummaryCard = (isCard = true) => {
+    const content = (
+      <div className="p-4 space-y-3.5 bg-white">
+        <div className="space-y-1">
+          <span className="text-[9px] text-[#FF5B00] font-extrabold uppercase tracking-widest block">
+            LIVE EXPEDITION SUMMARY
+          </span>
+          <h3 className="text-sm font-black capitalize tracking-tight text-slate-900 leading-tight">
+            {initialParams.tripName || 'Trip Checkout'}
+          </h3>
+        </div>
+
+        <div className="h-px bg-slate-100" />
+
+        {/* High Visual Priority Section */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Visual Priority 1: Departure Date */}
+          <div className="bg-amber-500/10 border-l-4 border-amber-500 p-2.5 rounded-r-lg space-y-0.5">
+            <span className="text-[8px] font-extrabold uppercase tracking-widest text-amber-800 block">DEPARTURE DATE</span>
+            <p className="text-xs font-bold text-slate-900 leading-tight truncate">{initialParams.date || 'Flexible'}</p>
+          </div>
+
+          {/* Visual Priority 2: Package Price */}
+          <div className="bg-[#FF5B00]/5 border-l-4 border-[#FF5B00] p-2.5 rounded-r-lg space-y-0.5">
+            <span className="text-[8px] font-extrabold uppercase tracking-widest text-[#FF5B00] block">PACKAGE PRICE</span>
+            <p className="text-xs font-bold text-slate-900 leading-tight">₹{pricing.originalTotalBase.toLocaleString()}</p>
+          </div>
+        </div>
+
+        {/* General Details List */}
+        <div className="space-y-2 text-xs border-t border-b border-slate-100 py-2.5">
+          <div className="flex items-start justify-between text-slate-650 gap-2 min-w-0">
+            <span className="flex items-center font-extrabold shrink-0 text-[8px] uppercase tracking-wider text-slate-400 mt-0.5">JOINING CITY</span>
+            <span className="font-extrabold text-slate-900 capitalize text-right break-all max-w-[60%] inline-block leading-tight">{selectedCity?.cityName || 'Delhi'}</span>
+          </div>
+
+          <div className="flex items-center justify-between text-slate-650 gap-2 min-w-0">
+            <span className="flex items-center font-extrabold shrink-0 text-[8px] uppercase tracking-wider text-slate-400">TRAVELERS</span>
+            <span className="font-extrabold text-slate-900 shrink-0">{formData.participants} Pax</span>
+          </div>
+
+          {/* Per-traveler options breakdown */}
+          {formData.participantsList.some(t => t.roomSharing !== 'Triple Sharing' || (!isDirectJoin && t.trainOption !== 'Sleeper')) && (
+            <div className="space-y-1 pl-2.5 border-l-2 border-slate-200">
+              {formData.participantsList.map((t, i) => {
+                const trainOpts = tripData?.travelOptions?.length > 0 ? tripData.travelOptions : [
+                  { label: 'Sleeper', priceDelta: 0 }, { label: '3AC', priceDelta: 2000 }, { label: 'No Train', priceDelta: -1500 }
+                ];
+                const roomOpts = tripData?.roomOptions?.length > 0 ? tripData.roomOptions : [
+                  { label: 'Triple Sharing', priceDelta: 0 }, { label: 'Double Sharing', priceDelta: 1500 }, { label: 'Quad Sharing', priceDelta: -500 }
+                ];
+                const trainDelta = isDirectJoin ? 0 : (trainOpts.find((o: any) => o.label === t.trainOption)?.priceDelta || 0);
+                const roomDelta = roomOpts.find((o: any) => o.label === t.roomSharing)?.priceDelta || 0;
+                if (trainDelta === 0 && roomDelta === 0) return null;
+                return (
+                  <div key={i} className="text-[9px] text-slate-400 space-y-0.5">
+                    <span className="font-bold capitalize text-slate-505">Traveler {i+1} Adjustments</span>
+                    {roomDelta !== 0 && <div className="flex justify-between gap-2"><span>{t.roomSharing}</span><span className={roomDelta > 0 ? 'text-slate-650 font-bold' : 'text-emerald-600 font-bold'}>{roomDelta > 0 ? '+' : ''}₹{roomDelta.toLocaleString()}</span></div>}
+                    {!isDirectJoin && trainDelta !== 0 && <div className="flex justify-between gap-2"><span>{t.trainOption}</span><span className={trainDelta > 0 ? 'text-slate-650 font-bold' : 'text-emerald-600 font-bold'}>{trainDelta > 0 ? '+' : ''}₹{trainDelta.toLocaleString()}</span></div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between text-slate-650 gap-2 min-w-0">
+            <span className="flex items-center font-extrabold shrink-0 text-[8px] uppercase tracking-wider text-slate-400">GST @ {tripData?.gstPercentage ?? 5}%</span>
+            <span className="font-extrabold text-slate-900 shrink-0">+₹{pricing.fullPackageGst.toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Calculations & Total */}
+        <div className="space-y-2 pt-0.5">
+          {/* Visual Priority 3: Pay Now / Grand Total */}
+          <div className="bg-gradient-to-br from-[#FF5B00] to-[#FF8A00] p-3 rounded-xl flex flex-col justify-between text-white shadow-sm">
+            <span className="text-[8px] font-extrabold uppercase tracking-widest opacity-95 block">PAY NOW</span>
+            <div className="flex items-end justify-between mt-0.5">
+              <span className="text-lg font-black tracking-tight">₹{pricing.finalTotal.toLocaleString()}</span>
+            </div>
+            <p className="text-[8px] font-semibold opacity-85 mt-0.5">₹{(pricing.finalTotal - pricing.depositGst).toLocaleString()} + ₹{pricing.depositGst.toLocaleString()} GST</p>
+          </div>
+
+          {paymentMode === 'Partial Payment' && (
+            <div className="flex justify-between items-center bg-slate-50 border border-slate-200/60 rounded-lg px-2.5 py-1.5 text-xs">
+              <span className="flex items-center font-extrabold text-[8px] uppercase tracking-wider text-slate-400">REMAINING BALANCE</span>
+              <span className="font-black text-slate-800 text-xs">₹{pricing.remainingBalance.toLocaleString()}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+
+    if (isCard) {
+      return (
+        <div className="bg-white border border-slate-200/80 rounded-[20px] overflow-hidden shadow-xs">
+          {content}
+        </div>
+      );
+    }
+    return content;
+  };
+
   const parsedDate = useMemo(() => parseTripDate(initialParams.date), [initialParams.date]);
 
   return (
-    <div className="bg-[#FAFAFA] min-h-screen text-slate-900 pb-36 lg:pb-36">
+    <div className="bg-[#FAFAFA] text-slate-900 pb-0 lg:pb-0 pt-[72px] md:pt-[80px]">
       {/* Top logo & waitlist header */}
-      <header className="bg-white border-b border-slate-100 py-3.5 px-6 sticky top-0 z-40 flex items-center justify-between">
-        <div className="font-extrabold text-sm tracking-tight text-slate-900 font-serif">
+      {/* Top logo & waitlist header */}
+      <header className="bg-white border-b border-slate-100 py-2.5 px-5 sticky top-0 z-40 flex items-center justify-between">
+        <div className="font-extrabold text-xs tracking-tight text-slate-900 font-serif">
           {initialParams.headerTitle || 'Talk That Damn Point'}
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4" id="booking-form-container">
         {/* Back Button */}
-        <button 
-          onClick={() => router.back()} 
-          className="flex items-center gap-1.5 text-slate-800 hover:text-slate-950 font-bold text-sm mb-6 transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4 stroke-[3px]" /> Back
-        </button>
+        {currentStep > 1 && (
+          <button 
+            onClick={() => router.back()} 
+            className="flex items-center gap-1.5 text-slate-800 hover:text-slate-950 font-bold text-xs mb-3 transition-colors"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 stroke-[3px]" /> Back
+          </button>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Left Area: Event Details + Inputs */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className="lg:col-span-8 space-y-3">
             
-            {/* Trip Poster Card */}
-            <div className="relative w-full rounded-[24px] overflow-hidden bg-slate-950 shadow-md aspect-[16/10] md:aspect-[16/9] flex items-center justify-center p-4 md:p-8">
-              {/* background image blurred */}
+            {/* Trip Poster Card (Full Image) */}
+            <div className="relative w-full rounded-[16px] overflow-hidden bg-slate-100 shadow-sm aspect-[21/6.5]">
               {tripData?.images?.[0] ? (
                 <OptimizedImage 
                   src={normalizeImageUrl(tripData.images[0])} 
                   alt={initialParams.tripName} 
-                  className="absolute inset-0 w-full h-full object-cover opacity-20 blur-md scale-105"
+                  className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-slate-900 to-slate-950" />
+                <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-950" />
               )}
-
-              {/* Framed Side-by-Side Images */}
-              <div className="relative z-10 flex items-center justify-center gap-4 w-full h-full">
-                {/* Left Image in White Border Frame */}
-                <div className="border-[6px] border-white shadow-2xl overflow-hidden w-[45%] aspect-[4/5] bg-slate-800 rounded-sm transform -rotate-2 hover:rotate-0 transition-transform duration-300">
-                  {tripData?.images?.[0] ? (
-                    <OptimizedImage 
-                      src={normalizeImageUrl(tripData.images[0])} 
-                      alt="Trip preview 1" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-white/20 text-xs">No Image</div>
-                  )}
-                </div>
-
-                {/* Right Image / Styled Poster fallback */}
-                <div className="w-[50%] aspect-[4/5] overflow-hidden bg-white shadow-2xl rounded-sm p-4 flex flex-col justify-between border border-slate-100">
-                  {tripData?.images?.[1] ? (
-                    <OptimizedImage 
-                      src={normalizeImageUrl(tripData.images[1])} 
-                      alt="Trip preview 2" 
-                      className="w-full h-full object-cover rounded-xs"
-                    />
-                  ) : (
-                    // Elegant text poster fallback
-                    <div className="flex flex-col h-full justify-between text-slate-900">
-                      <div>
-                        <p className="text-[7px] font-extrabold uppercase tracking-widest text-[#FF5B00]">Expedition</p>
-                        <h4 className="text-xs md:text-sm font-black tracking-tight leading-tight mt-1 line-clamp-3">
-                          {initialParams.tripName || 'Storytelling Night'}
-                        </h4>
-                      </div>
-                      <div className="space-y-1.5">
-                        <div className="text-[7px] font-bold text-slate-500 uppercase tracking-wider">
-                          DATE: {parsedDate.month} {parsedDate.day}
-                        </div>
-                        <div className="text-[7px] font-bold text-slate-500 uppercase tracking-wider line-clamp-1">
-                          VENUE: {selectedCity?.cityName || tripData?.location || 'TBD'}
-                        </div>
-                      </div>
-                      <div className="border-t border-dashed border-slate-200 pt-1.5 flex justify-between items-center text-[7px] font-bold">
-                        <span className="text-slate-400">Price</span>
-                        <span className="text-slate-900 font-extrabold">₹{(tripData?.price || basePrice).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  )}
+              {/* Dark gradient overlay for title legibility */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/20 to-transparent flex flex-col justify-end p-4 sm:p-5">
+                <div>
+                  <span className="text-[8px] font-extrabold uppercase tracking-widest text-[#FF5B00] bg-white px-2 py-0.5 rounded-full">Expedition</span>
+                  <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight leading-tight mt-1.5 text-white">
+                    {initialParams.tripName || 'Adventure Expedition'}
+                  </h1>
                 </div>
               </div>
             </div>
 
-            {/* Trip Title */}
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight capitalize">
-              {initialParams.tripName || 'Adventure Expedition'}
-            </h1>
-
-            {/* Date and Location Info Card */}
-            <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 shadow-sm space-y-4">
+            {/* Date and Location Info Card (Compact) */}
+            <div className="bg-white border border-slate-200/80 rounded-[16px] p-3.5 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Date */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 {/* Calendar Badge */}
-                <div className="w-12 h-14 rounded-xl border border-slate-200 overflow-hidden bg-white shadow-xs flex flex-col shrink-0">
-                  <div className="bg-rose-500 text-white text-[8px] font-bold py-0.5 text-center uppercase tracking-widest">
+                <div className="w-9 h-10 rounded-lg border border-slate-200 overflow-hidden bg-white shadow-xs flex flex-col shrink-0">
+                  <div className="bg-[#FF5B00] text-white text-[7px] font-bold py-0.5 text-center uppercase tracking-widest leading-none">
                     {parsedDate.month}
                   </div>
-                  <div className="flex-1 flex items-center justify-center font-bold text-lg text-slate-800 leading-none">
+                  <div className="flex-1 flex items-center justify-center font-bold text-xs text-slate-800 leading-none">
                     {parsedDate.day}
                   </div>
                 </div>
                 {/* Date text */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm md:text-base font-extrabold text-slate-900 leading-tight">
+                <div className="min-w-0">
+                  <p className="text-xs font-extrabold text-slate-900 leading-tight">
                     {parsedDate.fullDate}
                   </p>
-                  <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+                  <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
                     {initialParams.customTime || parsedDate.time}
                   </p>
                 </div>
               </div>
 
-              <div className="h-px bg-slate-100" />
-
               {/* Location / Joining Point */}
-              <div className="flex items-center gap-4">
-                {/* Location Icon Badge */}
-                <div className="w-12 h-12 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0">
-                  <div className="w-7 h-7 rounded-full bg-rose-50 flex items-center justify-center text-rose-500">
-                    <MapPin className="w-4 h-4" />
-                  </div>
+              <div className="flex items-center gap-3 md:border-l md:border-slate-100 md:pl-3.5">
+                <div className="w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0">
+                  <MapPin className="w-3.5 h-3.5 text-[#FF5B00]" />
                 </div>
                 {/* Location text */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-extrabold text-rose-500 uppercase tracking-wider">
+                <div className="min-w-0">
+                  <p className="text-[8px] font-extrabold text-[#FF5B00] uppercase tracking-wider leading-none">
                     Joining Point
                   </p>
-                  <p className="text-sm md:text-base font-extrabold text-slate-900 leading-tight capitalize mt-0.5">
+                  <p className="text-xs font-extrabold text-slate-900 leading-tight capitalize mt-0.5 truncate">
                     {typeof selectedCity === 'object' && selectedCity?.cityName ? selectedCity.cityName : (tripData?.location || 'Delhi')}
                     {typeof selectedCity === 'object' && selectedCity?.pickupPoint ? ` (${selectedCity.pickupPoint})` : ''}
                   </p>
@@ -798,52 +848,68 @@ function BookingForm() {
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(typeof selectedCity === 'object' && selectedCity?.cityName ? `${selectedCity.cityName} ${selectedCity.pickupPoint || ''}` : (tripData?.location || 'Delhi'))}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[11px] text-rose-500 hover:text-rose-600 font-bold mt-0.5 inline-flex items-center gap-0.5 transition-colors"
+                    className="text-[9px] text-[#FF5B00] hover:text-[#E65200] font-bold mt-0.5 inline-flex items-center gap-0.5 transition-colors"
                   >
-                    Open in Maps <ChevronRight className="w-3 h-3" />
+                    Open in Maps <ChevronRight className="w-2 h-2" />
                   </a>
                 </div>
               </div>
             </div>
 
-            {/* About the Experience Card */}
-            {currentStep === 1 && (
-              <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 shadow-sm space-y-2.5">
-                <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-450">
-                  ABOUT THE EXPERIENCE
-                </h3>
-                <p className="text-xs md:text-sm font-medium text-slate-600 leading-relaxed whitespace-pre-line">
-                  {tripData?.description || 'Join us for an incredible adventure designed to wow you at every step. Filled with curated stays, comfortable travel options, and exciting activities.'}
-                </p>
-              </div>
-            )}
-
-            {/* Progress Bar Container */}
-            <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar shadow-sm">
+            {/* Progress Bar Container (Updated step flow) */}
+            <div className="bg-white border border-slate-200/80 rounded-[16px] p-3 flex items-center justify-between gap-1 overflow-x-auto no-scrollbar shadow-sm">
               {[
-                { step: 1, label: 'Lead Contact' },
-                { step: 2, label: 'Travelers List' },
-                { step: 3, label: 'Pricing Summary' },
-                { step: 4, label: 'Verification' }
-              ].map((item) => (
-                <div key={item.step} className="flex items-center gap-2 shrink-0">
+                { key: 1, label: 'Contact', active: currentStep >= 1, completed: currentStep > 1 },
+                { key: 2, label: 'Travelers', active: currentStep >= 2, completed: currentStep > 2 },
+                { key: 3, label: 'Travel', active: currentStep >= 2, completed: currentStep > 2 },
+                { key: 4, label: 'Payment', active: currentStep >= 3, completed: currentStep > 3 },
+                { key: 5, label: 'Review', active: currentStep >= 4, completed: currentStep > 4 }
+              ].map((item, idx, arr) => (
+                <div key={item.label} className="flex items-center gap-1 shrink-0">
                   <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all",
-                    currentStep >= item.step 
+                    "w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold transition-all",
+                    item.active 
                       ? "bg-[#FF5B00] text-white shadow-sm" 
                       : "bg-slate-100 text-slate-400 border border-slate-200"
                   )}>
-                    {currentStep > item.step ? <Check size={10} strokeWidth={4} /> : item.step}
+                    {item.completed ? <Check size={7} strokeWidth={4} /> : idx + 1}
                   </div>
                   <span className={cn(
                     "text-[8px] uppercase font-bold tracking-widest",
-                    currentStep >= item.step ? "text-slate-900" : "text-slate-400"
+                    item.active ? "text-slate-900" : "text-slate-400"
                   )}>
                     {item.label}
                   </span>
-                  {item.step < 4 && <div className={cn("w-4 md:w-8 h-[2px] bg-slate-100", currentStep > item.step && "bg-[#FF5B00]")} />}
+                  {idx < arr.length - 1 && (
+                    <span className="text-slate-300 text-[10px] select-none font-bold">→</span>
+                  )}
                 </div>
               ))}
+            </div>
+
+            {/* Mobile Collapsible Booking Summary */}
+            <div className="lg:hidden bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-xs mt-2">
+              <button
+                type="button"
+                onClick={() => setIsMobileSummaryOpen(!isMobileSummaryOpen)}
+                className="w-full px-4 py-3 flex items-center justify-between font-extrabold text-[10px] text-slate-800 uppercase tracking-widest bg-slate-50/50 hover:bg-slate-50 transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  View Booking Summary
+                  <span className="bg-orange-100 text-[#FF5B00] px-2 py-0.5 rounded-full text-[9px] lowercase font-extrabold">
+                    {formData.participants} pax
+                  </span>
+                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[#FF5B00] font-mono text-xs">₹{pricing.finalTotal.toLocaleString()}</span>
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", isMobileSummaryOpen && "rotate-180")} />
+                </div>
+              </button>
+              {isMobileSummaryOpen && (
+                <div className="border-t border-slate-100 bg-white">
+                  {renderSummaryCard(false)}
+                </div>
+              )}
             </div>
 
             <AnimatePresence mode="wait">
@@ -855,45 +921,45 @@ function BookingForm() {
                   exit={{ opacity: 0, x: 10 }}
                   className="space-y-6"
                 >
-                  <div className="bg-white border border-slate-200/80 rounded-[2rem] p-8 md:p-10 space-y-6 shadow-sm">
-                                        <div className="border-b border-slate-100 pb-5">
-                      <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] mb-1.5">STEP 1 OF 4</p>
-                      <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Lead Contact Details</h2>
-                      <p className="text-xs text-slate-400 font-medium mt-0.5">Primary booking supervisor</p>
+                  <div className="bg-white border border-slate-200/80 rounded-[20px] p-[28px] md:p-[32px] space-y-4 shadow-sm">
+                    <div className="border-b border-slate-100 pb-3">
+                      <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] mb-1">STEP 1 OF 4</p>
+                      <h2 className="text-lg font-extrabold tracking-tight text-slate-900">Lead Contact Details</h2>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">Primary booking supervisor</p>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3.5">
                       <div className="relative group">
-                        <User size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF5B00] transition-colors" />
+                        <User size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF5B00] transition-colors" />
                         <input
                           type="text"
                           required
                           placeholder="Full Name *"
-                          className="w-full bg-slate-50/50 border border-slate-200 rounded-2xl py-5 pl-14 pr-6 text-sm font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#FF5B00] focus:ring-4 focus:ring-[#FF5B00]/5 outline-none transition-all"
+                          className="w-full h-[54px] bg-slate-50/50 border border-slate-200 rounded-xl pl-12 pr-4 text-xs font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#FF5B00] focus:ring-2 focus:ring-[#FF5B00]/5 outline-none transition-all"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         <div className="relative group">
-                          <Phone size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF5B00] transition-colors" />
+                          <Phone size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF5B00] transition-colors" />
                           <input
                             type="tel"
                             required
                             placeholder="WhatsApp Number *"
-                            className="w-full bg-slate-50/50 border border-slate-200 rounded-2xl py-5 pl-14 pr-6 text-sm font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#FF5B00] focus:ring-4 focus:ring-[#FF5B00]/5 outline-none transition-all"
+                            className="w-full h-[54px] bg-slate-50/50 border border-slate-200 rounded-xl pl-12 pr-4 text-xs font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#FF5B00] focus:ring-2 focus:ring-[#FF5B00]/5 outline-none transition-all"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                           />
                         </div>
 
                         <div className="relative group">
-                          <Mail size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF5B00] transition-colors" />
+                          <Mail size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF5B00] transition-colors" />
                           <input
                             type="email"
                             placeholder="Email Address"
-                            className="w-full bg-slate-50/50 border border-slate-200 rounded-2xl py-5 pl-14 pr-6 text-sm font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#FF5B00] focus:ring-4 focus:ring-[#FF5B00]/5 outline-none transition-all"
+                            className="w-full h-[54px] bg-slate-50/50 border border-slate-200 rounded-xl pl-12 pr-4 text-xs font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#FF5B00] focus:ring-2 focus:ring-[#FF5B00]/5 outline-none transition-all"
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           />
@@ -902,12 +968,12 @@ function BookingForm() {
 
                       {/* City/State Text Field */}
                       <div className="relative group">
-                        <Building size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF5B00] transition-colors" />
+                        <Building size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF5B00] transition-colors" />
                         <input
                           type="text"
                           required
                           placeholder="City/State *"
-                          className="w-full bg-slate-50/50 border border-slate-200 rounded-2xl py-5 pl-14 pr-6 text-sm font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#FF5B00] focus:ring-4 focus:ring-[#FF5B00]/5 outline-none transition-all"
+                          className="w-full h-[54px] bg-slate-50/50 border border-slate-200 rounded-xl pl-12 pr-4 text-xs font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#FF5B00] focus:ring-2 focus:ring-[#FF5B00]/5 outline-none transition-all"
                           value={formData.cityState}
                           onChange={(e) => setFormData({ ...formData, cityState: e.target.value })}
                         />
@@ -917,23 +983,24 @@ function BookingForm() {
                 </motion.div>
               )}
 
+
               {currentStep === 2 && (
                 <motion.div
                   key="step2"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
-                  className="space-y-8"
+                  className="space-y-4"
                 >
                   {/* Joining Point Selection */}
-                  <div className="bg-white border border-slate-200/80 rounded-[2rem] p-8 md:p-10 space-y-6 shadow-sm">
-                                        <div className="border-b border-slate-100 pb-5">
-                      <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] mb-1.5">ROUTE SELECTION</p>
-                      <h2 className="text-xl font-extrabold tracking-tight text-slate-900">{tripData?.bookingFormLabels?.joiningPoint || 'Joining Point'}</h2>
-                      <p className="text-xs text-slate-400 font-medium mt-0.5">Select where you want to meet us</p>
+                  <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 md:p-6 space-y-3.5 shadow-sm">
+                    <div className="border-b border-slate-100 pb-2">
+                      <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] mb-1">ROUTE SELECTION</p>
+                      <h2 className="text-base font-extrabold tracking-tight text-slate-900">{tripData?.bookingFormLabels?.joiningPoint || 'Joining Point'}</h2>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">Select where you want to meet us</p>
                     </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {joiningPoints.map((city: any) => {
                         const active = selectedCity?.cityName === city.cityName;
                         return (
@@ -946,21 +1013,21 @@ function BookingForm() {
                               localStorage.setItem(`selected_joining_point_${tripId}`, city.cityName);
                             }}
                             className={cn(
-                              "text-left p-4 md:p-5 rounded-2xl border-2 transition-all flex flex-col justify-between min-h-[110px] h-auto w-full gap-2",
+                              "text-left p-3 rounded-xl border-2 transition-all flex flex-col justify-between min-h-[82px] h-auto w-full gap-1.5",
                               active 
                                 ? "border-[#FF5B00] bg-[#FF5B00]/5 shadow-sm" 
                                 : "border-slate-100 bg-slate-50/50 hover:border-slate-300"
                             )}
                           >
-                            <div className="flex justify-between w-full items-start gap-2 min-w-0">
+                            <div className="flex justify-between w-full items-start gap-1.5 min-w-0">
                               <div className="min-w-0 flex-1">
-                                <p className="text-xs md:text-sm font-bold capitalize text-slate-800 whitespace-normal break-words">{city.cityName}</p>
-                                <p className="text-[10px] text-slate-500 font-medium capitalize tracking-wider mt-1 whitespace-normal break-words leading-tight">{city.pickupPoint}</p>
+                                <p className="text-xs font-bold capitalize text-slate-800 whitespace-normal break-words">{city.cityName}</p>
+                                <p className="text-[9px] text-slate-500 font-medium capitalize tracking-wider mt-0.5 whitespace-normal break-words leading-tight">{city.pickupPoint}</p>
                               </div>
-                              {active && <Check size={14} className="text-[#FF5B00] shrink-0 mt-0.5" />}
+                              {active && <Check size={12} className="text-[#FF5B00] shrink-0 mt-0.5" />}
                             </div>
                             {city.price !== undefined && (
-                              <div className="mt-auto pt-2 border-t border-slate-100/50 w-full flex justify-between items-center text-[10px]">
+                              <div className="mt-auto pt-1.5 border-t border-slate-100/50 w-full flex justify-between items-center text-[9px]">
                                 <span className="uppercase tracking-wider text-slate-400 font-bold">Package Price</span>
                                 <span className="font-extrabold text-slate-800 font-mono">₹{city.price.toLocaleString()}</span>
                               </div>
@@ -972,27 +1039,27 @@ function BookingForm() {
                   </div>
 
                   {/* Travelers Manifest Inputs */}
-                  <div className="bg-white border border-slate-200/80 rounded-[2rem] p-8 md:p-10 space-y-6 shadow-sm">
-                                        <div className="border-b border-slate-100 pb-5">
-                      <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] mb-1.5">MANIFEST</p>
-                      <h2 className="text-xl font-extrabold tracking-tight text-slate-900">{tripData?.bookingFormLabels?.travelers || 'Traveler Manifest'}</h2>
-                      <p className="text-xs text-slate-400 font-medium mt-0.5">{tripData?.bookingFormLabels?.travelersDescription || 'Fill info for all tour members'}</p>
+                  <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 md:p-6 space-y-3.5 shadow-sm">
+                    <div className="border-b border-slate-100 pb-2">
+                      <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] mb-1">MANIFEST</p>
+                      <h2 className="text-base font-extrabold tracking-tight text-slate-900">{tripData?.bookingFormLabels?.travelers || 'Traveler Manifest'}</h2>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">{tripData?.bookingFormLabels?.travelersDescription || 'Fill info for all tour members'}</p>
                     </div>
 
                     {/* Quick Traveler Count Select */}
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <label className="text-[9px] font-bold capitalize tracking-wider text-slate-500 block">Number of Travelers</label>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {[1, 2, 3, 4, 5].map((n) => (
                           <button
                             key={n}
                             type="button"
                             onClick={() => syncParticipantsCount(n)}
                             className={cn(
-                              "py-3.5 rounded-xl font-bold text-xs transition-all border",
+                              "py-2 rounded-lg font-bold text-xs transition-all border",
                               formData.participants === n 
-                                ? "bg-[#FF5B00] border-[#FF5B00] text-white shadow-lg shadow-[#FF5B00]/25" 
-                                : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-350"
+                                ? "bg-[#FF5B00] border-[#FF5B00] text-white shadow-xs" 
+                                : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
                             )}
                           >
                             {n}
@@ -1002,38 +1069,38 @@ function BookingForm() {
                     </div>
 
                     {/* Participant detail loops */}
-                    <div className="space-y-4 pt-2">
+                    <div className="space-y-3 pt-1">
                       {formData.participantsList.map((traveler, index) => (
-                        <div key={index} className="p-5 bg-slate-50/50 border border-slate-200 rounded-2xl space-y-4">
+                        <div key={index} className="p-3.5 bg-slate-50/50 border border-slate-200 rounded-xl space-y-2.5">
                           <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00]">TRAVELER {index + 1} DETAILS</span>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                             <input
                               required
                               placeholder="Full Name *"
-                              className="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 text-xs font-bold text-slate-800 outline-none focus:border-[#FF5B00]"
+                              className="w-full h-[46px] bg-white border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#FF5B00] focus:ring-2 focus:ring-[#FF5B00]/5"
                               value={traveler.name}
                               onChange={(e) => handleParticipantChange(index, 'name', e.target.value)}
                             />
                             <input
                               required
                               placeholder="Mobile Number *"
-                              className="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 text-xs font-bold text-slate-800 outline-none focus:border-[#FF5B00]"
+                              className="w-full h-[46px] bg-white border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#FF5B00] focus:ring-2 focus:ring-[#FF5B00]/5"
                               value={traveler.phone}
                               onChange={(e) => handleParticipantChange(index, 'phone', e.target.value)}
                             />
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-2.5">
                             <input
                               required
                               type="number"
                               placeholder="Age *"
-                              className="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 text-xs font-bold text-slate-800 outline-none focus:border-[#FF5B00]"
+                              className="w-full h-[46px] bg-white border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#FF5B00] focus:ring-2 focus:ring-[#FF5B00]/5"
                               value={traveler.age}
                               onChange={(e) => handleParticipantChange(index, 'age', e.target.value)}
                             />
                             <select
                               aria-label={`Gender for traveler ${index + 1}`}
-                              className="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 text-xs font-bold text-slate-800 outline-none"
+                              className="w-full h-[46px] bg-white border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#FF5B00]"
                               value={traveler.gender}
                               onChange={(e) => handleParticipantChange(index, 'gender', e.target.value)}
                             >
@@ -1043,10 +1110,10 @@ function BookingForm() {
                             </select>
                           </div>
 
-                                                    {/* Room Sharing Option for this traveler */}
-                          <div className="space-y-1.5 pt-1">
+                          {/* Room Sharing Option for this traveler */}
+                          <div className="space-y-1 pt-0.5">
                             <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500 block">{tripData?.bookingFormLabels?.roomSharing || 'Room Sharing Option'}</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                               {(tripData?.roomOptions?.length > 0 ? tripData.roomOptions : [
                                 { label: 'Double Sharing' }, { label: 'Triple Sharing' }, { label: 'Quad Sharing' }
                               ]).map((room: any) => (
@@ -1055,7 +1122,7 @@ function BookingForm() {
                                   type="button"
                                   onClick={() => handleParticipantChange(index, 'roomSharing', room.label)}
                                   className={cn(
-                                    "py-2.5 rounded-lg font-bold text-[10px] border text-center transition-all min-h-[44px] flex items-center justify-center whitespace-normal break-words px-2 w-full",
+                                    "py-1.5 rounded-md font-bold text-[9px] border text-center transition-all min-h-[34px] flex items-center justify-center whitespace-normal break-words px-2 w-full",
                                     traveler.roomSharing === room.label ? "bg-[#FF5B00]/10 border-[#FF5B00] text-[#FF5B00]" : "bg-white border-slate-200 text-slate-500"
                                   )}
                                 >
@@ -1065,11 +1132,11 @@ function BookingForm() {
                             </div>
                           </div>
 
-                                                    {/* Train Class Option for this traveler */}
+                          {/* Train Class Option for this traveler */}
                           {!isDirectJoin && (
-                             <div className="space-y-1.5 pt-1">
+                             <div className="space-y-1 pt-0.5">
                                <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500 block">{tripData?.bookingFormLabels?.travelOption || 'Train Ticket Option'}</label>
-                               <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                               <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-1.5">
                                  {(tripData?.travelOptions?.length > 0 ? tripData.travelOptions : [
                                    { label: 'Sleeper' }, { label: '3AC' }, { label: 'No Train' }
                                  ]).map((train: any) => (
@@ -1078,7 +1145,7 @@ function BookingForm() {
                                      type="button"
                                      onClick={() => handleParticipantChange(index, 'trainOption', train.label)}
                                      className={cn(
-                                       "py-2.5 rounded-lg font-bold text-[10px] border text-center transition-all min-h-[44px] flex items-center justify-center whitespace-normal break-words px-2 w-full",
+                                       "py-1.5 rounded-md font-bold text-[9px] border text-center transition-all min-h-[34px] flex items-center justify-center whitespace-normal break-words px-2 w-full",
                                        traveler.trainOption === train.label ? "bg-[#FF5B00]/10 border-[#FF5B00] text-[#FF5B00]" : "bg-white border-slate-200 text-slate-500"
                                      )}
                                    >
@@ -1090,16 +1157,16 @@ function BookingForm() {
                            )}
 
                           {/* Food Option for this traveler */}
-                          <div className="space-y-1.5 pt-1">
+                          <div className="space-y-1 pt-0.5">
                             <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500 block">Food Option</label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-2 gap-1.5">
                               {['Normal Food', 'Jain Food'].map((food) => (
                                 <button
                                   key={food}
                                   type="button"
                                   onClick={() => handleParticipantChange(index, 'foodPreference', food)}
                                   className={cn(
-                                    "py-2.5 rounded-lg font-bold text-[10px] border text-center transition-all min-h-[44px] flex items-center justify-center whitespace-normal break-words px-2 w-full",
+                                    "py-1.5 rounded-md font-bold text-[9px] border text-center transition-all min-h-[34px] flex items-center justify-center whitespace-normal break-words px-2 w-full",
                                     (traveler.foodPreference || 'Normal Food') === food ? "bg-[#FF5B00]/10 border-[#FF5B00] text-[#FF5B00]" : "bg-white border-slate-200 text-slate-500"
                                   )}
                                 >
@@ -1115,10 +1182,10 @@ function BookingForm() {
                   </div>
 
                   {/* Special Requests textarea (optional) */}
-                  <div className="bg-white border border-slate-200/80 rounded-[2rem] p-6 space-y-4 shadow-sm">
+                  <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 md:p-6 space-y-2.5 shadow-sm">
                     <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500 block">Special Requests (Optional)</span>
                     <textarea 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-6 text-xs font-bold text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-[#FF5B00] min-h-[100px] transition-all"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-[20px] p-4 text-xs font-bold text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-[#FF5B00] min-h-[64px] transition-all"
                       placeholder="Tell us about food allergies, physical requirements, room requests, or other details..."
                       value={formData.specialRequests}
                       onChange={(e) => setFormData({...formData, specialRequests: e.target.value})}
@@ -1190,115 +1257,130 @@ function BookingForm() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
-                  className="space-y-6"
+                  className="space-y-4"
                 >
-                  <div className="bg-white border border-slate-200/80 rounded-[2rem] p-8 md:p-10 space-y-6 shadow-sm">
-                    <div className="border-b border-slate-100 pb-5">
-                      <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] mb-1.5">STEP 4 OF 4</p>
-                      <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Terms & Verification</h2>
-                      <p className="text-xs text-slate-400 font-medium mt-0.5">Confirm final submission</p>
+                  <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 md:p-6 space-y-4 shadow-sm">
+                    <div className="border-b border-slate-100 pb-2">
+                      <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] mb-1">STEP 4 OF 4</p>
+                      <h2 className="text-base font-extrabold tracking-tight text-slate-900">Terms & Verification</h2>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">Confirm final submission</p>
                     </div>
 
-                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 space-y-4 text-xs font-medium text-slate-500 leading-relaxed">
-                      <p>
-                        By placing this booking, you verify that all traveler names, mobile numbers, and personal details match Government-issued photo IDs.
-                      </p>
-                      <p>
-                        Cancellations, transfers, and refunds are managed strictly under the YouthCamping standard trip reservation agreement.
-                      </p>
+                    {/* Collapsible Guidelines for Mobile */}
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setIsMobileTermsOpen(!isMobileTermsOpen)}
+                        className="w-full px-4.5 py-3 flex items-center justify-between text-[9px] font-extrabold text-slate-700 uppercase tracking-widest hover:bg-slate-100/50 transition-colors"
+                      >
+                        <span>Verification Guidelines & Terms</span>
+                        <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 transition-transform duration-200", isMobileTermsOpen && "rotate-180", "md:hidden")} />
+                      </button>
+                      
+                      <div className={cn(
+                        "px-4.5 pb-4 space-y-3 text-[11px] font-medium text-slate-500 leading-relaxed pt-3 border-t border-slate-200/50",
+                        !isMobileTermsOpen && "hidden md:block"
+                      )}>
+                        <p>
+                          By placing this booking, you verify that all traveler names, mobile numbers, and personal details match Government-issued photo IDs.
+                        </p>
+                        <p>
+                          Cancellations, transfers, and refunds are managed strictly under the YouthCamping standard trip reservation agreement.
+                        </p>
+                      </div>
                     </div>
 
                     {/* Complete Booking Summary */}
-                    <div className="bg-slate-50 border border-slate-150 rounded-[2rem] p-6 space-y-6">
-                                            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                        <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">BOOKING SUMMARY</h4>
-                        <span className="text-[9px] bg-[#FF5B00]/10 text-[#FF5B00] px-2.5 py-0.5 rounded-lg font-extrabold uppercase tracking-widest text-orange-600">PLEASE REVIEW</span>
+                    <div className="bg-slate-50 border border-slate-150 rounded-xl p-4 space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <h4 className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500">BOOKING SUMMARY</h4>
+                        <span className="text-[9px] bg-[#FF5B00]/10 text-[#FF5B00] px-2 py-0.5 rounded font-extrabold uppercase tracking-widest">PLEASE REVIEW</span>
                       </div>
 
-                                                                  {/* Visual Priority Highlights */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Visual Priority Highlights */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {/* Visual Priority 1: Departure Date */}
-                        <div className="bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r-2xl space-y-1 shadow-sm">
-                          <span className="text-[9px] font-extrabold uppercase tracking-widest text-amber-800 block">DEPARTURE DATE</span>
-                          <p className="text-sm font-bold text-slate-900 leading-tight">{initialParams.date || 'Flexible'}</p>
+                        <div className="bg-amber-500/10 border-l-4 border-amber-500 p-3 rounded-r-lg space-y-0.5 shadow-xs">
+                          <span className="text-[8px] font-extrabold uppercase tracking-widest text-amber-800 block">DEPARTURE DATE</span>
+                          <p className="text-xs font-bold text-slate-900 leading-tight">{initialParams.date || 'Flexible'}</p>
                         </div>
 
                         {/* Visual Priority 2: Package Price */}
-                        <div className="bg-[#FF5B00]/5 border-l-4 border-[#FF5B00] p-4 rounded-r-2xl space-y-1 shadow-sm">
-                          <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] block">PACKAGE PRICE</span>
-                          <p className="text-base font-bold text-slate-900 leading-tight">₹{pricing.originalTotalBase.toLocaleString()}</p>
+                        <div className="bg-[#FF5B00]/5 border-l-4 border-[#FF5B00] p-3 rounded-r-lg space-y-0.5 shadow-xs">
+                          <span className="text-[8px] font-extrabold uppercase tracking-widest text-[#FF5B00] block">PACKAGE PRICE</span>
+                          <p className="text-xs font-bold text-slate-900 leading-tight">₹{pricing.originalTotalBase.toLocaleString()}</p>
                         </div>
 
                         {/* Visual Priority 3: Amount Payable / Pay Now */}
-                        <div className="bg-gradient-to-br from-[#FF5B00] to-[#FF8A00] p-4 rounded-2xl flex flex-col justify-between text-white shadow-md min-h-[70px]">
-                          <span className="text-[9px] font-extrabold uppercase tracking-widest opacity-90 block">PAY NOW</span>
-                          <p className="text-xl font-bold tracking-tighter leading-tight">₹{pricing.finalTotal.toLocaleString()}</p>
-                          <p className="text-[9px] font-semibold opacity-80 mt-0.5">₹{(pricing.finalTotal - pricing.depositGst).toLocaleString()} + ₹{pricing.depositGst.toLocaleString()} GST</p>
+                        <div className="bg-gradient-to-br from-[#FF5B00] to-[#FF8A00] p-3 rounded-lg flex flex-col justify-between text-white shadow-xs min-h-[64px]">
+                          <span className="text-[8px] font-extrabold uppercase tracking-widest opacity-90 block">PAY NOW</span>
+                          <p className="text-sm font-bold tracking-tight leading-tight">₹{pricing.finalTotal.toLocaleString()}</p>
+                          <p className="text-[8px] font-semibold opacity-80 mt-0.5">₹{(pricing.finalTotal - pricing.depositGst).toLocaleString()} + ₹{pricing.depositGst.toLocaleString()} GST</p>
                         </div>
                       </div>
 
                       {/* General Booking Breakdown */}
-                      <div className="bg-white border border-slate-205 rounded-2xl p-5 space-y-4 shadow-sm text-xs">
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <h5 className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">RESERVATION DETAILS</h5>
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-xs text-xs">
+                        <div className="flex justify-between items-center border-b pb-1.5">
+                          <h5 className="text-[8px] font-extrabold uppercase tracking-widest text-slate-400">RESERVATION DETAILS</h5>
                           <button
                             type="button"
                             onClick={() => setCurrentStep(2)}
-                            className="text-[10px] text-[#FF5B00] hover:text-[#E65200] font-extrabold uppercase tracking-wider transition-all"
+                            className="text-[9px] text-[#FF5B00] hover:text-[#E65200] font-extrabold uppercase tracking-wider transition-all"
                           >
                             Edit
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           <div className="col-span-2 md:col-span-1">
-                            <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">JOINING CITY</p>
-                            <p className="font-bold text-slate-800 capitalize mt-1 break-all whitespace-normal leading-tight">{selectedCity?.cityName || 'Delhi'}</p>
+                            <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">JOINING CITY</p>
+                            <p className="font-bold text-slate-800 capitalize mt-0.5 break-all whitespace-normal leading-tight">{selectedCity?.cityName || 'Delhi'}</p>
                           </div>
                           <div>
-                            <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">DEPARTURE DATE</p>
-                            <p className="font-bold text-slate-800 mt-1">{initialParams.date || 'Flexible'}</p>
+                            <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">DEPARTURE DATE</p>
+                            <p className="font-bold text-slate-800 mt-0.5">{initialParams.date || 'Flexible'}</p>
                           </div>
                           <div>
-                            <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">TRAVELERS</p>
-                            <p className="font-bold text-slate-800 mt-1">{formData.participants} Pax</p>
+                            <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">TRAVELERS</p>
+                            <p className="font-bold text-slate-800 mt-0.5">{formData.participants} Pax</p>
                           </div>
                           {paymentMode === 'Full Payment' ? (
                             <>
                               <div>
-                                <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">PACKAGE PRICE</p>
-                                <p className="font-bold text-slate-800 mt-1">₹{pricing.originalTotalBase.toLocaleString()}</p>
+                                <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">PACKAGE PRICE</p>
+                                <p className="font-bold text-slate-800 mt-0.5">₹{pricing.originalTotalBase.toLocaleString()}</p>
                               </div>
                               <div>
-                                <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">GST @ {tripData?.gstPercentage ?? 5}%</p>
-                                <p className="font-bold text-slate-800 mt-1">₹{pricing.fullPackageGst.toLocaleString()}</p>
+                                <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">GST @ {tripData?.gstPercentage ?? 5}%</p>
+                                <p className="font-bold text-slate-800 mt-0.5">₹{pricing.fullPackageGst.toLocaleString()}</p>
                               </div>
                               <div>
-                                <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">PAY NOW</p>
-                                <p className="font-bold text-[#FF5B00] mt-1">₹{pricing.finalTotal.toLocaleString()}</p>
+                                <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">PAY NOW</p>
+                                <p className="font-bold text-[#FF5B00] mt-0.5">₹{pricing.finalTotal.toLocaleString()}</p>
                               </div>
                             </>
                           ) : (
                             <>
                               <div>
-                                <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">TOTAL TRIP COST (INC. GST)</p>
-                                <p className="font-bold text-slate-800 mt-1">₹{pricing.fullPackageTotal.toLocaleString()}</p>
+                                <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">TOTAL TRIP COST (INC. GST)</p>
+                                <p className="font-bold text-slate-800 mt-0.5">₹{pricing.fullPackageTotal.toLocaleString()}</p>
                               </div>
                               <div>
-                                <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">BOOKING DEPOSIT (BASE)</p>
-                                <p className="font-bold text-slate-800 mt-1">₹{pricing.partialBaseAmount.toLocaleString()}</p>
+                                <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">BOOKING DEPOSIT (BASE)</p>
+                                <p className="font-bold text-slate-800 mt-0.5">₹{pricing.partialBaseAmount.toLocaleString()}</p>
                               </div>
                               <div>
-                                <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">DEPOSIT GST @ {tripData?.gstPercentage ?? 5}%</p>
-                                <p className="font-bold text-slate-800 mt-1">₹{pricing.depositGst.toLocaleString()}</p>
+                                <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">DEPOSIT GST @ {tripData?.gstPercentage ?? 5}%</p>
+                                <p className="font-bold text-slate-800 mt-0.5">₹{pricing.depositGst.toLocaleString()}</p>
                               </div>
                               <div>
-                                <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">PAY NOW</p>
-                                <p className="font-bold text-[#FF5B00] mt-1">₹{pricing.finalTotal.toLocaleString()}</p>
+                                <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">PAY NOW</p>
+                                <p className="font-bold text-[#FF5B00] mt-0.5">₹{pricing.finalTotal.toLocaleString()}</p>
                               </div>
                               <div>
-                                <p className="text-[9px] text-slate-400 uppercase font-extrabold tracking-widest">REMAINING BALANCE</p>
-                                <p className="font-extrabold text-rose-600 mt-1">₹{pricing.remainingBalance.toLocaleString()}</p>
+                                <p className="text-[8px] text-slate-400 uppercase font-extrabold tracking-widest">REMAINING BALANCE</p>
+                                <p className="font-extrabold text-rose-600 mt-0.5">₹{pricing.remainingBalance.toLocaleString()}</p>
                               </div>
                             </>
                           )}
@@ -1306,59 +1388,59 @@ function BookingForm() {
                       </div>
 
                       {/* Section 1: Lead Contact Details */}
-                      <div className="bg-white border border-slate-205 rounded-2xl p-4.5 space-y-3 shadow-sm">
+                      <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 shadow-xs">
                         <div className="flex justify-between items-center">
-                          <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">1. Lead Contact</h5>
+                          <h5 className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">1. Lead Contact</h5>
                           <button
                             type="button"
                             onClick={() => setCurrentStep(1)}
-                            className="text-[10px] text-[#FF5B00] hover:text-[#E65200] font-bold flex items-center gap-1 transition-all"
+                            className="text-[9px] text-[#FF5B00] hover:text-[#E65200] font-bold flex items-center gap-1 transition-all"
                           >
                             Edit
                           </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                           <div className="min-w-0">
-                            <p className="text-[9px] text-slate-400 uppercase font-medium">Name</p>
+                            <p className="text-[8px] text-slate-400 uppercase font-medium">Name</p>
                             <p className="font-bold text-slate-800 capitalize break-words">{formData.name}</p>
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[9px] text-slate-400 uppercase font-medium">Phone</p>
+                            <p className="text-[8px] text-slate-400 uppercase font-medium">Phone</p>
                             <p className="font-bold text-slate-800 break-words">{formData.phone}</p>
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[9px] text-slate-400 uppercase font-medium">Email</p>
+                            <p className="text-[8px] text-slate-400 uppercase font-medium">Email</p>
                             <p className="font-bold text-slate-800 break-all">{formData.email || 'N/A'}</p>
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[9px] text-slate-400 uppercase font-medium">City/State</p>
+                            <p className="text-[8px] text-slate-400 uppercase font-medium">City/State</p>
                             <p className="font-bold text-slate-800 capitalize break-words">{formData.cityState}</p>
                           </div>
                         </div>
                       </div>
 
                       {/* Section 3: Traveler Details */}
-                      <div className="bg-white border border-slate-205 rounded-2xl p-4.5 space-y-3 shadow-sm">
+                      <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 shadow-xs">
                         <div className="flex justify-between items-center">
-                          <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">3. Traveler Details ({formData.participants})</h5>
+                          <h5 className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">3. Traveler Details ({formData.participants})</h5>
                           <button
                             type="button"
                             onClick={() => setCurrentStep(2)}
-                            className="text-[10px] text-[#FF5B00] hover:text-[#E65200] font-bold flex items-center gap-1 transition-all"
+                            className="text-[9px] text-[#FF5B00] hover:text-[#E65200] font-bold flex items-center gap-1 transition-all"
                           >
                             Edit
                           </button>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           {formData.participantsList.map((t, i) => (
-                            <div key={i} className="flex flex-col md:flex-row md:items-center justify-between border border-slate-100 bg-slate-50/50 rounded-xl px-4 py-3 gap-2">
+                            <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between border border-slate-100 bg-slate-50/50 rounded-lg px-3 py-2 gap-1.5">
                               <div>
                                 <p className="text-xs font-bold text-slate-800 capitalize">{t.name || `Traveler ${i+1}`}</p>
-                                <p className="text-[10px] text-slate-400 font-medium">Mobile: {t.phone} • {t.gender} • Age {t.age || 'N/A'}</p>
+                                <p className="text-[9px] text-slate-400 font-medium">Mobile: {t.phone} • {t.gender} • Age {t.age || 'N/A'}</p>
                               </div>
-                              <div className="text-left md:text-right shrink-0">
-                                <span className="inline-block text-[9px] font-bold text-slate-500 bg-white border border-slate-200/60 px-2 py-0.5 rounded mr-1 capitalize">{t.roomSharing}</span>
-                                <span className="inline-block text-[9px] font-bold text-slate-500 bg-white border border-slate-200/60 px-2 py-0.5 rounded capitalize">{t.trainOption}</span>
+                              <div className="text-left sm:text-right shrink-0">
+                                <span className="inline-block text-[8px] font-bold text-slate-500 bg-white border border-slate-200/60 px-1.5 py-0.5 rounded mr-1 capitalize">{t.roomSharing}</span>
+                                <span className="inline-block text-[8px] font-bold text-slate-500 bg-white border border-slate-200/60 px-1.5 py-0.5 rounded capitalize">{t.trainOption}</span>
                               </div>
                             </div>
                           ))}
@@ -1367,27 +1449,27 @@ function BookingForm() {
                     </div>
 
                     {/* Step 4: Mandatory T&C + optional WhatsApp opt-in checkboxes */}
-                    <div className="space-y-4 pt-2">
-                      <label className="flex items-start gap-3 cursor-pointer text-xs select-none">
+                    <div className="space-y-3 pt-1">
+                      <label className="flex items-start gap-2.5 cursor-pointer text-xs select-none">
                         <input
                           type="checkbox"
-                          className="mt-1 accent-[#FF5B00] rounded focus:ring-offset-slate-950"
+                          className="mt-0.5 accent-[#FF5B00] rounded focus:ring-offset-slate-950"
                           checked={acceptTerms}
                           onChange={(e) => setAcceptTerms(e.target.checked)}
                         />
-                        <span className={cn("font-bold text-slate-700", !acceptTerms && "text-slate-500")}>
+                        <span className={cn("font-bold text-slate-700 text-[11px]", !acceptTerms && "text-slate-505")}>
                           I agree to the terms and conditions and trip reservation guidelines * (Mandatory)
                         </span>
                       </label>
 
-                      <label className="flex items-start gap-3 cursor-pointer text-xs select-none">
+                      <label className="flex items-start gap-2.5 cursor-pointer text-xs select-none">
                         <input
                           type="checkbox"
-                          className="mt-1 accent-[#FF5B00] rounded focus:ring-offset-slate-950"
+                          className="mt-0.5 accent-[#FF5B00] rounded focus:ring-offset-slate-950"
                           checked={whatsappOptIn}
                           onChange={(e) => setWhatsappOptIn(e.target.checked)}
                         />
-                        <span className="font-bold text-slate-700">
+                        <span className="font-bold text-slate-700 text-[11px]">
                           Opt-in to receive booking updates and itinerary information directly on WhatsApp (Optional)
                         </span>
                       </label>
@@ -1407,124 +1489,56 @@ function BookingForm() {
             )}
 
             {/* Nav buttons */}
-            <div className="flex justify-start items-center gap-4">
+            <div className="flex justify-start items-center gap-4 mt-6">
               {currentStep > 1 && (
                 <button
                   onClick={handlePrev}
                   type="button"
-                  className="bg-white border border-slate-200 text-slate-700 rounded-2xl py-4.5 px-8 font-bold capitalize tracking-widest text-[10px] flex items-center gap-2 hover:bg-slate-50 transition-all active:scale-95"
+                  className="bg-white border border-slate-200 text-slate-700 rounded-xl py-3 px-6 font-bold capitalize tracking-widest text-[10px] flex items-center gap-2 hover:bg-slate-50 transition-all active:scale-95 shadow-xs"
                 >
                   <ChevronLeft size={14} /> Back
                 </button>
               )}
+
+              {/* Desktop Only Next Action Button */}
+              <div className="hidden lg:block ml-auto">
+                {currentStep < 4 ? (
+                  <button
+                    onClick={handleNext}
+                    type="button"
+                    className="bg-[#FF5B00] hover:bg-[#E65200] text-white rounded-xl py-3 px-6 font-extrabold uppercase tracking-widest text-[10px] flex items-center gap-1.5 shadow-md shadow-[#FF5B00]/15 transition-all active:scale-95"
+                  >
+                    Continue <ChevronRight size={12} strokeWidth={3} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleFinalSubmit}
+                    disabled={loading}
+                    type="button"
+                    className="bg-[#FF5B00] hover:bg-[#E65200] text-white rounded-xl py-3 px-6 font-extrabold uppercase tracking-widest text-[10px] flex items-center gap-1.5 shadow-md shadow-[#FF5B00]/25 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {loading ? <Loader2 className="animate-spin w-3 h-3" /> : <ShieldCheck size={12} strokeWidth={3} />}
+                    {loading ? 'Processing...' : 'Confirm'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Right Area: Sticky Desktop Summary Sidebar */}
-          <div className="lg:col-span-5">
-            <div className="sticky top-10 space-y-6">
+          <div className="hidden lg:block lg:col-span-4">
+            <div className="sticky top-24 space-y-4">
               
-                            {/* Summary Card */}
-              <div className="bg-white border border-slate-200/80 rounded-[2.5rem] overflow-hidden shadow-md">
-                <div className="p-6 md:p-8 space-y-6">
-                  
-                                    <div className="space-y-3">
-                    <span className="text-[9px] text-[#FF5B00] font-extrabold uppercase tracking-widest block">
-                      LIVE EXPEDITION SUMMARY
-                    </span>
-                    <h3 className="text-xl font-black capitalize tracking-tight text-slate-900 leading-tight">
-                      {initialParams.tripName || 'Trip Checkout'}
-                    </h3>
-                  </div>
-
-                  <div className="h-px bg-slate-100" />
-
-                                    {/* High Visual Priority Section */}
-                  <div className="space-y-3">
-                    {/* Visual Priority 1: Departure Date */}
-                    <div className="bg-amber-500/10 border-l-4 border-amber-500 p-3.5 rounded-r-2xl space-y-1">
-                      <span className="text-[9px] font-extrabold uppercase tracking-widest text-amber-800 block">DEPARTURE DATE</span>
-                      <p className="text-sm font-bold text-slate-900 leading-tight">{initialParams.date || 'Flexible'}</p>
-                    </div>
-
-                    {/* Visual Priority 2: Package Price */}
-                    <div className="bg-[#FF5B00]/5 border-l-4 border-[#FF5B00] p-3.5 rounded-r-2xl space-y-1">
-                      <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] block">PACKAGE PRICE</span>
-                      <p className="text-base font-bold text-slate-900 leading-tight">₹{pricing.originalTotalBase.toLocaleString()}</p>
-                    </div>
-                  </div>
-
-                  {/* General Details List */}
-                  <div className="space-y-3 text-xs border-t border-b border-slate-100 py-4">
-                    <div className="flex items-start justify-between text-slate-650 gap-2 min-w-0">
-                      <span className="flex items-center font-extrabold shrink-0 text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">JOINING CITY</span>
-                      <span className="font-extrabold text-slate-900 capitalize text-right break-all max-w-[60%] inline-block leading-tight">{selectedCity?.cityName || 'Delhi'}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-slate-650 gap-2 min-w-0">
-                      <span className="flex items-center font-extrabold shrink-0 text-[10px] uppercase tracking-wider text-slate-500">TRAVELERS</span>
-                      <span className="font-extrabold text-slate-900 shrink-0">{formData.participants} Pax</span>
-                    </div>
-
-                    {/* Per-traveler options breakdown */}
-                    {formData.participantsList.some(t => t.roomSharing !== 'Triple Sharing' || (!isDirectJoin && t.trainOption !== 'Sleeper')) && (
-                      <div className="space-y-1.5 pl-3 border-l-2 border-slate-200">
-                        {formData.participantsList.map((t, i) => {
-                          const trainOpts = tripData?.travelOptions?.length > 0 ? tripData.travelOptions : [
-                            { label: 'Sleeper', priceDelta: 0 }, { label: '3AC', priceDelta: 2000 }, { label: 'No Train', priceDelta: -1500 }
-                          ];
-                          const roomOpts = tripData?.roomOptions?.length > 0 ? tripData.roomOptions : [
-                            { label: 'Triple Sharing', priceDelta: 0 }, { label: 'Double Sharing', priceDelta: 1500 }, { label: 'Quad Sharing', priceDelta: -500 }
-                          ];
-                          const trainDelta = isDirectJoin ? 0 : (trainOpts.find((o: any) => o.label === t.trainOption)?.priceDelta || 0);
-                          const roomDelta = roomOpts.find((o: any) => o.label === t.roomSharing)?.priceDelta || 0;
-                          if (trainDelta === 0 && roomDelta === 0) return null;
-                          return (
-                            <div key={i} className="text-[10px] text-slate-400 space-y-0.5">
-                              <span className="font-bold capitalize text-slate-500">Traveler {i+1} Adjustments</span>
-                              {roomDelta !== 0 && <div className="flex justify-between gap-2"><span>{t.roomSharing}</span><span className={roomDelta > 0 ? 'text-slate-600 font-bold' : 'text-emerald-600 font-bold'}>{roomDelta > 0 ? '+' : ''}₹{roomDelta.toLocaleString()}</span></div>}
-                              {!isDirectJoin && trainDelta !== 0 && <div className="flex justify-between gap-2"><span>{t.trainOption}</span><span className={trainDelta > 0 ? 'text-slate-600 font-bold' : 'text-emerald-600 font-bold'}>{trainDelta > 0 ? '+' : ''}₹{trainDelta.toLocaleString()}</span></div>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between text-slate-650 gap-2 min-w-0">
-                      <span className="flex items-center font-extrabold shrink-0 text-[10px] uppercase tracking-wider text-slate-500">GST @ {tripData?.gstPercentage ?? 5}%</span>
-                      <span className="font-extrabold text-slate-900 shrink-0">+₹{pricing.fullPackageGst.toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  {/* Calculations & Total */}
-                  <div className="space-y-4 pt-1">
-                    {/* Visual Priority 3: Pay Now / Grand Total */}
-                    <div className="bg-gradient-to-br from-[#FF5B00] to-[#FF8A00] p-5 rounded-3xl flex flex-col justify-between text-white shadow-xl shadow-[#FF5B00]/15">
-                      <span className="text-[9px] font-extrabold uppercase tracking-widest opacity-90 block">PAY NOW</span>
-                      <div className="flex items-end justify-between mt-1">
-                        <span className="text-3xl font-black tracking-tighter">₹{pricing.finalTotal.toLocaleString()}</span>
-                      </div>
-                      <p className="text-[10px] font-semibold opacity-80 mt-1">₹{(pricing.finalTotal - pricing.depositGst).toLocaleString()} + ₹{pricing.depositGst.toLocaleString()} GST</p>
-                    </div>
-
-                    {paymentMode === 'Partial Payment' && (
-                      <div className="flex justify-between items-center bg-slate-50 border border-slate-200/60 rounded-2xl px-4 py-3.5 text-xs">
-                        <span className="flex items-center font-extrabold text-[10px] uppercase tracking-wider text-slate-500">REMAINING BALANCE</span>
-                        <span className="font-black text-slate-900 text-sm">₹{pricing.remainingBalance.toLocaleString()}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              {renderSummaryCard()}
 
               {/* Badges footer */}
               <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center gap-1 shadow-sm">
-                  <ShieldCheck className="text-[#FF5B00]" size={16} />
+                <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center gap-1 shadow-xs">
+                  <ShieldCheck className="text-[#FF5B00]" size={14} />
                   <span className="text-[9px] font-bold capitalize tracking-wider text-slate-700">100% Secured</span>
                 </div>
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center gap-1 shadow-sm">
-                  <Lock className="text-[#FF5B00]" size={16} />
+                <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center gap-1 shadow-xs">
+                  <Lock className="text-[#FF5B00]" size={14} />
                   <span className="text-[9px] font-bold capitalize tracking-wider text-slate-700">SSL Checkout</span>
                 </div>
               </div>
@@ -1536,7 +1550,7 @@ function BookingForm() {
       </div>
 
       {/* Sticky Live Price Bar (Mobile & Desktop) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] py-3 px-6 z-40">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] py-3 px-6 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div>
             <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#FF5B00] block">LIVE PACKAGE PRICE</span>
@@ -1577,7 +1591,7 @@ function BookingForm() {
 
 export default function BookPage() {
   return (
-    <main className="min-h-screen bg-[#FAFAFA]">
+    <main className="bg-[#FAFAFA]">
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]"><Loader2 className="animate-spin text-[#FF5B00] w-10 h-10" /></div>}>
         <BookingForm />
       </Suspense>

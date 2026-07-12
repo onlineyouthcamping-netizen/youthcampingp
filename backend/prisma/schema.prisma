@@ -447,6 +447,11 @@ model BookingLink {
   customTime   String?
   headerTitle  String?
   headerSubtitle String?
+  customerName   String?
+  customerPhone  String?
+  customerEmail  String?
+  travelerCount  Int?
+  internalNote   String?
 
   expiresAt DateTime?
   status    String   @default("active") // active|revoked|expired
