@@ -1043,7 +1043,7 @@ exports.createBooking = async (req, res, next) => {
 
 exports.updateBooking = async (req, res, next) => {
   try {
-    const { email, ...updateData } = req.body;
+    const { email, reason, ...updateData } = req.body;
     delete updateData.id; delete updateData.tenantId;
 
     // Add email back to updateData if it exists
@@ -1179,6 +1179,14 @@ exports.updateBooking = async (req, res, next) => {
     if (updateData.salesAdminId && updateData.salesAdminId !== beforeBooking.salesAdminId) detailParts.push(`salesperson reassigned`);
     if (updateData.notes !== undefined && updateData.notes !== beforeBooking.notes) detailParts.push(`notes updated`);
     if (req.body.passengers !== undefined) detailParts.push(`co-travelers updated`);
+    if (updateData.departureDate !== undefined) {
+      const newDepStr = formatDateStr(updateData.departureDate);
+      const oldDepStr = formatDateStr(beforeBooking.departureDate);
+      if (newDepStr !== oldDepStr) {
+        const reasonSuffix = reason ? ` (Reason: ${reason})` : '';
+        detailParts.push(`departure date changed to ${newDepStr}${reasonSuffix}`);
+      }
+    }
     
     const activityDetails = detailParts.length > 0 ? `Booking updated: ${detailParts.join(', ')}` : 'Booking details updated';
 
