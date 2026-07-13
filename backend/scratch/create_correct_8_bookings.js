@@ -47,7 +47,12 @@ async function run() {
         advancePaid: 5000,
         remainingAmount: 18000,
         upiReference: "UPI DEVARSH",
-        persons: [{ name: "Jeel", age: 23, gender: "Male" }]
+        persons: [{ name: "Jeel", age: 23, gender: "Male" }],
+        roomDetails: {
+          personsRoomDetails: {
+            "Jeel": { roomType: "Triple Sharing", coupleWith: "", roomNo: "Room 2" }
+          }
+        }
       },
       // Booking 2: Vatsal (2 Pax)
       {
@@ -62,7 +67,13 @@ async function run() {
         persons: [
           { name: "Vatsal", age: 22, gender: "Male" },
           { name: "Shubham", age: 23, gender: "Male" }
-        ]
+        ],
+        roomDetails: {
+          personsRoomDetails: {
+            "Vatsal": { roomType: "Triple Sharing", coupleWith: "", roomNo: "Room 2" },
+            "Shubham": { roomType: "Triple Sharing", coupleWith: "", roomNo: "Room 2" }
+          }
+        }
       },
       // Booking 3: Diya (1 Pax)
       {
@@ -74,7 +85,12 @@ async function run() {
         advancePaid: 5000,
         remainingAmount: 18000,
         upiReference: "UPI DEVARSH",
-        persons: [{ name: "Diya", age: 19, gender: "Female" }]
+        persons: [{ name: "Diya", age: 19, gender: "Female" }],
+        roomDetails: {
+          personsRoomDetails: {
+            "Diya": { roomType: "Friends", coupleWith: "", roomNo: "Room 3" }
+          }
+        }
       },
       // Booking 4: Yashvi (1 Pax)
       {
@@ -86,7 +102,12 @@ async function run() {
         advancePaid: 5000,
         remainingAmount: 18000,
         upiReference: "UPI",
-        persons: [{ name: "Yashvi", age: 19, gender: "Female" }]
+        persons: [{ name: "Yashvi", age: 19, gender: "Female" }],
+        roomDetails: {
+          personsRoomDetails: {
+            "Yashvi": { roomType: "Friends", coupleWith: "", roomNo: "Room 3" }
+          }
+        }
       },
       // Booking 5: Janki + Nishit Couple Booking (2 Pax)
       {
@@ -96,7 +117,7 @@ async function run() {
         gender: "Female",
         phone: "9054057893",
         advancePaid: 10000,
-        remainingAmount: 42000, // 18000 (Janki) + 24000 (Nishit)
+        remainingAmount: 42000,
         upiReference: "UPI DEVARSH",
         adminNotes: "Couple Room requested",
         persons: [
@@ -120,7 +141,12 @@ async function run() {
         advancePaid: 5000,
         remainingAmount: 18750,
         upiReference: "UPI",
-        persons: [{ name: "Manasvi", age: 27, gender: "Female" }]
+        persons: [{ name: "Manasvi", age: 27, gender: "Female" }],
+        roomDetails: {
+          personsRoomDetails: {
+            "Manasvi": { roomType: "Friends", coupleWith: "", roomNo: "Room 4" }
+          }
+        }
       },
       // Booking 7: Tanvi + Rajveer + Manthan (3 Pax)
       {
@@ -136,7 +162,14 @@ async function run() {
           { name: "Tanvi", age: 21, gender: "Female" },
           { name: "Rajveer", age: 19, gender: "Male" },
           { name: "Manthan", age: 19, gender: "Male" }
-        ]
+        ],
+        roomDetails: {
+          personsRoomDetails: {
+            "Tanvi": { roomType: "Friends", coupleWith: "", roomNo: "Room 4" },
+            "Rajveer": { roomType: "Friends", coupleWith: "", roomNo: "Room 5" },
+            "Manthan": { roomType: "Friends", coupleWith: "", roomNo: "Room 5" }
+          }
+        }
       },
       // Booking 8: Darshana + Jatinsinh + Rutvik + Foram (4 Pax)
       {
@@ -153,7 +186,15 @@ async function run() {
           { name: "Jatinsinh", age: 45, gender: "Male" },
           { name: "Rutvik", age: 23, gender: "Male" },
           { name: "Foram", age: 23, gender: "Female" }
-        ]
+        ],
+        roomDetails: {
+          personsRoomDetails: {
+            "Darshana": { roomType: "Friends", coupleWith: "", roomNo: "Room 7" },
+            "Jatinsinh": { roomType: "Friends", coupleWith: "", roomNo: "Room 6" },
+            "Rutvik": { roomType: "Friends", coupleWith: "", roomNo: "Room 6" },
+            "Foram": { roomType: "Friends", coupleWith: "", roomNo: "Room 7" }
+          }
+        }
       }
     ];
 
