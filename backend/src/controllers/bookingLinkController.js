@@ -163,7 +163,7 @@ exports.createBookingLink = async (req, res, next) => {
         status: 'active',
         tokenHash,
         tokenPrefix,
-        shareUrl: `${getBaseUrl()}/book/link/${token}?p=${signedMetadata.payload}&s=${signedMetadata.signature}`,
+        shareUrl: `${getBaseUrl()}/b/${token}`,
       },
     });
 
