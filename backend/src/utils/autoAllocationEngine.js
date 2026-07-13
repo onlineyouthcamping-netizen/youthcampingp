@@ -384,7 +384,7 @@ function runAutoAllocation(bookings, fleet, roomInventory) {
   }
 
   // ── WHATSAPP TEXT FORMATTING ──
-  const whatsappTempoText = buildWhatsappTempoText(vehicleAllocations, fleetStatus);
+  const whatsappTempoText = buildWhatsappTempoText(vehicleAllocations, fleetStatus, flags);
 
   let whatsappRoomText = `🏨 *HOTEL ROOM ALLOCATION LIST*\n\n`;
   const roomMap = {};
@@ -410,9 +410,9 @@ function runAutoAllocation(bookings, fleet, roomInventory) {
   };
 }
 
-function buildWhatsappTempoText(vehicleAllocations = [], fleetStatus = []) {
+function buildWhatsappTempoText(vehicleAllocations = [], fleetStatus = [], flags = []) {
   let whatsappTempoText = `🚌 *TEMPO & VEHICLE ALLOCATION LIST*\n\n`;
-  
+
   // Group allocations by fleetId
   const fleetMap = {};
   vehicleAllocations.forEach(va => {
@@ -420,27 +420,42 @@ function buildWhatsappTempoText(vehicleAllocations = [], fleetStatus = []) {
     fleetMap[va.fleetId].push(va);
   });
 
-  if (fleetStatus.length > 0) {
-    fleetStatus.forEach((f, idx) => {
-      const allocs = fleetMap[f.id] || [];
-      whatsappTempoText += `*${f.vehicleType.toUpperCase()} ${idx + 1} (${f.capacity} Seater)* — ${allocs.length}/${f.capacity} filled\n`;
-      allocs.forEach((t, i) => {
-        const seatStr = t.seatNumber ? ` [Seat #${t.seatNumber}]` : ` [Seat #${i + 1}]`;
-        whatsappTempoText += `${i + 1}. ${t.travelerName}${seatStr}\n`;
-      });
-      whatsappTempoText += `\n`;
+  fleetStatus.forEach((f, idx) => {
+    const allocs = fleetMap[f.id] || [];
+    const emptySeats = f.capacity - allocs.length;
+    const isFull = emptySeats === 0;
+
+    whatsappTempoText += `${isFull ? "" : "⚠️ "}*TEMPO ${idx + 1} (${f.capacity} Seater)* — ${allocs.length}/${f.capacity} filled${emptySeats > 0 ? ` (${emptySeats} seats empty)` : ""}\n`;
+
+    // Group allocations within this vehicle by bookingId
+    const groupsInVehicle = {};
+    allocs.forEach(va => {
+      if (!groupsInVehicle[va.bookingId]) groupsInVehicle[va.bookingId] = [];
+      groupsInVehicle[va.bookingId].push(va.travelerName);
     });
-  } else {
-    // Fallback if fleetStatus array not provided
-    Object.entries(fleetMap).forEach(([fleetId, allocs], idx) => {
-      whatsappTempoText += `*VEHICLE ${idx + 1}* — ${allocs.length} assigned\n`;
-      allocs.forEach((t, i) => {
-        const seatStr = t.seatNumber ? ` [Seat #${t.seatNumber}]` : ` [Seat #${i + 1}]`;
-        whatsappTempoText += `${i + 1}. ${t.travelerName}${seatStr}\n`;
-      });
-      whatsappTempoText += `\n`;
+
+    const groupEntries = Object.entries(groupsInVehicle);
+    groupEntries.forEach(([bookingId, names], gIdx) => {
+      const isLast = gIdx === groupEntries.length - 1;
+      const prefix = isLast ? "└── " : "├── ";
+
+      if (names.length > 1) {
+        whatsappTempoText += `${prefix}Group ${bookingId} (${names.length} persons) — ${names.join(", ")}\n`;
+      } else {
+        whatsappTempoText += `${prefix}Solo — ${names[0]}\n`;
+      }
+    });
+
+    whatsappTempoText += `\n`;
+  });
+
+  if (flags.length > 0) {
+    whatsappTempoText += `🚨 *FLAGS (${flags.length} issues need manual review)*\n`;
+    flags.forEach((flag, fIdx) => {
+      whatsappTempoText += `${fIdx + 1}. ${flag.replace(/^🚨\s*|^⚠️\s*|^ℹ️\s*/, "")}\n`;
     });
   }
+
   return whatsappTempoText.trim();
 }
 
