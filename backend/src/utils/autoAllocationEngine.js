@@ -393,12 +393,9 @@ function runAutoAllocation(bookings, fleet, roomInventory) {
     roomMap[r.roomNumber].members.push(r.travelerName);
   });
 
-  Object.entries(roomMap).forEach(([roomNum, details]) => {
-    whatsappRoomText += `*${roomNum} (${details.type} - ${details.gender})*\n`;
-    details.members.forEach((m) => {
-      whatsappRoomText += `• ${m}\n`;
-    });
-    whatsappRoomText += `\n`;
+  Object.entries(roomMap).forEach(([roomNum, details]: any) => {
+    const genderLabel = details.gender === 'BOYS' ? 'Boys' : details.gender === 'GIRLS' ? 'Girls' : details.gender === 'COUPLE' ? 'Couple' : 'Group';
+    whatsappRoomText += `*${roomNum}* — ${details.members.join(", ")} (${genderLabel})\n`;
   });
 
   return {
@@ -422,35 +419,12 @@ function buildWhatsappTempoText(vehicleAllocations = [], fleetStatus = [], flags
 
   fleetStatus.forEach((f, idx) => {
     const allocs = fleetMap[f.id] || [];
-    const emptySeats = f.capacity - allocs.length;
-    const isFull = emptySeats === 0;
-
-    whatsappTempoText += `${isFull ? "" : "⚠️ "}*TEMPO ${idx + 1} (${f.capacity} Seater)* — ${allocs.length}/${f.capacity} filled${emptySeats > 0 ? ` (${emptySeats} seats empty)` : ""}\n`;
-
-    // Group allocations within this vehicle by bookingId
-    const groupsInVehicle = {};
-    allocs.forEach(va => {
-      if (!groupsInVehicle[va.bookingId]) groupsInVehicle[va.bookingId] = [];
-      groupsInVehicle[va.bookingId].push(va.travelerName);
-    });
-
-    const groupEntries = Object.entries(groupsInVehicle);
-    groupEntries.forEach(([bookingId, names], gIdx) => {
-      const isLast = gIdx === groupEntries.length - 1;
-      const prefix = isLast ? "└── " : "├── ";
-
-      if (names.length > 1) {
-        whatsappTempoText += `${prefix}Group ${bookingId} (${names.length} persons) — ${names.join(", ")}\n`;
-      } else {
-        whatsappTempoText += `${prefix}Solo — ${names[0]}\n`;
-      }
-    });
-
-    whatsappTempoText += `\n`;
+    const names = allocs.map(t => t.travelerName);
+    whatsappTempoText += `*Tempo ${idx + 1}* — ${names.join(", ")}\n`;
   });
 
   if (flags.length > 0) {
-    whatsappTempoText += `🚨 *FLAGS (${flags.length} issues need manual review)*\n`;
+    whatsappTempoText += `\n🚨 *FLAGS (${flags.length} issues need manual review)*\n`;
     flags.forEach((flag, fIdx) => {
       whatsappTempoText += `${fIdx + 1}. ${flag.replace(/^🚨\s*|^⚠️\s*|^ℹ️\s*/, "")}\n`;
     });
