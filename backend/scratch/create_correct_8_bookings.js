@@ -184,7 +184,7 @@ async function run() {
           payment_status: b.remainingAmount === 0 ? "paid" : "partially_paid",
           upi_reference: b.upiReference,
           adminNotes: b.adminNotes || null,
-          departureDate: new Date("2026-07-02"),
+          departureDate: new Date("2026-07-14"),
           passengers: {
             details: {
               gstAmount: 0,
