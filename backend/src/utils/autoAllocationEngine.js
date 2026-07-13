@@ -393,7 +393,7 @@ function runAutoAllocation(bookings, fleet, roomInventory) {
     roomMap[r.roomNumber].members.push(r.travelerName);
   });
 
-  Object.entries(roomMap).forEach(([roomNum, details]: any) => {
+  Object.entries(roomMap).forEach(([roomNum, details]) => {
     const genderLabel = details.gender === 'BOYS' ? 'Boys' : details.gender === 'GIRLS' ? 'Girls' : details.gender === 'COUPLE' ? 'Couple' : 'Group';
     whatsappRoomText += `*${roomNum}* — ${details.members.join(", ")} (${genderLabel})\n`;
   });
