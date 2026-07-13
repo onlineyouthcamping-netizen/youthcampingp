@@ -50,8 +50,8 @@ async function run() {
         "Shubham": { roomType: "Triple Sharing", coupleWith: "", roomNo: "Room 2" },
         "Diya": { roomType: "Triple Sharing", coupleWith: "", roomNo: "Room 3" },
         "Yashvi": { roomType: "Triple Sharing", coupleWith: "", roomNo: "Room 3" },
-        "Janki": { roomType: "Couple", coupleWith: "Nishit", roomNo: "Room 1" },
-        "Nishit": { roomType: "Couple", coupleWith: "Janki", roomNo: "Room 1" }
+        "Janki": { roomType: "Double", coupleWith: "Nishit", roomNo: "Room 1" },
+        "Nishit": { roomType: "Double", coupleWith: "Janki", roomNo: "Room 1" }
       }
     };
 
