@@ -1,4 +1,4 @@
-const xlsx = require('/Users/parthpatel/Documents/youthcamping_os/backend/node_modules/xlsx');
+const xlsx = require('xlsx');
 const { prisma } = require('../lib/prisma');
 
 // Helper to normalize phone numbers
