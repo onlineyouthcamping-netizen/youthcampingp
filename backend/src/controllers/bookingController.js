@@ -2173,3 +2173,109 @@ exports.deletePassengerDocument = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.cancelBookingWithRefund = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { reason, cancellationCharges, refundAmount, refundPaymentMode } = req.body;
+    const tenantId = req.user.tenantId;
+
+    const booking = await prisma.booking.findFirst({
+      where: { id, tenantId }
+    });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found.' });
+    }
+
+    const charges = parseFloat(cancellationCharges) || 0;
+    const refund = parseFloat(refundAmount) || 0;
+
+    // 1. Update Booking status to cancelled, record cancellation charges and refund amount
+    const updatedBooking = await prisma.booking.update({
+      where: { id },
+      data: {
+        status: 'cancelled',
+        paymentStatus: 'Cancelled',
+        notes: `${booking.notes || ''}\n[Cancellation Reason: ${reason || 'Not provided'} | Charges: ₹${charges} | Refunded: ₹${refund} (${refundPaymentMode || 'UPI'})]`.trim(),
+        remainingAmount: 0
+      }
+    });
+
+    // 2. Automatically Cancel associated Train Tickets
+    const trainTickets = await prisma.trainTicket.findMany({
+      where: { bookingId: booking.bookingId, tenantId }
+    });
+
+    if (trainTickets.length > 0) {
+      await prisma.trainTicket.updateMany({
+        where: { bookingId: booking.bookingId, tenantId },
+        data: {
+          ticketStatus: 'CANCELLED',
+          cancellationReason: `Booking Cancelled: ${reason || 'No reason specified'}`,
+          refundAmount: refund / trainTickets.length
+        }
+      });
+
+      // Log history for each ticket
+      for (const ticket of trainTickets) {
+        await prisma.trainTicketHistory.create({
+          data: {
+            ticketId: ticket.id,
+            action: 'CANCEL',
+            fromStatus: ticket.ticketStatus,
+            toStatus: 'CANCELLED',
+            notes: `Auto-cancelled due to booking cancellation. Reason: ${reason || 'None'}`,
+            performedById: req.user.id
+          }
+        });
+      }
+    }
+
+    // 3. Record Refund in Accounting Ledger (if refund amount > 0)
+    if (refund > 0) {
+      await prisma.accountingEntry.create({
+        data: {
+          tenantId,
+          type: 'REFUND',
+          amount: refund,
+          category: 'REFUNDS',
+          paymentMode: refundPaymentMode || 'UPI',
+          status: 'CLEARED',
+          referenceId: booking.bookingId,
+          description: `Refund for Cancelled Booking #${booking.bookingId} (${booking.fullName}). Reason: ${reason || 'Not specified'}`,
+          date: new Date(),
+          createdById: req.user.id
+        }
+      });
+    }
+
+    // 4. Log booking activity
+    await logBookingActivity({
+      bookingId: id,
+      action: 'STATUS_CHANGE',
+      details: `Booking Cancelled. Refund of ₹${refund} processed via ${refundPaymentMode || 'UPI'}. Reason: ${reason || 'None'}.`,
+      performedByAdminId: req.user.id
+    });
+
+    // 5. Trigger email notification (cancellation)
+    try {
+      const { sendEmail } = require('../services/emailService');
+      await sendEmail(booking.id, 'cancellation', {
+        reason: reason || 'Not specified',
+        refundAmount: refund,
+        cancellationCharges: charges
+      });
+    } catch (e) {
+      console.error('Failed to send cancellation email:', e.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'Booking cancelled, tickets cancelled, and refund recorded successfully.',
+      booking: updatedBooking
+    });
+  } catch (error) {
+    next(error);
+  }
+};

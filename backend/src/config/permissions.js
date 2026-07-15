@@ -70,7 +70,16 @@ const PERMISSIONS = [
   'emails.send',
   'emails.send_bulk',
   'emails.manage_templates',
-  'emails.view_logs'
+  'emails.view_logs',
+  'vendors.view',
+  'vendors.create',
+  'vendors.edit',
+  'vendors.import',
+  'vendors.activate',
+  'package.vendor.select',
+  'ops.vendor.allocate',
+  'ops.vendor.confirm',
+  'ops.vendor.rate.override'
 ];
 
 const ROLE_PERMISSIONS = {
@@ -127,7 +136,16 @@ const ROLE_PERMISSIONS = {
     'emails.send',
     'emails.send_bulk',
     'emails.manage_templates',
-    'emails.view_logs'
+    'emails.view_logs',
+    'vendors.view',
+    'vendors.create',
+    'vendors.edit',
+    'vendors.import',
+    'vendors.activate',
+    'package.vendor.select',
+    'ops.vendor.allocate',
+    'ops.vendor.confirm',
+    'ops.vendor.rate.override'
   ],
 
   sales: [
@@ -155,7 +173,9 @@ const ROLE_PERMISSIONS = {
     'emails.view',
     'emails.send',
     'emails.send_bulk',
-    'emails.view_logs'
+    'emails.view_logs',
+    'vendors.view',
+    'package.vendor.select'
   ],
 
   operations: [
@@ -181,7 +201,15 @@ const ROLE_PERMISSIONS = {
     'ops.checklist',
     'emails.view',
     'emails.send',
-    'emails.view_logs'
+    'emails.view_logs',
+    'vendors.view',
+    'vendors.create',
+    'vendors.edit',
+    'vendors.import',
+    'package.vendor.select',
+    'ops.vendor.allocate',
+    'ops.vendor.confirm',
+    'ops.vendor.rate.override'
   ],
 
   finance: [

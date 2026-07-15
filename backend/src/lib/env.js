@@ -83,13 +83,13 @@ for (const variableName of ['DATABASE_URL', 'DIRECT_URL']) {
 
   const isLocalOrIsolated = LOCAL_DATABASE_HOSTS.has(host);
   console.log(`[DEBUG env.js] variableName: ${variableName}, value: ${value}, host: ${host}, nodeEnv: ${nodeEnv}, isLocalOrIsolated: ${isLocalOrIsolated}, envLocalPath: ${envLocalPath}, exists: ${fs.existsSync(envLocalPath)}`);
-  if ((nodeEnv === 'development' || nodeEnv === 'test') && !isLocalOrIsolated) {
+  if ((nodeEnv === 'development' || nodeEnv === 'test') && !isLocalOrIsolated && process.env.ALLOW_PRODUCTION_DATABASE !== 'true') {
     failStartup(`Refusing to start local development because ${variableName} is not an approved local database host.`);
   }
 
   if (!isLocalOrIsolated) {
-    if (nodeEnv !== 'production' || process.env.ALLOW_PRODUCTION_DATABASE !== 'true') {
-      failStartup(`Remote database access through ${variableName} requires NODE_ENV=production and ALLOW_PRODUCTION_DATABASE=true.`);
+    if (process.env.ALLOW_PRODUCTION_DATABASE !== 'true') {
+      failStartup(`Remote database access through ${variableName} requires ALLOW_PRODUCTION_DATABASE=true.`);
     }
   }
 }

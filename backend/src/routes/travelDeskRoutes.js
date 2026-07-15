@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/travelDeskController');
 const { protect } = require('../middleware/auth');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 // ── TAB 2: TICKETING ──
 router.get('/ticketing/:tripId', protect, controller.getTicketing);
@@ -28,7 +30,8 @@ router.delete('/sops/:id', protect, controller.deleteSop);
 
 // ── TAB 5: DOCUMENTS ──
 router.get('/documents/:tripId', protect, controller.getDocuments);
-router.post('/documents', protect, controller.createDocument);
+router.post('/documents/upload', protect, upload.array('files'), controller.uploadDocuments);
+router.put('/documents/:id/status', protect, controller.reviewDocument);
 router.delete('/documents/:id', protect, controller.deleteDocument);
 
 // ── TAB 7: GALLERY ──
@@ -42,4 +45,25 @@ router.post('/notes', protect, controller.createNote);
 router.put('/notes/:id', protect, controller.updateNote);
 router.delete('/notes/:id', protect, controller.deleteNote);
 
+// ── KNOWLEDGE BASE ITEMS ──
+router.get('/knowledge-items/:tripId', protect, controller.getKnowledgeItems);
+router.put('/knowledge-items/:id', protect, controller.updateKnowledgeItem);
+
+// ── TRAVEL AI ──
+router.post('/ai/chat', protect, controller.travelAiChat);
+
+// ── ESCALATED QUESTIONS ──
+router.get('/questions/:tripId', protect, controller.getEscalatedQuestions);
+router.post('/questions', protect, controller.createEscalatedQuestion);
+router.put('/questions/:id/answer', protect, controller.answerEscalatedQuestion);
+
+// ── TRIP NOTICES & UPDATES ACKS ──
+router.post('/notices/:id/acknowledge', protect, controller.acknowledgeNotice);
+router.get('/notices/:id/acks', protect, controller.getNoticeAcks);
+
+// ── SALES RECORD GENERATION ──
+router.post('/create-record', protect, controller.createSalesRecord);
+router.post('/bulk-trips', protect, controller.bulkCreateTrips);
+
 module.exports = router;
+

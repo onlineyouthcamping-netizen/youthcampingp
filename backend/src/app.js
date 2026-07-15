@@ -136,6 +136,8 @@ app.use('/api/train-tickets', require('./routes/trainTicketRoutes'));
 app.use('/api/train-ticket-templates', require('./routes/trainTicketTemplateRoutes'));
 app.use('/api/accounting', require('./routes/accountingRoutes'));
 app.use('/api/ops', require('./routes/opsRoutes'));
+app.use('/api/ops/payments', require('./routes/paymentRoutes'));
+app.use('/api/ops/tasks-docs-comm', require('./routes/opsTasksDocsCommRoutes'));
 app.use('/api/knowledge', require('./routes/knowledgeRoutes'));
 app.use('/api/travel-desk', require('./routes/travelDeskRoutes'));
 app.use('/api/package-builder', require('./routes/packageBuilderRoutes'));

@@ -45,7 +45,21 @@ const {
   assignTripLeader,
   patchTripLeader,
   archiveTripLeader,
-  restoreTripLeader
+  restoreTripLeader,
+  getActivities,
+  createActivity,
+  updateActivity,
+  deleteActivity,
+  copyActivities,
+  getVendorRates,
+  saveVendorRate,
+  createHotelOverride,
+  resetHotelOverride,
+  saveManualAllocations,
+  updateGuidePayment,
+  deleteGuidePayment,
+  updateTransportFleet,
+  getTransportPassengerGroups
 } = require('../controllers/opsController');
 const { authenticate, requirePermission } = require('../middleware/auth');
 
@@ -54,11 +68,21 @@ router.use(authenticate);
 // Directory
 router.get('/vendors', requirePermission('ops.view'), getVendors);
 router.post('/vendors', requirePermission('ops.manage'), createVendor);
+router.get('/vendors/:vendorId/rates', requirePermission('ops.view'), getVendorRates);
+router.post('/vendors/:vendorId/rates', requirePermission('ops.manage'), saveVendorRate);
 
 // Excel Match Grids (Scoped by departureDate in query params)
 router.get('/itinerary/:tripId', requirePermission('ops.view'), getDayItinerary);
 router.post('/itinerary/:tripId', requirePermission('ops.manage'), upsertDayItinerary);
 router.delete('/itinerary/:id', requirePermission('ops.manage'), deleteDayItinerary);
+
+// Activities Grid (Scoped by departureDate in query params)
+router.get('/activities/:tripId', requirePermission('ops.view'), getActivities);
+router.post('/activities/:tripId', requirePermission('ops.manage'), createActivity);
+router.put('/activities/:tripId/:id', requirePermission('ops.manage'), updateActivity);
+router.delete('/activities/:id', requirePermission('ops.manage'), deleteActivity);
+router.post('/activities/:tripId/copy', requirePermission('ops.manage'), copyActivities);
+
 router.get('/expenses/:tripId', requirePermission('ops.view'), getTripExpenses);
 router.post('/expenses/:tripId', requirePermission('ops.manage'), upsertTripExpense);
 router.delete('/expenses/:id', requirePermission('ops.manage'), deleteTripExpense);
@@ -67,14 +91,19 @@ router.delete('/expenses/:id', requirePermission('ops.manage'), deleteTripExpens
 router.get('/hotels/:tripId', requirePermission('ops.view'), getHotelBookings);
 router.post('/hotels/:tripId', requirePermission('ops.manage'), createHotelBooking);
 router.delete('/hotels/:id', requirePermission('ops.manage'), deleteHotelBooking);
-router.get('/transport/:tripId', requirePermission('ops.view'), getTransportFleet);
-router.post('/transport/:tripId', requirePermission('ops.manage'), createTransportFleet);
-router.delete('/transport/:id', requirePermission('ops.manage'), deleteTransportFleet);
-router.get('/rooms/:tripId', requirePermission('ops.view'), getRoomInventory);
-router.post('/rooms/:tripId', requirePermission('ops.manage'), createRoomInventory);
-router.delete('/rooms/:id', requirePermission('ops.manage'), deleteRoomInventory);
+router.post('/hotels/:tripId/override', requirePermission('ops.manage'), createHotelOverride);
+router.post('/hotels/:tripId/reset-override', requirePermission('ops.manage'), resetHotelOverride);
 router.get('/guides/:tripId', requirePermission('ops.view'), getGuidePayments);
 router.post('/guides/:tripId', requirePermission('ops.manage'), createGuidePayment);
+router.put('/guides/:id', requirePermission('ops.manage'), updateGuidePayment);
+router.delete('/guides/:id', requirePermission('ops.manage'), deleteGuidePayment);
+
+// Transport
+router.get('/transport/:tripId', requirePermission('ops.view'), getTransportFleet);
+router.post('/transport/:tripId', requirePermission('ops.manage'), createTransportFleet);
+router.put('/transport/:id', requirePermission('ops.manage'), updateTransportFleet);
+router.delete('/transport/:id', requirePermission('ops.manage'), deleteTransportFleet);
+router.get('/transport/:tripId/passenger-groups', requirePermission('ops.view'), getTransportPassengerGroups);
 
 // Summary & Seats
 router.get('/summary/:tripId', requirePermission('ops.view'), getWorkspaceSummary);
@@ -109,5 +138,6 @@ router.get('/auto-allocate/:tripId', requirePermission('ops.allocate'), generate
 router.get('/auto-allocate/:tripId/confirmed', requirePermission('ops.view'), getConfirmedAllocations);
 router.post('/auto-allocate/confirm', requirePermission('ops.allocate'), confirmAllocation);
 router.post('/auto-allocate/override', requirePermission('ops.allocate'), overrideAllocation);
+router.post('/auto-allocate/manual-save', requirePermission('ops.allocate'), saveManualAllocations);
 
 module.exports = router;
