@@ -59,9 +59,20 @@ async function parseDepartureFilter(req, res, requireDepartureDate = true) {
 
   const tenantId = req.user?.tenantId || 'default';
 
+  if (!rawTripId || rawTripId === 'undefined') {
+    res.status(400).json({ success: false, message: 'tripId is required and must be valid' });
+    return null;
+  }
+
+  if (!rawTripId || rawTripId === 'undefined') {
+    res.status(400).json({ success: false, message: 'tripId is required and must be valid' });
+    return null;
+  }
+
   let tripId = rawTripId;
   if (rawTripId) {
-    const trip = await prisma.trip.findFirst({
+    // 1. Try exact/slug/shortName match
+    let trip = await prisma.trip.findFirst({
       where: {
         tenantId,
         OR: [
@@ -72,7 +83,35 @@ async function parseDepartureFilter(req, res, requireDepartureDate = true) {
       },
       select: { id: true }
     });
-    if (trip) tripId = trip.id;
+
+    // 2. Resolve departure code to trip if not found exactly (e.g. MKA-0705 -> MKA)
+    if (!trip && rawTripId.includes('-')) {
+      const parts = rawTripId.split('-');
+      const prefix = parts[0].toUpperCase();
+      trip = await prisma.trip.findFirst({
+        where: {
+          tenantId,
+          OR: [
+            { id: { startsWith: prefix, mode: 'insensitive' } },
+            { id: { startsWith: prefix + '-', mode: 'insensitive' } },
+            { slug: { startsWith: prefix.toLowerCase(), mode: 'insensitive' } },
+            { shortName: { startsWith: prefix, mode: 'insensitive' } }
+          ]
+        },
+        select: { id: true }
+      });
+    }
+
+    if (trip) {
+      tripId = trip.id;
+    } else {
+      res.status(404).json({
+        success: false,
+        code: 'TRIP_NOT_FOUND',
+        message: `The trip matching identifier '${rawTripId}' could not be resolved.`
+      });
+      return null;
+    }
   }
 
   const where = { tenantId, tripId };
@@ -258,13 +297,25 @@ exports.deleteTripExpense = async (req, res) => {
 
 // ── HOTEL BOOKINGS TRACKER ──
 exports.getHotelBookings = async (req, res) => {
+  let ctx = null;
   try {
-    const ctx = await parseDepartureFilter(req, res, true);
+    ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
-    const bookings = await prisma.opsHotelBooking.findMany({ where: ctx.where, include: { vendor: true } });
+    const bookings = await prisma.opsHotelBooking.findMany({
+      where: ctx.where,
+      include: { vendor: true, overrides: true }
+    });
+    if (!bookings || bookings.length === 0) {
+      return res.json({ success: true, data: [], message: "No hotel selections created yet" });
+    }
     return res.json({ success: true, data: bookings });
   } catch (err) {
-    console.error('getHotelBookings error:', err);
+    console.error("Departure hotel fetch failed", {
+      departureId: ctx ? `${ctx.tripId}-${ctx.departureDate?.toISOString().substring(0, 10)}` : 'UNKNOWN',
+      tripId: ctx?.tripId || 'UNKNOWN',
+      departureDate: ctx?.departureDate || 'UNKNOWN',
+      error: err.message
+    });
     return res.status(500).json({ success: false, message: 'Failed to fetch hotel bookings' });
   }
 };
@@ -272,63 +323,187 @@ exports.getHotelBookings = async (req, res) => {
 exports.createHotelBooking = async (req, res) => {
   try {
     const ctx = await parseDepartureFilter(req, res, true);
-    if (!ctx) return;
-    const { hotelName, vendorId, location, checkIn, checkOut, roomType, numberOfRooms, confirmed, totalAmount, advancePaid, contactPerson, contactPhone, notes } = req.body;
+    if (!ctx) return; // parseDepartureFilter handles error response (400/404)
 
-    const tot = parseFloat(totalAmount || 0);
-    const adv = parseFloat(advancePaid || 0);
-
-    let booking;
-    if (req.body.id) {
-      booking = await prisma.opsHotelBooking.update({
-        where: { id: req.body.id },
-        data: {
-          vendorId: vendorId || null,
-          hotelName,
-          location,
-          checkIn: checkIn ? new Date(checkIn) : null,
-          checkOut: checkOut ? new Date(checkOut) : null,
-          roomType,
-          numberOfRooms: parseInt(numberOfRooms || 1),
-          confirmed: confirmed || 'UNCONFIRMED',
-          totalAmount: tot,
-          advancePaid: adv,
-          balanceAmount: tot - adv,
-          contactPerson,
-          contactPhone,
-          notes
-        }
-      });
-    } else {
-      booking = await prisma.opsHotelBooking.create({
-        data: {
-          tenantId: ctx.tenantId,
-          tripId: ctx.tripId,
-          departureDate: ctx.departureDate,
-          vendorId: vendorId || null,
-          hotelName,
-          location,
-          checkIn: checkIn ? new Date(checkIn) : null,
-          checkOut: checkOut ? new Date(checkOut) : null,
-          roomType,
-          numberOfRooms: parseInt(numberOfRooms || 1),
-          confirmed: confirmed || 'UNCONFIRMED',
-          totalAmount: tot,
-          advancePaid: adv,
-          balanceAmount: tot - adv,
-          contactPerson,
-          contactPhone,
-          notes
-        }
-      });
+    // Accept either array under "hotels" or fallback to single object in body
+    let hotelList = req.body.hotels;
+    if (!hotelList) {
+      // Fallback/backward compatibility for single object payload
+      hotelList = [req.body];
     }
-    
-    return res.status(201).json({ success: true, data: booking });
+
+    if (!Array.isArray(hotelList)) {
+      return res.status(400).json({ success: false, message: "hotels parameter must be an array of hotel booking objects." });
+    }
+
+    // Validate duplicate check-in dates in the incoming request
+    const checkInDates = new Set();
+    for (const h of hotelList) {
+      if (h.checkIn) {
+        const dateStr = new Date(h.checkIn).toISOString().substring(0, 10);
+        if (checkInDates.has(dateStr)) {
+          return res.status(400).json({ success: false, message: `Duplicate hotel allocations detected for check-in date ${dateStr}.` });
+        }
+        checkInDates.add(dateStr);
+      }
+    }
+
+    // Pre-validate all items before executing any database changes
+    for (const h of hotelList) {
+      const adv = parseFloat(h.advancePaid || 0);
+      const dRooms = parseInt(h.doubleRoomsCount || 0);
+      const tRooms = parseInt(h.tripleRoomsCount || 0);
+      const qRooms = parseInt(h.quadRoomsCount || 0);
+      const exPax = parseInt(h.extraPersonsCount || 0);
+      const nights = (h.nightsCount !== undefined && h.nightsCount !== null) ? parseInt(h.nightsCount) : 1;
+
+      if (dRooms < 0 || tRooms < 0 || qRooms < 0 || exPax < 0) {
+        return res.status(400).json({ success: false, message: "Passenger counts must be non-negative integers." });
+      }
+
+      const dRate = parseFloat(h.doubleRate ?? 0);
+      const tRate = parseFloat(h.tripleRate ?? 0);
+      const qRate = parseFloat(h.quadRate ?? 0);
+      const exRate = parseFloat(h.extraBedRate ?? h.extraPersonRate ?? 0);
+
+      if (dRate < 0 || tRate < 0 || qRate < 0 || exRate < 0) {
+        return res.status(400).json({ success: false, message: "Rates must be non-negative numbers." });
+      }
+
+      if (nights < 1) {
+        return res.status(400).json({ success: false, message: "Nights must be at least 1." });
+      }
+
+      if (h.checkIn && h.checkOut) {
+        const cin = new Date(h.checkIn);
+        const cout = new Date(h.checkOut);
+        if (cout <= cin) {
+          return res.status(400).json({ success: false, message: "Check-out date must be after check-in date." });
+        }
+      }
+
+      // Validate vendor existence & type
+      if (h.vendorId) {
+        const dbVendor = await prisma.opsVendor.findUnique({ where: { id: h.vendorId } });
+        if (!dbVendor) {
+          return res.status(400).json({ success: false, message: `Selected vendor ${h.vendorId} does not exist in directory.` });
+        }
+        if (dbVendor.type !== "HOTEL") {
+          return res.status(400).json({ success: false, message: "Selected vendor is not a hotel vendor." });
+        }
+      }
+
+      // Validate booking ID belongs to selected trip
+      if (h.id && !h.id.startsWith('stay')) {
+        const existing = await prisma.opsHotelBooking.findUnique({ where: { id: h.id } });
+        if (!existing) {
+          return res.status(404).json({ success: false, message: `Hotel booking record not found for ID: ${h.id}` });
+        }
+        if (existing.tripId !== ctx.tripId) {
+          return res.status(400).json({ success: false, message: "Hotel allocation does not belong to the selected trip." });
+        }
+        const existingDateStr = existing.departureDate.toISOString().substring(0, 10);
+        const ctxDateStr = ctx.departureDate.toISOString().substring(0, 10);
+        if (existingDateStr !== ctxDateStr) {
+          return res.status(400).json({ success: false, message: "Hotel allocation departure date mismatch." });
+        }
+      }
+    }
+
+    const savedBookings = [];
+
+    // Run safe transaction for all upserts
+    await prisma.$transaction(async (tx) => {
+      for (const h of hotelList) {
+        const adv = parseFloat(h.advancePaid || 0);
+        const dRooms = parseInt(h.doubleRoomsCount || 0);
+        const tRooms = parseInt(h.tripleRoomsCount || 0);
+        const qRooms = parseInt(h.quadRoomsCount || 0);
+        const exPax = parseInt(h.extraPersonsCount || 0);
+        const nights = (h.nightsCount !== undefined && h.nightsCount !== null) ? parseInt(h.nightsCount) : 1;
+
+        const dRate = parseFloat(h.doubleRate ?? 0);
+        const tRate = parseFloat(h.tripleRate ?? 0);
+        const qRate = parseFloat(h.quadRate ?? 0);
+        const exRate = parseFloat(h.extraBedRate ?? h.extraPersonRate ?? 0);
+
+        let calculatedCost = 0;
+        if (h.pricingMethod === 'manual') {
+          calculatedCost = parseFloat(h.totalAmount || 0);
+        } else {
+          const twinCost = dRooms * dRate * nights;
+          const tripleCost = tRooms * tRate * nights;
+          const quadCost = qRooms * qRate * nights;
+          const extraBedCost = exPax * exRate * nights;
+          calculatedCost = twinCost + tripleCost + quadCost + extraBedCost;
+        }
+
+        // Apply overrides if existing
+        if (h.id && !h.id.startsWith('stay')) {
+          const existingOverrides = await tx.departureHotelRateOverride.findMany({
+            where: { departureHotelId: h.id }
+          });
+          if (existingOverrides.length > 0) {
+            calculatedCost = existingOverrides[0].overriddenValue;
+          }
+        }
+
+        const dataObj = {
+          vendorId: h.vendorId || null,
+          hotelName: h.hotelName,
+          location: h.location,
+          checkIn: h.checkIn ? new Date(h.checkIn) : null,
+          checkOut: h.checkOut ? new Date(h.checkOut) : null,
+          roomType: h.roomType,
+          numberOfRooms: parseInt(h.numberOfRooms || 1),
+          confirmed: h.confirmed || 'UNCONFIRMED',
+          totalAmount: calculatedCost,
+          advancePaid: adv,
+          balanceAmount: calculatedCost - adv,
+          contactPerson: h.contactPerson || null,
+          contactPhone: h.contactPhone || null,
+          notes: h.notes,
+          pricingMethod: h.pricingMethod || 'room-wise',
+          doubleRoomsCount: dRooms,
+          tripleRoomsCount: tRooms,
+          quadRoomsCount: qRooms,
+          extraPersonsCount: exPax,
+          nightsCount: nights,
+          doubleRate: dRate,
+          tripleRate: tRate,
+          quadRate: qRate,
+          extraBedRate: exRate
+        };
+
+        let booking;
+        if (h.id && !h.id.startsWith('stay')) {
+          booking = await tx.opsHotelBooking.update({
+            where: { id: h.id },
+            data: dataObj,
+            include: { overrides: true }
+          });
+        } else {
+          booking = await tx.opsHotelBooking.create({
+            data: {
+              tenantId: ctx.tenantId,
+              tripId: ctx.tripId,
+              departureDate: ctx.departureDate,
+              ...dataObj
+            },
+            include: { overrides: true }
+          });
+        }
+        savedBookings.push(booking);
+      }
+    });
+
+    return res.status(201).json({ success: true, data: savedBookings });
   } catch (err) {
     console.error('createHotelBooking error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to create hotel booking' });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 exports.deleteHotelBooking = async (req, res) => {
   try {
@@ -358,52 +533,57 @@ exports.createTransportFleet = async (req, res) => {
   try {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
-    const { vehicleType, vendorId, capacity, route, pickupPoints, dropPoints, totalAmount, advancePaid, driverName, driverPhone, notes } = req.body;
+    const {
+      vehicleType, vehicleNumber, vendorId, capacity,
+      route, pickupPoints, dropPoints,
+      reportingTime, departureTime, confirmationStatus, paymentDueDate,
+      totalAmount, advancePaid, driverName, driverPhone, notes
+    } = req.body;
+
+    if (!vehicleType) return res.status(400).json({ success: false, message: 'vehicleType is required' });
+
+    // Validate vendor type
+    if (vendorId) {
+      const vendor = await prisma.opsVendor.findUnique({ where: { id: vendorId }, select: { type: true, isActive: true } });
+      if (!vendor) return res.status(400).json({ success: false, message: 'Vendor not found' });
+      if (vendor.type !== 'TRANSPORT') return res.status(400).json({ success: false, message: `Vendor type must be TRANSPORT, got ${vendor.type}` });
+      if (!vendor.isActive) return res.status(400).json({ success: false, message: 'Vendor is inactive' });
+    }
 
     const tot = parseFloat(totalAmount || 0);
     const adv = parseFloat(advancePaid || 0);
+    const cap = parseInt(capacity || 13);
+    if (tot < 0) return res.status(400).json({ success: false, message: 'totalAmount cannot be negative' });
+    if (adv < 0) return res.status(400).json({ success: false, message: 'advancePaid cannot be negative' });
+    if (adv > tot) return res.status(400).json({ success: false, message: 'advancePaid cannot exceed totalAmount' });
+    if (cap < 1 || cap > 60) return res.status(400).json({ success: false, message: 'capacity must be between 1 and 60' });
 
-    let vehicle;
-    if (req.body.id) {
-      vehicle = await prisma.opsTransportFleet.update({
-        where: { id: req.body.id },
-        data: {
-          vendorId: vendorId || null,
-          vehicleType,
-          capacity: parseInt(capacity || 13),
-          route,
-          pickupPoints,
-          dropPoints,
-          totalAmount: tot,
-          advancePaid: adv,
-          balanceAmount: tot - adv,
-          driverName,
-          driverPhone,
-          notes
-        }
-      });
-    } else {
-      vehicle = await prisma.opsTransportFleet.create({
-        data: {
-          tenantId: ctx.tenantId,
-          tripId: ctx.tripId,
-          departureDate: ctx.departureDate,
-          vendorId: vendorId || null,
-          vehicleType,
-          capacity: parseInt(capacity || 13),
-          route,
-          pickupPoints,
-          dropPoints,
-          totalAmount: tot,
-          advancePaid: adv,
-          balanceAmount: tot - adv,
-          driverName,
-          driverPhone,
-          notes
-        }
-      });
-    }
-    
+    const vehicle = await prisma.opsTransportFleet.create({
+      data: {
+        tenantId: ctx.tenantId,
+        tripId: ctx.tripId,
+        departureDate: ctx.departureDate,
+        vendorId: vendorId || null,
+        vehicleType,
+        vehicleNumber: vehicleNumber || null,
+        capacity: cap,
+        route: route || null,
+        pickupPoints: pickupPoints || null,
+        dropPoints: dropPoints || null,
+        reportingTime: reportingTime || null,
+        departureTime: departureTime || null,
+        confirmationStatus: confirmationStatus || 'UNCONFIRMED',
+        paymentDueDate: paymentDueDate ? new Date(paymentDueDate) : null,
+        totalAmount: tot,
+        advancePaid: adv,
+        balanceAmount: tot - adv,
+        driverName: driverName || null,
+        driverPhone: driverPhone || null,
+        notes: notes || null
+      },
+      include: { vendor: { select: { id: true, name: true, phone: true } } }
+    });
+
     return res.status(201).json({ success: true, data: vehicle });
   } catch (err) {
     console.error('createTransportFleet error:', err);
@@ -419,6 +599,141 @@ exports.deleteTransportFleet = async (req, res) => {
   } catch (err) {
     console.error('deleteTransportFleet error:', err);
     return res.status(500).json({ success: false, message: 'Failed to delete transport vehicle' });
+  }
+};
+
+exports.updateTransportFleet = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      vehicleType, vehicleNumber, capacity, vendorId,
+      route, pickupPoints, dropPoints,
+      reportingTime, departureTime, confirmationStatus, paymentDueDate,
+      totalAmount, advancePaid, driverName, driverPhone, notes
+    } = req.body;
+    const existing = await prisma.opsTransportFleet.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, message: 'Transport vehicle not found' });
+
+    // Validate vendor type if changing vendorId
+    if (vendorId !== undefined && vendorId !== null) {
+      const vendor = await prisma.opsVendor.findUnique({ where: { id: vendorId }, select: { type: true, isActive: true } });
+      if (!vendor) return res.status(400).json({ success: false, message: 'Vendor not found' });
+      if (vendor.type !== 'TRANSPORT') return res.status(400).json({ success: false, message: `Vendor type must be TRANSPORT, got ${vendor.type}` });
+      if (!vendor.isActive) return res.status(400).json({ success: false, message: 'Vendor is inactive' });
+    }
+
+    const tot = totalAmount !== undefined ? parseFloat(totalAmount) : existing.totalAmount;
+    const adv = advancePaid !== undefined ? parseFloat(advancePaid) : existing.advancePaid;
+    if (tot < 0) return res.status(400).json({ success: false, message: 'totalAmount cannot be negative' });
+    if (adv < 0) return res.status(400).json({ success: false, message: 'advancePaid cannot be negative' });
+    if (adv > tot) return res.status(400).json({ success: false, message: 'advancePaid cannot exceed totalAmount' });
+
+    const updated = await prisma.opsTransportFleet.update({
+      where: { id },
+      data: {
+        vehicleType:        vehicleType        !== undefined ? vehicleType        : undefined,
+        vehicleNumber:      vehicleNumber      !== undefined ? vehicleNumber      : undefined,
+        capacity:           capacity           !== undefined ? parseInt(capacity) : undefined,
+        vendorId:           vendorId           !== undefined ? (vendorId || null) : undefined,
+        route:              route              !== undefined ? route              : undefined,
+        pickupPoints:       pickupPoints       !== undefined ? pickupPoints       : undefined,
+        dropPoints:         dropPoints         !== undefined ? dropPoints         : undefined,
+        reportingTime:      reportingTime      !== undefined ? reportingTime      : undefined,
+        departureTime:      departureTime      !== undefined ? departureTime      : undefined,
+        confirmationStatus: confirmationStatus !== undefined ? confirmationStatus : undefined,
+        paymentDueDate:     paymentDueDate     !== undefined ? (paymentDueDate ? new Date(paymentDueDate) : null) : undefined,
+        totalAmount:  tot,
+        advancePaid:  adv,
+        balanceAmount: tot - adv,
+        driverName:   driverName   !== undefined ? driverName   : undefined,
+        driverPhone:  driverPhone  !== undefined ? driverPhone  : undefined,
+        notes:        notes        !== undefined ? notes        : undefined,
+      },
+      include: { vendor: { select: { id: true, name: true, phone: true } } }
+    });
+    return res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error('updateTransportFleet error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update transport vehicle' });
+  }
+};
+
+// ── TRANSPORT PASSENGER GROUPS (by pickup/joining city) ──
+exports.getTransportPassengerGroups = async (req, res) => {
+  try {
+    const ctx = await parseDepartureFilter(req, res, true);
+    if (!ctx) return;
+
+    // Load all bookings for this departure with pickupCity
+    const bookings = await prisma.booking.findMany({
+      where: {
+        tripId: ctx.tripId,
+        departureDate: ctx.departureDate,
+        status: { notIn: ['cancelled', 'refunded'] }
+      },
+      select: {
+        bookingId: true, name: true, fullName: true, phone: true, pickupCity: true,
+        numberOfTravelers: true, passengers: true, status: true
+      },
+      orderBy: { pickupCity: 'asc' }
+    });
+
+    // Load current active vehicle allocations
+    const activeAllocations = await prisma.opsVehicleAllocation.findMany({
+      where: { tripId: ctx.tripId, departureDate: ctx.departureDate, allocationStatus: 'ACTIVE' },
+      select: { bookingId: true, travelerName: true, fleetId: true, pickupPoint: true }
+    });
+    const allocatedKeys = new Set(activeAllocations.map(a => `${a.bookingId}:${a.travelerName}`));
+
+    // Group by pickupCity
+    const groups = {};
+    for (const b of bookings) {
+      const city = b.pickupCity || 'Not Specified';
+      if (!groups[city]) groups[city] = { city, count: 0, bookings: [], unallocated: 0 };
+      const paxCount = b.numberOfTravelers || 1;
+      groups[city].count += paxCount;
+      groups[city].bookings.push({
+        bookingId: b.bookingId,
+        name: b.fullName || b.name,
+        phone: b.phone,
+        travelers: paxCount,
+        status: b.status
+      });
+      groups[city].unallocated += paxCount; // will subtract below
+    }
+
+    // Subtract allocated passengers
+    for (const a of activeAllocations) {
+      const booking = bookings.find(b => b.bookingId === a.bookingId);
+      const city = booking?.pickupCity || 'Not Specified';
+      if (groups[city]) groups[city].unallocated = Math.max(0, groups[city].unallocated - 1);
+    }
+
+    // Load fleet summary for this departure
+    const fleets = await prisma.opsTransportFleet.findMany({
+      where: { tripId: ctx.tripId, departureDate: ctx.departureDate },
+      select: { id: true, vehicleType: true, vehicleNumber: true, capacity: true, route: true, driverName: true, confirmationStatus: true }
+    });
+    const fleetWithCounts = fleets.map(f => ({
+      ...f,
+      assigned: activeAllocations.filter(a => a.fleetId === f.id).length,
+      remaining: f.capacity - activeAllocations.filter(a => a.fleetId === f.id).length
+    }));
+
+    return res.json({
+      success: true,
+      data: {
+        passengerGroups: Object.values(groups).sort((a, b) => b.count - a.count),
+        totalPassengers: bookings.reduce((s, b) => s + (b.numberOfTravelers || 1), 0),
+        totalAllocated: activeAllocations.length,
+        totalUnallocated: bookings.reduce((s, b) => s + (b.numberOfTravelers || 1), 0) - activeAllocations.length,
+        fleetSummary: fleetWithCounts,
+        totalCapacity: fleets.reduce((s, f) => s + f.capacity, 0)
+      }
+    });
+  } catch (err) {
+    console.error('getTransportPassengerGroups error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch passenger groups' });
   }
 };
 
@@ -442,10 +757,42 @@ exports.createGuidePayment = async (req, res) => {
   try {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
-    const { guideName, guideAdminId, vendorId, daysWorked, agreedAmount, advancePaid } = req.body;
+    const {
+      guideName, guideAdminId, vendorId,
+      assignmentType, assignmentStatus,
+      startDate, endDate, reportingLocation, reportingTime, emergencyContact,
+      daysWorked, agreedAmount, advancePaid, notes
+    } = req.body;
+
+    if (!guideName?.trim()) return res.status(400).json({ success: false, message: 'guideName is required' });
+
+    // Validate Admin directory lookup if guideAdminId provided
+    let resolvedName = guideName;
+    if (guideAdminId) {
+      const admin = await prisma.admin.findUnique({ where: { id: guideAdminId }, select: { id: true, name: true, isActive: true } });
+      if (!admin) return res.status(400).json({ success: false, message: 'Guide (Admin) not found in directory' });
+      if (!admin.isActive) return res.status(400).json({ success: false, message: 'This admin/guide is inactive' });
+      resolvedName = admin.name || guideName; // use directory name
+
+      // Warn: prevent duplicate CONFIRMED/ASSIGNED assignment for same Admin+departure
+      const existingAssignment = await prisma.opsGuidePayment.findFirst({
+        where: {
+          tripId: ctx.tripId, departureDate: ctx.departureDate,
+          guideAdminId,
+          assignmentStatus: { in: ['ASSIGNED', 'CONFIRMED', 'ACCEPTED'] }
+        }
+      });
+      if (existingAssignment) {
+        return res.status(400).json({
+          success: false,
+          message: `${resolvedName} is already assigned to this departure (status: ${existingAssignment.assignmentStatus}). Cancel the existing assignment before re-assigning.`
+        });
+      }
+    }
 
     const agreed = parseFloat(agreedAmount || 0);
     const adv = parseFloat(advancePaid || 0);
+    if (adv > agreed) return res.status(400).json({ success: false, message: 'advancePaid cannot exceed agreedAmount' });
 
     const payment = await prisma.opsGuidePayment.create({
       data: {
@@ -454,17 +801,93 @@ exports.createGuidePayment = async (req, res) => {
         departureDate: ctx.departureDate,
         guideAdminId: guideAdminId || null,
         vendorId: vendorId || null,
-        guideName,
+        guideName: resolvedName,
+        assignmentType: assignmentType || 'PRIMARY_GUIDE',
+        assignmentStatus: assignmentStatus || 'ASSIGNED',
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        reportingLocation: reportingLocation || null,
+        reportingTime: reportingTime || null,
+        emergencyContact: emergencyContact || null,
         daysWorked: parseInt(daysWorked || 1),
         agreedAmount: agreed,
         advancePaid: adv,
-        balanceAmount: agreed - adv
-      }
+        balanceAmount: agreed - adv,
+        notes: notes || null
+      },
+      include: { guideAdmin: { select: { id: true, name: true, email: true } } }
     });
     return res.status(201).json({ success: true, data: payment });
   } catch (err) {
     console.error('createGuidePayment error:', err);
     return res.status(500).json({ success: false, message: 'Failed to create guide payment' });
+  }
+};
+
+exports.updateGuidePayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      guideName, guideAdminId, vendorId,
+      assignmentType, assignmentStatus,
+      startDate, endDate, reportingLocation, reportingTime, emergencyContact,
+      daysWorked, agreedAmount, advancePaid, paymentStatus, notes
+    } = req.body;
+    const existing = await prisma.opsGuidePayment.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, message: 'Guide payment not found' });
+
+    const agreed = agreedAmount !== undefined ? parseFloat(agreedAmount) : existing.agreedAmount;
+    const adv    = advancePaid  !== undefined ? parseFloat(advancePaid)  : existing.advancePaid;
+    if (adv > agreed) return res.status(400).json({ success: false, message: 'advancePaid cannot exceed agreedAmount' });
+
+    const updated = await prisma.opsGuidePayment.update({
+      where: { id },
+      data: {
+        guideName:         guideName         !== undefined ? guideName                         : undefined,
+        guideAdminId:      guideAdminId      !== undefined ? (guideAdminId || null)            : undefined,
+        vendorId:          vendorId          !== undefined ? (vendorId || null)                : undefined,
+        assignmentType:    assignmentType    !== undefined ? assignmentType                    : undefined,
+        assignmentStatus:  assignmentStatus  !== undefined ? assignmentStatus                  : undefined,
+        startDate:         startDate         !== undefined ? (startDate ? new Date(startDate) : null) : undefined,
+        endDate:           endDate           !== undefined ? (endDate ? new Date(endDate) : null)     : undefined,
+        reportingLocation: reportingLocation !== undefined ? reportingLocation                 : undefined,
+        reportingTime:     reportingTime     !== undefined ? reportingTime                     : undefined,
+        emergencyContact:  emergencyContact  !== undefined ? emergencyContact                  : undefined,
+        daysWorked:        daysWorked        !== undefined ? parseInt(daysWorked)              : undefined,
+        agreedAmount:      agreed,
+        advancePaid:       adv,
+        balanceAmount:     agreed - adv,
+        paymentStatus:     paymentStatus     !== undefined ? paymentStatus                     : undefined,
+        notes:             notes             !== undefined ? notes                             : undefined,
+      },
+      include: { guideAdmin: { select: { id: true, name: true, email: true } } }
+    });
+    return res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error('updateGuidePayment error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update guide payment' });
+  }
+};
+
+exports.deleteGuidePayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.opsGuidePayment.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, message: 'Guide payment not found' });
+    // Soft-cancel to preserve history; actual delete only if no financial data
+    const hasFinancials = existing.agreedAmount > 0 || existing.advancePaid > 0;
+    if (hasFinancials) {
+      await prisma.opsGuidePayment.update({
+        where: { id },
+        data: { assignmentStatus: 'CANCELLED' }
+      });
+      return res.json({ success: true, message: 'Guide assignment cancelled (financial record preserved)' });
+    }
+    await prisma.opsGuidePayment.delete({ where: { id } });
+    return res.json({ success: true, message: 'Guide payment deleted' });
+  } catch (err) {
+    console.error('deleteGuidePayment error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete guide payment' });
   }
 };
 
@@ -758,6 +1181,9 @@ exports.getChecklist = async (req, res) => {
 
 exports.initializeChecklist = async (req, res) => {
   try {
+    const { tripId: rawTripId } = req.params;
+    const rawDate = req.query.departureDate || req.body.departureDate;
+
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
@@ -765,11 +1191,67 @@ exports.initializeChecklist = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to initialize checklists' });
     }
 
-    // Try to find the trip to get destination
+    // 1. Confirm the related trip exists
     const trip = await prisma.trip.findFirst({
       where: { id: ctx.tripId }
     });
-    const destination = trip?.destination || trip?.title || '';
+    if (!trip) {
+      console.error("Trip not found during checklist initialization", { tripId: ctx.tripId });
+      return res.status(404).json({
+        success: false,
+        code: 'TRIP_NOT_FOUND',
+        message: 'Related trip not found.'
+      });
+    }
+
+    // 2. Validate the departure exists (using availableDates or bookings fallback)
+    const formattedDate = ctx.departureDate.toISOString().substring(0, 10);
+    let datesList = [];
+    if (trip.availableDates) {
+      try {
+        datesList = typeof trip.availableDates === 'string' 
+          ? JSON.parse(trip.availableDates) 
+          : trip.availableDates;
+      } catch (e) {
+        datesList = [];
+      }
+    }
+    const departureExistsInDates = Array.isArray(datesList) && datesList.some((d) => {
+      const dStr = typeof d === 'string' ? d : d.date || d.departureDate;
+      return dStr && dStr.substring(0, 10) === formattedDate;
+    });
+
+    if (!departureExistsInDates) {
+      const bookingsCount = await prisma.booking.count({
+        where: {
+          tripId: ctx.tripId,
+          departureDate: {
+            gte: new Date(formattedDate + 'T00:00:00.000Z'),
+            lte: new Date(formattedDate + 'T23:59:59.999Z')
+          }
+        }
+      });
+      if (bookingsCount === 0) {
+        console.error("Departure not found during checklist initialization", { tripId: ctx.tripId, departureDate: formattedDate });
+        return res.status(404).json({
+          success: false,
+          code: 'DEPARTURE_NOT_FOUND',
+          message: `No departure was found for code ${rawTripId} and date ${formattedDate}.`
+        });
+      }
+    }
+
+    // 3. Confirm itinerary is present
+    if (!trip.itinerary || !Array.isArray(trip.itinerary) || trip.itinerary.length === 0) {
+      console.error("Trip itinerary is missing during checklist initialization", { tripId: ctx.tripId });
+      return res.status(422).json({
+        success: false,
+        code: 'ITINERARY_MISSING',
+        message: 'Trip itinerary is missing.'
+      });
+    }
+
+    const destination = trip.destination || trip.title || '';
 
     // Fetch active SOP templates for this destination
     const templates = await prisma.opsSOPTemplate.findMany({
@@ -844,7 +1326,23 @@ exports.initializeChecklist = async (req, res) => {
       orderBy: { taskName: 'asc' }
     });
 
-    return res.json({ success: true, message: 'Checklist initialized successfully', data: items });
+    if (existing.length > 0 && seedData.length === 0) {
+      return res.json({
+        success: true,
+        created: 0,
+        existing: existing.length,
+        message: "Checklist was already initialized.",
+        data: items
+      });
+    }
+
+    return res.json({
+      success: true,
+      created: seedData.length,
+      existing: existing.length,
+      message: 'Checklist initialized successfully',
+      data: items
+    });
   } catch (err) {
     console.error('initializeChecklist error:', err);
     return res.status(500).json({ success: false, message: 'Failed to initialize checklist' });
@@ -1231,7 +1729,10 @@ exports.generateAllocation = async (req, res) => {
     const fleet = await prisma.opsTransportFleet.findMany({ where: ctx.where });
     const rooms = await prisma.opsRoomInventory.findMany({ where: ctx.where });
 
-    const result = await runAutoAllocation(bookings, fleet, rooms);
+    // Enrich bookings with tripId so allocation engine can resolve hotel priority
+    const enrichedBookings = bookings.map(b => ({ ...b, tripId: ctx.tripId }));
+
+    const result = await runAutoAllocation(enrichedBookings, fleet, rooms);
 
     // Get current version count to bump
     const runCount = await prisma.opsAllocationRun.count({ where: ctx.where });
@@ -1368,24 +1869,44 @@ exports.getConfirmedAllocations = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
+    // Only return ACTIVE allocations (not CANCELLED soft-deletes)
     const rooms = await prisma.opsRoomAllocation.findMany({
-      where: { tripId: ctx.tripId, departureDate: ctx.departureDate },
+      where: { tripId: ctx.tripId, departureDate: ctx.departureDate, allocationStatus: 'ACTIVE' },
       orderBy: { roomNumber: 'asc' }
     });
 
     const vehicles = await prisma.opsVehicleAllocation.findMany({
-      where: { tripId: ctx.tripId, departureDate: ctx.departureDate },
-      orderBy: [
-        { fleetId: 'asc' },
-        { seatNumber: 'asc' }
-      ]
+      where: { tripId: ctx.tripId, departureDate: ctx.departureDate, allocationStatus: 'ACTIVE' },
+      orderBy: [{ fleetId: 'asc' }, { seatNumber: 'asc' }]
+    });
+
+    // Compute allocation summary
+    const fleetCapacities = {};
+    if (vehicles.length > 0) {
+      const fleetIds = [...new Set(vehicles.map(v => v.fleetId))];
+      const fleets = await prisma.opsTransportFleet.findMany({ where: { id: { in: fleetIds } }, select: { id: true, capacity: true, vehicleType: true } });
+      fleets.forEach(f => { fleetCapacities[f.id] = { capacity: f.capacity, type: f.vehicleType }; });
+    }
+
+    const vehicleGroups = {};
+    vehicles.forEach(v => {
+      if (!vehicleGroups[v.fleetId]) vehicleGroups[v.fleetId] = { ...fleetCapacities[v.fleetId], assigned: 0 };
+      vehicleGroups[v.fleetId].assigned++;
     });
 
     return res.json({
       success: true,
       data: {
         rooms,
-        vehicles
+        vehicles,
+        summary: {
+          totalRoomAllocations: rooms.length,
+          totalVehicleAllocations: vehicles.length,
+          vehicleCapacitySummary: Object.entries(vehicleGroups).map(([id, g]) => ({
+            fleetId: id, type: g.type, capacity: g.capacity || 0, assigned: g.assigned,
+            remaining: (g.capacity || 0) - g.assigned
+          }))
+        }
       }
     });
   } catch (err) {
@@ -1424,8 +1945,238 @@ exports.overrideAllocation = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to record manual override' });
   }
 };
+// ── MANUAL ALLOCATION SAVE (hardened: validated, transactional, audited) ──
+exports.saveManualAllocations = async (req, res) => {
+  try {
+    if (req.user?.role === 'sales') {
+      return res.status(403).json({ success: false, message: 'Sales role cannot save allocations' });
+    }
 
-// ── SOP LIBRARY CRUD ──
+    const {
+      tripId, departureDate: rawDate,
+      roomAllocations = [], vehicleAllocations = [],
+      clearExisting = false
+    } = req.body;
+
+    if (!tripId || !rawDate) {
+      return res.status(400).json({ success: false, message: 'tripId and departureDate are required' });
+    }
+
+    // Require explicit clearExisting flag when sending empty arrays (prevents silent data loss)
+    const isEmpty = roomAllocations.length === 0 && vehicleAllocations.length === 0;
+    if (isEmpty && !clearExisting) {
+      return res.status(400).json({
+        success: false,
+        message: 'Sending empty allocation arrays requires clearExisting=true to prevent accidental data loss'
+      });
+    }
+
+    const tenantId = req.user?.tenantId || 'default';
+    const departureDate = normalizeDepartureDateIndia(rawDate);
+    if (!departureDate || isNaN(departureDate.getTime())) {
+      return res.status(400).json({ success: false, message: 'Invalid departureDate format' });
+    }
+
+    // Resolve trip
+    const trip = await prisma.trip.findFirst({
+      where: { tenantId, OR: [{ id: tripId }, { slug: tripId }, { shortName: tripId }] },
+      select: { id: true }
+    });
+    if (!trip) return res.status(404).json({ success: false, message: `Trip not found: ${tripId}` });
+    const resolvedTripId = trip.id;
+    const scope = { tripId: resolvedTripId, departureDate };
+
+    // ── PRE-VALIDATION (all checks before any DB write) ──
+
+    // 1. Validate all bookingIds belong to this departure
+    const allBookingIds = [
+      ...roomAllocations.map(r => r.bookingId),
+      ...vehicleAllocations.map(v => v.bookingId)
+    ].filter(Boolean);
+    if (allBookingIds.length > 0) {
+      const validBookings = await prisma.booking.findMany({
+        where: {
+          bookingId: { in: [...new Set(allBookingIds)] },
+          tripId: resolvedTripId
+        },
+        select: { bookingId: true, departureDate: true, status: true }
+      });
+      const validBookingIds = new Set(validBookings.map(b => b.bookingId));
+      const invalidBookings = [...new Set(allBookingIds)].filter(id => !validBookingIds.has(id));
+      if (invalidBookings.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `These bookingIds do not belong to trip ${tripId}: ${invalidBookings.join(', ')}`
+        });
+      }
+    }
+
+    // 2. Validate all fleetIds belong to this departure
+    const allFleetIds = vehicleAllocations.map(v => v.fleetId).filter(Boolean);
+    if (allFleetIds.length > 0) {
+      const validFleets = await prisma.opsTransportFleet.findMany({
+        where: { id: { in: [...new Set(allFleetIds)] }, tripId: resolvedTripId, departureDate },
+        select: { id: true, capacity: true }
+      });
+      const validFleetMap = new Map(validFleets.map(f => [f.id, f]));
+      const invalidFleets = [...new Set(allFleetIds)].filter(id => !validFleetMap.has(id));
+      if (invalidFleets.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `These fleetIds do not belong to this departure: ${invalidFleets.join(', ')}`
+        });
+      }
+
+      // 3. Enforce capacity per vehicle
+      const vehicleCountMap = {};
+      for (const v of vehicleAllocations) {
+        vehicleCountMap[v.fleetId] = (vehicleCountMap[v.fleetId] || 0) + 1;
+      }
+      for (const [fleetId, count] of Object.entries(vehicleCountMap)) {
+        const fleet = validFleetMap.get(fleetId);
+        if (fleet && count > fleet.capacity) {
+          return res.status(400).json({
+            success: false,
+            message: `Vehicle ${fleetId} capacity is ${fleet.capacity} but ${count} passengers assigned`
+          });
+        }
+      }
+    }
+
+    // 4. Reject duplicate passengers within the request payload
+    const roomSeen = new Set();
+    for (const r of roomAllocations) {
+      if (!r.bookingId || !r.travelerName || !r.roomNumber) {
+        return res.status(400).json({ success: false, message: `Missing required fields in room allocation: ${JSON.stringify(r)}` });
+      }
+      const key = `${r.bookingId}:${r.travelerName}`;
+      if (roomSeen.has(key)) {
+        return res.status(400).json({ success: false, message: `Duplicate room allocation for: ${r.travelerName} (${r.bookingId})` });
+      }
+      roomSeen.add(key);
+    }
+
+    const vehicleSeen = new Set();
+    for (const v of vehicleAllocations) {
+      if (!v.fleetId || !v.bookingId || !v.travelerName) {
+        return res.status(400).json({ success: false, message: `Missing required fields in vehicle allocation: ${JSON.stringify(v)}` });
+      }
+      const key = `${v.bookingId}:${v.travelerName}`;
+      if (vehicleSeen.has(key)) {
+        return res.status(400).json({ success: false, message: `Duplicate vehicle allocation for: ${v.travelerName} (${v.bookingId})` });
+      }
+      vehicleSeen.add(key);
+    }
+
+    // ── TRANSACTIONAL WRITE ──
+    let savedRooms = [];
+    let savedVehicles = [];
+
+    await prisma.$transaction(async (tx) => {
+      // Soft-cancel existing ACTIVE allocations for this departure
+      await tx.opsRoomAllocation.updateMany({
+        where: { ...scope, allocationStatus: 'ACTIVE' },
+        data: { allocationStatus: 'CANCELLED' }
+      });
+      await tx.opsVehicleAllocation.updateMany({
+        where: { ...scope, allocationStatus: 'ACTIVE' },
+        data: { allocationStatus: 'CANCELLED' }
+      });
+
+      // Upsert new ACTIVE room allocations
+      for (const r of roomAllocations) {
+        const record = await tx.opsRoomAllocation.upsert({
+          where: {
+            tripId_departureDate_bookingId_travelerName: {
+              tripId: resolvedTripId, departureDate, bookingId: r.bookingId, travelerName: r.travelerName
+            }
+          },
+          update: {
+            roomNumber: r.roomNumber,
+            roomType: r.roomType || 'STANDARD',
+            genderGroup: r.genderGroup || 'MIXED',
+            sharingType: r.sharingType || 'STANDARD',
+            allocationStatus: 'ACTIVE',
+            hotelBookingId: r.hotelBookingId || null,
+            notes: r.notes || null
+          },
+          create: {
+            tripId: resolvedTripId, departureDate,
+            bookingId: r.bookingId, travelerName: r.travelerName,
+            roomNumber: r.roomNumber,
+            roomType: r.roomType || 'STANDARD',
+            genderGroup: r.genderGroup || 'MIXED',
+            sharingType: r.sharingType || 'STANDARD',
+            allocationStatus: 'ACTIVE',
+            hotelBookingId: r.hotelBookingId || null,
+            notes: r.notes || null
+          }
+        });
+        savedRooms.push(record);
+      }
+
+      // Upsert new ACTIVE vehicle allocations
+      for (const v of vehicleAllocations) {
+        const record = await tx.opsVehicleAllocation.upsert({
+          where: {
+            tripId_departureDate_bookingId_travelerName: {
+              tripId: resolvedTripId, departureDate, bookingId: v.bookingId, travelerName: v.travelerName
+            }
+          },
+          update: {
+            fleetId: v.fleetId,
+            seatNumber: v.seatNumber || null,
+            allocationStatus: 'ACTIVE',
+            routeSegment: v.routeSegment || null,
+            pickupPoint: v.pickupPoint || null
+          },
+          create: {
+            tripId: resolvedTripId, departureDate,
+            fleetId: v.fleetId, bookingId: v.bookingId, travelerName: v.travelerName,
+            seatNumber: v.seatNumber || null,
+            allocationStatus: 'ACTIVE',
+            routeSegment: v.routeSegment || null,
+            pickupPoint: v.pickupPoint || null
+          }
+        });
+        savedVehicles.push(record);
+      }
+
+      // Write audit record
+      await tx.opsAllocationAudit.create({
+        data: {
+          tenantId,
+          tripId: resolvedTripId,
+          departureDate,
+          action: isEmpty ? 'CLEAR' : 'MANUAL_SAVE',
+          actorId: req.user?.id || null,
+          actorName: req.user?.name || req.user?.email || null,
+          roomCount: savedRooms.length,
+          vehicleCount: savedVehicles.length,
+          cleared: isEmpty,
+          metadata: {
+            requestedRooms: roomAllocations.length,
+            requestedVehicles: vehicleAllocations.length,
+            clearExisting
+          }
+        }
+      });
+    });
+
+    return res.json({
+      success: true,
+      message: isEmpty ? 'Allocations cleared successfully' : 'Manual allocations saved successfully',
+      data: { rooms: savedRooms, vehicles: savedVehicles }
+    });
+  } catch (err) {
+    console.error('saveManualAllocations error:', err);
+    const isValidationErr = /Duplicate|Missing|capacity|not belong|not found/i.test(err.message);
+    return res.status(isValidationErr ? 400 : 500)
+      .json({ success: false, message: err.message || 'Failed to save manual allocations' });
+  }
+};
+
+
 exports.getSopLibrary = async (req, res) => {
   try {
     const tenantId = req.user.tenantId || 'default';
@@ -1904,6 +2655,434 @@ exports.restoreTripLeader = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to restore trip leader' });
   }
 };
+
+// ── OPERATIONS DAY-WISE ACTIVITIES ──
+
+exports.getActivities = async (req, res) => {
+  try {
+    const ctx = await parseDepartureFilter(req, res, true);
+    if (!ctx) return;
+
+    const activities = await prisma.opsActivity.findMany({
+      where: ctx.where,
+      orderBy: [
+        { dayNumber: 'asc' },
+        { order: 'asc' },
+        { createdAt: 'asc' }
+      ],
+      include: {
+        responsibleGuide: { select: { id: true, name: true, email: true } },
+        vendor: { select: { id: true, name: true, type: true } }
+      }
+    });
+
+    return res.json({ success: true, data: activities });
+  } catch (err) {
+    console.error('getActivities error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch activities' });
+  }
+};
+
+exports.createActivity = async (req, res) => {
+  try {
+    const ctx = await parseDepartureFilter(req, res, true);
+    if (!ctx) return;
+
+    const {
+      dayNumber,
+      date,
+      name,
+      type,
+      startTime,
+      endTime,
+      location,
+      description,
+      responsibleGuideId,
+      responsibleStaff,
+      vendorId,
+      vendorName,
+      estimatedCost,
+      actualCost,
+      maxParticipants,
+      safetyInstructions,
+      requiredEquipment,
+      status,
+      remarks,
+      order
+    } = req.body;
+
+    const activity = await prisma.opsActivity.create({
+      data: {
+        tenantId: ctx.tenantId,
+        tripId: ctx.tripId,
+        departureDate: ctx.departureDate,
+        dayNumber: Number(dayNumber) || 1,
+        date: date ? new Date(date) : null,
+        name,
+        type,
+        startTime,
+        endTime,
+        location,
+        description,
+        responsibleGuideId: responsibleGuideId || null,
+        responsibleStaff,
+        vendorId: vendorId || null,
+        vendorName,
+        estimatedCost: Number(estimatedCost) || 0,
+        actualCost: Number(actualCost) || 0,
+        maxParticipants: Number(maxParticipants) || 0,
+        safetyInstructions,
+        requiredEquipment,
+        status: status || 'Planned',
+        remarks,
+        order: Number(order) || 0
+      }
+    });
+
+    return res.status(201).json({ success: true, data: activity });
+  } catch (err) {
+    console.error('createActivity error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to create activity' });
+  }
+};
+
+exports.updateActivity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      dayNumber,
+      date,
+      name,
+      type,
+      startTime,
+      endTime,
+      location,
+      description,
+      responsibleGuideId,
+      responsibleStaff,
+      vendorId,
+      vendorName,
+      estimatedCost,
+      actualCost,
+      maxParticipants,
+      safetyInstructions,
+      requiredEquipment,
+      status,
+      remarks,
+      order
+    } = req.body;
+
+    const activity = await prisma.opsActivity.update({
+      where: { id },
+      data: {
+        dayNumber: dayNumber !== undefined ? Number(dayNumber) : undefined,
+        date: date !== undefined ? (date ? new Date(date) : null) : undefined,
+        name,
+        type,
+        startTime,
+        endTime,
+        location,
+        description,
+        responsibleGuideId: responsibleGuideId !== undefined ? (responsibleGuideId || null) : undefined,
+        responsibleStaff,
+        vendorId: vendorId !== undefined ? (vendorId || null) : undefined,
+        vendorName,
+        estimatedCost: estimatedCost !== undefined ? Number(estimatedCost) : undefined,
+        actualCost: actualCost !== undefined ? Number(actualCost) : undefined,
+        maxParticipants: maxParticipants !== undefined ? Number(maxParticipants) : undefined,
+        safetyInstructions,
+        requiredEquipment,
+        status,
+        remarks,
+        order: order !== undefined ? Number(order) : undefined
+      }
+    });
+
+    return res.json({ success: true, data: activity });
+  } catch (err) {
+    console.error('updateActivity error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update activity' });
+  }
+};
+
+exports.deleteActivity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.opsActivity.delete({
+      where: { id }
+    });
+    return res.json({ success: true, message: 'Activity deleted successfully' });
+  } catch (err) {
+    console.error('deleteActivity error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete activity' });
+  }
+};
+
+exports.copyActivities = async (req, res) => {
+  try {
+    const ctx = await parseDepartureFilter(req, res, true);
+    if (!ctx) return;
+
+    const { fromTripId, fromDepartureDate } = req.body;
+
+    if (!fromTripId || !fromDepartureDate) {
+      return res.status(400).json({ success: false, message: 'fromTripId and fromDepartureDate are required' });
+    }
+
+    const fromDate = new Date(fromDepartureDate);
+    if (isNaN(fromDate.getTime())) {
+      return res.status(400).json({ success: false, message: 'Invalid fromDepartureDate format' });
+    }
+
+    const sourceActivities = await prisma.opsActivity.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        tripId: fromTripId,
+        departureDate: fromDate
+      }
+    });
+
+    if (sourceActivities.length === 0) {
+      return res.status(404).json({ success: false, message: 'No activities found in the source departure to copy' });
+    }
+
+    const newActivities = await Promise.all(
+      sourceActivities.map(async (act) => {
+        return prisma.opsActivity.create({
+          data: {
+            tenantId: ctx.tenantId,
+            tripId: ctx.tripId,
+            departureDate: ctx.departureDate,
+            dayNumber: act.dayNumber,
+            date: ctx.departureDate,
+            name: act.name,
+            type: act.type,
+            startTime: act.startTime,
+            endTime: act.endTime,
+            location: act.location,
+            description: act.description,
+            responsibleGuideId: act.responsibleGuideId,
+            responsibleStaff: act.responsibleStaff,
+            vendorId: act.vendorId,
+            vendorName: act.vendorName,
+            estimatedCost: act.estimatedCost,
+            actualCost: 0,
+            maxParticipants: act.maxParticipants,
+            safetyInstructions: act.safetyInstructions,
+            requiredEquipment: act.requiredEquipment,
+            status: 'Planned',
+            remarks: act.remarks,
+            order: act.order
+          }
+        });
+      })
+    );
+
+    return res.json({ success: true, message: `Successfully copied ${newActivities.length} activities`, data: newActivities });
+  } catch (err) {
+    console.error('copyActivities error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to copy activities' });
+  }
+};
+
+exports.getVendorRates = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const rates = await prisma.opsVendorHotelRate.findMany({
+      where: { vendorId },
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json({ success: true, data: rates });
+  } catch (err) {
+    console.error('getVendorRates error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch vendor rates' });
+  }
+};
+
+exports.saveVendorRate = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const {
+      id,
+      rateName,
+      rateType,
+      doubleRate,
+      tripleRate,
+      quadRate,
+      singleRate,
+      extraBedRate,
+      childWithBed,
+      childWithoutBed,
+      mealPlan,
+      mealPlanRate,
+      taxPercent,
+      validFrom,
+      validUntil,
+      isActive
+    } = req.body;
+
+    // Validations
+    if (!rateType) {
+      return res.status(400).json({ success: false, message: 'Rate type is required' });
+    }
+    const dRate = parseFloat(doubleRate || 0);
+    const tRate = parseFloat(tripleRate || 0);
+    const qRate = parseFloat(quadRate || 0);
+    const sRate = parseFloat(singleRate || 0);
+    const exRate = parseFloat(extraBedRate || 0);
+    const cWithBed = parseFloat(childWithBed || 0);
+    const cWithoutBed = parseFloat(childWithoutBed || 0);
+    const mpRate = parseFloat(mealPlanRate || 0);
+    const tax = parseFloat(taxPercent || 0);
+
+    if (
+      dRate < 0 || tRate < 0 || qRate < 0 || sRate < 0 ||
+      exRate < 0 || cWithBed < 0 || cWithoutBed < 0 || mpRate < 0 || tax < 0
+    ) {
+      return res.status(400).json({ success: false, message: 'Rates cannot be negative' });
+    }
+
+    if (validFrom && validUntil && new Date(validUntil) < new Date(validFrom)) {
+      return res.status(400).json({ success: false, message: 'Valid Until date cannot be earlier than Valid From date' });
+    }
+
+    const dataObj = {
+      tenantId: 'default',
+      vendorId,
+      rateName,
+      rateType,
+      doubleRate: dRate,
+      tripleRate: tRate,
+      quadRate: qRate,
+      singleRate: sRate,
+      extraBedRate: exRate,
+      childWithBed: cWithBed,
+      childWithoutBed: cWithoutBed,
+      mealPlan,
+      mealPlanRate: mpRate,
+      taxPercent: tax,
+      validFrom: validFrom ? new Date(validFrom) : null,
+      validUntil: validUntil ? new Date(validUntil) : null,
+      isActive: isActive !== false
+    };
+
+    let rateRecord;
+    if (id) {
+      rateRecord = await prisma.opsVendorHotelRate.update({
+        where: { id },
+        data: dataObj
+      });
+    } else {
+      rateRecord = await prisma.opsVendorHotelRate.create({
+        data: dataObj
+      });
+    }
+
+    return res.status(201).json({ success: true, data: rateRecord });
+  } catch (err) {
+    console.error('saveVendorRate error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to save vendor rate' });
+  }
+};
+
+exports.createHotelOverride = async (req, res) => {
+  try {
+    const { departureHotelId, fieldName, originalValue, overriddenValue, reason } = req.body;
+    const allowedRoles = ['operations manager', 'admin', 'superadmin'];
+    if (!allowedRoles.includes(req.user.role?.toLowerCase())) {
+      return res.status(403).json({ success: false, message: 'Not authorized to override prices' });
+    }
+
+    const override = await prisma.departureHotelRateOverride.create({
+      data: {
+        departureHotelId,
+        fieldName,
+        originalValue: parseFloat(originalValue || 0),
+        overriddenValue: parseFloat(overriddenValue || 0),
+        reason,
+        overriddenById: req.user.id || 'system'
+      }
+    });
+
+    // Update the booking total to match overridden value
+    const booking = await prisma.opsHotelBooking.update({
+      where: { id: departureHotelId },
+      data: {
+        totalAmount: parseFloat(overriddenValue || 0),
+        balanceAmount: parseFloat(overriddenValue || 0) - parseFloat(req.body.advancePaid || 0)
+      }
+    });
+
+    return res.status(201).json({ success: true, data: { override, booking } });
+  } catch (err) {
+    console.error('createHotelOverride error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to apply price override' });
+  }
+};
+
+exports.resetHotelOverride = async (req, res) => {
+  try {
+    const { departureHotelId } = req.body;
+    const allowedRoles = ['operations manager', 'admin', 'superadmin'];
+    if (!allowedRoles.includes(req.user.role?.toLowerCase())) {
+      return res.status(403).json({ success: false, message: 'Not authorized to reset overrides' });
+    }
+
+    // Delete overrides
+    await prisma.departureHotelRateOverride.deleteMany({
+      where: { departureHotelId }
+    });
+
+    // Retrieve snapshot rates to restore cost
+    const booking = await prisma.opsHotelBooking.findUnique({
+      where: { id: departureHotelId }
+    });
+
+    if (booking && booking.rateId) {
+      const dRate = booking.doubleRate || 0;
+      const tRate = booking.tripleRate || 0;
+      const qRate = booking.quadRate || 0;
+      const exRate = booking.extraBedRate || 0;
+      const dRooms = booking.doubleRoomsCount || 0;
+      const tRooms = booking.tripleRoomsCount || 0;
+      const qRooms = booking.quadRoomsCount || 0;
+      const exPax = booking.extraPersonsCount || 0;
+      const nights = booking.nightsCount || 1;
+
+      let baseCost = 0;
+      if (booking.rateType === 'PER_PERSON_PER_NIGHT') {
+        const totalPaxCovered = (dRooms * 2) + (tRooms * 3) + (qRooms * 4) + exPax;
+        baseCost = totalPaxCovered * dRate * nights;
+      } else {
+        baseCost = (
+          (dRooms * dRate) +
+          (tRooms * tRate) +
+          (qRooms * qRate) +
+          (exPax * exRate)
+        ) * nights;
+      }
+
+      const taxAmount = baseCost * (booking.taxPercent || 0) / 100;
+      const restoredCost = baseCost + taxAmount;
+
+      const updated = await prisma.opsHotelBooking.update({
+        where: { id: departureHotelId },
+        data: {
+          totalAmount: restoredCost,
+          balanceAmount: restoredCost - (booking.advancePaid || 0)
+        }
+      });
+
+      return res.json({ success: true, message: 'Price reset to vendor rate snapshot', data: updated });
+    }
+
+    return res.status(400).json({ success: false, message: 'No valid rate snapshot found to reset to' });
+  } catch (err) {
+    console.error('resetHotelOverride error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to reset overrides' });
+  }
+};
+
 
 module.exports = {
   normalizeDepartureDateIndia,

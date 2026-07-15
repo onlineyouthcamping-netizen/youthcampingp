@@ -343,6 +343,23 @@ exports.getTrip = async (req, res, next) => {
         include: includeRelations
       });
     }
+    if (!trip && id.includes('-')) {
+      const parts = id.split('-');
+      const prefix = parts[0].toUpperCase();
+      trip = await prisma.trip.findFirst({
+        where: {
+          tenantId,
+          OR: [
+            { id: { startsWith: prefix, mode: 'insensitive' } },
+            { id: { startsWith: prefix + '-', mode: 'insensitive' } },
+            { slug: { startsWith: prefix.toLowerCase(), mode: 'insensitive' } },
+            { shortName: { startsWith: prefix, mode: 'insensitive' } }
+          ],
+          tenantId
+        },
+        include: includeRelations
+      });
+    }
 
     if (!trip) {
       return res.status(404).json({ success: false, message: 'Trip not found' });

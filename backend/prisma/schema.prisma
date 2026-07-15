@@ -9,77 +9,79 @@ datasource db {
 }
 
 model Admin {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  role      AdminRole @default(admin)
-  isActive  Boolean   @default(true)
-  tokenVersion Int     @default(0)
+  id           String    @id @default(cuid())
+  email        String    @unique
+  password     String
+  name         String?
+  role         AdminRole @default(admin)
+  isActive     Boolean   @default(true)
+  tokenVersion Int       @default(0)
   lastLoginAt  DateTime?
-  tenantId  String?   @default("default")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  tenantId     String?   @default("default")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   // Booking-link ownership (used for sales filtering + analytics)
-  createdBookingLinks BookingLink[] @relation("CreatedBookingLinks")
-  salesBookings Booking[] @relation("SalesBookings")
-  salesInquiries Inquiry[] @relation("SalesInquiries")
-  salesQuotations Quotation[] @relation("SalesQuotations")
-  tripAssignments TripAssignment[]
-  sentEmails    EmailLog[]
+  createdBookingLinks BookingLink[]    @relation("CreatedBookingLinks")
+  salesBookings       Booking[]        @relation("SalesBookings")
+  salesInquiries      Inquiry[]        @relation("SalesInquiries")
+  salesQuotations     Quotation[]      @relation("SalesQuotations")
+  tripAssignments     TripAssignment[]
+  sentEmails          EmailLog[]
 
   // Verification & ticket relations
-  verifiedBookings      BookingVerification[]    @relation("VerifiedByAdmin")
-  verificationLogs      BookingVerificationLog[] @relation("VerificationLogAdmin")
-  trainTicketLogs       TrainTicketLog[]         @relation("TicketLogAdmin")
-  ticketHistories       TrainTicketHistory[]     @relation("TicketHistoryAdmin")
-  submittedTickets      TrainTicket[]            @relation("TicketSubmittedByAdmin")
-  approvalActors        TrainTicketApproval[]    @relation("ApprovalActorAdmin")
-  trainTicketGroups     TrainTicketGroup[]       @relation("GroupCreatedByAdmin")
-  bookingActivityLogs   BookingActivityLog[]     @relation("BookingActivityActor")
-  assignedTasks         BookingTask[]            @relation("TaskAssignedBy")
-  receivedTasks         BookingTask[]            @relation("TaskAssignedTo")
+  verifiedBookings    BookingVerification[]    @relation("VerifiedByAdmin")
+  verificationLogs    BookingVerificationLog[] @relation("VerificationLogAdmin")
+  trainTicketLogs     TrainTicketLog[]         @relation("TicketLogAdmin")
+  ticketHistories     TrainTicketHistory[]     @relation("TicketHistoryAdmin")
+  submittedTickets    TrainTicket[]            @relation("TicketSubmittedByAdmin")
+  approvalActors      TrainTicketApproval[]    @relation("ApprovalActorAdmin")
+  trainTicketGroups   TrainTicketGroup[]       @relation("GroupCreatedByAdmin")
+  bookingActivityLogs BookingActivityLog[]     @relation("BookingActivityActor")
+  assignedTasks       BookingTask[]            @relation("TaskAssignedBy")
+  receivedTasks       BookingTask[]            @relation("TaskAssignedTo")
 
   // Package Builder relations
-  salesPackageDrafts      PackageDraft[]     @relation("SalesPackageDrafts")
-  createdPackageDrafts    PackageDraft[]     @relation("PackageDraftCreatedBy")
-  updatedPackageDrafts    PackageDraft[]     @relation("PackageDraftUpdatedBy")
+  salesPackageDrafts   PackageDraft[] @relation("SalesPackageDrafts")
+  createdPackageDrafts PackageDraft[] @relation("PackageDraftCreatedBy")
+  updatedPackageDrafts PackageDraft[] @relation("PackageDraftUpdatedBy")
 
   // Accounting relations
-  salesAccountingEntries   AccountingEntry[] @relation("SalesAccountingEntries")
-  actionedAccountingEntries AccountingEntry[] @relation("ActionedAccountingEntries")
+  salesAccountingEntries    AccountingEntry[]    @relation("SalesAccountingEntries")
+  actionedAccountingEntries AccountingEntry[]    @relation("ActionedAccountingEntries")
   accountingLogs            AccountingEntryLog[]
 
   // Ops relations
-  opsChecklistsCompleted   OpsTripChecklist[]       @relation("ChecklistCompletedByAdmin")
-  opsIncidentsReported     OpsIncidentLog[]         @relation("IncidentReportedByAdmin")
-  guideOpsPayments         OpsGuidePayment[]        @relation("GuideAssignments")
-  approvedOpsPayments      OpsGuidePayment[]        @relation("GuidePaymentApprovals")
-  opsAllocationRuns        OpsAllocationRun[]
-  opsAllocationOverrides   OpsAllocationOverride[]
+  opsChecklistsCompleted OpsTripChecklist[]      @relation("ChecklistCompletedByAdmin")
+  opsIncidentsReported   OpsIncidentLog[]        @relation("IncidentReportedByAdmin")
+  guideOpsPayments       OpsGuidePayment[]       @relation("GuideAssignments")
+  approvedOpsPayments    OpsGuidePayment[]       @relation("GuidePaymentApprovals")
+  opsAllocationRuns      OpsAllocationRun[]
+  opsAllocationOverrides OpsAllocationOverride[]
 
   // Ops SOP Library Relations
-  createdSops              OpsSopLibrary[]          @relation("SopCreatedByAdmin")
-  updatedSops              OpsSopLibrary[]          @relation("SopUpdatedByAdmin")
-  archivedSops             OpsSopLibrary[]          @relation("SopArchivedByAdmin")
+  createdSops  OpsSopLibrary[] @relation("SopCreatedByAdmin")
+  updatedSops  OpsSopLibrary[] @relation("SopUpdatedByAdmin")
+  archivedSops OpsSopLibrary[] @relation("SopArchivedByAdmin")
 
   // Ops Trip Leader Relations
-  assignedLeaders          OpsTripLeader[]          @relation("LeaderAssignedByAdmin")
-  updatedLeaders           OpsTripLeader[]          @relation("LeaderUpdatedByAdmin")
-  archivedLeaders          OpsTripLeader[]          @relation("LeaderArchivedByAdmin")
+  assignedLeaders OpsTripLeader[] @relation("LeaderAssignedByAdmin")
+  updatedLeaders  OpsTripLeader[] @relation("LeaderUpdatedByAdmin")
+  archivedLeaders OpsTripLeader[] @relation("LeaderArchivedByAdmin")
 
   // Checklist Activity Relations
-  checklistActivities      OpsChecklistActivity[]
+  checklistActivities OpsChecklistActivity[]
 
   // Incident Log Relations
-  resolvedIncidents        OpsIncidentLog[]         @relation("IncidentResolvedByAdmin")
-  incidentActivities       OpsIncidentActivity[]
-  leaderActivities         OpsTripLeaderActivity[]
+  resolvedIncidents  OpsIncidentLog[]        @relation("IncidentResolvedByAdmin")
+  incidentActivities OpsIncidentActivity[]
+  leaderActivities   OpsTripLeaderActivity[]
 
   // Ticket Approval relations
   requestedTicketApprovals TicketApproval[] @relation("TicketApprovalRequestedBy")
   reviewedTicketApprovals  TicketApproval[] @relation("TicketApprovalReviewedBy")
+  opsActivities            OpsActivity[]    @relation("OpsActivityGuide")
+  opsDocuments             OpsDocument[]    @relation("OpsDocUploadedByAdmin")
 
   @@index([tenantId])
 }
@@ -99,23 +101,23 @@ model User {
 }
 
 model Inquiry {
-  id         String   @id @default(cuid())
-  tenantId   String   @default("default")
-  name       String?
-  email      String?
-  phone      String
-  message    String?
-  tripId     String?
-  tripTitle  String?
-  date       String?
-  count      Int?
-  source     String?
-  status     String   @default("new")
-  adminNotes String?
+  id           String     @id @default(cuid())
+  tenantId     String     @default("default")
+  name         String?
+  email        String?
+  phone        String
+  message      String?
+  tripId       String?
+  tripTitle    String?
+  date         String?
+  count        Int?
+  source       String?
+  status       String     @default("new")
+  adminNotes   String?
   salesAdminId String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  salesAdmin   Admin?   @relation("SalesInquiries", fields: [salesAdminId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  salesAdmin   Admin?     @relation("SalesInquiries", fields: [salesAdminId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   emailLogs    EmailLog[]
 
   @@index([tenantId])
@@ -139,42 +141,42 @@ model Vendor {
 }
 
 model TripVendor {
-  id            String   @id @default(cuid())
-  tenantId      String   @default("default")
-  tripId        String
-  vendorId      String
-  agreedCost    Float
-  paidAmount    Float    @default(0)
-  paymentStatus String   @default("pending")
-  notes         String?
+  id                  String   @id @default(cuid())
+  tenantId            String   @default("default")
+  tripId              String
+  vendorId            String
+  agreedCost          Float
+  paidAmount          Float    @default(0)
+  paymentStatus       String   @default("pending")
+  notes               String?
   outgoingPaymentMode String?
   onlinePersonAccount String?
   cashDepositorName   String?
   depositAccountName  String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  trip          Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  vendor        Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  trip                Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  vendor              Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([tenantId])
   @@index([tripId])
 }
 
 model Blog {
-  id        String   @id @default(cuid())
-  tenantId  String   @default("default")
-  title     String
-  slug      String   @unique
-  content   String
-  image     String?
+  id          String   @id @default(cuid())
+  tenantId    String   @default("default")
+  title       String
+  slug        String   @unique
+  content     String
+  image       String?
   author      String?  @default("Expedition Team")
   authorImage String?
   status      String   @default("draft")
   readTime    String?  @default("5 MIN READ")
   hasVideo    Boolean  @default(false)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([tenantId])
 }
@@ -216,105 +218,112 @@ model Payment {
 }
 
 model Quotation {
-  id          String   @id @default(cuid())
-  tenantId    String   @default("default")
-  title       String
-  slug        String?  @unique
-  clientName  String
-  totalAmount Float
-  status      String   @default("draft")
-  data        Json?
+  id           String   @id @default(cuid())
+  tenantId     String   @default("default")
+  title        String
+  slug         String?  @unique
+  clientName   String
+  totalAmount  Float
+  status       String   @default("draft")
+  data         Json?
   salesAdminId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   salesAdmin   Admin?   @relation("SalesQuotations", fields: [salesAdminId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([tenantId])
 }
 
 model Trip {
-  id              String       @id @default(cuid())
-  tenantId        String       @default("default")
-  title           String
-  shortName       String?
-  slug            String       @unique
-  location        String
-  price           Float
-  duration        String
-  description     String
-  category        String       @default("himalayan")
-  isActive        Boolean      @default(true)
-  status          String       @default("published")
-  heroImage       String?
-  images          String[]
-  itinerary       Json?
-  availableDates  Json?
-  variants        Json?
-  travelOptions   Json?
-  roomOptions     Json?
-  seo             Json?
-  highlights      Json?
-  inclusions      Json?
-  exclusions      Json?
-  faqs            Json?
-  addons          Json?
-  maxGroupSize    Int?
-  difficulty      String?
-  departureCity   String?
-  pickupCities    Json?
+  id             String   @id @default(cuid())
+  tenantId       String   @default("default")
+  title          String
+  shortName      String?
+  slug           String   @unique
+  location       String
+  price          Float
+  duration       String
+  description    String
+  category       String   @default("himalayan")
+  isActive       Boolean  @default(true)
+  status         String   @default("published")
+  heroImage      String?
+  images         String[]
+  itinerary      Json?
+  availableDates Json?
+  variants       Json?
+  travelOptions  Json?
+  roomOptions    Json?
+  seo            Json?
+  highlights     Json?
+  inclusions     Json?
+  exclusions     Json?
+  faqs           Json?
+  addons         Json?
+  maxGroupSize   Int?
+  difficulty     String?
+  departureCity  String?
+  pickupCities   Json?
 
-  ageLimit        String?
-  bookingUrl      String?
-  customSections  Json?
-  attractions     Json?
-  activities      Json?
-  accommodations  Json?
-  popupDetails    Json?
-  route           Json?
-  ageGroup        String?
-  maxAltitude     String?
-  tripType        String?
-  startEnd        String?
-  pickupMode      String?
-  stickyCardPrice Float?
-  stickyCardLabel String?
-  gstPercentage  Float?    @default(5)
-  reels           Json?
-  tripReviews     Json?
+  ageLimit          String?
+  bookingUrl        String?
+  customSections    Json?
+  attractions       Json?
+  activities        Json?
+  accommodations    Json?
+  popupDetails      Json?
+  route             Json?
+  ageGroup          String?
+  maxAltitude       String?
+  tripType          String?
+  startEnd          String?
+  pickupMode        String?
+  stickyCardPrice   Float?
+  stickyCardLabel   String?
+  gstPercentage     Float?  @default(5)
+  reels             Json?
+  tripReviews       Json?
   itineraryVersions Json?
 
-  order           Int          @default(999)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  bookings        Booking[]
-  assignments     TripVendor[]
+  order            Int              @default(999)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  bookings         Booking[]
+  assignments      TripVendor[]
+  opsTripVendors   OpsTripVendor[]
   guideAssignments TripAssignment[]
-  trainTemplates  TrainTemplate[]
+  trainTemplates   TrainTemplate[]
 
   // Ops relations
-  opsHotelBookings   OpsHotelBooking[]
-  opsTransportFleets OpsTransportFleet[]
-  opsGuidePayments   OpsGuidePayment[]
-  opsMiscExpenses    OpsMiscExpense[]
-  opsSeatConfigs     OpsSeatConfig[]
-  opsChecklists      OpsTripChecklist[]
-  opsIncidents       OpsIncidentLog[]
-  opsRoomAllocations OpsRoomAllocation[]
+  opsHotelBookings      OpsHotelBooking[]
+  opsTransportFleets    OpsTransportFleet[]
+  opsGuidePayments      OpsGuidePayment[]
+  opsMiscExpenses       OpsMiscExpense[]
+  opsSeatConfigs        OpsSeatConfig[]
+  opsChecklists         OpsTripChecklist[]
+  opsIncidents          OpsIncidentLog[]
+  opsRoomAllocations    OpsRoomAllocation[]
   opsVehicleAllocations OpsVehicleAllocation[]
-  opsDayItineraries  OpsDayItinerary[]
-  opsTripExpenses    OpsTripExpense[]
-  opsAllocationRuns  OpsAllocationRun[]
-  opsRoomInventories OpsRoomInventory[]
-  opsTripLeaders     OpsTripLeader[]
+  opsDayItineraries     OpsDayItinerary[]
+  opsTripExpenses       OpsTripExpense[]
+  opsActivities         OpsActivity[]
+  opsVendorPayments     OpsVendorPayment[]
+  opsAllocationRuns     OpsAllocationRun[]
+  opsRoomInventories    OpsRoomInventory[]
+  opsTripLeaders        OpsTripLeader[]
 
   // Travel Desk relations
-  ticketingSops      TicketingSop[]
-  ticketingLinks     TicketingLink[]
-  itineraries        Itinerary[]
-  tripSops           TripSop[]
-  tripDocuments      TripDocument[]
-  tripGalleries      TripGallery[]
-  tripNotes          TripNote[]
+  ticketingSops  TicketingSop[]
+  ticketingLinks TicketingLink[]
+  itineraries    Itinerary[]
+  tripSops       TripSop[]
+  tripDocuments  TripDocument[]
+  tripGalleries  TripGallery[]
+  tripNotes      TripNote[]
+  opsDocuments   OpsDocument[]
+  opsMessages    OpsMessage[]
+  knowledgeItems KnowledgeItem[]
+  travelQuestions TravelQuestion[]
 
   @@index([tenantId])
   @@index([category])
@@ -323,66 +332,67 @@ model Trip {
 }
 
 model Booking {
-  id              String            @id @default(cuid())
-  tenantId        String            @default("default")
-  bookingId       String            @unique
-  tripId          String
-  tripName        String?
-  status          String            @default("pending")
-  name            String
-  fullName        String?
-  phone           String
-  mobile          String?
-  email           String?
-  age             Int?
-  gender          String?
-  numberOfTravelers Int?
-  baseAmount      Float?
-  gstAmount       Float?
-  depositGst      Float?
-  totalAmount     Float             @default(0)
-  amount          Float
-  advancePaid     Float             @default(0)
-  remainingAmount Float             @default(0)
-  paymentMode     String?
-  paymentStatus   String            @default("Pending")
-  payment_status  String            @default("pending")
-  payment_method  String            @default("upi")
-  upi_reference   String?
-  notes           String?
-  adminNotes      String?
+  id                  String            @id @default(cuid())
+  tenantId            String            @default("default")
+  bookingId           String            @unique
+  tripId              String
+  tripName            String?
+  status              String            @default("pending")
+  name                String
+  fullName            String?
+  phone               String
+  mobile              String?
+  email               String?
+  age                 Int?
+  gender              String?
+  numberOfTravelers   Int?
+  baseAmount          Float?
+  gstAmount           Float?
+  depositGst          Float?
+  totalAmount         Float             @default(0)
+  amount              Float
+  advancePaid         Float             @default(0)
+  remainingAmount     Float             @default(0)
+  paymentMode         String?
+  paymentStatus       String            @default("Pending")
+  payment_status      String            @default("pending")
+  payment_method      String            @default("upi")
+  upi_reference       String?
+  notes               String?
+  adminNotes          String?
   sourceBookingLinkId String?
   salesAdminId        String?
   sourceMeta          Json?
-  departureDate   DateTime?
-  pickupCity      String?
-  skipDays        Int?              @default(0)
-  adjustedPrice   Float?
-  joiningDate     DateTime?
-  reminderSent    Boolean           @default(false)
-  passengers      Json?
-  trainTicketRequired Boolean       @default(false)
-  trainTicketStatus   String        @default("NOT_REQUIRED")
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  tripRef         Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  emailLogs       BookingEmailLog[]
-  emailLogsNew    EmailLog[]
-  sourceBookingLink BookingLink?   @relation(fields: [sourceBookingLinkId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  salesAdmin        Admin?         @relation("SalesBookings", fields: [salesAdminId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  departureDate       DateTime?
+  pickupCity          String?
+  skipDays            Int?              @default(0)
+  adjustedPrice       Float?
+  joiningDate         DateTime?
+  reminderSent        Boolean           @default(false)
+  passengers          Json?
+  trainTicketRequired Boolean           @default(false)
+  trainTicketStatus   String            @default("NOT_REQUIRED")
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  tripRef             Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  emailLogs           BookingEmailLog[]
+  emailLogsNew        EmailLog[]
+  sourceBookingLink   BookingLink?      @relation(fields: [sourceBookingLinkId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  salesAdmin          Admin?            @relation("SalesBookings", fields: [salesAdminId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   // Verification & ticket relations
-  verification      BookingVerification?
-  trainTicket       TrainTicketRequest?
-  trainTickets      TrainTicket[]
-  trainTicketGroups TrainTicketGroup[]
-  activityLogs      BookingActivityLog[]
-  tasks             BookingTask[]
-  accountingEntries AccountingEntry[]
+  verification          BookingVerification?
+  trainTicket           TrainTicketRequest?
+  trainTickets          TrainTicket[]
+  trainTicketGroups     TrainTicketGroup[]
+  activityLogs          BookingActivityLog[]
+  tasks                 BookingTask[]
+  accountingEntries     AccountingEntry[]
   opsVehicleAllocations OpsVehicleAllocation[]
   opsRoomAllocations    OpsRoomAllocation[]
   documents             BookingDocument[]
   ticketApprovals       TicketApproval[]
+  opsClientPayments     OpsClientPayment[]
 
   @@index([tenantId])
   @@index([status])
@@ -408,12 +418,12 @@ model BookingDocument {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  booking          Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
-  @@map("booking_documents")
   @@index([tenantId])
   @@index([bookingId])
   @@index([passengerId])
+  @@map("booking_documents")
 }
 
 model BookingEmailLog {
@@ -432,20 +442,20 @@ model BookingEmailLog {
 }
 
 model BookingLink {
-  id        String   @id @default(cuid())
-  tenantId  String   @default("default")
+  id       String @id @default(cuid())
+  tenantId String @default("default")
 
   createdByAdminId String?
   createdByAdmin   Admin?  @relation("CreatedBookingLinks", fields: [createdByAdminId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
-  tripId     String
-  tripName   String?
-  departureDate DateTime?
-  pickupCity String?
-  paymentMode String?
-  customAmount Float?
-  customTime   String?
-  headerTitle  String?
+  tripId         String
+  tripName       String?
+  departureDate  DateTime?
+  pickupCity     String?
+  paymentMode    String?
+  customAmount   Float?
+  customTime     String?
+  headerTitle    String?
   headerSubtitle String?
   customerName   String?
   customerPhone  String?
@@ -454,20 +464,20 @@ model BookingLink {
   internalNote   String?
 
   expiresAt DateTime?
-  status    String   @default("active") // active|revoked|expired
+  status    String    @default("active") // active|revoked|expired
 
-  tokenHash   String @unique
+  tokenHash   String  @unique
   tokenPrefix String  @default("")
   // Admin needs to copy the exact share URL later; storing the URL keeps the token server-side.
   // Customers only see the URL they were already shared.
   shareUrl    String?
 
-  openedCount Int     @default(0)
-  firstOpenedAt DateTime?
-  lastOpenedAt  DateTime?
-  completedCount Int   @default(0)
+  openedCount     Int       @default(0)
+  firstOpenedAt   DateTime?
+  lastOpenedAt    DateTime?
+  completedCount  Int       @default(0)
   lastCompletedAt DateTime?
-  revokedAt DateTime?
+  revokedAt       DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -525,6 +535,7 @@ model Setting {
   @@index([tenantId])
   @@index([key])
 }
+
 model Theme {
   id        String   @id @default(cuid())
   tenantId  String   @default("default")
@@ -540,7 +551,7 @@ model Theme {
 model DesignConfig {
   id        String   @id @default(cuid())
   tenantId  String   @default("default")
-  scope     String   // "global" | "page:{slug}" | "section:{pageSlug}:{sectionId}"
+  scope     String // "global" | "page:{slug}" | "section:{pageSlug}:{sectionId}"
   config    Json     @default("{}")
   status    String   @default("draft") // "draft" | "published"
   version   Int      @default(1)
@@ -559,7 +570,7 @@ model DesignVersion {
   scope            String
   config           Json
   version          Int
-  action           String   // "published" | "restored" | "draft_saved"
+  action           String // "published" | "restored" | "draft_saved"
   changedBy        String?
   changedByName    String?
   changeSummary    String?
@@ -586,7 +597,6 @@ model DesignPreset {
   @@index([category])
 }
 
-
 model Attraction {
   id            String   @id @default(cuid())
   tenantId      String   @default("default")
@@ -610,7 +620,6 @@ model Attraction {
   @@index([tenantId])
   @@index([slug])
 }
-
 
 // ==========================================
 // ACCESS CONTROL / RBAC / AUDIT LOG MODELS
@@ -660,27 +669,26 @@ model AuditLog {
   @@index([entityType, entityId])
 }
 
-
 // ==========================================
 // BOOKING VERIFICATION & TRAIN TICKET MODELS
 // ==========================================
 
 model BookingVerification {
-  id                String                   @id @default(cuid())
-  tenantId          String                   @default("default")
-  bookingId         String                   @unique
-  status            String                   @default("DRAFT") // DRAFT, PENDING_VERIFICATION, CHANGES_REQUESTED, VERIFIED, REJECTED
+  id                String    @id @default(cuid())
+  tenantId          String    @default("default")
+  bookingId         String    @unique
+  status            String    @default("DRAFT") // DRAFT, PENDING_VERIFICATION, CHANGES_REQUESTED, VERIFIED, REJECTED
   checklist         Json?
-  notes             String?                  @db.Text
+  notes             String?   @db.Text
   submittedAt       DateTime?
   verifiedAt        DateTime?
   verifiedByAdminId String?
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  booking           Booking                  @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
-  verifiedBy        Admin?                   @relation("VerifiedByAdmin", fields: [verifiedByAdminId], references: [id])
-  logs              BookingVerificationLog[]
+  booking    Booking                  @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  verifiedBy Admin?                   @relation("VerifiedByAdmin", fields: [verifiedByAdminId], references: [id])
+  logs       BookingVerificationLog[]
 
   @@index([tenantId])
   @@index([status])
@@ -689,46 +697,46 @@ model BookingVerification {
 }
 
 model BookingVerificationLog {
-  id                    String              @id @default(cuid())
+  id                    String   @id @default(cuid())
   bookingVerificationId String
-  action                String              // SUBMIT, VERIFY, REQUEST_CHANGES, REJECT
-  notes                 String?             @db.Text
+  action                String // SUBMIT, VERIFY, REQUEST_CHANGES, REJECT
+  notes                 String?  @db.Text
   snapshot              Json?
   adminId               String?
-  createdAt             DateTime            @default(now())
+  createdAt             DateTime @default(now())
 
-  verification          BookingVerification @relation(fields: [bookingVerificationId], references: [id], onDelete: Cascade)
-  admin                 Admin?              @relation("VerificationLogAdmin", fields: [adminId], references: [id])
+  verification BookingVerification @relation(fields: [bookingVerificationId], references: [id], onDelete: Cascade)
+  admin        Admin?              @relation("VerificationLogAdmin", fields: [adminId], references: [id])
 
   @@index([bookingVerificationId])
   @@map("booking_verification_logs")
 }
 
 model TrainTicketRequest {
-  id              String                 @id @default(cuid())
-  tenantId        String                 @default("default")
-  bookingId       String                 @unique
-  status          String                 @default("DRAFT") // DRAFT, PENDING_VERIFICATION, CHANGES_REQUESTED, APPROVED, REJECTED, ISSUED, CANCELLED, REBOOKED
+  id              String    @id @default(cuid())
+  tenantId        String    @default("default")
+  bookingId       String    @unique
+  status          String    @default("DRAFT") // DRAFT, PENDING_VERIFICATION, CHANGES_REQUESTED, APPROVED, REJECTED, ISSUED, CANCELLED, REBOOKED
   journeyDate     DateTime?
   fromStation     String?
   toStation       String?
   preferredTrain  String?
   preferredClass  String?
   seatPreference  String?
-  estimatedAmount Float?                 @default(0)
-  specialNotes    String?                @db.Text
+  estimatedAmount Float?    @default(0)
+  specialNotes    String?   @db.Text
   pnr             String?
-  ticketDetails   String?                @db.Text
+  ticketDetails   String?   @db.Text
   history         Json?
   templateId      String?
   emailTemplateId String?
   alertMetadata   Json?
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  booking         Booking                @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
-  travellers      TrainTicketTraveller[]
-  logs            TrainTicketLog[]
+  booking    Booking                @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  travellers TrainTicketTraveller[]
+  logs       TrainTicketLog[]
 
   @@index([tenantId])
   @@index([status])
@@ -736,31 +744,31 @@ model TrainTicketRequest {
 }
 
 model TrainTicketTraveller {
-  id                   String             @id @default(cuid())
+  id                   String   @id @default(cuid())
   trainTicketRequestId String
   name                 String
   age                  Int?
   gender               String?
   phone                String?
-  createdAt            DateTime           @default(now())
+  createdAt            DateTime @default(now())
 
-  request              TrainTicketRequest @relation(fields: [trainTicketRequestId], references: [id], onDelete: Cascade)
+  request TrainTicketRequest @relation(fields: [trainTicketRequestId], references: [id], onDelete: Cascade)
 
   @@index([trainTicketRequestId])
   @@map("train_ticket_travellers")
 }
 
 model TrainTicketLog {
-  id                   String             @id @default(cuid())
+  id                   String   @id @default(cuid())
   trainTicketRequestId String
-  action               String             // CREATE, SAVE_DRAFT, SUBMIT, APPROVE, REJECT, REQUEST_CHANGES, MARK_ISSUED
-  notes                String?            @db.Text
+  action               String // CREATE, SAVE_DRAFT, SUBMIT, APPROVE, REJECT, REQUEST_CHANGES, MARK_ISSUED
+  notes                String?  @db.Text
   snapshot             Json?
   adminId              String?
-  createdAt            DateTime           @default(now())
+  createdAt            DateTime @default(now())
 
-  request              TrainTicketRequest @relation(fields: [trainTicketRequestId], references: [id], onDelete: Cascade)
-  admin                Admin?             @relation("TicketLogAdmin", fields: [adminId], references: [id])
+  request TrainTicketRequest @relation(fields: [trainTicketRequestId], references: [id], onDelete: Cascade)
+  admin   Admin?             @relation("TicketLogAdmin", fields: [adminId], references: [id])
 
   @@index([trainTicketRequestId])
   @@map("train_ticket_logs")
@@ -785,49 +793,49 @@ enum TrainTicketApprovalStatus {
 }
 
 model TrainTicket {
-  id                    String                    @id @default(cuid())
-  tenantId              String                    @default("default")
-  bookingId             String
-  travelerName          String
-  passengerReference    String?
-  pnr                   String?
-  trainName             String?
-  trainNumber           String?
-  journeyDate           DateTime?
-  sourceStation         String?
-  destinationStation    String?
-  coach                 String?
-  seatNumber            String?
-  berthType             String?
-  ticketStatus          TrainTicketStatus         @default(PENDING)
-  approvalStatus        TrainTicketApprovalStatus @default(DRAFT)
-  isLocked              Boolean                   @default(false)
-  ticketAmount          Decimal                   @default(0.00) @db.Decimal(10, 2)
-  amountMode            String?
-  refundAmount          Decimal                   @default(0.00) @db.Decimal(10, 2)
-  cancellationReason    String?
-  internalNote          String?                   @db.Text
-  ticketBookingPerson   String?
-  supersedesTicketId    String?                   @unique
-  supersededByTicketId  String?                   @unique
-  reopenReason          String?                   @db.Text
-  submittedByAdminId    String?
-  groupId               String?
-  templateId            String?
-  ticketFileUrl         String?
+  id                   String                    @id @default(cuid())
+  tenantId             String                    @default("default")
+  bookingId            String
+  travelerName         String
+  passengerReference   String?
+  pnr                  String?
+  trainName            String?
+  trainNumber          String?
+  journeyDate          DateTime?
+  sourceStation        String?
+  destinationStation   String?
+  coach                String?
+  seatNumber           String?
+  berthType            String?
+  ticketStatus         TrainTicketStatus         @default(PENDING)
+  approvalStatus       TrainTicketApprovalStatus @default(DRAFT)
+  isLocked             Boolean                   @default(false)
+  ticketAmount         Decimal                   @default(0.00) @db.Decimal(10, 2)
+  amountMode           String?
+  refundAmount         Decimal                   @default(0.00) @db.Decimal(10, 2)
+  cancellationReason   String?
+  internalNote         String?                   @db.Text
+  ticketBookingPerson  String?
+  supersedesTicketId   String?                   @unique
+  supersededByTicketId String?                   @unique
+  reopenReason         String?                   @db.Text
+  submittedByAdminId   String?
+  groupId              String?
+  templateId           String?
+  ticketFileUrl        String?
 
   // Relations
-  booking               Booking                   @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
-  supersedes            TrainTicket?              @relation("TicketSupersedes", fields: [supersedesTicketId], references: [id])
-  supersededBy          TrainTicket?              @relation("TicketSupersedes")
-  submittedBy           Admin?                    @relation("TicketSubmittedByAdmin", fields: [submittedByAdminId], references: [id], onDelete: SetNull)
-  history               TrainTicketHistory[]
-  approvals             TrainTicketApproval[]
-  group                 TrainTicketGroup?         @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  emailLogs             EmailLog[]
+  booking      Booking               @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  supersedes   TrainTicket?          @relation("TicketSupersedes", fields: [supersedesTicketId], references: [id])
+  supersededBy TrainTicket?          @relation("TicketSupersedes")
+  submittedBy  Admin?                @relation("TicketSubmittedByAdmin", fields: [submittedByAdminId], references: [id], onDelete: SetNull)
+  history      TrainTicketHistory[]
+  approvals    TrainTicketApproval[]
+  group        TrainTicketGroup?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  emailLogs    EmailLog[]
 
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([tenantId])
   @@index([bookingId])
@@ -840,45 +848,45 @@ model TrainTicket {
 }
 
 model TrainTicketHistory {
-  id             String                    @id @default(cuid())
-  ticketId       String
-  action         String
-  fromStatus     TrainTicketStatus?
-  toStatus       TrainTicketStatus?
-  fromApproval   TrainTicketApprovalStatus?
-  toApproval     TrainTicketApprovalStatus?
-  notes          String?                   @db.Text
-  performedById  String?
-  createdAt      DateTime                  @default(now())
+  id            String                     @id @default(cuid())
+  ticketId      String
+  action        String
+  fromStatus    TrainTicketStatus?
+  toStatus      TrainTicketStatus?
+  fromApproval  TrainTicketApprovalStatus?
+  toApproval    TrainTicketApprovalStatus?
+  notes         String?                    @db.Text
+  performedById String?
+  createdAt     DateTime                   @default(now())
 
-  ticket         TrainTicket               @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  performedBy    Admin?                    @relation("TicketHistoryAdmin", fields: [performedById], references: [id], onDelete: SetNull)
+  ticket      TrainTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  performedBy Admin?      @relation("TicketHistoryAdmin", fields: [performedById], references: [id], onDelete: SetNull)
 
   @@index([ticketId])
   @@index([ticketId, createdAt])
 }
 
 model TrainTemplate {
-  id                    String        @id @default(cuid())
-  tenantId              String        @default("default")
-  tripId                String?
-  tripTitle             String?
-  departureDate         DateTime?
-  trainName             String?
-  trainNumber           String?
-  source                String?
-  destination           String?
-  defaultClass          String?
-  defaultCoach          String?
-  journeyDate           DateTime?
-  boardingPoint         String?
-  droppingPoint         String?
-  waitlistDisclaimer    String?       @db.Text
-  isActive              Boolean       @default(true)
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  id                 String    @id @default(cuid())
+  tenantId           String    @default("default")
+  tripId             String?
+  tripTitle          String?
+  departureDate      DateTime?
+  trainName          String?
+  trainNumber        String?
+  source             String?
+  destination        String?
+  defaultClass       String?
+  defaultCoach       String?
+  journeyDate        DateTime?
+  boardingPoint      String?
+  droppingPoint      String?
+  waitlistDisclaimer String?   @db.Text
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  trip                  Trip?         @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  trip Trip? @relation(fields: [tripId], references: [id], onDelete: SetNull)
 
   @@unique([tripId, departureDate, source, destination])
   @@index([tenantId])
@@ -886,16 +894,16 @@ model TrainTemplate {
 }
 
 model TrainTicketAlert {
-  id          String   @id @default(cuid())
-  tenantId    String   @default("default")
-  alertType   String
-  dedupeKey   String
-  bookingId   String?
-  ticketId    String?
-  resolved    Boolean  @default(false)
-  sentAt      DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String   @default("default")
+  alertType String
+  dedupeKey String
+  bookingId String?
+  ticketId  String?
+  resolved  Boolean  @default(false)
+  sentAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([alertType, dedupeKey])
   @@index([tenantId])
@@ -916,9 +924,9 @@ model TrainTicketGroup {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  booking           Booking  @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
-  createdBy         Admin?   @relation("GroupCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
-  tickets           TrainTicket[]
+  booking   Booking       @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  createdBy Admin?        @relation("GroupCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  tickets   TrainTicket[]
 
   @@index([tenantId])
   @@index([bookingId])
@@ -926,20 +934,20 @@ model TrainTicketGroup {
 
 // ── NEW: TrainTicketApproval — immutable approval workflow history ──
 model TrainTicketApproval {
-  id                  String                     @id @default(cuid())
-  tenantId            String                     @default("default")
-  trainTicketId       String
-  action              String                     // CREATE|EDIT|SUBMIT|APPROVE|REJECT|REQUEST_CORRECTION|REOPEN|CANCEL|REBOOK|BULK_UPDATE
-  fromApprovalStatus  TrainTicketApprovalStatus?
-  toApprovalStatus    TrainTicketApprovalStatus?
-  fromTicketStatus    TrainTicketStatus?
-  toTicketStatus      TrainTicketStatus?
-  notes               String?                    @db.Text
-  actorAdminId        String?
-  createdAt           DateTime                   @default(now())
+  id                 String                     @id @default(cuid())
+  tenantId           String                     @default("default")
+  trainTicketId      String
+  action             String // CREATE|EDIT|SUBMIT|APPROVE|REJECT|REQUEST_CORRECTION|REOPEN|CANCEL|REBOOK|BULK_UPDATE
+  fromApprovalStatus TrainTicketApprovalStatus?
+  toApprovalStatus   TrainTicketApprovalStatus?
+  fromTicketStatus   TrainTicketStatus?
+  toTicketStatus     TrainTicketStatus?
+  notes              String?                    @db.Text
+  actorAdminId       String?
+  createdAt          DateTime                   @default(now())
 
-  ticket              TrainTicket                @relation(fields: [trainTicketId], references: [id], onDelete: Cascade)
-  actorAdmin          Admin?                     @relation("ApprovalActorAdmin", fields: [actorAdminId], references: [id], onDelete: SetNull)
+  ticket     TrainTicket @relation(fields: [trainTicketId], references: [id], onDelete: Cascade)
+  actorAdmin Admin?      @relation("ApprovalActorAdmin", fields: [actorAdminId], references: [id], onDelete: SetNull)
 
   @@index([trainTicketId, createdAt])
   @@index([tenantId])
@@ -947,21 +955,21 @@ model TrainTicketApproval {
 
 // ── NEW: TicketApproval — booking-level approval gate for generated tickets (train/flight/bus) ──
 model TicketApproval {
-  id            String   @id @default(cuid())
-  bookingId     String
-  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  ticketType    String   // "train" | "flight" | "bus"
-  status        String   @default("pending") // pending | approved | rejected
-  ticketNumber  String?  // PNR or ticket ref, filled once generated
-  ticketFileUrl String?  // uploaded ticket PDF/image if applicable
-  requestedBy   String   // user id who generated/requested it
-  reviewedBy    String?  // user id who approved/rejected
-  requestedByAdmin Admin  @relation("TicketApprovalRequestedBy", fields: [requestedBy], references: [id])
-  reviewedByAdmin  Admin? @relation("TicketApprovalReviewedBy", fields: [reviewedBy], references: [id])
-  reviewedAt    DateTime?
-  rejectionNote String?  @db.Text
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String    @id @default(cuid())
+  bookingId        String
+  booking          Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  ticketType       String // "train" | "flight" | "bus"
+  status           String    @default("pending") // pending | approved | rejected
+  ticketNumber     String? // PNR or ticket ref, filled once generated
+  ticketFileUrl    String? // uploaded ticket PDF/image if applicable
+  requestedBy      String // user id who generated/requested it
+  reviewedBy       String? // user id who approved/rejected
+  requestedByAdmin Admin     @relation("TicketApprovalRequestedBy", fields: [requestedBy], references: [id])
+  reviewedByAdmin  Admin?    @relation("TicketApprovalReviewedBy", fields: [reviewedBy], references: [id])
+  reviewedAt       DateTime?
+  rejectionNote    String?   @db.Text
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([bookingId])
   @@index([status])
@@ -969,17 +977,17 @@ model TicketApproval {
 
 // ── NEW: TrainTicketAlertEvent — deduplication table for future alert emails ──
 model TrainTicketAlertEvent {
-  id                String    @id @default(cuid())
-  tenantId          String    @default("default")
-  bookingId         String?
-  trainTicketId     String?
-  alertType         String    // PENDING_2D | DEPARTURE_10D_URGENT
-  dedupeKey         String
-  recipientAdminId  String?
-  channel           String    @default("EMAIL") // EMAIL | WHATSAPP
-  sentAt            DateTime?
-  metadata          Json?
-  createdAt         DateTime  @default(now())
+  id               String    @id @default(cuid())
+  tenantId         String    @default("default")
+  bookingId        String?
+  trainTicketId    String?
+  alertType        String // PENDING_2D | DEPARTURE_10D_URGENT
+  dedupeKey        String
+  recipientAdminId String?
+  channel          String    @default("EMAIL") // EMAIL | WHATSAPP
+  sentAt           DateTime?
+  metadata         Json?
+  createdAt        DateTime  @default(now())
 
   @@unique([alertType, dedupeKey])
   @@index([tenantId])
@@ -1013,16 +1021,16 @@ model AccountingEntry {
   notes           String?               @db.Text
   rejectionReason String?               @db.Text
 
-  salespersonId   String
-  actionedById    String?
+  salespersonId String
+  actionedById  String?
 
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  booking         Booking               @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
-  salesperson     Admin                 @relation("SalesAccountingEntries", fields: [salespersonId], references: [id])
-  actionedBy      Admin?                @relation("ActionedAccountingEntries", fields: [actionedById], references: [id])
-  history         AccountingEntryLog[]
+  booking     Booking              @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  salesperson Admin                @relation("SalesAccountingEntries", fields: [salespersonId], references: [id])
+  actionedBy  Admin?               @relation("ActionedAccountingEntries", fields: [actionedById], references: [id])
+  history     AccountingEntryLog[]
 
   @@index([tenantId])
   @@index([bookingId])
@@ -1032,15 +1040,15 @@ model AccountingEntry {
 
 // ── NEW: Accounting Entry Log Model ──
 model AccountingEntryLog {
-  id                String                @id @default(cuid())
+  id                String   @id @default(cuid())
   accountingEntryId String
   action            String
-  notes             String?               @db.Text
+  notes             String?  @db.Text
   actorId           String
-  createdAt         DateTime              @default(now())
+  createdAt         DateTime @default(now())
 
-  accountingEntry   AccountingEntry       @relation(fields: [accountingEntryId], references: [id], onDelete: Cascade)
-  actor             Admin                 @relation(fields: [actorId], references: [id])
+  accountingEntry AccountingEntry @relation(fields: [accountingEntryId], references: [id], onDelete: Cascade)
+  actor           Admin           @relation(fields: [actorId], references: [id])
 
   @@index([accountingEntryId])
 }
@@ -1056,11 +1064,13 @@ model AccountingAlertDedupe {
   @@index([bookingId])
 }
 
-// ── NEW: OPS & AUTO ALLOCATION ENUMS ──
 enum OpsVendorType {
   HOTEL
+  HOMESTAY
+  CAMP
   TRANSPORT
   GUIDE
+  FOOD
   MEALS
   MISC
 }
@@ -1089,23 +1099,39 @@ enum IncidentSeverity {
 
 // ── VENDOR DIRECTORY ENHANCEMENTS ──
 model OpsVendor {
-  id            String              @id @default(cuid())
-  tenantId      String              @default("default")
-  name          String
-  type          OpsVendorType
-  contactPerson String?
-  email         String?
-  phone         String?
-  location      String?
-  rating        Float?              @default(5.0)
-  notes         String?             @db.Text
-  isActive      Boolean             @default(true)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id             String        @id @default(cuid())
+  tenantId       String        @default("default")
+  vendorCode     String?       @unique
+  name           String
+  type           OpsVendorType
+  contactPerson  String?
+  email          String?
+  phone          String?
+  alternatePhone String?
+  state          String?
+  location       String?       // represents city
+  address        String?       @db.Text
+  rating         Float?        @default(5.0)
+  notes          String?       @db.Text
+  isActive       Boolean       @default(true)
+  sourceSheet    String?
+  sourceRow      Int?
+  totalRooms     Int?
+  roomTypes      String?
+  sharingTypes   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  hotelBookings  OpsHotelBooking[]
-  transportFleet OpsTransportFleet[]
-  guidePayments  OpsGuidePayment[]
+  hotelBookings      OpsHotelBooking[]
+  transportFleet     OpsTransportFleet[]
+  guidePayments      OpsGuidePayment[]
+  opsActivities      OpsActivity[]                  @relation("OpsActivityVendor")
+  hotelRates         OpsVendorHotelRate[]
+  accommodationRates OpsAccommodationRate[]
+  transportRates     OpsTransportRate[]
+  additionalCharges  OpsVendorAdditionalCharge[]
+  opsAllocations     OpsDepartureVendorAllocation[]
+  tripVendors        OpsTripVendor[]
 
   @@index([tenantId])
   @@index([type])
@@ -1134,11 +1160,81 @@ model OpsHotelBooking {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
-  trip          Trip             @relation(fields: [tripId], references: [id], onDelete: Restrict)
-  vendor        OpsVendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  // Snapshot Fields
+  rateId           String?
+  rateType         String?          @default("PER_ROOM_PER_NIGHT")
+  doubleRate       Float?
+  tripleRate       Float?
+  quadRate         Float?
+  singleRate       Float?
+  extraBedRate     Float?
+  childWithBed     Float?
+  childWithoutBed  Float?
+  mealPlanRate     Float?
+  taxPercent       Float?           @default(0)
+  rateValidFrom    DateTime?
+  rateValidUntil   DateTime?
+  rateSnapshotAt   DateTime?
+
+  // Allocations
+  pricingMethod    String?          @default("room-wise")
+  doubleRoomsCount Int?             @default(0)
+  tripleRoomsCount Int?             @default(0)
+  quadRoomsCount   Int?             @default(0)
+  extraPersonsCount Int?            @default(0)
+  nightsCount      Int?             @default(1)
+
+  trip   Trip       @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  vendor OpsVendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  overrides DepartureHotelRateOverride[]
 
   @@index([tenantId])
   @@index([tripId, departureDate])
+}
+
+// ── PERSISTENT VENDOR HOTEL RATES ──
+model OpsVendorHotelRate {
+  id              String    @id @default(cuid())
+  tenantId        String    @default("default")
+  vendorId        String
+  rateName        String?
+  rateType        String    @default("PER_ROOM_PER_NIGHT") // PER_ROOM_PER_NIGHT | PER_PERSON_PER_NIGHT
+  doubleRate      Float?
+  tripleRate      Float?
+  quadRate        Float?
+  singleRate      Float?
+  extraBedRate    Float?
+  childWithBed    Float?
+  childWithoutBed Float?
+  mealPlan        String?
+  mealPlanRate    Float?
+  taxPercent      Float?    @default(0)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  vendor          OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([validFrom, validUntil])
+}
+
+// ── DEPARTURE-SPECIFIC OVERRIDES ──
+model DepartureHotelRateOverride {
+  id                  String   @id @default(cuid())
+  departureHotelId    String
+  fieldName           String
+  originalValue       Float
+  overriddenValue     Float
+  reason              String
+  overriddenById      String
+  createdAt           DateTime @default(now())
+
+  departureHotel      OpsHotelBooking @relation(fields: [departureHotelId], references: [id], onDelete: Cascade)
+
+  @@index([departureHotelId])
 }
 
 // ── ROOM INVENTORY (Available rooms for allocation) ──
@@ -1156,7 +1252,7 @@ model OpsRoomInventory {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  trip          Trip     @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
 
   @@index([tenantId])
   @@index([tripId, departureDate])
@@ -1164,28 +1260,33 @@ model OpsRoomInventory {
 
 // ── TRANSPORT FLEET TRACKER ──
 model OpsTransportFleet {
-  id            String                 @id @default(cuid())
-  tenantId      String                 @default("default")
-  tripId        String
-  departureDate DateTime               @db.Date
-  vendorId      String?
-  vehicleType   String
-  capacity      Int                    @default(13)
-  route         String?
-  pickupPoints  String?
-  dropPoints    String?
-  totalAmount   Float                  @default(0)
-  advancePaid   Float                  @default(0)
-  balanceAmount Float                  @default(0)
-  driverName    String?
-  driverPhone   String?
-  notes         String?                @db.Text
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
+  id                 String    @id @default(cuid())
+  tenantId           String    @default("default")
+  tripId             String
+  departureDate      DateTime  @db.Date
+  vendorId           String?
+  vehicleType        String
+  vehicleNumber      String?                          // registration plate e.g. HP-01-AB-1234
+  capacity           Int       @default(13)
+  route              String?
+  pickupPoints       String?
+  dropPoints         String?
+  reportingTime      String?                          // HH:MM — when vehicle should report
+  departureTime      String?                          // HH:MM — scheduled departure
+  confirmationStatus String    @default("UNCONFIRMED") // UNCONFIRMED | CONFIRMED | CANCELLED
+  paymentDueDate     DateTime?
+  totalAmount        Float     @default(0)
+  advancePaid        Float     @default(0)
+  balanceAmount      Float     @default(0)
+  driverName         String?
+  driverPhone        String?
+  notes              String?   @db.Text
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  trip          Trip                   @relation(fields: [tripId], references: [id], onDelete: Restrict)
-  vendor        OpsVendor?             @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  allocations   OpsVehicleAllocation[]
+  trip        Trip                   @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  vendor      OpsVendor?             @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  allocations OpsVehicleAllocation[]
 
   @@index([tenantId])
   @@index([tripId, departureDate])
@@ -1193,26 +1294,34 @@ model OpsTransportFleet {
 
 // ── GUIDE PAYMENTS TRACKER ──
 model OpsGuidePayment {
-  id            String    @id @default(cuid())
-  tenantId      String    @default("default")
-  tripId        String
-  departureDate DateTime  @db.Date
-  guideAdminId  String?
-  vendorId      String?
-  guideName     String
-  daysWorked    Int       @default(1)
-  agreedAmount  Float     @default(0)
-  advancePaid   Float     @default(0)
-  balanceAmount Float     @default(0)
-  paymentStatus String    @default("PENDING")
-  approvedById  String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  tenantId           String    @default("default")
+  tripId             String
+  departureDate      DateTime  @db.Date
+  guideAdminId       String?                          // FK → Admin (internal guide from directory)
+  vendorId           String?                          // FK → OpsVendor type=GUIDE (external guide vendor)
+  guideName          String                           // display name (from Admin.name or free-text)
+  assignmentType     String    @default("PRIMARY_GUIDE") // PRIMARY_GUIDE | CO_GUIDE | LOCAL_GUIDE | SUPPORT_STAFF
+  assignmentStatus   String    @default("ASSIGNED")   // ASSIGNED | ACCEPTED | CONFIRMED | DECLINED | REPLACED | CANCELLED
+  startDate          DateTime? @db.Date               // guide availability start
+  endDate            DateTime? @db.Date               // guide availability end
+  reportingLocation  String?
+  reportingTime      String?                          // HH:MM
+  emergencyContact   String?
+  daysWorked         Int       @default(1)
+  agreedAmount       Float     @default(0)
+  advancePaid        Float     @default(0)
+  balanceAmount      Float     @default(0)
+  paymentStatus      String    @default("PENDING")
+  approvedById       String?
+  notes              String?   @db.Text
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  trip          Trip      @relation(fields: [tripId], references: [id], onDelete: Restrict)
-  guideAdmin    Admin?    @relation("GuideAssignments", fields: [guideAdminId], references: [id])
-  approvedBy    Admin?    @relation("GuidePaymentApprovals", fields: [approvedById], references: [id])
-  vendor        OpsVendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  guideAdmin Admin?     @relation("GuideAssignments", fields: [guideAdminId], references: [id])
+  approvedBy Admin?     @relation("GuidePaymentApprovals", fields: [approvedById], references: [id])
+  vendor     OpsVendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tripId, departureDate])
@@ -1229,7 +1338,7 @@ model OpsMiscExpense {
   amount        Float    @default(0)
   createdAt     DateTime @default(now())
 
-  trip          Trip     @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
 
   @@index([tripId, departureDate])
 }
@@ -1247,7 +1356,7 @@ model OpsSeatConfig {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  trip           Trip     @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
 
   @@unique([tenantId, tripId, departureDate])
 }
@@ -1277,28 +1386,33 @@ model OpsTripChecklist {
   completedById String?
   completedAt   DateTime?
   notes         String?
+  assignedTo    String? // OPERATIONS, GUIDE, FINANCE, etc.
+  priority      String      @default("MEDIUM") // LOW, MEDIUM, HIGH
+  dueDate       DateTime?
+  status        String      @default("Pending") // Pending, In Progress, Completed, Overdue
+  remarks       String?     @db.Text
 
-  trip          Trip        @relation(fields: [tripId], references: [id], onDelete: Restrict)
-  completedBy   Admin?      @relation("ChecklistCompletedByAdmin", fields: [completedById], references: [id], onDelete: Restrict)
-  activities    OpsChecklistActivity[]
+  trip        Trip                   @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  completedBy Admin?                 @relation("ChecklistCompletedByAdmin", fields: [completedById], references: [id], onDelete: Restrict)
+  activities  OpsChecklistActivity[]
 
   @@index([tripId, departureDate, stage])
 }
 
 // ── CHECKLIST ITEM ACTIVITY LOG ──
 model OpsChecklistActivity {
-  id               String             @id @default(cuid())
-  tenantId         String             @default("default")
-  checklistItemId  String
-  action           OpsChecklistAction
-  previousStatus   Boolean
-  nextStatus       Boolean
-  notes            String?            @db.Text
-  actorId          String
-  createdAt        DateTime           @default(now())
+  id              String             @id @default(cuid())
+  tenantId        String             @default("default")
+  checklistItemId String
+  action          OpsChecklistAction
+  previousStatus  Boolean
+  nextStatus      Boolean
+  notes           String?            @db.Text
+  actorId         String
+  createdAt       DateTime           @default(now())
 
-  checklist        OpsTripChecklist   @relation(fields: [checklistItemId], references: [id], onDelete: Restrict)
-  actor            Admin              @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  checklist OpsTripChecklist @relation(fields: [checklistItemId], references: [id], onDelete: Restrict)
+  actor     Admin            @relation(fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([tenantId])
   @@index([checklistItemId])
@@ -1322,26 +1436,26 @@ model OpsIncidentLog {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
-  trip          Trip                  @relation(fields: [tripId], references: [id], onDelete: Restrict)
-  reportedBy    Admin                 @relation("IncidentReportedByAdmin", fields: [reportedById], references: [id], onDelete: Restrict)
-  resolvedBy    Admin?                @relation("IncidentResolvedByAdmin", fields: [resolvedById], references: [id], onDelete: Restrict)
-  activities    OpsIncidentActivity[]
+  trip       Trip                  @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  reportedBy Admin                 @relation("IncidentReportedByAdmin", fields: [reportedById], references: [id], onDelete: Restrict)
+  resolvedBy Admin?                @relation("IncidentResolvedByAdmin", fields: [resolvedById], references: [id], onDelete: Restrict)
+  activities OpsIncidentActivity[]
 
   @@index([tripId, departureDate])
 }
 
 // ── INCIDENT ACTIVITY LOG ──
 model OpsIncidentActivity {
-  id           String                    @id @default(cuid())
-  tenantId     String                    @default("default")
-  incidentId   String
-  action       OpsIncidentActivityAction
-  notes        String?                   @db.Text
-  actorId      String
-  createdAt    DateTime                  @default(now())
+  id         String                    @id @default(cuid())
+  tenantId   String                    @default("default")
+  incidentId String
+  action     OpsIncidentActivityAction
+  notes      String?                   @db.Text
+  actorId    String
+  createdAt  DateTime                  @default(now())
 
-  incident     OpsIncidentLog            @relation(fields: [incidentId], references: [id], onDelete: Restrict)
-  actor        Admin                     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  incident OpsIncidentLog @relation(fields: [incidentId], references: [id], onDelete: Restrict)
+  actor    Admin          @relation(fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([tenantId])
   @@index([incidentId])
@@ -1359,9 +1473,9 @@ model OpsAllocationRun {
   actorId       String?
   createdAt     DateTime @default(now())
 
-  trip          Trip     @relation(fields: [tripId], references: [id], onDelete: Restrict)
-  actor         Admin?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  overrides     OpsAllocationOverride[]
+  trip      Trip                    @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  actor     Admin?                  @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  overrides OpsAllocationOverride[]
 
   @@index([tenantId, tripId, departureDate])
 }
@@ -1370,7 +1484,7 @@ model OpsAllocationOverride {
   id              String   @id @default(cuid())
   tenantId        String   @default("default")
   allocationRunId String
-  targetType      String   // VEHICLE | ROOM
+  targetType      String // VEHICLE | ROOM
   targetId        String
   beforeValue     Json?
   afterValue      Json
@@ -1378,46 +1492,58 @@ model OpsAllocationOverride {
   actorId         String
   createdAt       DateTime @default(now())
 
-  run             OpsAllocationRun @relation(fields: [allocationRunId], references: [id], onDelete: Restrict)
-  actor           Admin            @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  run   OpsAllocationRun @relation(fields: [allocationRunId], references: [id], onDelete: Restrict)
+  actor Admin            @relation(fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([allocationRunId])
 }
 
 model OpsVehicleAllocation {
-  id            String            @id @default(cuid())
-  tripId        String
-  departureDate DateTime          @db.Date
-  fleetId       String
-  bookingId     String
-  travelerName  String
-  seatNumber    Int?
-  createdAt     DateTime          @default(now())
+  id               String   @id @default(cuid())
+  tripId           String
+  departureDate    DateTime @db.Date
+  fleetId          String
+  bookingId        String
+  travelerName     String
+  seatNumber       Int?
+  allocationStatus String   @default("ACTIVE") // ACTIVE | CANCELLED
+  routeSegment     String?                     // e.g. pickup-point tag
+  pickupPoint      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  trip          Trip              @relation(fields: [tripId], references: [id], onDelete: Restrict)
-  fleet         OpsTransportFleet @relation(fields: [fleetId], references: [id], onDelete: Restrict)
-  booking       Booking           @relation(fields: [bookingId], references: [bookingId], onDelete: Restrict)
+  trip    Trip              @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  fleet   OpsTransportFleet @relation(fields: [fleetId], references: [id], onDelete: Restrict)
+  booking Booking           @relation(fields: [bookingId], references: [bookingId], onDelete: Restrict)
 
+  @@unique([tripId, departureDate, bookingId, travelerName]) // prevent duplicate passenger allocation
   @@index([tripId, departureDate])
   @@index([fleetId])
   @@index([bookingId])
 }
 
 model OpsRoomAllocation {
-  id            String    @id @default(cuid())
-  tripId        String
-  departureDate DateTime  @db.Date
-  roomNumber    String
-  roomType      String
-  genderGroup   String
-  bookingId     String
-  travelerName  String
-  createdAt     DateTime  @default(now())
+  id               String   @id @default(cuid())
+  tripId           String
+  departureDate    DateTime @db.Date
+  roomNumber       String
+  roomType         String
+  genderGroup      String
+  bookingId        String
+  travelerName     String
+  sharingType      String   @default("STANDARD") // TWIN|TRIPLE|QUAD|EXTRA_BED|COUPLE|SINGLE|GUIDE_STAFF|COMPLIMENTARY
+  allocationStatus String   @default("ACTIVE")   // ACTIVE | CANCELLED | NIGHT_JOURNEY_BLOCKED
+  hotelBookingId   String?                        // FK → OpsHotelBooking (nullable for backward compat)
+  notes            String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  trip          Trip      @relation(fields: [tripId], references: [id], onDelete: Restrict)
-  booking       Booking   @relation(fields: [bookingId], references: [bookingId], onDelete: Restrict)
+  trip    Trip    @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  booking Booking @relation(fields: [bookingId], references: [bookingId], onDelete: Restrict)
 
+  @@unique([tripId, departureDate, bookingId, travelerName]) // prevent duplicate passenger allocation
   @@index([tripId, departureDate])
+  @@index([hotelBookingId])
 }
 
 // ── DAY ITINERARY GRID (EXCEL SHEET MATCH) ──
@@ -1440,7 +1566,7 @@ model OpsDayItinerary {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  trip               Trip      @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
 
   @@index([tripId, departureDate])
 }
@@ -1462,30 +1588,30 @@ model OpsTripExpense {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  trip          Trip      @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
 
   @@index([tripId, departureDate])
 }
 
 // ── SOP LIBRARY (Destination operating instructions only) ──
 model OpsSopLibrary {
-  id            String   @id @default(cuid())
-  tenantId      String   @default("default")
-  destination   String
-  title         String
-  content       String   @db.Text
-  isActive      Boolean  @default(true)
-  createdById   String?
-  updatedById   String?
-  archivedAt    DateTime?
-  archivedById  String?
+  id           String    @id @default(cuid())
+  tenantId     String    @default("default")
+  destination  String
+  title        String
+  content      String    @db.Text
+  isActive     Boolean   @default(true)
+  createdById  String?
+  updatedById  String?
+  archivedAt   DateTime?
+  archivedById String?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  createdBy     Admin?   @relation("SopCreatedByAdmin", fields: [createdById], references: [id], onDelete: Restrict)
-  updatedBy     Admin?   @relation("SopUpdatedByAdmin", fields: [updatedById], references: [id], onDelete: Restrict)
-  archivedBy    Admin?   @relation("SopArchivedByAdmin", fields: [archivedById], references: [id], onDelete: Restrict)
+  createdBy  Admin? @relation("SopCreatedByAdmin", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy  Admin? @relation("SopUpdatedByAdmin", fields: [updatedById], references: [id], onDelete: Restrict)
+  archivedBy Admin? @relation("SopArchivedByAdmin", fields: [archivedById], references: [id], onDelete: Restrict)
 
   @@index([tenantId])
   @@index([destination])
@@ -1493,30 +1619,30 @@ model OpsSopLibrary {
 
 // ── TRIP LEADER ASSIGNMENT (Departure scoped) ──
 model OpsTripLeader {
-  id            String                 @id @default(cuid())
-  tenantId      String                 @default("default")
+  id            String   @id @default(cuid())
+  tenantId      String   @default("default")
   tripId        String
-  departureDate DateTime               @db.Date
+  departureDate DateTime @db.Date
 
-  leaderName    String
-  leaderPhone   String
-  leaderType    OpsLeaderType          @default(INTERNAL)
-  isPrimary     Boolean                @default(false)
-  notes         String?                @db.Text
+  leaderName  String
+  leaderPhone String
+  leaderType  OpsLeaderType @default(INTERNAL)
+  isPrimary   Boolean       @default(false)
+  notes       String?       @db.Text
 
-  assignedById  String?
-  updatedById   String?
-  archivedAt    DateTime?
-  archivedById  String?
+  assignedById String?
+  updatedById  String?
+  archivedAt   DateTime?
+  archivedById String?
 
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  trip          Trip                   @relation(fields: [tripId], references: [id], onDelete: Restrict)
-  assignedBy    Admin?                 @relation("LeaderAssignedByAdmin", fields: [assignedById], references: [id], onDelete: Restrict)
-  updatedBy     Admin?                 @relation("LeaderUpdatedByAdmin", fields: [updatedById], references: [id], onDelete: Restrict)
-  archivedBy    Admin?                 @relation("LeaderArchivedByAdmin", fields: [archivedById], references: [id], onDelete: Restrict)
-  activities    OpsTripLeaderActivity[]
+  trip       Trip                    @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  assignedBy Admin?                  @relation("LeaderAssignedByAdmin", fields: [assignedById], references: [id], onDelete: Restrict)
+  updatedBy  Admin?                  @relation("LeaderUpdatedByAdmin", fields: [updatedById], references: [id], onDelete: Restrict)
+  archivedBy Admin?                  @relation("LeaderArchivedByAdmin", fields: [archivedById], references: [id], onDelete: Restrict)
+  activities OpsTripLeaderActivity[]
 
   @@unique([tenantId, tripId, departureDate, leaderPhone])
   @@index([tenantId, tripId, departureDate])
@@ -1534,8 +1660,8 @@ model OpsTripLeaderActivity {
   actorId            String
   createdAt          DateTime                @default(now())
 
-  leader             OpsTripLeader           @relation(fields: [leaderAssignmentId], references: [id], onDelete: Restrict)
-  actor              Admin                   @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  leader OpsTripLeader @relation(fields: [leaderAssignmentId], references: [id], onDelete: Restrict)
+  actor  Admin         @relation(fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([tenantId])
   @@index([leaderAssignmentId])
@@ -1583,36 +1709,36 @@ enum OpsIncidentActivityAction {
 }
 
 model BookingActivityLog {
-  id                  String   @id @default(cuid())
-  bookingId           String
-  action              String
-  details             String   @db.Text
-  performedByAdminId  String?
-  createdAt           DateTime @default(now())
+  id                 String   @id @default(cuid())
+  bookingId          String
+  action             String
+  details            String   @db.Text
+  performedByAdminId String?
+  createdAt          DateTime @default(now())
 
-  booking             Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  performedBy         Admin?   @relation("BookingActivityActor", fields: [performedByAdminId], references: [id], onDelete: SetNull)
+  booking     Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  performedBy Admin?  @relation("BookingActivityActor", fields: [performedByAdminId], references: [id], onDelete: SetNull)
 
   @@index([bookingId])
   @@index([createdAt])
 }
 
 model BookingTask {
-  id              String   @id @default(cuid())
-  tenantId        String   @default("default")
-  bookingId       String
-  title           String
-  description     String   @db.Text
-  status          String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
-  dueDate         DateTime?
-  assignedById    String
-  assignedToId    String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String    @id @default(cuid())
+  tenantId     String    @default("default")
+  bookingId    String
+  title        String
+  description  String    @db.Text
+  status       String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  dueDate      DateTime?
+  assignedById String
+  assignedToId String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  assignedBy      Admin    @relation("TaskAssignedBy", fields: [assignedById], references: [id])
-  assignedTo      Admin    @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
+  booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  assignedBy Admin   @relation("TaskAssignedBy", fields: [assignedById], references: [id])
+  assignedTo Admin   @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
 
   @@index([bookingId])
   @@index([assignedById])
@@ -1645,54 +1771,69 @@ model TripNotice {
   tripId    String
   title     String
   body      String   @db.Text
+  isMajor   Boolean  @default(false)
+  author    String?
   createdAt DateTime @default(now())
+  acks      TripNoticeAck[]
 
   @@index([tripId])
 }
 
+model TripNoticeAck {
+  id        String   @id @default(cuid())
+  noticeId  String
+  userId    String
+  userName  String
+  ackedAt   DateTime @default(now())
+
+  notice    TripNotice @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+
+  @@unique([noticeId, userId])
+}
+
 model EmailTemplate {
-  id                String   @id @default(cuid())
-  tenantId          String   @default("default")
-  name              String
-  subject           String
-  body              String   @db.Text
-  category          String   // e.g. "Booking", "Inquiry", "Ticketing", "General"
-  isActive          Boolean  @default(true)
-  defaultAttachments Json?   // Array of files
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  tenantId           String   @default("default")
+  name               String
+  subject            String
+  body               String   @db.Text
+  category           String // e.g. "Booking", "Inquiry", "Ticketing", "General"
+  isActive           Boolean  @default(true)
+  defaultAttachments Json? // Array of files
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([category])
 }
 
 model EmailLog {
-  id              String   @id @default(cuid())
-  tenantId        String   @default("default")
-  
-  bookingId       String?
-  booking         Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  
-  inquiryId       String?
-  inquiry         Inquiry? @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
-  
-  trainTicketId   String?
-  trainTicket     TrainTicket? @relation(fields: [trainTicketId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  tenantId String @default("default")
 
-  senderId        String?
-  sender          Admin?   @relation(fields: [senderId], references: [id], onDelete: SetNull)
-  
-  recipient       String
-  ccCount         Int      @default(0)
-  bccCount        Int      @default(0)
-  subject         String
-  body            String   @db.Text
-  templateId      String?
-  templateName    String?
-  attachments     Json?    // Array of file metadata
-  status          String   @default("PENDING") // SENT, FAILED
-  error           String?  // Failure reason
-  isTest          Boolean  @default(false)
-  sentAt          DateTime @default(now())
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  inquiryId String?
+  inquiry   Inquiry? @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+
+  trainTicketId String?
+  trainTicket   TrainTicket? @relation(fields: [trainTicketId], references: [id], onDelete: Cascade)
+
+  senderId String?
+  sender   Admin?  @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  recipient    String
+  ccCount      Int      @default(0)
+  bccCount     Int      @default(0)
+  subject      String
+  body         String   @db.Text
+  templateId   String?
+  templateName String?
+  attachments  Json? // Array of file metadata
+  status       String   @default("PENDING") // SENT, FAILED
+  error        String? // Failure reason
+  isTest       Boolean  @default(false)
+  sentAt       DateTime @default(now())
 
   @@index([bookingId])
   @@index([inquiryId])
@@ -1706,34 +1847,34 @@ model EmailLog {
 
 // ── State / Region ──
 model PackageState {
-  id        String          @id @default(cuid())
-  tenantId  String          @default("default")
-  name      String          @unique
-  isActive  Boolean         @default(true)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String   @default("default")
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  cities    PackageCity[]
+  cities PackageCity[]
 
   @@index([tenantId])
 }
 
 // ── Destination / City ──
 model PackageCity {
-  id        String          @id @default(cuid())
-  tenantId  String          @default("default")
+  id        String   @id @default(cuid())
+  tenantId  String   @default("default")
   stateId   String
   name      String
-  isActive  Boolean         @default(true)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  state     PackageState    @relation(fields: [stateId], references: [id], onDelete: Cascade)
-  hotels    PackageHotel[]
-  vehicles  PackageVehicle[]
-  activities PackageActivity[]
-  transferFrom PackageTransferRoute[] @relation("TransferFromCity")
-  transferTo   PackageTransferRoute[] @relation("TransferToCity")
+  state         PackageState           @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  hotels        PackageHotel[]
+  vehicles      PackageVehicle[]
+  activities    PackageActivity[]
+  transferFrom  PackageTransferRoute[] @relation("TransferFromCity")
+  transferTo    PackageTransferRoute[] @relation("TransferToCity")
   itineraryDays PackageItineraryDay[]
 
   @@unique([tenantId, stateId, name])
@@ -1743,23 +1884,23 @@ model PackageCity {
 
 // ── Vendor (Package-specific) ──
 model PackageVendor {
-  id            String        @id @default(cuid())
-  tenantId      String        @default("default")
+  id            String   @id @default(cuid())
+  tenantId      String   @default("default")
   name          String
-  type          String        // HOTEL | VEHICLE | ACTIVITY | MEALS | GUIDE | OTHER
+  type          String // HOTEL | VEHICLE | ACTIVITY | MEALS | GUIDE | OTHER
   contactPerson String?
   email         String?
   phone         String?
   location      String?
   gstNumber     String?
-  isActive      Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  hotels        PackageHotel[]
-  vehicles      PackageVehicle[]
-  activities    PackageActivity[]
-  meals         PackageMealPlan[]
+  hotels     PackageHotel[]
+  vehicles   PackageVehicle[]
+  activities PackageActivity[]
+  meals      PackageMealPlan[]
 
   @@index([tenantId])
   @@index([type])
@@ -1767,32 +1908,32 @@ model PackageVendor {
 
 // ── Hotel / Resort ──
 model PackageHotel {
-  id            String              @id @default(cuid())
-  tenantId      String              @default("default")
-  cityId        String
-  name          String
-  category      String              // Budget | Standard | Deluxe | Premium | Luxury
-  roomType      String              // Standard | Deluxe | Super Deluxe | Premium | Suite
-  maxPeoplePerRoom Int              @default(2)
-  mealPlan      String              // EP | CP | MAP | AP
-  basePrice     Float               @default(0)
-  weekendPrice  Float?
-  peakSeasonPrice Float?
-  extraMattressPrice Float?         @default(0)
-  extraAdultPrice Float?            @default(0)
-  childWithBedPrice Float?          @default(0)
-  childWithoutBedPrice Float?       @default(0)
-  images        String[]            @default([])
-  vendorId      String?
-  contactName   String?
-  contactPhone  String?
-  isActive      Boolean             @default(true)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id                   String   @id @default(cuid())
+  tenantId             String   @default("default")
+  cityId               String
+  name                 String
+  category             String // Budget | Standard | Deluxe | Premium | Luxury
+  roomType             String // Standard | Deluxe | Super Deluxe | Premium | Suite
+  maxPeoplePerRoom     Int      @default(2)
+  mealPlan             String // EP | CP | MAP | AP
+  basePrice            Float    @default(0)
+  weekendPrice         Float?
+  peakSeasonPrice      Float?
+  extraMattressPrice   Float?   @default(0)
+  extraAdultPrice      Float?   @default(0)
+  childWithBedPrice    Float?   @default(0)
+  childWithoutBedPrice Float?   @default(0)
+  images               String[] @default([])
+  vendorId             String?
+  contactName          String?
+  contactPhone         String?
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  city          PackageCity         @relation(fields: [cityId], references: [id], onDelete: Cascade)
-  vendor        PackageVendor?      @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  tariffs       PackageHotelTariff[]
+  city    PackageCity          @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  vendor  PackageVendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  tariffs PackageHotelTariff[]
 
   @@index([tenantId])
   @@index([cityId])
@@ -1806,9 +1947,9 @@ model PackageHotelTariff {
   startDate DateTime @db.Date
   endDate   DateTime @db.Date
   roomRate  Float    @default(0)
-  label     String?  // "Peak Season", "Weekend", "Diwali", etc.
+  label     String? // "Peak Season", "Weekend", "Diwali", etc.
 
-  hotel     PackageHotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotel PackageHotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   @@index([hotelId])
   @@index([startDate, endDate])
@@ -1816,21 +1957,21 @@ model PackageHotelTariff {
 
 // ── Vehicle / Transportation ──
 model PackageVehicle {
-  id            String             @id @default(cuid())
-  tenantId      String             @default("default")
-  cityId        String
-  name          String             // Ertiga, Innova, Crysta, Tempo Traveller, Bus, Volvo
+  id              String   @id @default(cuid())
+  tenantId        String   @default("default")
+  cityId          String
+  name            String // Ertiga, Innova, Crysta, Tempo Traveller, Bus, Volvo
   seatingCapacity Int
-  isAc          Boolean            @default(true)
-  image         String?
-  vendorId      String?
-  isActive      Boolean            @default(true)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  isAc            Boolean  @default(true)
+  image           String?
+  vendorId        String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  city          PackageCity        @relation(fields: [cityId], references: [id], onDelete: Cascade)
-  vendor        PackageVendor?     @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  tariffs       PackageVehicleTariff[]
+  city    PackageCity            @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  vendor  PackageVendor?         @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  tariffs PackageVehicleTariff[]
 
   @@index([tenantId])
   @@index([cityId])
@@ -1838,41 +1979,41 @@ model PackageVehicle {
 
 // ── Vehicle Pricing ──
 model PackageVehicleTariff {
-  id            String          @id @default(cuid())
-  vehicleId     String
-  priceType     String          // PER_DAY | PER_KM | FIXED_ROUTE | AIRPORT | RAILWAY
-  perDayRate    Float?
-  perKmRate     Float?
-  fixedRouteRate Float?
-  minKmPerDay   Int?            @default(0)
-  driverAllowance Float?        @default(0)
-  fuelIncluded  Boolean         @default(true)
-  tollParkingIncluded Boolean   @default(false)
-  notes         String?
+  id                  String  @id @default(cuid())
+  vehicleId           String
+  priceType           String // PER_DAY | PER_KM | FIXED_ROUTE | AIRPORT | RAILWAY
+  perDayRate          Float?
+  perKmRate           Float?
+  fixedRouteRate      Float?
+  minKmPerDay         Int?    @default(0)
+  driverAllowance     Float?  @default(0)
+  fuelIncluded        Boolean @default(true)
+  tollParkingIncluded Boolean @default(false)
+  notes               String?
 
-  vehicle       PackageVehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicle PackageVehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId])
 }
 
 // ── Transfer Route ──
 model PackageTransferRoute {
-  id              String        @id @default(cuid())
-  tenantId        String        @default("default")
-  fromCityId      String
-  toCityId        String
-  distanceKm      Float?
-  travelTimeMins  Int?
+  id               String   @id @default(cuid())
+  tenantId         String   @default("default")
+  fromCityId       String
+  toCityId         String
+  distanceKm       Float?
+  travelTimeMins   Int?
   suggestedVehicle String?
-  fixedRate       Float?
-  perKmRate       Float?
-  pickupDropNotes String?
-  isActive        Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  fixedRate        Float?
+  perKmRate        Float?
+  pickupDropNotes  String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  fromCity        PackageCity   @relation("TransferFromCity", fields: [fromCityId], references: [id], onDelete: Cascade)
-  toCity          PackageCity   @relation("TransferToCity", fields: [toCityId], references: [id], onDelete: Cascade)
+  fromCity PackageCity @relation("TransferFromCity", fields: [fromCityId], references: [id], onDelete: Cascade)
+  toCity   PackageCity @relation("TransferToCity", fields: [toCityId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([fromCityId])
@@ -1881,25 +2022,25 @@ model PackageTransferRoute {
 
 // ── Activity / Sightseeing ──
 model PackageActivity {
-  id            String               @id @default(cuid())
-  tenantId      String               @default("default")
+  id            String   @id @default(cuid())
+  tenantId      String   @default("default")
   cityId        String
   name          String
-  adultRate     Float                @default(0)
-  childRate     Float                @default(0)
-  isShared      Boolean              @default(true)
-  duration      String?              // "2 hrs", "Half Day", "Full Day"
+  adultRate     Float    @default(0)
+  childRate     Float    @default(0)
+  isShared      Boolean  @default(true)
+  duration      String? // "2 hrs", "Half Day", "Full Day"
   description   String?
-  includedItems String?              @db.Text
-  excludedItems String?              @db.Text
+  includedItems String?  @db.Text
+  excludedItems String?  @db.Text
   image         String?
   vendorId      String?
-  isActive      Boolean              @default(true)
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  city          PackageCity          @relation(fields: [cityId], references: [id], onDelete: Cascade)
-  vendor        PackageVendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  city   PackageCity    @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  vendor PackageVendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([cityId])
@@ -1907,30 +2048,30 @@ model PackageActivity {
 
 // ── Meal Plan ──
 model PackageMealPlan {
-  id            String         @id @default(cuid())
-  tenantId      String         @default("default")
-  vendorId      String?
-  name          String         // "EP", "CP", "MAP", "AP" or custom
-  breakfastCost Float?         @default(0)
-  lunchCost     Float?         @default(0)
-  dinnerCost    Float?         @default(0)
-  perPersonPerDay Float?       @default(0)
-  description   String?
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id              String   @id @default(cuid())
+  tenantId        String   @default("default")
+  vendorId        String?
+  name            String // "EP", "CP", "MAP", "AP" or custom
+  breakfastCost   Float?   @default(0)
+  lunchCost       Float?   @default(0)
+  dinnerCost      Float?   @default(0)
+  perPersonPerDay Float?   @default(0)
+  description     String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  vendor        PackageVendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  vendor PackageVendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
 }
 
 // ── Package Draft / Quote ──
 model PackageDraft {
-  id              String                @id @default(cuid())
-  tenantId        String                @default("default")
-  draftId         String                @unique
-  status          String                @default("draft") // draft | template | quoted | converted
+  id       String @id @default(cuid())
+  tenantId String @default("default")
+  draftId  String @unique
+  status   String @default("draft") // draft | template | quoted | converted
 
   // Customer
   customerName    String?
@@ -1942,64 +2083,64 @@ model PackageDraft {
   packageName     String?
   stateId         String?
   departureCity   String?
-  travelStartDate DateTime?             @db.Date
-  travelEndDate   DateTime?             @db.Date
-  totalNights     Int                   @default(0)
-  totalDays       Int                   @default(0)
-  adults          Int                   @default(0)
-  children        Int                   @default(0)
-  couples         Int                   @default(0)
-  totalRooms      Int                   @default(0)
-  roomConfig      Json?                 // room allocation details
-  specialNotes    String?               @db.Text
-  inclusions      String?               @db.Text
-  exclusions      String?               @db.Text
-  terms           String?               @db.Text
+  travelStartDate DateTime? @db.Date
+  travelEndDate   DateTime? @db.Date
+  totalNights     Int       @default(0)
+  totalDays       Int       @default(0)
+  adults          Int       @default(0)
+  children        Int       @default(0)
+  couples         Int       @default(0)
+  totalRooms      Int       @default(0)
+  roomConfig      Json? // room allocation details
+  specialNotes    String?   @db.Text
+  inclusions      String?   @db.Text
+  exclusions      String?   @db.Text
+  terms           String?   @db.Text
 
   // Pricing (recalculated server-side)
-  hotelCost       Float                 @default(0)
-  vehicleCost     Float                 @default(0)
-  transferCost    Float                 @default(0)
-  activityCost    Float                 @default(0)
-  mealCost        Float                 @default(0)
-  guideCost       Float                 @default(0)
-  trainCost       Float                 @default(0)
-  flightCost      Float                 @default(0)
-  miscCost        Float                 @default(0)
-  subtotal        Float                 @default(0)
-  discount        Float                 @default(0)
-  discountType    String?               // percentage | fixed
-  gstRate         Float                 @default(5)
-  gstAmount       Float                 @default(0)
-  serviceCharge   Float                 @default(0)
-  totalAmount     Float                 @default(0)
+  hotelCost     Float   @default(0)
+  vehicleCost   Float   @default(0)
+  transferCost  Float   @default(0)
+  activityCost  Float   @default(0)
+  mealCost      Float   @default(0)
+  guideCost     Float   @default(0)
+  trainCost     Float   @default(0)
+  flightCost    Float   @default(0)
+  miscCost      Float   @default(0)
+  subtotal      Float   @default(0)
+  discount      Float   @default(0)
+  discountType  String? // percentage | fixed
+  gstRate       Float   @default(5)
+  gstAmount     Float   @default(0)
+  serviceCharge Float   @default(0)
+  totalAmount   Float   @default(0)
 
   // Internal vendor costs (hidden from sales)
-  vendorHotelCost   Float               @default(0)
-  vendorVehicleCost Float               @default(0)
-  vendorActivityCost Float              @default(0)
-  vendorMealCost    Float               @default(0)
-  vendorGuideCost   Float               @default(0)
-  estimatedMargin   Float               @default(0)
+  vendorHotelCost    Float @default(0)
+  vendorVehicleCost  Float @default(0)
+  vendorActivityCost Float @default(0)
+  vendorMealCost     Float @default(0)
+  vendorGuideCost    Float @default(0)
+  estimatedMargin    Float @default(0)
 
   // Quote
-  quoteNumber     String?
-  quoteValidity   String?               @default("48 hours")
-  paymentTerms    String?               @default("50% advance, 50% before travel")
-  quoteSentAt     DateTime?
+  quoteNumber   String?
+  quoteValidity String?   @default("48 hours")
+  paymentTerms  String?   @default("50% advance, 50% before travel")
+  quoteSentAt   DateTime?
 
   // Audit
-  salesAdminId    String?
-  createdById     String?
-  updatedById     String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  salesAdminId String?
+  createdById  String?
+  updatedById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
-  salesAdmin      Admin?                @relation("SalesPackageDrafts", fields: [salesAdminId], references: [id], onDelete: SetNull)
-  createdBy       Admin?                @relation("PackageDraftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy       Admin?                @relation("PackageDraftUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  itineraryDays   PackageItineraryDay[]
+  salesAdmin    Admin?                @relation("SalesPackageDrafts", fields: [salesAdminId], references: [id], onDelete: SetNull)
+  createdBy     Admin?                @relation("PackageDraftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy     Admin?                @relation("PackageDraftUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  itineraryDays PackageItineraryDay[]
 
   @@index([tenantId])
   @@index([status])
@@ -2009,21 +2150,21 @@ model PackageDraft {
 
 // ── Itinerary Day ──
 model PackageItineraryDay {
-  id            String          @id @default(cuid())
-  draftId       String
-  dayNumber     Int
-  date          DateTime?       @db.Date
-  stayCityId    String?
-  title         String?         // Optional custom title
-  routeFrom     String?
-  routeTo       String?
-  distanceKm    Float?
+  id             String    @id @default(cuid())
+  draftId        String
+  dayNumber      Int
+  date           DateTime? @db.Date
+  stayCityId     String?
+  title          String? // Optional custom title
+  routeFrom      String?
+  routeTo        String?
+  distanceKm     Float?
   travelTimeMins Int?
-  notes         String?         @db.Text
+  notes          String?   @db.Text
 
-  draft         PackageDraft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
-  stayCity      PackageCity?    @relation(fields: [stayCityId], references: [id], onDelete: SetNull)
-  items         PackageItineraryItem[]
+  draft    PackageDraft           @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  stayCity PackageCity?           @relation(fields: [stayCityId], references: [id], onDelete: SetNull)
+  items    PackageItineraryItem[]
 
   @@index([draftId])
   @@index([dayNumber])
@@ -2031,35 +2172,35 @@ model PackageItineraryDay {
 
 // ── Itinerary Item (service assigned to a day) ──
 model PackageItineraryItem {
-  id            String   @id @default(cuid())
-  dayId         String
-  serviceType   String   // HOTEL | VEHICLE | TRANSFER | ACTIVITY | MEAL | GUIDE | TRAIN | FLIGHT | CUSTOM
-  serviceId     String?  // ID of the master record (PackageHotel.id, etc.)
-  label         String   // Display name
-  description   String?  @db.Text
-  quantity      Int      @default(1)
-  rate          Float    @default(0)
-  amount        Float    @default(0)
-  isVendorCost  Boolean  @default(false)
-  sortOrder     Int      @default(0)
-  metadata      Json?    // Extra data (room type, meal plan, vehicle type, etc.)
+  id           String  @id @default(cuid())
+  dayId        String
+  serviceType  String // HOTEL | VEHICLE | TRANSFER | ACTIVITY | MEAL | GUIDE | TRAIN | FLIGHT | CUSTOM
+  serviceId    String? // ID of the master record (PackageHotel.id, etc.)
+  label        String // Display name
+  description  String? @db.Text
+  quantity     Int     @default(1)
+  rate         Float   @default(0)
+  amount       Float   @default(0)
+  isVendorCost Boolean @default(false)
+  sortOrder    Int     @default(0)
+  metadata     Json? // Extra data (room type, meal plan, vehicle type, etc.)
 
-  day           PackageItineraryDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  day PackageItineraryDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
 
   @@index([dayId])
 }
 
 // ── Package Activity Log (audit trail) ──
 model PackageActivityLog {
-  id          String   @id @default(cuid())
-  tenantId    String   @default("default")
-  draftId     String?
-  action      String
-  details     String?  @db.Text
-  actorId     String?
-  beforeData  Json?
-  afterData   Json?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  tenantId   String   @default("default")
+  draftId    String?
+  action     String
+  details    String?  @db.Text
+  actorId    String?
+  beforeData Json?
+  afterData  Json?
+  createdAt  DateTime @default(now())
 
   @@index([tenantId, createdAt])
   @@index([draftId])
@@ -2071,30 +2212,30 @@ model PackageActivityLog {
 
 // ── TICKETING SOPs ──
 model TicketingSop {
-  id          String             @id @default(cuid())
+  id          String   @id @default(cuid())
   tripId      String
-  category    String             // e.g. "train", "flight", "bus", "cancellation"
+  category    String // e.g. "train", "flight", "bus", "cancellation"
   title       String
-  description String             @db.Text
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  description String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  trip        Trip               @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  items       TicketingSopItem[]
+  trip  Trip               @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  items TicketingSopItem[]
 
   @@index([tripId])
   @@index([category])
 }
 
 model TicketingSopItem {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
   sopId     String
   title     String
-  content   String?      @db.Text
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  content   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  sop       TicketingSop @relation(fields: [sopId], references: [id], onDelete: Cascade)
+  sop TicketingSop @relation(fields: [sopId], references: [id], onDelete: Cascade)
 
   @@index([sopId])
 }
@@ -2110,112 +2251,112 @@ model TicketingLink {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
 }
 
 // ── ITINERARY (parent: supports multiple variants) ──
 model Itinerary {
-  id          String              @id @default(cuid())
-  tripId      String
-  name        String
-  isDefault   Boolean             @default(false)
-  version     Int                 @default(1)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id        String   @id @default(cuid())
+  tripId    String
+  name      String
+  isDefault Boolean  @default(false)
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  trip        Trip                @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  days        ItineraryDay[]
-  routeMaps   ItineraryRouteMap[]
-  inclusions  ItineraryInclusion[]
-  exclusions  ItineraryExclusion[]
-  notes       ItineraryNote[]
+  trip       Trip                 @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  days       ItineraryDay[]
+  routeMaps  ItineraryRouteMap[]
+  inclusions ItineraryInclusion[]
+  exclusions ItineraryExclusion[]
+  notes      ItineraryNote[]
 
   @@index([tripId])
 }
 
 model ItineraryDay {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   itineraryId String
   dayNumber   String
   dayDate     String
-  plan        String    @db.Text
+  plan        String   @db.Text
   stay        String
   meals       String
   transport   String
   distance    String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  itinerary   Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  itinerary Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
 
   @@index([itineraryId])
 }
 
 model ItineraryRouteMap {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   itineraryId String
   mapUrl      String?
-  description String?   @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  itinerary   Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  itinerary Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
 
   @@index([itineraryId])
 }
 
 model ItineraryInclusion {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   itineraryId String
-  text        String    @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  text        String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  itinerary   Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  itinerary Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
 
   @@index([itineraryId])
 }
 
 model ItineraryExclusion {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   itineraryId String
-  text        String    @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  text        String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  itinerary   Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  itinerary Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
 
   @@index([itineraryId])
 }
 
 model ItineraryNote {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   itineraryId String
   title       String
-  body        String    @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  body        String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  itinerary   Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  itinerary Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
 
   @@index([itineraryId])
 }
 
 // ── TRIP SOPs (Travel Desk) ──
 model TripSop {
-  id          String        @id @default(cuid())
+  id          String   @id @default(cuid())
   tripId      String
   title       String
-  description String        @db.Text
+  description String   @db.Text
   category    String
   icon        String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  trip        Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  items       TripSopItem[]
+  trip  Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  items TripSopItem[]
 
   @@index([tripId])
 }
@@ -2228,28 +2369,81 @@ model TripSopItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sop       TripSop  @relation(fields: [sopId], references: [id], onDelete: Cascade)
+  sop TripSop @relation(fields: [sopId], references: [id], onDelete: Cascade)
 
   @@index([sopId])
 }
 
 // ── TRIP DOCUMENTS ──
 model TripDocument {
-  id        String   @id @default(cuid())
-  tripId    String
-  name      String
-  category  String
-  fileType  String
-  size      String?
-  addedBy   String
-  dateAdded DateTime @default(now())
-  fileUrl   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  tripId           String
+  name             String
+  category         String
+  fileType         String
+  size             String?
+  addedBy          String
+  dateAdded        DateTime @default(now())
+  fileUrl          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  title            String   @default("")
+  version          Int      @default(1)
+  visibility       String   @default("internal")
+  validFrom        DateTime?
+  validUntil       DateTime?
+  status           String   @default("DRAFT")
+  uploadedBy       String   @default("system")
+  approvalDetails  Json?
+  knowledgeItems   KnowledgeItem[]
 
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
+}
+
+model KnowledgeItem {
+  id            String        @id @default(cuid())
+  tripId        String
+  documentId    String?
+  sourceDocName String
+  pageNumber    Int
+  title         String
+  content       String        @db.Text
+  category      String
+  version       Int           @default(1)
+  status        String        @default("DRAFT")
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  trip          Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  document      TripDocument? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@index([category])
+  @@index([status])
+}
+
+model TravelQuestion {
+  id             String    @id @default(cuid())
+  tripId         String
+  question       String    @db.Text
+  answer         String?   @db.Text
+  status         String    @default("OPEN")
+  escalatedTo    String
+  assignedToId   String?
+  assignedToName String?
+  createdBy      String
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  trip           Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@index([status])
 }
 
 // ── TRIP GALLERY ──
@@ -2261,7 +2455,7 @@ model TripGallery {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
 }
@@ -2277,7 +2471,7 @@ model TripNote {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
   @@index([category])
@@ -2293,4 +2487,751 @@ model Announcement {
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
+}
+
+// ── DEPARTURE-WISE ACTIVITIES ──
+model OpsActivity {
+  id                 String    @id @default(cuid())
+  tenantId           String    @default("default")
+  tripId             String
+  departureDate      DateTime  @db.Date
+  dayNumber          Int       @default(1)
+  date               DateTime?
+  name               String
+  type               String
+  startTime          String?
+  endTime            String?
+  location           String?
+  description        String?   @db.Text
+  responsibleGuideId String?
+  responsibleStaff   String?
+  vendorId           String?
+  vendorName         String?
+  estimatedCost      Float     @default(0)
+  actualCost         Float     @default(0)
+  maxParticipants    Int       @default(0)
+  safetyInstructions String?   @db.Text
+  requiredEquipment  String?   @db.Text
+  status             String    @default("Planned") // Planned, Confirmed, In Progress, Completed, Cancelled
+  remarks            String?   @db.Text
+  order              Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  trip             Trip       @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  responsibleGuide Admin?     @relation("OpsActivityGuide", fields: [responsibleGuideId], references: [id])
+  vendor           OpsVendor? @relation("OpsActivityVendor", fields: [vendorId], references: [id])
+
+  @@index([tenantId])
+  @@index([tripId, departureDate])
+}
+
+// ── NEW: VENDOR PAYMENTS TRACKER ──
+model OpsVendorPayment {
+  id                 String    @id @default(cuid())
+  tenantId           String    @default("default")
+  tripId             String
+  departureDate      DateTime  @db.Date
+  vendorName         String
+  category           String // Hotels, Transport, Activities, Meals, Guides, Local vendors, Other
+  serviceDescription String?   @db.Text
+  agreedAmount       Float     @default(0)
+  advancePaid        Float     @default(0)
+  remainingPayable   Float     @default(0)
+  paymentDate        DateTime?
+  paymentMode        String?
+  transactionId      String?
+  invoiceProof       String?
+  status             String    @default("Not Paid") // Not Paid, Advance Paid, Partially Paid, Pending Approval, Paid, Rejected
+  paidBy             String?
+  remarks            String?   @db.Text
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tripId, departureDate])
+}
+
+// ── NEW: CLIENT RECEIPTS/PAYMENTS TRACKER ──
+model OpsClientPayment {
+  id            String    @id @default(cuid())
+  tenantId      String    @default("default")
+  bookingId     String
+  amount        Float     @default(0)
+  paymentMode   String?
+  transactionId String?
+  paymentDate   DateTime?
+  proofUrl      String?
+  status        String    @default("Pending Verification") // Unpaid, Partially Paid, Paid, Pending Verification, Verified, Rejected, Refunded
+  collectedBy   String?
+  remarks       String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([bookingId])
+}
+
+// ── DEPARTURE-WISE DOCUMENTS ──
+model OpsDocument {
+  id                 String   @id @default(cuid())
+  tenantId           String   @default("default")
+  tripId             String
+  departureDate      DateTime @db.Date
+  category           String // PASSENGER, PAYMENT_PROOF, HOTEL_VOUCHER, VEHICLE, GUIDE_ID, OPERATIONAL
+  uploadedById       String
+  originalFileName   String
+  fileUrl            String
+  fileSize           Int
+  verificationStatus String   @default("Pending") // Pending, Verified, Rejected, Action Required
+  remarks            String?  @db.Text
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  trip       Trip  @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  uploadedBy Admin @relation("OpsDocUploadedByAdmin", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tripId, departureDate])
+}
+
+// ── DEPARTURE-WISE CHATS/MESSAGES ──
+model OpsMessage {
+  id            String   @id @default(cuid())
+  tenantId      String   @default("default")
+  tripId        String
+  departureDate DateTime @db.Date
+  senderType    String // STAFF, GUIDE, PASSENGER
+  senderId      String // Admin.id or Passenger Booking ID
+  senderName    String
+  messageType   String // ANNOUNCEMENT, GROUP, DIRECT
+  content       String   @db.Text
+  attachments   Json? // Array of attachment URLs
+  recipients    Json? // Array of recipient roles/ids
+  readBy        Json? // Array of user/admin ids who read
+  createdAt     DateTime @default(now())
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tripId, departureDate])
+}
+
+// ── ALLOCATION AUDIT LOG ──
+model OpsAllocationAudit {
+  id            String   @id @default(cuid())
+  tenantId      String   @default("default")
+  tripId        String
+  departureDate DateTime @db.Date
+  action        String   // MANUAL_SAVE | AUTO_CONFIRM | CLEAR | CANCEL_PASSENGER
+  actorId       String?  // Admin.id who triggered the action
+  actorName     String?  // snapshot of admin name at time of action
+  roomCount     Int      @default(0)
+  vehicleCount  Int      @default(0)
+  cleared       Boolean  @default(false)
+  metadata      Json?    // full payload snapshot for traceability
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tripId, departureDate])
+}
+
+// ── VENDORS & RATES DIRECTORY ──
+
+enum OpsSharingType {
+  SINGLE
+  DOUBLE
+  TRIPLE
+  QUAD
+  FAMILY
+}
+
+enum OpsRateBasis {
+  PER_PERSON
+  PER_ROOM
+}
+
+enum OpsMealPlan {
+  EP
+  CP
+  MAP
+  AP
+}
+
+enum OpsSeasonType {
+  STANDARD
+  SEASON
+  OFF_SEASON
+}
+
+enum OpsAddonRateBasis {
+  PER_PERSON
+  PER_MEAL
+  PER_ROOM
+  PER_DAY
+  PER_VEHICLE
+  PER_TENT
+  FIXED
+}
+
+enum OpsAllocationStatus {
+  PLANNED
+  CONTACTED
+  CONFIRMED
+  CANCELLED
+}
+
+
+model OpsAccommodationRate {
+  id               String         @id @default(cuid())
+  vendorId         String
+  propertyName     String?
+  city             String?
+  roomCategory     String?
+  sharingType      OpsSharingType
+  rateBasis        OpsRateBasis
+  amount           Decimal        @db.Decimal(10, 2)
+  mealPlan         OpsMealPlan    @default(EP)
+  seasonType       OpsSeasonType  @default(STANDARD)
+  validFrom        DateTime?      @db.Date
+  validTo          DateTime?      @db.Date
+  minimumOccupancy Int            @default(1)
+  maximumOccupancy Int            @default(4)
+  totalRooms       Int            @default(0)
+  notes            String?        @db.Text
+  active           Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  vendor      OpsVendor                      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  allocations OpsDepartureVendorAllocation[]
+
+  @@index([vendorId])
+  @@index([city])
+  @@index([sharingType])
+}
+
+model OpsTransportRate {
+  id                   String                         @id @default(cuid())
+  vendorId             String
+  tripCode             String?
+  routeName            String?
+  pickupLocation       String?
+  dropLocation         String?
+  numberOfDays         Int                            @default(1)
+  seasonType           String?
+  vehicleType          String
+  advertisedCapacity   Int                            @default(17)
+  sellableSeats        Int                            @default(17)
+  totalVehicleCost     Decimal                        @db.Decimal(10, 2)
+  driverAllowance      Decimal                        @default(0) @db.Decimal(10, 2)
+  tollParkingIncluded  Boolean                        @default(false)
+  extraPickupCharge    Decimal                        @default(0) @db.Decimal(10, 2)
+  validFrom            DateTime?                      @db.Date
+  validTo              DateTime?                      @db.Date
+  notes                String?                        @db.Text
+  active               Boolean                        @default(true)
+  createdAt            DateTime                       @default(now())
+  updatedAt            DateTime                       @updatedAt
+
+  vendor      OpsVendor                      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  allocations OpsDepartureVendorAllocation[]
+
+  @@index([vendorId])
+  @@index([tripCode])
+}
+
+model OpsVendorAdditionalCharge {
+  id             String            @id @default(cuid())
+  vendorId       String
+  tripCode       String?
+  chargeName     String
+  chargeCategory String?
+  rateBasis      OpsAddonRateBasis
+  amount         Decimal           @db.Decimal(10, 2)
+  unit           String?
+  city           String?
+  conditions     String?           @db.Text
+  active         Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+}
+
+model OpsDepartureVendorAllocation {
+  id                  String              @id @default(cuid())
+  departureId         String // represents tripId + departureDate (stable identity string e.g. "tripId_date")
+  itineraryDayId      String? // references DayItinerary.id if needed
+  vendorId            String
+  accommodationRateId String?
+  transportRateId     String?
+  masterRate          Decimal?            @db.Decimal(10, 2)
+  negotiatedRate      Decimal?            @db.Decimal(10, 2)
+  finalBookedRate     Decimal?            @db.Decimal(10, 2)
+  quantity            Int                 @default(1)
+  numberOfRooms       Int                 @default(0)
+  numberOfGuests      Int                 @default(0)
+  status              OpsAllocationStatus @default(PLANNED)
+  confirmationNumber  String?
+  confirmedAt         DateTime?
+  notes               String?             @db.Text
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  vendor            OpsVendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  accommodationRate OpsAccommodationRate? @relation(fields: [accommodationRateId], references: [id], onDelete: SetNull)
+  transportRate     OpsTransportRate?     @relation(fields: [transportRateId], references: [id], onDelete: SetNull)
+  tripVendorRateId  String?
+  tripVendorRate    OpsTripVendorRate?    @relation(fields: [tripVendorRateId], references: [id], onDelete: SetNull)
+
+  @@index([departureId])
+  @@index([vendorId])
+}
+
+model OpsTripVendor {
+  id        String   @id @default(cuid())
+  tripId    String
+  vendorId  String
+  category  String?  // HOTEL, TRANSPORT, GUIDE, FOOD, OTHER
+  preferred Boolean  @default(false)
+  priority  Int      @default(0)
+  active    Boolean  @default(true)
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trip   Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  rates  OpsTripVendorRate[]
+
+  @@unique([tripId, vendorId, category])
+  @@index([tripId])
+  @@index([vendorId])
+}
+
+model OpsTripVendorRate {
+  id               String   @id @default(cuid())
+  tripVendorId     String
+  city             String?
+  rateType         String   // HOTEL, TRANSPORT, GUIDE, FOOD, OTHER
+  roomType         String?
+  sharingType      String?  // SINGLE, DOUBLE, TRIPLE, QUAD, FAMILY
+  vehicleType      String?
+  routeName        String?
+  rateBasis        String?  // PER_PERSON, PER_ROOM, PER_VEHICLE, PER_DAY, PER_MEAL, PER_TENT, FIXED
+  amount           Decimal  @db.Decimal(10, 2)
+  seasonType       String   @default("STANDARD") // STANDARD, SEASON, OFF_SEASON
+  validFrom        DateTime? @db.Date
+  validTo          DateTime? @db.Date
+  minimumOccupancy Int      @default(1)
+  maximumOccupancy Int      @default(4)
+  sellableSeats    Int      @default(17)
+  numberOfDays     Int      @default(1)
+  active           Boolean  @default(true)
+  notes            String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tripVendor       OpsTripVendor @relation(fields: [tripVendorId], references: [id], onDelete: Cascade)
+  allocations      OpsDepartureVendorAllocation[]
+
+  @@index([tripVendorId])
+}
+
+// ── VENDOR DIRECTORY & AUTO-PRICING MODELS ──
+
+model DirectoryVendor {
+  id              String   @id @default(cuid())
+  vendorCode      String   @unique
+  name            String
+  legalName       String?
+  type            DirectoryVendorType
+
+  contactPerson   String?
+  contactNumber   String?
+  alternateNumber String?
+  whatsappNumber  String?
+  email           String?
+
+  gstin           String?
+  panNumber       String?
+
+  state           String?
+  city            String?
+  area            String?
+  address         String?  @db.Text
+
+  paymentTerms    String?  @db.Text
+  creditDays      Int?
+  bankDetails     Json?
+
+  rating          Decimal? @db.Decimal(3, 2)
+  isActive        Boolean  @default(true)
+  notes           String?  @db.Text
+
+  roomRates       DirectoryVendorRoomRate[]
+  transportRates  DirectoryVendorTransportRate[]
+  foodRates       DirectoryVendorFoodRate[]
+  guideRates      DirectoryVendorGuideRate[]
+  miscCharges     DirectoryVendorMiscCharge[]
+  tripMappings    DirectoryTripVendorMapping[]
+  payments        DirectoryVendorPayment[]
+  contacts        DirectoryVendorContact[]
+  contracts       DirectoryVendorContract[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([type, isActive])
+  @@index([state, city])
+}
+
+model DirectoryVendorContact {
+  id              String   @id @default(cuid())
+  vendorId        String
+  vendor          DirectoryVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  contactName     String
+  designation     String?
+  phone           String
+  email           String?
+  isPrimary       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([vendorId])
+}
+
+model DirectoryVendorRoomRate {
+  id                 String                  @id @default(cuid())
+  vendorId           String
+  vendor             DirectoryVendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  propertyName       String?
+  roomCategory       String                  @default("Standard")
+  sharingType        DirectoryRoomSharingType
+  standardOccupancy  Int                     @default(2)
+  maximumOccupancy   Int                     @default(3)
+  mixedOccupancyAllowed Boolean              @default(true)
+  rateBasis          DirectoryAccommodationRateBasis  @default(PER_ROOM_PER_NIGHT)
+
+  amount             Decimal                 @db.Decimal(12, 2)
+  extraAdultRate     Decimal?                @db.Decimal(12, 2)
+  extraChildRate     Decimal?                @db.Decimal(12, 2)
+  guideRoomRate      Decimal?                @db.Decimal(12, 2)
+
+  availableRooms     Int?
+  mealPlan           DirectoryMealPlan       @default(EP)
+  season             DirectoryVendorSeason   @default(ALL)
+
+  validFrom          DateTime?
+  validTo            DateTime?
+
+  taxIncluded        Boolean                 @default(false)
+  taxPercent         Decimal?                @db.Decimal(5, 2)
+
+  minimumRooms       Int?
+  cancellationPolicy String?                 @db.Text
+  blackoutDates      Json?
+
+  status             DirectoryVendorRateStatus @default(ACTIVE)
+
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  @@index([vendorId, sharingType])
+  @@index([validFrom, validTo])
+}
+
+model DirectoryVendorTransportRate {
+  id                    String             @id @default(cuid())
+  vendorId              String
+  vendor                DirectoryVendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  routeName             String
+  pickupLocation        String?
+  dropLocation          String?
+
+  vehicleType           String
+  seatCapacity          Int
+  rateBasis             DirectoryTransportRateBasis
+
+  amount                Decimal            @db.Decimal(12, 2)
+  extraCharge           Decimal?           @db.Decimal(12, 2)
+  extraKmRate           Decimal?           @db.Decimal(12, 2)
+  extraHourRate         Decimal?           @db.Decimal(12, 2)
+  nightHaltRate         Decimal?           @db.Decimal(12, 2)
+
+  tollIncluded          Boolean            @default(false)
+  parkingIncluded       Boolean            @default(false)
+  fuelIncluded          Boolean            @default(true)
+  driverAllowanceIncluded Boolean          @default(false)
+  stateTaxIncluded      Boolean            @default(false)
+  backupVehicleAvailable Boolean           @default(true)
+
+  season                DirectoryVendorSeason @default(ALL)
+  validFrom             DateTime?
+  validTo               DateTime?
+
+  cancellationPolicy    String?            @db.Text
+  status                DirectoryVendorRateStatus @default(ACTIVE)
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([vendorId, vehicleType])
+  @@index([validFrom, validTo])
+}
+
+model DirectoryVendorFoodRate {
+  id              String           @id @default(cuid())
+  vendorId        String
+  vendor          DirectoryVendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  mealType        String
+  menuDescription String?          @db.Text
+  isVeg           Boolean          @default(true)
+  ratePerPerson   Decimal          @db.Decimal(12, 2)
+
+  minimumPax      Int?
+  maximumPax      Int?
+  packedMeal      Boolean          @default(false)
+  guideMealRate   Decimal?         @db.Decimal(12, 2)
+  driverMealRate  Decimal?         @db.Decimal(12, 2)
+  taxIncluded     Boolean          @default(false)
+  taxPercent      Decimal?         @db.Decimal(5, 2)
+
+  validFrom       DateTime?
+  validTo         DateTime?
+  cancellationPolicy String?       @db.Text
+  status          DirectoryVendorRateStatus @default(ACTIVE)
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model DirectoryVendorGuideRate {
+  id              String           @id @default(cuid())
+  vendorId        String
+  vendor          DirectoryVendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  serviceName     String
+  serviceLocation String?
+  languages       String?
+  specialization  String?
+
+  dailyRate       Decimal          @db.Decimal(12, 2)
+  travelCharge    Decimal?         @db.Decimal(12, 2)
+  foodCharge      Decimal?         @db.Decimal(12, 2)
+  stayCharge      Decimal?         @db.Decimal(12, 2)
+
+  maximumGroupSize Int?
+  emergencySupport Boolean         @default(false)
+  idVerified      Boolean          @default(false)
+  policeVerified  Boolean          @default(false)
+  validFrom       DateTime?
+  validTo         DateTime?
+  status          DirectoryVendorRateStatus @default(ACTIVE)
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model DirectoryVendorMiscCharge {
+  id          String           @id @default(cuid())
+  vendorId    String?
+  vendor      DirectoryVendor? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  chargeName  String
+  chargeType  String
+  amount      Decimal          @db.Decimal(12, 2)
+  unit        DirectoryMiscChargeUnit
+
+  validFrom   DateTime?
+  validTo     DateTime?
+  notes       String?          @db.Text
+  status      DirectoryVendorRateStatus @default(ACTIVE)
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model DirectoryTripVendorMapping {
+  id              String     @id @default(cuid())
+
+  tripId          String
+  departureDate   DateTime?
+  dayNumber       Int?
+  serviceDate     DateTime?
+
+  vendorId        String
+  vendor          DirectoryVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  serviceType     DirectoryVendorType
+  destination     String?
+
+  roomRateId      String?
+  transportRateId String?
+  foodRateId      String?
+  guideRateId     String?
+  miscChargeId    String?
+
+  quantity        Int        @default(1)
+  paxCount        Int?
+  numberOfNights  Int?
+  numberOfDays    Int?
+  numberOfVehicles Int?      @default(1)
+
+  isPrimary       Boolean    @default(true)
+  backupPriority  Int?
+
+  quotedAmount    Decimal?   @db.Decimal(12, 2)
+  confirmedAmount Decimal?   @db.Decimal(12, 2)
+
+  confirmationNo  String?
+  status          String     @default("PLANNED")
+  instructions    String?    @db.Text
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([tripId, departureDate])
+  @@index([vendorId])
+}
+
+model DirectoryTripCostSnapshot {
+  id              String   @id @default(cuid())
+  tripId          String
+  departureDate   DateTime?
+  paxCount        Int
+
+  vendorCost      Decimal  @db.Decimal(12, 2)
+  costPerPerson   Decimal  @db.Decimal(12, 2)
+
+  calculationData Json
+  vendorRatesData Json
+
+  createdById     String?
+  createdAt       DateTime @default(now())
+
+  @@index([tripId, departureDate])
+}
+
+model DirectoryVendorContract {
+  id              String           @id @default(cuid())
+  vendorId        String
+  vendor          DirectoryVendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  contractStatus  String           @default("DRAFT") // DRAFT | SIGNED | EXPIRED
+  validFrom       DateTime?
+  validTo         DateTime?
+  terms           String?          @db.Text
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([vendorId])
+}
+
+model DirectoryVendorPayment {
+  id              String           @id @default(cuid())
+  vendorId        String
+  vendor          DirectoryVendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  tripId          String?
+  departureDate   DateTime?        @db.Date
+  invoiceAmount   Decimal          @db.Decimal(12, 2)
+  advanceAmount   Decimal          @db.Decimal(12, 2)          @default(0.0)
+  paidAmount      Decimal          @db.Decimal(12, 2)          @default(0.0)
+  remainingBalance Decimal         @db.Decimal(12, 2)          @default(0.0)
+  paymentStatus   String           @default("PENDING") // PENDING | PARTIAL | PAID
+  dueDate         DateTime?        @db.Date
+  paymentDate     DateTime?        @db.Date
+  paymentMode     String? // CASH | BANK_TRANSFER | CHEQUE | UPI
+  transactionRef  String?
+  approvedBy      String?
+  invoiceLink     String?
+  remarks         String?          @db.Text
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([vendorId])
+}
+
+enum DirectoryVendorType {
+  HOTEL
+  HOMESTAY
+  CAMP
+  TRANSPORT
+  FOOD
+  GUIDE
+  ACTIVITY
+  TICKETING
+  EQUIPMENT
+  PORTER
+  MEDICAL
+  MECHANIC
+  MISC
+}
+
+enum DirectoryRoomSharingType {
+  SINGLE
+  DOUBLE
+  TRIPLE
+  QUAD
+  FAMILY
+  DORMITORY
+  GROUP
+}
+
+enum DirectoryAccommodationRateBasis {
+  PER_ROOM_PER_NIGHT
+  PER_PERSON_PER_NIGHT
+  FLAT_PACKAGE
+}
+
+enum DirectoryTransportRateBasis {
+  PER_VEHICLE
+  PER_DAY
+  PER_KM
+  FLAT_PACKAGE
+}
+
+enum DirectoryMiscChargeUnit {
+  PER_PERSON
+  PER_PERSON_PER_DAY
+  PER_GROUP_PER_DAY
+  PER_ROOM_PER_NIGHT
+  PER_VEHICLE
+  PER_DAY
+  FLAT
+}
+
+enum DirectoryMealPlan {
+  EP
+  CP
+  MAP
+  AP
+  CUSTOM
+}
+
+enum DirectoryVendorSeason {
+  ALL
+  PEAK
+  REGULAR
+  OFF_SEASON
+  SUMMER
+  WINTER
+  MONSOON
+  FESTIVAL
+}
+
+enum DirectoryVendorRateStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  DRAFT
 }

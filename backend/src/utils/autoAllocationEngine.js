@@ -1,7 +1,5 @@
-/**
- * autoAllocationEngine.js
- * Core logic engine for auto-allocating vehicles and rooms based on booking rules.
- */
+const { PrismaClient } = require('/Users/parthpatel/Documents/youthcamping_os/backend/node_modules/@prisma/client');
+const prisma = new PrismaClient();
 
 /**
  * Executes vehicle and room auto-allocation for a given departure
@@ -9,7 +7,7 @@
  * @param {Array} fleet List of available transport fleet (tempos/cars)
  * @returns {Object} { vehicleAllocations, roomAllocations, flags, whatsappTempoText, whatsappRoomText }
  */
-function runAutoAllocation(bookings, fleet, roomInventory) {
+async function runAutoAllocation(bookings, fleet, roomInventory) {
   const flags = [];
   const vehicleAllocations = [];
   const roomAllocations = [];
@@ -180,6 +178,38 @@ function runAutoAllocation(bookings, fleet, roomInventory) {
       remaining: r.capacity || 2,
       assigned: []
     }));
+
+    // Sort roomSlots by trip hotel priority (primary hotel first, secondary hotel second, etc.)
+    // This ensures rooms from Hotel #1 are filled before moving to Hotel #2
+    const tripId = bookings[0]?.tripId;
+    if (tripId) {
+      try {
+        const mappings = await prisma.directoryTripVendorMapping.findMany({
+          where: { tripId, serviceType: 'HOTEL' },
+          include: { vendor: true },
+          orderBy: [
+            { isPrimary: 'desc' },
+            { id: 'asc' }
+          ]
+        });
+        
+        const hotelPriority = mappings.map(m => m.vendor.name.toLowerCase());
+        
+        roomSlots.sort((a, b) => {
+          const idxA = hotelPriority.indexOf((a.hotelName || '').toLowerCase());
+          const idxB = hotelPriority.indexOf((b.hotelName || '').toLowerCase());
+          const valA = idxA === -1 ? 999 : idxA;
+          const valB = idxB === -1 ? 999 : idxB;
+          return valA - valB;
+        });
+
+        if (hotelPriority.length > 0) {
+          flags.push(`ℹ️ Hotel priority order: ${hotelPriority.join(' → ')}. Rooms filled in order — overflow moves to next hotel.`);
+        }
+      } catch (err) {
+        console.error("Failed to prioritize roomSlots by trip vendor mappings:", err);
+      }
+    }
 
     // Helper: find a room slot matching gender with enough remaining capacity
     const findRoom = (genderGroup, count, prefCapacity = null) => {

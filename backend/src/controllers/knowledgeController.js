@@ -59,14 +59,55 @@ exports.saveNavState = async (req, res, next) => {
 exports.getSections = async (req, res, next) => {
   try {
     const { tripId } = req.params;
-    const sections = await prisma.knowledgeSection.findMany({
-      where: { tripId },
-      orderBy: { createdAt: 'asc' }
+
+    // Get count of published/approved items for each category
+    const counts = await prisma.knowledgeItem.groupBy({
+      by: ['category'],
+      where: {
+        tripId,
+        status: { in: ['APPROVED', 'PUBLISHED'] }
+      },
+      _count: {
+        _all: true
+      }
+    });
+
+    // Build map
+    const countsMap = {};
+    counts.forEach(c => {
+      countsMap[c.category.toLowerCase().replace(/\s/g, "")] = c._count._all;
+    });
+
+    const sectionsMeta = [
+      { tabKey: "Overview", title: "Trip Overview", description: "Key highlights, route, best time, difficulty & more" },
+      { tabKey: "Sales Guide", title: "Sales Guide", description: "How to sell, USPs, objections & answers" },
+      { tabKey: "Customer FAQs", title: "Customer FAQs", description: "All customer questions & answers" },
+      { tabKey: "Inclusions & Exclusions", title: "Inclusions & Exclusions", description: "What's included / not included" },
+      { tabKey: "Ticketing SOPs", title: "Ticketing Info", description: "Train, flight, bus, cab SOPs & rules" },
+      { tabKey: "Visa & Entry", title: "Visa & Entry", description: "Visa process, docs, requirements" },
+      { tabKey: "Destination Guide", title: "Destination Guide", description: "Weather, food, culture, local info" },
+      { tabKey: "Packing Guide", title: "Packing Guide", description: "What to carry, checklist, tips" },
+      { tabKey: "Operational SOPs", title: "SOPs & Processes", description: "Operational SOPs & workflows" },
+      { tabKey: "Emergency Center", title: "Emergency Center", description: "What to do in emergencies" },
+      { tabKey: "Pricing & Policies", title: "Pricing & Policy", description: "Price sheet, cancellation, refund" },
+      { tabKey: "Past Learnings", title: "Past Learnings", description: "Lessons, feedback & improvements" }
+    ];
+
+    const data = sectionsMeta.map(meta => {
+      const cleanKey = meta.tabKey.toLowerCase().replace(/\s/g, "");
+      return {
+        id: cleanKey,
+        tripId,
+        tabKey: meta.tabKey,
+        title: meta.title,
+        description: meta.description,
+        itemCount: countsMap[cleanKey] || 0
+      };
     });
 
     res.json({
       success: true,
-      data: sections
+      data
     });
   } catch (error) {
     next(error);

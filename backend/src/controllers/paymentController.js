@@ -1,178 +1,394 @@
 const { prisma } = require('../lib/prisma');
-const { logAction } = require('../utils/auditLogger');
 
-/**
- * Recalculates paidAmount and status based on Prisma
- */
-async function syncBookingFromPayments(bookingId, tenantId) {
-  const payments = await prisma.payment.findMany({
-    where: { bookingId, tenantId }
-  });
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-
-  const booking = await prisma.booking.findFirst({
-    where: { id: bookingId, tenantId }
-  });
-  if (!booking) return;
-
-  const totalAmount = booking.totalAmount || 0;
-  let paymentStatus = 'unpaid';
-  if (totalPaid >= totalAmount && totalAmount > 0) {
-    paymentStatus = 'paid';
-  } else if (totalPaid > 0) {
-    paymentStatus = 'partial';
+function normalizeDepartureDateIndia(dateInput) {
+  if (!dateInput) return null;
+  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+    const directDate = new Date(`${dateInput}T00:00:00.000Z`);
+    if (!isNaN(directDate.getTime())) return directDate;
   }
-
-  await prisma.booking.update({
-    where: { id: bookingId },
-    data: {
-      advancePaid: totalPaid,
-      paymentStatus,
-      remainingAmount: totalAmount - totalPaid
-    }
-  });
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return null;
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const indiaDateStr = formatter.format(d);
+    return new Date(`${indiaDateStr}T00:00:00.000Z`);
+  } catch {
+    return d;
+  }
 }
 
-/**
- * @desc    Add payment
- * @route   POST /api/payments
- * @access  Private/Admin
- */
-exports.addPayment = async (req, res, next) => {
-  try {
-    const tenantId = req.user.tenantId;
-    const { bookingId, amount, paymentMode } = req.body;
+async function parseDepartureFilter(req, res) {
+  const { tripId: rawTripId } = req.params;
+  const rawDate = req.query.departureDate || req.body.departureDate;
 
-    const booking = await prisma.booking.findFirst({
-      where: { id: bookingId, tenantId }
+  if (!rawDate) {
+    res.status(400).json({ success: false, message: 'departureDate is required' });
+    return null;
+  }
+
+  const departureDate = normalizeDepartureDateIndia(rawDate);
+  if (!departureDate || isNaN(departureDate.getTime())) {
+    res.status(400).json({ success: false, message: 'Invalid departureDate format' });
+    return null;
+  }
+
+  const tenantId = req.user?.tenantId || 'default';
+  let tripId = rawTripId;
+  if (rawTripId) {
+    const trip = await prisma.trip.findFirst({
+      where: {
+        tenantId,
+        OR: [
+          { id: rawTripId },
+          { slug: rawTripId },
+          { shortName: rawTripId }
+        ]
+      },
+      select: { id: true }
     });
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (trip) tripId = trip.id;
+  }
 
-    // Sales ownership check
-    if (req.user?.role === 'sales' && booking.salesAdminId !== req.user.id) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
+  const where = { tenantId, tripId, departureDate };
 
-    const payment = await prisma.payment.create({
-      data: {
-        bookingId,
-        amount: Number(amount),
-        paymentMode,
-        tenantId
+  let bookingWhere = { tenantId, tripId, status: { notIn: ['cancelled', 'rejected'] } };
+  const startOfDay = new Date(departureDate);
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const endOfDay = new Date(departureDate);
+  endOfDay.setUTCHours(23, 59, 59, 999);
+  bookingWhere.departureDate = { gte: startOfDay, lte: endOfDay };
+
+  return { tenantId, tripId, departureDate, where, bookingWhere };
+}
+
+// ── CLIENT RECEIPTS / RECEIVABLES ──
+exports.getClientPayments = async (req, res) => {
+  try {
+    const ctx = await parseDepartureFilter(req, res);
+    if (!ctx) return;
+
+    // Fetch all bookings for this departure
+    const bookings = await prisma.booking.findMany({
+      where: ctx.bookingWhere,
+      select: {
+        bookingId: true,
+        name: true,
+        totalAmount: true,
+        advancePaid: true,
+        remainingAmount: true,
+        paymentStatus: true,
+        passengers: true
       }
     });
 
-    await syncBookingFromPayments(bookingId, tenantId);
+    const bookingIds = bookings.map(b => b.bookingId);
 
-    await logAction({
-      tenantId,
-      actorUserId: req.user.id,
-      action: 'payment_update',
-      entityType: 'payment',
-      entityId: payment.id,
-      afterData: payment,
-      ipAddress: req.ip || null
-    });
-
-    res.status(201).json({ success: true, data: payment });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * @desc    Get payments for a booking
- * @route   GET /api/payments/booking/:bookingId
- * @access  Private/Admin
- */
-exports.getPaymentsByBooking = async (req, res, next) => {
-  try {
-    const tenantId = req.user.tenantId;
-    const booking = await prisma.booking.findFirst({
-      where: { id: req.params.bookingId, tenantId }
-    });
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-    
-    if (req.user?.role === 'sales' && booking.salesAdminId !== req.user.id) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-
-    const payments = await prisma.payment.findMany({
-      where: { bookingId: req.params.bookingId, tenantId },
+    // Fetch all recorded transaction receipts
+    const receipts = await prisma.opsClientPayment.findMany({
+      where: {
+        bookingId: { in: bookingIds }
+      },
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json({ success: true, data: payments });
-  } catch (error) {
-    next(error);
+    return res.json({
+      success: true,
+      data: {
+        bookings,
+        receipts
+      }
+    });
+  } catch (err) {
+    console.error('getClientPayments error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch client payments' });
   }
 };
 
-/**
- * @desc    Get all payments (tenantId scoped)
- * @route   GET /api/payments
- */
-exports.getAllPayments = async (req, res, next) => {
+exports.addClientPayment = async (req, res) => {
   try {
-    const where = { tenantId: req.user.tenantId };
-    
-    if (req.user?.role === 'sales') {
-      const salesBookings = await prisma.booking.findMany({
-        where: { salesAdminId: req.user.id, tenantId: req.user.tenantId },
-        select: { id: true }
+    const { bookingId } = req.params;
+    const { amount, paymentMode, transactionId, paymentDate, proofUrl, status, remarks } = req.body;
+    const tenantId = req.user?.tenantId || 'default';
+
+    const booking = await prisma.booking.findUnique({
+      where: { bookingId }
+    });
+
+    if (!booking) {
+      return res.status(444).json({ success: false, message: 'Booking not found' });
+    }
+
+    const receipt = await prisma.opsClientPayment.create({
+      data: {
+        tenantId,
+        bookingId,
+        amount: parseFloat(amount) || 0,
+        paymentMode,
+        transactionId,
+        paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
+        proofUrl,
+        status: status || 'Pending Verification',
+        collectedBy: req.user?.name || req.user?.email || 'Staff',
+        remarks
+      }
+    });
+
+    // Automatically recalculate booking advancePaid and remainingAmount if status is Verified
+    if (receipt.status === 'Verified') {
+      const allVerified = await prisma.opsClientPayment.findMany({
+        where: { bookingId, status: 'Verified' }
       });
-      const bookingIds = salesBookings.map(b => b.id);
-      where.bookingId = { in: bookingIds };
+      const totalVerified = allVerified.reduce((s, r) => s + r.amount, 0);
+      const remaining = Math.max(0, booking.totalAmount - totalVerified);
+      
+      await prisma.booking.update({
+        where: { bookingId },
+        data: {
+          advancePaid: totalVerified,
+          remainingAmount: remaining,
+          paymentStatus: remaining === 0 ? 'Paid' : totalVerified > 0 ? 'Partially Paid' : 'Unpaid'
+        }
+      });
     }
 
-    const payments = await prisma.payment.findMany({
-      where,
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json({ success: true, data: payments });
-  } catch (error) {
-    next(error);
+    return res.json({ success: true, data: receipt });
+  } catch (err) {
+    console.error('addClientPayment error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to record client payment' });
   }
 };
 
-/**
- * @desc    Delete payment
- * @route   DELETE /api/payments/:id
- */
-exports.deletePayment = async (req, res, next) => {
+exports.verifyClientPayment = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId;
-    const payment = await prisma.payment.findFirst({
-      where: { id: req.params.id, tenantId }
-    });
-    if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' });
+    const { id } = req.params;
+    const { status, remarks } = req.body; // Verified, Rejected, Refunded
 
-    // Validate ownership before delete
-    const booking = await prisma.booking.findFirst({
-      where: { id: payment.bookingId, tenantId }
+    const receipt = await prisma.opsClientPayment.findUnique({
+      where: { id }
     });
-    if (booking && req.user?.role === 'sales' && booking.salesAdminId !== req.user.id) {
-      return res.status(404).json({ success: false, message: 'Payment not found' });
+
+    if (!receipt) {
+      return res.status(444).json({ success: false, message: 'Payment record not found' });
     }
 
-    await prisma.payment.delete({
-      where: { id: req.params.id }
+    const updated = await prisma.opsClientPayment.update({
+      where: { id },
+      data: {
+        status,
+        remarks: remarks || receipt.remarks
+      }
     });
 
-    await syncBookingFromPayments(payment.bookingId, tenantId);
-
-    await logAction({
-      tenantId,
-      actorUserId: req.user.id,
-      action: 'payment_delete',
-      entityType: 'payment',
-      entityId: req.params.id,
-      beforeData: payment,
-      ipAddress: req.ip || null
+    // Update booking totals
+    const booking = await prisma.booking.findUnique({
+      where: { bookingId: receipt.bookingId }
     });
 
-    res.json({ success: true, message: 'Payment deleted and booking synced' });
-  } catch (error) {
-    next(error);
+    if (booking) {
+      const allVerified = await prisma.opsClientPayment.findMany({
+        where: { bookingId: receipt.bookingId, status: 'Verified' }
+      });
+      const totalVerified = allVerified.reduce((s, r) => s + r.amount, 0);
+      const remaining = Math.max(0, booking.totalAmount - totalVerified);
+
+      await prisma.booking.update({
+        where: { bookingId: receipt.bookingId },
+        data: {
+          advancePaid: totalVerified,
+          remainingAmount: remaining,
+          paymentStatus: remaining === 0 ? 'Paid' : totalVerified > 0 ? 'Partially Paid' : 'Unpaid'
+        }
+      });
+    }
+
+    return res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error('verifyClientPayment error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to verify client payment' });
+  }
+};
+
+// ── VENDOR PAYMENTS ──
+exports.getVendorPayments = async (req, res) => {
+  try {
+    const ctx = await parseDepartureFilter(req, res);
+    if (!ctx) return;
+
+    const vendorPayments = await prisma.opsVendorPayment.findMany({
+      where: ctx.where,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return res.json({ success: true, data: vendorPayments });
+  } catch (err) {
+    console.error('getVendorPayments error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch vendor payments' });
+  }
+};
+
+exports.createVendorPayment = async (req, res) => {
+  try {
+    const { tripId } = req.params;
+    const { departureDate, vendorName, category, serviceDescription, agreedAmount, advancePaid, paymentDate, paymentMode, transactionId, invoiceProof, status, remarks } = req.body;
+    const tenantId = req.user?.tenantId || 'default';
+
+    const depDate = normalizeDepartureDateIndia(departureDate);
+    const agreed = parseFloat(agreedAmount) || 0;
+    const advance = parseFloat(advancePaid) || 0;
+    const remaining = Math.max(0, agreed - advance);
+
+    const payment = await prisma.opsVendorPayment.create({
+      data: {
+        tenantId,
+        tripId,
+        departureDate: depDate,
+        vendorName,
+        category,
+        serviceDescription,
+        agreedAmount: agreed,
+        advancePaid: advance,
+        remainingPayable: remaining,
+        paymentDate: paymentDate ? new Date(paymentDate) : null,
+        paymentMode,
+        transactionId,
+        invoiceProof,
+        status: status || 'Not Paid',
+        paidBy: req.user?.name || req.user?.email || 'Operations',
+        remarks
+      }
+    });
+
+    return res.json({ success: true, data: payment });
+  } catch (err) {
+    console.error('createVendorPayment error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to create vendor payment' });
+  }
+};
+
+exports.updateVendorPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { vendorName, category, serviceDescription, agreedAmount, advancePaid, paymentDate, paymentMode, transactionId, invoiceProof, status, remarks } = req.body;
+
+    const existing = await prisma.opsVendorPayment.findUnique({
+      where: { id }
+    });
+
+    if (!existing) {
+      return res.status(444).json({ success: false, message: 'Vendor payment not found' });
+    }
+
+    const agreed = agreedAmount !== undefined ? parseFloat(agreedAmount) : existing.agreedAmount;
+    const advance = advancePaid !== undefined ? parseFloat(advancePaid) : existing.advancePaid;
+    const remaining = Math.max(0, agreed - advance);
+
+    const updated = await prisma.opsVendorPayment.update({
+      where: { id },
+      data: {
+        vendorName: vendorName || existing.vendorName,
+        category: category || existing.category,
+        serviceDescription: serviceDescription !== undefined ? serviceDescription : existing.serviceDescription,
+        agreedAmount: agreed,
+        advancePaid: advance,
+        remainingPayable: remaining,
+        paymentDate: paymentDate ? new Date(paymentDate) : existing.paymentDate,
+        paymentMode: paymentMode !== undefined ? paymentMode : existing.paymentMode,
+        transactionId: transactionId !== undefined ? transactionId : existing.transactionId,
+        invoiceProof: invoiceProof !== undefined ? invoiceProof : existing.invoiceProof,
+        status: status || existing.status,
+        remarks: remarks !== undefined ? remarks : existing.remarks
+      }
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error('updateVendorPayment error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update vendor payment' });
+  }
+};
+
+exports.deleteVendorPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.opsVendorPayment.delete({
+      where: { id }
+    });
+    return res.json({ success: true, message: 'Vendor payment deleted' });
+  } catch (err) {
+    console.error('deleteVendorPayment error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete vendor payment' });
+  }
+};
+
+// ── FINANCIAL DASHBOARD STATS ──
+exports.getPaymentsDashboardStats = async (req, res) => {
+  try {
+    const ctx = await parseDepartureFilter(req, res);
+    if (!ctx) return;
+
+    // Fetch Client Totals
+    const bookings = await prisma.booking.findMany({
+      where: ctx.bookingWhere,
+      select: {
+        bookingId: true,
+        totalAmount: true
+      }
+    });
+
+    const totalClientRevenue = bookings.reduce((s, b) => s + (b.totalAmount || 0), 0);
+
+    const bookingIds = bookings.map(b => b.bookingId);
+    const clientPayments = await prisma.opsClientPayment.findMany({
+      where: {
+        bookingId: { in: bookingIds },
+        status: 'Verified'
+      },
+      select: {
+        amount: true
+      }
+    });
+
+    const clientAmountReceived = clientPayments.reduce((s, p) => s + p.amount, 0);
+    const clientOutstandingBalance = Math.max(0, totalClientRevenue - clientAmountReceived);
+
+    // Fetch Vendor Totals
+    const vendorPayments = await prisma.opsVendorPayment.findMany({
+      where: ctx.where,
+      select: {
+        agreedAmount: true,
+        advancePaid: true,
+        remainingPayable: true
+      }
+    });
+
+    const totalVendorPayable = vendorPayments.reduce((s, v) => s + v.agreedAmount, 0);
+    const vendorAmountPaid = vendorPayments.reduce((s, v) => s + v.advancePaid, 0);
+    const vendorOutstandingBalance = vendorPayments.reduce((s, v) => s + v.remainingPayable, 0);
+
+    // Profits
+    const estProfit = totalClientRevenue - totalVendorPayable;
+    const actProfit = clientAmountReceived - vendorAmountPaid;
+
+    return res.json({
+      success: true,
+      data: {
+        totalClientRevenue,
+        clientAmountReceived,
+        clientOutstandingBalance,
+        totalVendorPayable,
+        vendorAmountPaid,
+        vendorOutstandingBalance,
+        estimatedProfit: estProfit,
+        actualProfit: actProfit
+      }
+    });
+  } catch (err) {
+    console.error('getPaymentsDashboardStats error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to compute payment dashboard stats' });
   }
 };
