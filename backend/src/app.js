@@ -42,13 +42,24 @@ addOrigins(process.env.ADMIN_URL);
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    const normalizedOrigin = origin.replace(/\/$/, '');
-    if (allowedOrigins.includes(normalizedOrigin) || normalizedOrigin.endsWith('.vercel.app') || normalizedOrigin.includes('.vercel.app')) {
+    const normalizedOrigin = origin.replace(/\/$/, '').toLowerCase();
+    
+    // Check if origin is explicitly allowed or belongs to youthcamping.online or vercel
+    const isAllowed = allowedOrigins.map(o => o.toLowerCase()).includes(normalizedOrigin) || 
+                      normalizedOrigin.endsWith('.vercel.app') || 
+                      normalizedOrigin.includes('.vercel.app') ||
+                      normalizedOrigin.endsWith('.youthcamping.online') ||
+                      normalizedOrigin === 'https://youthcamping.online' ||
+                      normalizedOrigin === 'https://admin.youthcamping.online';
+
+    if (isAllowed) {
       return callback(null, true);
     }
     if (/^https?:\/\/localhost(:\d+)?$/i.test(normalizedOrigin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/i.test(normalizedOrigin)) {
       return callback(null, true);
     }
+    
+    console.warn(`[CORS REJECTED] Origin: ${origin}`);
     callback(null, false);
   },
   credentials: true,
