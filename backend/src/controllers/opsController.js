@@ -715,6 +715,8 @@ exports.createTransportFleet = async (req, res) => {
 exports.deleteTransportFleet = async (req, res) => {
   try {
     const { id } = req.params;
+    // Delete any dependent allocations first to avoid Restrict constraint violation
+    await prisma.opsVehicleAllocation.deleteMany({ where: { fleetId: id } });
     await prisma.opsTransportFleet.deleteMany({ where: { id } });
     return res.json({ success: true, message: 'Transport vehicle deleted' });
   } catch (err) {
@@ -3197,7 +3199,8 @@ exports.resetHotelOverride = async (req, res) => {
       return res.json({ success: true, message: 'Price reset to vendor rate snapshot', data: updated });
     }
 
-    return res.status(400).json({ success: false, message: 'No valid rate snapshot found to reset to' });
+    // If no rateId (ad-hoc custom rate), clearing overrides is sufficient
+    return res.json({ success: true, message: 'Hotel rate overrides cleared' });
   } catch (err) {
     console.error('resetHotelOverride error:', err);
     return res.status(500).json({ success: false, message: 'Failed to reset overrides' });
