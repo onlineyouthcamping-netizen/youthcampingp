@@ -9,7 +9,8 @@ const {
   createVendorPayment,
   updateVendorPayment,
   deleteVendorPayment,
-  getPaymentsDashboardStats
+  getPaymentsDashboardStats,
+  getBookingPayments
 } = require('../controllers/paymentController');
 
 router.use(authenticate);
@@ -18,6 +19,7 @@ router.use(authenticate);
 router.get('/client/:tripId', requirePermission('ops.view'), getClientPayments);
 router.post('/client/add/:bookingId', requirePermission('ops.manage'), addClientPayment);
 router.patch('/client/verify/:id', requirePermission('ops.manage'), verifyClientPayment);
+router.get('/booking/:bookingId', getBookingPayments);
 
 // Vendor Payables Routes
 router.get('/vendor/:tripId', requirePermission('ops.view'), getVendorPayments);

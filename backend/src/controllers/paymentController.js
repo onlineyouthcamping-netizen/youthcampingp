@@ -213,6 +213,61 @@ exports.verifyClientPayment = async (req, res) => {
   }
 };
 
+exports.getBookingPayments = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const tenantId = req.user?.tenantId || 'default';
+
+    // Query standard Payment records
+    const standardPayments = await prisma.payment.findMany({
+      where: { bookingId, tenantId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Query operations client receipts (manual uploads)
+    const clientReceipts = await prisma.opsClientPayment.findMany({
+      where: { bookingId, tenantId },
+      orderBy: { paymentDate: 'desc' }
+    });
+
+    // Merge both sources together cleanly
+    const allPayments = [
+      ...standardPayments.map(p => ({
+        id: p.id,
+        amount: p.amount,
+        paymentMode: p.paymentMode || 'Online',
+        notes: p.transactionId ? `Txn ID: ${p.transactionId}` : 'Booking payment',
+        status: p.status || 'success',
+        createdAt: p.createdAt
+      })),
+      ...clientReceipts.map(r => ({
+        id: r.id,
+        amount: r.amount,
+        paymentMode: r.paymentMode,
+        notes: r.remarks || 'Manual Payment',
+        status: r.status === 'Verified' ? 'success' : r.status === 'Rejected' ? 'failed' : 'pending',
+        createdAt: r.paymentDate
+      }))
+    ];
+
+    // Compute basic totals
+    const successfulPayments = allPayments.filter(p => p.status === 'success');
+    const totalPaid = successfulPayments.reduce((sum, p) => sum + p.amount, 0);
+
+    return res.json({
+      success: true,
+      data: allPayments,
+      summary: {
+        totalPaid,
+        paymentsCount: allPayments.length
+      }
+    });
+  } catch (err) {
+    console.error('getBookingPayments error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to retrieve booking payments' });
+  }
+};
+
 // ── VENDOR PAYMENTS ──
 exports.getVendorPayments = async (req, res) => {
   try {
