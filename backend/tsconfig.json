@@ -5,7 +5,6 @@
     "lib": ["ESNext", "DOM"],
     "moduleResolution": "node",
     "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "allowJs": false,
     "checkJs": false,
     "strict": false,

@@ -585,7 +585,9 @@
   }
   
   .wavy-edge {
+    -webkit-mask-image: radial-gradient(circle at 10px 100%, transparent 10px, white 11px);
     mask-image: radial-gradient(circle at 10px 100%, transparent 10px, white 11px);
+    -webkit-mask-size: 20px 100%;
     mask-size: 20px 100%;
   }
 
