@@ -386,12 +386,15 @@ exports.getPaymentsDashboardStats = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res);
     if (!ctx) return;
 
-    // Fetch Client Totals
+    // Fetch Client Totals — include advancePaid so outstanding is correct
+    // even before opsClientPayment receipts are manually logged
     const bookings = await prisma.booking.findMany({
       where: ctx.bookingWhere,
       select: {
         bookingId: true,
-        totalAmount: true
+        totalAmount: true,
+        advancePaid: true,
+        remainingAmount: true
       }
     });
 
@@ -404,12 +407,31 @@ exports.getPaymentsDashboardStats = async (req, res) => {
         status: 'Verified'
       },
       select: {
-        amount: true
+        amount: true,
+        bookingId: true
       }
     });
 
-    const clientAmountReceived = clientPayments.reduce((s, p) => s + p.amount, 0);
-    const clientOutstandingBalance = Math.max(0, totalClientRevenue - clientAmountReceived);
+    // Build a map of opsClientPayment sums per booking
+    const receiptSumByBooking = {};
+    clientPayments.forEach((p) => {
+      receiptSumByBooking[p.bookingId] = (receiptSumByBooking[p.bookingId] || 0) + p.amount;
+    });
+
+    // For each booking, use the higher of: advancePaid OR sum of verified receipts
+    // This ensures outstanding is correct whether the team uses manual receipt logging or not
+    let clientAmountReceived = 0;
+    let clientOutstandingBalance = 0;
+    bookings.forEach((b) => {
+      const advancePaid = b.advancePaid || 0;
+      const receiptSum = receiptSumByBooking[b.bookingId] || 0;
+      const effectivePaid = Math.max(advancePaid, receiptSum);
+      const outstanding = b.remainingAmount !== undefined && b.remainingAmount !== null
+        ? b.remainingAmount
+        : Math.max(0, (b.totalAmount || 0) - effectivePaid);
+      clientAmountReceived += effectivePaid;
+      clientOutstandingBalance += outstanding;
+    });
 
     // Fetch Vendor Totals
     const vendorPayments = await prisma.opsVendorPayment.findMany({
