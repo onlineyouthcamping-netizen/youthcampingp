@@ -477,9 +477,36 @@ exports.createHotelBooking = async (req, res) => {
 
       // 4. Validate vendor existence & type
       if (h.vendorId) {
-        const dbVendor = await prisma.opsVendor.findUnique({ where: { id: h.vendorId } });
+        let dbVendor = await prisma.opsVendor.findUnique({ where: { id: h.vendorId } });
         if (!dbVendor) {
-          return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: `Selected vendor ${h.vendorId} does not exist in directory.`, field: "vendorId", index: idx });
+          const dirVendor = await prisma.directoryVendor.findUnique({ where: { id: h.vendorId } });
+          if (dirVendor) {
+            let type = "HOTEL";
+            const u = (dirVendor.type || "").toUpperCase();
+            if (["HOTEL", "HOMESTAY", "CAMP", "TRANSPORT", "GUIDE", "FOOD", "MISC"].includes(u)) {
+              type = u;
+            } else if (u === "MEALS") {
+              type = "FOOD";
+            } else {
+              type = "MISC";
+            }
+            dbVendor = await prisma.opsVendor.create({
+              data: {
+                id: dirVendor.id,
+                tenantId: "default",
+                vendorCode: dirVendor.vendorCode,
+                name: dirVendor.name,
+                type: type,
+                contactPerson: dirVendor.contactPerson || "Primary Contact",
+                email: dirVendor.email || "",
+                phone: dirVendor.contactNumber || dirVendor.alternateNumber || "",
+                location: dirVendor.city || "",
+                isActive: true
+              }
+            });
+          } else {
+            return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: `Selected vendor ${h.vendorId} does not exist in directory.`, field: "vendorId", index: idx });
+          }
         }
         const vType = (dbVendor.type || "").toUpperCase();
         if (vType !== "HOTEL" && vType !== "HOMESTAY" && vType !== "CAMP") {
