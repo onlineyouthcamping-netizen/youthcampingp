@@ -2117,12 +2117,12 @@ exports.saveManualAllocations = async (req, res) => {
     if (allBookingIds.length > 0) {
       const validBookings = await prisma.booking.findMany({
         where: {
-          id: { in: [...new Set(allBookingIds)] },
+          bookingId: { in: [...new Set(allBookingIds)] },
           tripId: resolvedTripId
         },
-        select: { id: true, departureDate: true, status: true }
+        select: { bookingId: true, departureDate: true, status: true }
       });
-      const validBookingIds = new Set(validBookings.map(b => b.id));
+      const validBookingIds = new Set(validBookings.map(b => b.bookingId));
       const invalidBookings = [...new Set(allBookingIds)].filter(id => !validBookingIds.has(id));
       if (invalidBookings.length > 0) {
         return res.status(400).json({
