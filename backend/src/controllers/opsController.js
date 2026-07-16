@@ -509,8 +509,8 @@ exports.createHotelBooking = async (req, res) => {
           }
         }
         const vType = (dbVendor.type || "").toUpperCase();
-        if (vType !== "HOTEL" && vType !== "HOMESTAY" && vType !== "CAMP") {
-          return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Selected vendor is not a HOTEL, HOMESTAY, or CAMP vendor.", field: "vendorId", index: idx });
+        if (vType !== "HOTEL" && vType !== "HOMESTAY" && vType !== "CAMP" && vType !== "TRANSPORT" && vType !== "GUIDE" && vType !== "FOOD" && vType !== "MISC" && vType !== "MEALS") {
+          return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Selected vendor type is not supported.", field: "vendorId", index: idx });
         }
       }
 
