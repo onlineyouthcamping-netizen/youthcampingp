@@ -515,7 +515,7 @@ exports.createHotelBooking = async (req, res) => {
       }
 
       // Validate booking ID belongs to selected trip
-      if (h.id && !h.id.startsWith('stay')) {
+      if (h.id && !h.id.startsWith('stay') && !h.id.startsWith('spt-stay')) {
         const existing = await prisma.opsHotelBooking.findUnique({ where: { id: h.id } });
         if (!existing) {
           return res.status(404).json({ success: false, code: "NOT_FOUND", message: `Hotel booking record not found for ID: ${h.id}`, field: "id", index: idx });
@@ -597,7 +597,7 @@ exports.createHotelBooking = async (req, res) => {
         };
 
         let booking;
-        if (h.id && !h.id.startsWith('stay')) {
+        if (h.id && !h.id.startsWith('stay') && !h.id.startsWith('spt-stay')) {
           booking = await tx.opsHotelBooking.update({
             where: { id: h.id },
             data: dataObj,
