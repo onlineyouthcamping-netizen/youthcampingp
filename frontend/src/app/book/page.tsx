@@ -1047,9 +1047,9 @@ function BookingForm() {
                     </div>
 
                     {/* Quick Traveler Count Select */}
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <label className="text-[9px] font-bold capitalize tracking-wider text-slate-500 block">Number of Travelers</label>
-                      <div className="grid grid-cols-5 gap-1.5">
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                         {[1, 2, 3, 4, 5].map((n) => (
                           <button
                             key={n}
@@ -1062,10 +1062,46 @@ function BookingForm() {
                                 : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
                             )}
                           >
-                            {n}
+                            {n} {n === 1 ? 'Traveller' : 'Travellers'}
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (formData.participants <= 5) {
+                              syncParticipantsCount(6);
+                            }
+                          }}
+                          className={cn(
+                            "py-2 rounded-lg font-bold text-xs transition-all border",
+                            formData.participants > 5 
+                              ? "bg-[#FF5B00] border-[#FF5B00] text-white shadow-xs" 
+                              : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
+                          )}
+                        >
+                          More than 5
+                        </button>
                       </div>
+
+                      {/* Dropdown for More than 5 selection */}
+                      {formData.participants > 5 && (
+                        <div className="pt-1.5 max-w-xs">
+                          <label className="text-[8px] font-extrabold uppercase tracking-wider text-[#FF5B00] block mb-1">
+                            Select count (6 to 12)
+                          </label>
+                          <select
+                            value={formData.participants}
+                            onChange={(e) => syncParticipantsCount(Number(e.target.value))}
+                            className="w-full h-10 bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs font-bold text-slate-800 outline-none focus:border-[#FF5B00]"
+                          >
+                            {[6, 7, 8, 9, 10, 11, 12].map((cnt) => (
+                              <option key={cnt} value={cnt}>
+                                {cnt} Travellers
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     {/* Participant detail loops */}
