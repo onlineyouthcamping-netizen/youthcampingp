@@ -1,5 +1,4 @@
-const { PrismaClient } = require('/Users/parthpatel/Documents/youthcamping_os/backend/node_modules/@prisma/client');
-const prisma = new PrismaClient();
+const { prisma } = require('../lib/prisma');
 
 /**
  * Executes vehicle and room auto-allocation for a given departure
