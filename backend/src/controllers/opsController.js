@@ -70,6 +70,7 @@ async function parseDepartureFilter(req, res, requireDepartureDate = true) {
   }
 
   let tripId = rawTripId;
+  let tripData = null;
   if (rawTripId) {
     // 1. Try exact/slug/shortName match
     let trip = await prisma.trip.findFirst({
@@ -81,7 +82,7 @@ async function parseDepartureFilter(req, res, requireDepartureDate = true) {
           { shortName: rawTripId }
         ]
       },
-      select: { id: true }
+      select: { id: true, availableDates: true }
     });
 
     // 2. Resolve departure code to trip if not found exactly (e.g. MKA-0705 -> MKA)
@@ -98,12 +99,13 @@ async function parseDepartureFilter(req, res, requireDepartureDate = true) {
             { shortName: { startsWith: prefix, mode: 'insensitive' } }
           ]
         },
-        select: { id: true }
+        select: { id: true, availableDates: true }
       });
     }
 
     if (trip) {
       tripId = trip.id;
+      tripData = trip;
     } else {
       res.status(404).json({
         success: false,
@@ -111,6 +113,47 @@ async function parseDepartureFilter(req, res, requireDepartureDate = true) {
         message: `The trip matching identifier '${rawTripId}' could not be resolved.`
       });
       return null;
+    }
+  }
+
+  // If a departure date is provided/required, validate it against availableDates or bookings
+  if (departureDate && tripData) {
+    const formattedDate = departureDate.toISOString().substring(0, 10);
+    let datesList = [];
+    if (tripData.availableDates) {
+      try {
+        datesList = typeof tripData.availableDates === 'string'
+          ? JSON.parse(tripData.availableDates)
+          : tripData.availableDates;
+      } catch (e) {
+        datesList = [];
+      }
+    }
+
+    const departureExistsInDates = Array.isArray(datesList) && datesList.some((d) => {
+      const dStr = typeof d === 'string' ? d : (d.date || d.departureDate);
+      return dStr && dStr.substring(0, 10) === formattedDate;
+    });
+
+    if (!departureExistsInDates) {
+      const bookingsCount = await prisma.booking.count({
+        where: {
+          tripId: tripId,
+          status: { notIn: ['cancelled', 'rejected'] },
+          departureDate: {
+            gte: new Date(formattedDate + 'T00:00:00.000Z'),
+            lte: new Date(formattedDate + 'T23:59:59.999Z')
+          }
+        }
+      });
+      if (bookingsCount === 0) {
+        res.status(400).json({
+          success: false,
+          code: 'DEPARTURE_NOT_FOUND',
+          message: `The departure date ${formattedDate} is not configured and has no active bookings for trip ${tripId}.`
+        });
+        return null;
+      }
     }
   }
 
@@ -325,31 +368,71 @@ exports.createHotelBooking = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return; // parseDepartureFilter handles error response (400/404)
 
-    // Accept either array under "hotels" or fallback to single object in body
+    // Accept either array under "hotels" or fallback to single object in body or direct array
     let hotelList = req.body.hotels;
     if (!hotelList) {
-      // Fallback/backward compatibility for single object payload
-      hotelList = [req.body];
+      if (Array.isArray(req.body)) {
+        hotelList = req.body;
+      } else {
+        hotelList = [req.body];
+      }
     }
 
     if (!Array.isArray(hotelList)) {
-      return res.status(400).json({ success: false, message: "hotels parameter must be an array of hotel booking objects." });
+      return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "hotels parameter must be an array of hotel booking objects." });
     }
 
     // Validate duplicate check-in dates in the incoming request
     const checkInDates = new Set();
-    for (const h of hotelList) {
+    for (let idx = 0; idx < hotelList.length; idx++) {
+      const h = hotelList[idx];
       if (h.checkIn) {
         const dateStr = new Date(h.checkIn).toISOString().substring(0, 10);
         if (checkInDates.has(dateStr)) {
-          return res.status(400).json({ success: false, message: `Duplicate hotel allocations detected for check-in date ${dateStr}.` });
+          return res.status(400).json({
+            success: false,
+            code: "VALIDATION_ERROR",
+            message: `Duplicate hotel allocations detected for check-in date ${dateStr}.`,
+            field: "checkIn",
+            index: idx
+          });
         }
         checkInDates.add(dateStr);
       }
     }
 
     // Pre-validate all items before executing any database changes
-    for (const h of hotelList) {
+    for (let idx = 0; idx < hotelList.length; idx++) {
+      const h = hotelList[idx];
+
+      // 1. Mandatory Fields
+      if (!h.hotelName) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Hotel Name is required.", field: "hotelName", index: idx });
+      }
+      if (!h.location) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Destination is required.", field: "location", index: idx });
+      }
+      if (!h.checkIn) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Check-in date is required.", field: "checkIn", index: idx });
+      }
+      if (!h.checkOut) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Check-out date is required.", field: "checkOut", index: idx });
+      }
+
+      // Check dates validity
+      const cin = new Date(h.checkIn);
+      const cout = new Date(h.checkOut);
+      if (isNaN(cin.getTime())) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Invalid check-in date format.", field: "checkIn", index: idx });
+      }
+      if (isNaN(cout.getTime())) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Invalid check-out date format.", field: "checkOut", index: idx });
+      }
+      if (cout <= cin) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Check-out date must be after check-in date.", field: "checkOut", index: idx });
+      }
+
+      // 2. Occupancies/Nights Counts Validation
       const adv = parseFloat(h.advancePaid || 0);
       const dRooms = parseInt(h.doubleRoomsCount || 0);
       const tRooms = parseInt(h.tripleRoomsCount || 0);
@@ -357,39 +440,50 @@ exports.createHotelBooking = async (req, res) => {
       const exPax = parseInt(h.extraPersonsCount || 0);
       const nights = (h.nightsCount !== undefined && h.nightsCount !== null) ? parseInt(h.nightsCount) : 1;
 
-      if (dRooms < 0 || tRooms < 0 || qRooms < 0 || exPax < 0) {
-        return res.status(400).json({ success: false, message: "Passenger counts must be non-negative integers." });
+      if (isNaN(dRooms) || dRooms < 0) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Double rooms count must be a non-negative integer.", field: "doubleRoomsCount", index: idx });
+      }
+      if (isNaN(tRooms) || tRooms < 0) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Triple rooms count must be a non-negative integer.", field: "tripleRoomsCount", index: idx });
+      }
+      if (isNaN(qRooms) || qRooms < 0) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Quad rooms count must be a non-negative integer.", field: "quadRoomsCount", index: idx });
+      }
+      if (isNaN(exPax) || exPax < 0) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Extra persons count must be a non-negative integer.", field: "extraPersonsCount", index: idx });
+      }
+      if (isNaN(nights) || nights < 1) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Nights must be at least 1.", field: "nightsCount", index: idx });
       }
 
+      // 3. Room Rates Validation
       const dRate = parseFloat(h.doubleRate ?? 0);
       const tRate = parseFloat(h.tripleRate ?? 0);
       const qRate = parseFloat(h.quadRate ?? 0);
       const exRate = parseFloat(h.extraBedRate ?? h.extraPersonRate ?? 0);
 
-      if (dRate < 0 || tRate < 0 || qRate < 0 || exRate < 0) {
-        return res.status(400).json({ success: false, message: "Rates must be non-negative numbers." });
+      if (isNaN(dRate) || dRate < 0) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Double rate must be a non-negative number.", field: "doubleRate", index: idx });
+      }
+      if (isNaN(tRate) || tRate < 0) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Triple rate must be a non-negative number.", field: "tripleRate", index: idx });
+      }
+      if (isNaN(qRate) || qRate < 0) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Quad rate must be a non-negative number.", field: "quadRate", index: idx });
+      }
+      if (isNaN(exRate) || exRate < 0) {
+        return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Extra bed rate must be a non-negative number.", field: "extraBedRate", index: idx });
       }
 
-      if (nights < 1) {
-        return res.status(400).json({ success: false, message: "Nights must be at least 1." });
-      }
-
-      if (h.checkIn && h.checkOut) {
-        const cin = new Date(h.checkIn);
-        const cout = new Date(h.checkOut);
-        if (cout <= cin) {
-          return res.status(400).json({ success: false, message: "Check-out date must be after check-in date." });
-        }
-      }
-
-      // Validate vendor existence & type
+      // 4. Validate vendor existence & type
       if (h.vendorId) {
         const dbVendor = await prisma.opsVendor.findUnique({ where: { id: h.vendorId } });
         if (!dbVendor) {
-          return res.status(400).json({ success: false, message: `Selected vendor ${h.vendorId} does not exist in directory.` });
+          return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: `Selected vendor ${h.vendorId} does not exist in directory.`, field: "vendorId", index: idx });
         }
-        if ((dbVendor.type || "").toUpperCase() !== "HOTEL") {
-          return res.status(400).json({ success: false, message: "Selected vendor is not a hotel vendor." });
+        const vType = (dbVendor.type || "").toUpperCase();
+        if (vType !== "HOTEL" && vType !== "HOMESTAY" && vType !== "CAMP") {
+          return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Selected vendor is not a HOTEL, HOMESTAY, or CAMP vendor.", field: "vendorId", index: idx });
         }
       }
 
@@ -397,15 +491,15 @@ exports.createHotelBooking = async (req, res) => {
       if (h.id && !h.id.startsWith('stay')) {
         const existing = await prisma.opsHotelBooking.findUnique({ where: { id: h.id } });
         if (!existing) {
-          return res.status(404).json({ success: false, message: `Hotel booking record not found for ID: ${h.id}` });
+          return res.status(404).json({ success: false, code: "NOT_FOUND", message: `Hotel booking record not found for ID: ${h.id}`, field: "id", index: idx });
         }
         if (existing.tripId !== ctx.tripId) {
-          return res.status(400).json({ success: false, message: "Hotel allocation does not belong to the selected trip." });
+          return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Hotel allocation does not belong to the selected trip.", field: "tripId", index: idx });
         }
         const existingDateStr = existing.departureDate.toISOString().substring(0, 10);
         const ctxDateStr = ctx.departureDate.toISOString().substring(0, 10);
         if (existingDateStr !== ctxDateStr) {
-          return res.status(400).json({ success: false, message: "Hotel allocation departure date mismatch." });
+          return res.status(400).json({ success: false, code: "VALIDATION_ERROR", message: "Hotel allocation departure date mismatch.", field: "departureDate", index: idx });
         }
       }
     }
