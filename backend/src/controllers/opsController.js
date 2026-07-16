@@ -388,7 +388,7 @@ exports.createHotelBooking = async (req, res) => {
         if (!dbVendor) {
           return res.status(400).json({ success: false, message: `Selected vendor ${h.vendorId} does not exist in directory.` });
         }
-        if (dbVendor.type !== "HOTEL") {
+        if ((dbVendor.type || "").toUpperCase() !== "HOTEL") {
           return res.status(400).json({ success: false, message: "Selected vendor is not a hotel vendor." });
         }
       }
