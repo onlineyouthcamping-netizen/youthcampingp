@@ -1000,8 +1000,20 @@ async function runAlertScanner(tenantId) {
  */
 exports.getTemplates = async (req, res) => {
   try {
+    const { tripId, departureDate } = req.query;
+    let whereClause = { tenantId: req.user.tenantId, isActive: true };
+    
+    if (tripId) {
+      whereClause.tripId = tripId;
+    }
+    
+    if (departureDate) {
+      // If departureDate is provided, fetch both TRIP defaults (null) and DEPARTURE overrides (exact date)
+      whereClause.departureDate = { in: [null, new Date(departureDate)] };
+    }
+    
     const templates = await prisma.trainTemplate.findMany({
-      where: { tenantId: req.user.tenantId },
+      where: whereClause,
       include: { trip: { select: { id: true, title: true } } },
       orderBy: { createdAt: 'desc' }
     });
@@ -1012,31 +1024,209 @@ exports.getTemplates = async (req, res) => {
   }
 };
 
+exports.getEffectiveTemplates = async (req, res) => {
+  try {
+    const { tripId, departureDate } = req.query;
+    if (!tripId || !departureDate) {
+      return res.status(400).json({ success: false, message: 'tripId and departureDate are required' });
+    }
+
+    const templates = await prisma.trainTemplate.findMany({
+      where: {
+        tenantId: req.user.tenantId,
+        tripId,
+        isActive: true,
+        departureDate: { in: [null, new Date(departureDate)] }
+      }
+    });
+
+    // Group by route/direction. Since source/destination could vary slightly,
+    // we group by transportMode + source + destination.
+    const effectiveTemplates = [];
+    
+    // Extract unique transportMode + source + destination combinations
+    const groups = {};
+    for (const t of templates) {
+      const key = `${t.transportMode}-${(t.source || t.flightOrigin || '').toLowerCase()}-${(t.destination || t.flightDestination || '').toLowerCase()}`;
+      if (!groups[key]) groups[key] = { tripDefaults: [], overrides: [] };
+      if (t.scope === 'DEPARTURE') {
+        groups[key].overrides.push(t);
+      } else {
+        groups[key].tripDefaults.push(t);
+      }
+    }
+
+    for (const key in groups) {
+      const { tripDefaults, overrides } = groups[key];
+      // Priority: DEPARTURE OVERRIDE > TRIP DEFAULT
+      if (overrides.length > 0) {
+        effectiveTemplates.push({
+          effectiveTemplate: overrides[0],
+          source: 'DEPARTURE_OVERRIDE',
+          tripDefault: tripDefaults[0] || null
+        });
+      } else if (tripDefaults.length > 0) {
+        effectiveTemplates.push({
+          effectiveTemplate: tripDefaults[0],
+          source: 'TRIP_DEFAULT',
+          tripDefault: tripDefaults[0]
+        });
+      }
+    }
+
+    return res.json({ success: true, data: effectiveTemplates });
+  } catch (err) {
+    console.error('getEffectiveTemplates error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to resolve effective templates' });
+  }
+};
+
+const validateTransportMode = (body) => {
+  const { transportMode } = body;
+  
+  // Clone body to mutate
+  const data = { ...body };
+
+  if (transportMode === 'FLIGHT') {
+    if (!data.flightAirline || !data.flightNumber) {
+      throw new Error('Flight templates require flightAirline and flightNumber');
+    }
+    // Nullify train fields
+    data.trainName = null;
+    data.trainNumber = null;
+    data.source = null;
+    data.destination = null;
+  } else if (transportMode === 'TRAIN') {
+    if (!data.trainName || !data.trainNumber) {
+      throw new Error('Train templates require trainName and trainNumber');
+    }
+    // Nullify flight fields
+    data.flightAirline = null;
+    data.flightNumber = null;
+    data.flightOrigin = null;
+    data.flightDestination = null;
+    data.flightTerminal = null;
+  } else if (transportMode === 'BUS') {
+    if (!data.trainName || !data.trainNumber) {
+      throw new Error('Bus templates require operator (trainName) and route (trainNumber)');
+    }
+    data.flightAirline = null;
+    data.flightNumber = null;
+    data.flightOrigin = null;
+    data.flightDestination = null;
+    data.flightTerminal = null;
+  }
+
+  return data;
+};
+
+const checkUniqueness = async (tenantId, scope, tripId, departureDate, transportMode, sourceOrOrigin, destOrDest, excludeId = null) => {
+  const where = {
+    tenantId,
+    tripId: tripId || null,
+    scope,
+    transportMode,
+    isActive: true
+  };
+  
+  if (scope === 'DEPARTURE') {
+    where.departureDate = new Date(departureDate);
+  }
+
+  if (excludeId) {
+    where.id = { not: excludeId };
+  }
+
+  const existing = await prisma.trainTemplate.findMany({ where });
+  
+  // Filter by source/dest loosely since they are split between fields
+  for (const t of existing) {
+    const tSrc = (t.source || t.flightOrigin || '').toLowerCase();
+    const tDest = (t.destination || t.flightDestination || '').toLowerCase();
+    const mSrc = (sourceOrOrigin || '').toLowerCase();
+    const mDest = (destOrDest || '').toLowerCase();
+    
+    if (tSrc === mSrc && tDest === mDest) {
+      return true; // Duplicate found
+    }
+  }
+  
+  return false;
+};
+
 exports.createTemplate = async (req, res) => {
   try {
     const {
-      tripId, tripTitle, departureDate, trainName, trainNumber,
-      source, destination, defaultClass, defaultCoach, journeyDate,
-      boardingPoint, droppingPoint, waitlistDisclaimer, isActive
+      tripId, departureDate, scope, transportMode,
+      trainName, trainNumber, source, destination, defaultClass, defaultCoach, journeyDate,
+      boardingPoint, droppingPoint,
+      flightAirline, flightNumber, flightOrigin, flightDestination, flightTerminal, baggageGuidance,
+      reportingTime, arrivalTime,
+      waitlistDisclaimer, isActive
     } = req.body;
+
+    let actualScope = scope || (departureDate ? 'DEPARTURE' : 'TRIP');
+    if (actualScope === 'TRIP' && departureDate) {
+      return res.status(400).json({ success: false, message: 'TRIP scope templates cannot have a departure date' });
+    }
+    if (actualScope === 'DEPARTURE' && !departureDate) {
+      return res.status(400).json({ success: false, message: 'DEPARTURE scope templates must specify a departure date' });
+    }
+
+    let sanitizedData;
+    try {
+      sanitizedData = validateTransportMode(req.body);
+    } catch (e) {
+      return res.status(400).json({ success: false, message: e.message });
+    }
+
+    // Never trust frontend tripTitle. Fetch it.
+    let tripTitle = null;
+    if (tripId) {
+      const trip = await prisma.trip.findUnique({ where: { id: tripId } });
+      if (!trip) return res.status(404).json({ success: false, message: 'Trip not found' });
+      tripTitle = trip.title;
+    }
+
+    const tMode = sanitizedData.transportMode || 'TRAIN';
+    const src = sanitizedData.source || sanitizedData.flightOrigin;
+    const dest = sanitizedData.destination || sanitizedData.flightDestination;
+
+    const isDuplicate = await checkUniqueness(
+      req.user.tenantId, actualScope, tripId, departureDate, tMode, src, dest
+    );
+
+    if (isDuplicate) {
+      return res.status(409).json({ success: false, message: 'A template for this route and scope already exists' });
+    }
 
     const template = await prisma.trainTemplate.create({
       data: {
         tenantId: req.user.tenantId,
         tripId: tripId || null,
-        tripTitle: tripTitle || null,
+        tripTitle,
         departureDate: departureDate ? new Date(departureDate) : null,
-        trainName: trainName || null,
-        trainNumber: trainNumber || null,
-        source: source || null,
-        destination: destination || null,
-        defaultClass: defaultClass || null,
-        defaultCoach: defaultCoach || null,
-        journeyDate: journeyDate ? new Date(journeyDate) : null,
-        boardingPoint: boardingPoint || null,
-        droppingPoint: droppingPoint || null,
-        waitlistDisclaimer: waitlistDisclaimer || null,
-        isActive: isActive !== undefined ? isActive : true
+        scope: actualScope,
+        transportMode: tMode,
+        trainName: sanitizedData.trainName || null,
+        trainNumber: sanitizedData.trainNumber || null,
+        source: sanitizedData.source || null,
+        destination: sanitizedData.destination || null,
+        defaultClass: sanitizedData.defaultClass || null,
+        defaultCoach: sanitizedData.defaultCoach || null,
+        journeyDate: sanitizedData.journeyDate ? new Date(sanitizedData.journeyDate) : null,
+        boardingPoint: sanitizedData.boardingPoint || null,
+        droppingPoint: sanitizedData.droppingPoint || null,
+        flightAirline: sanitizedData.flightAirline || null,
+        flightNumber: sanitizedData.flightNumber || null,
+        flightOrigin: sanitizedData.flightOrigin || null,
+        flightDestination: sanitizedData.flightDestination || null,
+        flightTerminal: sanitizedData.flightTerminal || null,
+        baggageGuidance: sanitizedData.baggageGuidance || null,
+        reportingTime: sanitizedData.reportingTime ? new Date(sanitizedData.reportingTime) : null,
+        arrivalTime: sanitizedData.arrivalTime ? new Date(sanitizedData.arrivalTime) : null,
+        waitlistDisclaimer: sanitizedData.waitlistDisclaimer || null,
+        isActive: sanitizedData.isActive !== undefined ? sanitizedData.isActive : true
       }
     });
 
@@ -1050,12 +1240,7 @@ exports.createTemplate = async (req, res) => {
 exports.updateTemplate = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      tripId, tripTitle, departureDate, trainName, trainNumber,
-      source, destination, defaultClass, defaultCoach, journeyDate,
-      boardingPoint, droppingPoint, waitlistDisclaimer, isActive
-    } = req.body;
-
+    
     const template = await prisma.trainTemplate.findFirst({
       where: { id, tenantId: req.user.tenantId }
     });
@@ -1064,21 +1249,78 @@ exports.updateTemplate = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Template not found' });
     }
 
+    let sanitizedData;
+    try {
+      // Merge with existing to validate properly
+      const mergedBody = { ...template, ...req.body };
+      sanitizedData = validateTransportMode(mergedBody);
+    } catch (e) {
+      return res.status(400).json({ success: false, message: e.message });
+    }
+
+    const {
+      tripId, departureDate, scope, transportMode,
+      trainName, trainNumber, source, destination, defaultClass, defaultCoach, journeyDate,
+      boardingPoint, droppingPoint,
+      flightAirline, flightNumber, flightOrigin, flightDestination, flightTerminal, baggageGuidance,
+      reportingTime, arrivalTime,
+      waitlistDisclaimer, isActive
+    } = sanitizedData;
+
+    let tripTitle = template.tripTitle;
+    if (tripId && tripId !== template.tripId) {
+      const trip = await prisma.trip.findUnique({ where: { id: tripId } });
+      if (trip) tripTitle = trip.title;
+    }
+    
+    let updatedDepartureDate = departureDate !== undefined ? (departureDate ? new Date(departureDate) : null) : template.departureDate;
+    let actualScope = scope !== undefined ? scope : template.scope;
+    
+    if (actualScope === 'TRIP' && updatedDepartureDate) {
+      return res.status(400).json({ success: false, message: 'TRIP scope templates cannot have a departure date' });
+    }
+    if (actualScope === 'DEPARTURE' && !updatedDepartureDate) {
+      return res.status(400).json({ success: false, message: 'DEPARTURE scope templates must specify a departure date' });
+    }
+
+    const tMode = transportMode !== undefined ? transportMode : template.transportMode;
+    const src = source !== undefined ? source : (flightOrigin !== undefined ? flightOrigin : (template.source || template.flightOrigin));
+    const dest = destination !== undefined ? destination : (flightDestination !== undefined ? flightDestination : (template.destination || template.flightDestination));
+    const tTripId = tripId !== undefined ? tripId : template.tripId;
+
+    const isDuplicate = await checkUniqueness(
+      req.user.tenantId, actualScope, tTripId, updatedDepartureDate, tMode, src, dest, id
+    );
+
+    if (isDuplicate) {
+      return res.status(409).json({ success: false, message: 'A template for this route and scope already exists' });
+    }
+
     const updated = await prisma.trainTemplate.update({
       where: { id },
       data: {
-        tripId: tripId !== undefined ? tripId : template.tripId,
-        tripTitle: tripTitle !== undefined ? tripTitle : template.tripTitle,
-        departureDate: departureDate !== undefined ? (departureDate ? new Date(departureDate) : null) : template.departureDate,
-        trainName: trainName !== undefined ? trainName : template.trainName,
-        trainNumber: trainNumber !== undefined ? trainNumber : template.trainNumber,
-        source: source !== undefined ? source : template.source,
-        destination: destination !== undefined ? destination : template.destination,
+        tripId: tTripId,
+        tripTitle,
+        departureDate: updatedDepartureDate,
+        scope: actualScope,
+        transportMode: tMode,
+        trainName: trainName !== undefined ? trainName : null,
+        trainNumber: trainNumber !== undefined ? trainNumber : null,
+        source: source !== undefined ? source : null,
+        destination: destination !== undefined ? destination : null,
         defaultClass: defaultClass !== undefined ? defaultClass : template.defaultClass,
         defaultCoach: defaultCoach !== undefined ? defaultCoach : template.defaultCoach,
         journeyDate: journeyDate !== undefined ? (journeyDate ? new Date(journeyDate) : null) : template.journeyDate,
         boardingPoint: boardingPoint !== undefined ? boardingPoint : template.boardingPoint,
         droppingPoint: droppingPoint !== undefined ? droppingPoint : template.droppingPoint,
+        flightAirline: flightAirline !== undefined ? flightAirline : null,
+        flightNumber: flightNumber !== undefined ? flightNumber : null,
+        flightOrigin: flightOrigin !== undefined ? flightOrigin : null,
+        flightDestination: flightDestination !== undefined ? flightDestination : null,
+        flightTerminal: flightTerminal !== undefined ? flightTerminal : template.flightTerminal,
+        baggageGuidance: baggageGuidance !== undefined ? baggageGuidance : template.baggageGuidance,
+        reportingTime: reportingTime !== undefined ? (reportingTime ? new Date(reportingTime) : null) : template.reportingTime,
+        arrivalTime: arrivalTime !== undefined ? (arrivalTime ? new Date(arrivalTime) : null) : template.arrivalTime,
         waitlistDisclaimer: waitlistDisclaimer !== undefined ? waitlistDisclaimer : template.waitlistDisclaimer,
         isActive: isActive !== undefined ? isActive : template.isActive
       }
@@ -1092,6 +1334,10 @@ exports.updateTemplate = async (req, res) => {
 };
 
 exports.deleteTemplate = async (req, res) => {
+  return exports.archiveTemplate(req, res);
+};
+
+exports.archiveTemplate = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -1103,11 +1349,49 @@ exports.deleteTemplate = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Template not found' });
     }
 
-    await prisma.trainTemplate.delete({ where: { id } });
+    await prisma.trainTemplate.update({ 
+      where: { id },
+      data: { isActive: false }
+    });
 
-    return res.json({ success: true, message: 'Template deleted successfully' });
+    return res.json({ success: true, message: 'Template archived successfully' });
   } catch (err) {
-    console.error('deleteTemplate error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to delete template' });
+    console.error('archiveTemplate error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to archive template' });
+  }
+};
+
+exports.restoreTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const template = await prisma.trainTemplate.findFirst({
+      where: { id, tenantId: req.user.tenantId }
+    });
+
+    if (!template) {
+      return res.status(404).json({ success: false, message: 'Template not found' });
+    }
+
+    const src = template.source || template.flightOrigin;
+    const dest = template.destination || template.flightDestination;
+
+    const isDuplicate = await checkUniqueness(
+      req.user.tenantId, template.scope, template.tripId, template.departureDate, template.transportMode, src, dest, id
+    );
+
+    if (isDuplicate) {
+      return res.status(409).json({ success: false, message: 'Cannot restore: an active template for this route and scope already exists' });
+    }
+
+    const updated = await prisma.trainTemplate.update({ 
+      where: { id },
+      data: { isActive: true }
+    });
+
+    return res.json({ success: true, data: updated, message: 'Template restored successfully' });
+  } catch (err) {
+    console.error('restoreTemplate error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to restore template' });
   }
 };

@@ -136,6 +136,7 @@ model Vendor {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   assignments TripVendor[]
+  travelDeskVendorLinks TravelDeskVendorLink[]
 
   @@index([tenantId])
 }
@@ -324,6 +325,7 @@ model Trip {
   opsMessages    OpsMessage[]
   knowledgeItems KnowledgeItem[]
   travelQuestions TravelQuestion[]
+  travelDeskWorkspace TravelDeskWorkspace?
 
   @@index([tenantId])
   @@index([category])
@@ -872,6 +874,11 @@ model TrainTemplate {
   tripId             String?
   tripTitle          String?
   departureDate      DateTime?
+  
+  scope              String    @default("TRIP") // "TRIP" | "DEPARTURE"
+  transportMode      String    @default("TRAIN") // "TRAIN" | "FLIGHT" | "BUS"
+  
+  // Train/Bus Fields
   trainName          String?
   trainNumber        String?
   source             String?
@@ -881,6 +888,19 @@ model TrainTemplate {
   journeyDate        DateTime?
   boardingPoint      String?
   droppingPoint      String?
+  
+  // Flight Specific Fields
+  flightAirline      String?
+  flightNumber       String?
+  flightOrigin       String?
+  flightDestination  String?
+  flightTerminal     String?
+  baggageGuidance    String?
+  
+  // Shared Timing
+  reportingTime      DateTime?
+  arrivalTime        DateTime?
+  
   waitlistDisclaimer String?   @db.Text
   isActive           Boolean   @default(true)
   createdAt          DateTime  @default(now())
@@ -2346,19 +2366,46 @@ model ItineraryNote {
 
 // ── TRIP SOPs (Travel Desk) ──
 model TripSop {
-  id          String   @id @default(cuid())
-  tripId      String
-  title       String
-  description String   @db.Text
-  category    String
-  icon        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  tripId          String
+  title           String
+  description     String   @db.Text
+  category        String
+  icon            String
+  applicableRoles Json?
+  trigger         String?
+  responsibleRole String?
+  requiredInputs  Json?
+  escalationPath  String?
+  expectedOutput  String?
+  reviewFrequency String?
+  ownerId         String?
+  status          String   @default("ACTIVE")
+  version         Int      @default(1)
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   trip  Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
   items TripSopItem[]
+  versions TripSopVersion[]
 
   @@index([tripId])
+}
+
+model TripSopVersion {
+  id            String   @id @default(cuid())
+  sopId         String
+  version       Int
+  snapshot      Json     // Contains complete SOP and ordered items
+  changeComment String?
+  authorId      String?
+  createdAt     DateTime @default(now())
+
+  sop           TripSop  @relation(fields: [sopId], references: [id], onDelete: Cascade)
+
+  @@unique([sopId, version])
+  @@index([sopId, createdAt])
 }
 
 model TripSopItem {
@@ -2385,6 +2432,9 @@ model TripDocument {
   addedBy          String
   dateAdded        DateTime @default(now())
   fileUrl          String?
+  storageKey       String?
+  storedFilename   String?
+  checksum         String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   title            String   @default("")
@@ -2396,10 +2446,34 @@ model TripDocument {
   uploadedBy       String   @default("system")
   approvalDetails  Json?
   knowledgeItems   KnowledgeItem[]
+  versions         TripDocumentVersion[]
 
   trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
+}
+
+model TripDocumentVersion {
+  id               String   @id @default(cuid())
+  documentId       String
+  storageKey       String?
+  fileUrl          String?
+  originalFilename String?
+  storedFilename   String?
+  mimeType         String?
+  fileSize         String?
+  checksum         String?
+  version          Int
+  metadata         Json?
+  visibility       String
+  status           String
+  uploadedBy       String
+  createdAt        DateTime @default(now())
+
+  document         TripDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, version])
+  @@index([documentId, createdAt])
 }
 
 model KnowledgeItem {
@@ -3234,4 +3308,193 @@ enum DirectoryVendorRateStatus {
   INACTIVE
   EXPIRED
   DRAFT
+}
+
+// ── TRAVEL DESK MODELS ──
+
+model TravelDeskWorkspace {
+  id              String               @id @default(cuid())
+  tripId          String               @unique
+  status          String               @default("ACTIVE")
+  readinessScore  Float?
+  createdById     String?
+  updatedById     String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  trip            Trip                 @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  categories      TravelDeskCategory[]
+  articles        TravelDeskArticle[]
+  vendorLinks     TravelDeskVendorLink[]
+  notices         TravelDeskNotice[]
+  learnings       TravelDeskLearning[]
+  auditLogs       TravelDeskAuditLog[]
+
+  @@index([tripId])
+}
+
+model TravelDeskCategory {
+  id              String               @id @default(cuid())
+  workspaceId     String
+  name            String
+  slug            String
+  description     String?
+  sortOrder       Int                  @default(0)
+  isRequired      Boolean              @default(false)
+  isActive        Boolean              @default(true)
+
+  workspace       TravelDeskWorkspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  articles        TravelDeskArticle[]
+
+  @@index([workspaceId])
+}
+
+model TravelDeskArticle {
+  id              String               @id @default(cuid())
+  workspaceId     String
+  categoryId      String
+  title           String
+  summary         String?
+  content         String               @db.Text
+  tags            Json?
+  status          String               @default("DRAFT")
+  visibility      String               @default("INTERNAL")
+  ownerId         String?
+  version         Int                  @default(1)
+  effectiveFrom   DateTime?
+  expiresAt       DateTime?
+  approvedById    String?
+  publishedById   String?
+  createdById     String?
+  updatedById     String?
+  originLearningId String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  workspace       TravelDeskWorkspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  category        TravelDeskCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  originLearning  TravelDeskLearning?  @relation(fields: [originLearningId], references: [id], onDelete: SetNull)
+  versions        TravelDeskArticleVersion[]
+
+  @@index([workspaceId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model TravelDeskArticleVersion {
+  id              String               @id @default(cuid())
+  articleId       String
+  version         Int
+  title           String
+  summary         String?
+  content         String               @db.Text
+  categoryId      String
+  tags            Json?
+  visibility      String
+  status          String
+  effectiveFrom   DateTime?
+  expiresAt       DateTime?
+  ownerId         String?
+  authorId        String?
+  changeComment   String?
+  createdAt       DateTime             @default(now())
+
+  article         TravelDeskArticle    @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, version])
+  @@index([articleId, createdAt])
+}
+
+model TravelDeskVendorLink {
+  id              String               @id @default(cuid())
+  workspaceId     String
+  vendorId        String
+  departureDate   String?              // Soft reference to a departure date string (e.g. "YYYY-MM-DD")
+  itineraryDayId  String?
+  relationshipType String              // e.g., "HOTEL", "TRANSPORT"
+  negotiatedRate  Float?
+  validFrom       DateTime?
+  validUntil      DateTime?
+  internalNotes   String?
+  isPreferred     Boolean              @default(false)
+  isBackup        Boolean              @default(false)
+  status          String               @default("ACTIVE")
+
+  workspace       TravelDeskWorkspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  vendor          Vendor               @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([vendorId])
+  @@index([departureDate])
+}
+
+model TravelDeskNotice {
+  id                     String               @id @default(cuid())
+  workspaceId            String?
+  departureDate          String?              // Soft reference
+  title                  String
+  message                String               @db.Text
+  type                   String               // e.g., "GLOBAL", "TRIP_WISE", "DEPARTURE_WISE"
+  priority               String               // e.g., "LOW", "NORMAL", "HIGH", "CRITICAL"
+  audienceRoles          Json?                // Array of strings
+  requiresAcknowledgement Boolean             @default(false)
+  publishedAt            DateTime?
+  expiresAt              DateTime?
+  status                 String               @default("ACTIVE")
+
+  workspace              TravelDeskWorkspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  acks                   TravelDeskNoticeAck[]
+
+  @@index([workspaceId])
+  @@index([departureDate])
+  @@index([status])
+}
+
+model TravelDeskNoticeAck {
+  id             String               @id @default(cuid())
+  noticeId       String
+  userId         String
+  acknowledgedAt DateTime             @default(now())
+
+  notice         TravelDeskNotice     @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+
+  @@unique([noticeId, userId])
+  @@index([userId, acknowledgedAt])
+}
+
+model TravelDeskLearning {
+  id              String               @id @default(cuid())
+  workspaceId     String
+  departureDate   String               // Soft reference
+  category        String               // e.g., "VENDOR", "ITINERARY", "CUSTOMER_FEEDBACK"
+  issue           String               @db.Text
+  rootCause       String?              @db.Text
+  resolution      String?              @db.Text
+  recommendation  String?              @db.Text
+  severity        String               // e.g., "LOW", "MEDIUM", "HIGH"
+  status          String               @default("OPEN")
+  ownerId         String?
+
+  workspace       TravelDeskWorkspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  articles        TravelDeskArticle[]
+
+  @@index([workspaceId])
+  @@index([departureDate])
+}
+
+model TravelDeskAuditLog {
+  id              String               @id @default(cuid())
+  workspaceId     String
+  entityType      String
+  entityId        String
+  action          String
+  oldValue        Json?
+  newValue        Json?
+  performedById   String
+  createdAt       DateTime             @default(now())
+
+  workspace       TravelDeskWorkspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([entityType, entityId])
 }

@@ -1,6 +1,24 @@
 const { prisma } = require('../lib/prisma');
 const { extractTextPageByPage } = require('../utils/documentParser');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const cloudinary = require('cloudinary').v2;
+const { createAuditLog } = require('./travelDeskCoreController');
+
+const uploadToCloudinary = (fileBuffer, folder, resourceType = 'auto') => {
+  return new Promise((resolve, reject) => {
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
+      return reject(new Error('Cloudinary configuration is missing on the backend.'));
+    }
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: resourceType },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    uploadStream.end(fileBuffer);
+  });
+};
 
 // ── TAB 2: TICKETING (SOPs & Links) ──
 exports.getTicketing = async (req, res, next) => {
@@ -80,6 +98,12 @@ exports.createTicketingLink = async (req, res, next) => {
     const link = await prisma.ticketingLink.create({
       data: { tripId, label, val, icon, linkUrl }
     });
+
+    const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+    if (workspace && req.user) {
+      await createAuditLog(workspace.id, 'TICKETING_LINK', link.id, 'CREATE', null, { label }, req.user.id);
+    }
+
     res.json({ success: true, data: link });
   } catch (e) { next(e); }
 };
@@ -156,6 +180,12 @@ exports.createItinerary = async (req, res, next) => {
         notes: true
       }
     });
+
+    const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+    if (workspace && req.user) {
+      await createAuditLog(workspace.id, 'ITINERARY', itinerary.id, 'CREATE', null, { name }, req.user.id);
+    }
+
     res.json({ success: true, data: itinerary });
   } catch (e) { next(e); }
 };
@@ -347,6 +377,12 @@ exports.createSop = async (req, res, next) => {
       },
       include: { items: true }
     });
+
+    const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+    if (workspace && req.user) {
+      await createAuditLog(workspace.id, 'TRIP_SOP', sop.id, 'CREATE', null, { title }, req.user.id);
+    }
+
     res.json({ success: true, data: sop });
   } catch (e) { next(e); }
 };
@@ -426,71 +462,101 @@ exports.uploadDocuments = async (req, res, next) => {
     const uploadedDocs = [];
 
     for (const file of files) {
+      // 10 MB limit for documents
+      if (file.size > 10 * 1024 * 1024) {
+        return res.status(400).json({ success: false, message: `File ${file.originalname} exceeds the 10MB limit.` });
+      }
+
       const fileName = file.originalname;
       const title = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
       
-      // Determine version: if a doc with same name & tripId exists, increment version
-      const existingDocs = await prisma.tripDocument.findMany({
-        where: { tripId, name: fileName }
-      });
-      const nextVersion = existingDocs.length > 0 ? Math.max(...existingDocs.map(d => d.version)) + 1 : 1;
-
-      // Create doc in DRAFT status
-      const doc = await prisma.tripDocument.create({
-        data: {
-          tripId,
-          name: fileName,
-          category: category || 'Trip Documents',
-          fileType: file.mimetype || 'application/octet-stream',
-          size: formatBytes(file.size),
-          addedBy: req.user.role || 'admin',
-          fileUrl: `/uploads/${Date.now()}-${fileName}`, // mock upload URL
-          title: title,
-          version: nextVersion,
-          visibility: visibility || 'internal',
-          validFrom: validFrom ? new Date(validFrom) : null,
-          validUntil: validUntil ? new Date(validUntil) : null,
-          status: 'DRAFT',
-          uploadedBy: req.user.id || 'system'
-        }
-      });
-
-      // Extract page-by-page content
-      const pages = await extractTextPageByPage(file.buffer, file.mimetype, fileName);
-
-      // Save each page as a KnowledgeItem in DRAFT status
-      for (const p of pages) {
-        // Automatic category mapping
-        let targetCategory = 'Trip Overview';
-        const txt = p.text.toLowerCase();
-        if (txt.includes('faq') || txt.includes('question') || txt.includes('answer')) targetCategory = 'Customer FAQs';
-        else if (txt.includes('sales') || txt.includes('pitch') || txt.includes('usp')) targetCategory = 'Sales Guide';
-        else if (txt.includes('include') || txt.includes('exclude')) targetCategory = 'Inclusions & Exclusions';
-        else if (txt.includes('ticket') || txt.includes('train') || txt.includes('flight')) targetCategory = 'Ticketing Info';
-        else if (txt.includes('visa') || txt.includes('entry') || txt.includes('passport')) targetCategory = 'Visa & Entry';
-        else if (txt.includes('weather') || txt.includes('food') || txt.includes('culture')) targetCategory = 'Destination Guide';
-        else if (txt.includes('pack') || txt.includes('clothes') || txt.includes('carry')) targetCategory = 'Packing Guide';
-        else if (txt.includes('sop') || txt.includes('process') || txt.includes('workflow')) targetCategory = 'SOPs & Processes';
-        else if (txt.includes('emergency') || txt.includes('hospital') || txt.includes('rescue')) targetCategory = 'Emergency Center';
-        else if (txt.includes('price') || txt.includes('policy') || txt.includes('refund')) targetCategory = 'Pricing & Policy';
-        else if (txt.includes('learning') || txt.includes('feedback') || txt.includes('past')) targetCategory = 'Past Learnings';
-
-        await prisma.knowledgeItem.create({
-          data: {
-            tripId,
-            documentId: doc.id,
-            sourceDocName: fileName,
-            pageNumber: p.pageNumber,
-            title: `${title} - Page ${p.pageNumber}`,
-            content: p.text || 'Empty page content',
-            category: targetCategory,
-            version: nextVersion,
-            status: 'DRAFT'
-          }
-        });
+      let uploadResult;
+      try {
+        uploadResult = await uploadToCloudinary(file.buffer, `travel-desk/${tripId}/documents`, 'raw');
+      } catch (err) {
+        return res.status(500).json({ success: false, message: 'Cloudinary upload failed: ' + err.message });
       }
 
-      uploadedDocs.push(doc);
+      try {
+        // Determine version: if a doc with same name & tripId exists, increment version
+        const existingDocs = await prisma.tripDocument.findMany({
+          where: { tripId, name: fileName }
+        });
+        const nextVersion = existingDocs.length > 0 ? Math.max(...existingDocs.map(d => d.version)) + 1 : 1;
+
+        // Create doc in DRAFT status
+        const doc = await prisma.tripDocument.create({
+          data: {
+            tripId,
+            name: fileName,
+            category: category || 'Trip Documents',
+            fileType: file.mimetype || 'application/octet-stream',
+            size: formatBytes(file.size),
+            addedBy: req.user.role || 'admin',
+            fileUrl: uploadResult.secure_url,
+            title: title,
+            version: nextVersion,
+            visibility: visibility || 'internal',
+            validFrom: validFrom ? new Date(validFrom) : null,
+            validUntil: validUntil ? new Date(validUntil) : null,
+            status: 'DRAFT',
+            uploadedBy: req.user.id || 'system'
+          }
+        });
+
+        // Extract page-by-page content if it's a PDF
+        if (file.mimetype === 'application/pdf') {
+          try {
+            const pages = await extractTextPageByPage(file.buffer, file.mimetype, fileName);
+            for (const p of pages) {
+              let targetCategory = 'Trip Overview';
+              const txt = p.text.toLowerCase();
+              if (txt.includes('faq') || txt.includes('question') || txt.includes('answer')) targetCategory = 'Customer FAQs';
+              else if (txt.includes('sales') || txt.includes('pitch') || txt.includes('usp')) targetCategory = 'Sales Guide';
+              else if (txt.includes('include') || txt.includes('exclude')) targetCategory = 'Inclusions & Exclusions';
+              else if (txt.includes('ticket') || txt.includes('train') || txt.includes('flight')) targetCategory = 'Ticketing Info';
+              else if (txt.includes('visa') || txt.includes('entry') || txt.includes('passport')) targetCategory = 'Visa & Entry';
+              else if (txt.includes('weather') || txt.includes('food') || txt.includes('culture')) targetCategory = 'Destination Guide';
+              else if (txt.includes('pack') || txt.includes('clothes') || txt.includes('carry')) targetCategory = 'Packing Guide';
+              else if (txt.includes('sop') || txt.includes('process') || txt.includes('workflow')) targetCategory = 'SOPs & Processes';
+              else if (txt.includes('emergency') || txt.includes('hospital') || txt.includes('rescue')) targetCategory = 'Emergency Center';
+              else if (txt.includes('price') || txt.includes('policy') || txt.includes('refund')) targetCategory = 'Pricing & Policy';
+              else if (txt.includes('learning') || txt.includes('feedback') || txt.includes('past')) targetCategory = 'Past Learnings';
+
+              await prisma.knowledgeItem.create({
+                data: {
+                  tripId,
+                  documentId: doc.id,
+                  sourceDocName: fileName,
+                  pageNumber: p.pageNumber,
+                  title: `${title} - Page ${p.pageNumber}`,
+                  content: p.text || 'Empty page content',
+                  category: targetCategory,
+                  version: nextVersion,
+                  status: 'DRAFT'
+                }
+              });
+            }
+          } catch (pdfErr) {
+            console.error('PDF extraction failed:', pdfErr);
+            // Non-fatal, continue.
+          }
+        }
+
+        // Trigger audit log for Document Upload
+        const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+        if (workspace && req.user) {
+          await createAuditLog(workspace.id, 'DOCUMENT', doc.id, 'UPLOAD', null, { title, version: nextVersion, fileName }, req.user.id);
+        }
+
+        uploadedDocs.push(doc);
+      } catch (dbErr) {
+        // Rollback Cloudinary upload if DB fails
+        if (uploadResult.public_id) {
+          await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: 'raw' });
+        }
+        return res.status(500).json({ success: false, message: 'Database transaction failed, file rolled back. ' + dbErr.message });
+      }
     }
 
     res.json({ success: true, data: uploadedDocs });
@@ -583,11 +649,59 @@ exports.getGallery = async (req, res, next) => {
 
 exports.createGalleryItem = async (req, res, next) => {
   try {
-    const { tripId, title, imageUrl } = req.body;
-    const item = await prisma.tripGallery.create({
-      data: { tripId, title, imageUrl }
-    });
-    res.json({ success: true, data: item });
+    const { tripId, title, category } = req.body;
+    const files = req.files || (req.file ? [req.file] : []);
+
+    if (files.length > 0) {
+      const uploadedItems = [];
+      for (const file of files) {
+        // 5 MB limit for gallery images
+        if (file.size > 5 * 1024 * 1024) {
+          return res.status(400).json({ success: false, message: `Image ${file.originalname} exceeds the 5MB limit.` });
+        }
+
+        let uploadResult;
+        try {
+          uploadResult = await uploadToCloudinary(file.buffer, `travel-desk/${tripId}/gallery`, 'image');
+        } catch (err) {
+          return res.status(500).json({ success: false, message: 'Cloudinary upload failed: ' + err.message });
+        }
+
+        try {
+          const item = await prisma.tripGallery.create({
+            data: { 
+              tripId, 
+              title: title || file.originalname, 
+              imageUrl: uploadResult.secure_url,
+              category: category || 'General'
+            }
+          });
+
+          // Trigger audit log for Gallery Upload
+          const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+          if (workspace && req.user) {
+            await createAuditLog(workspace.id, 'GALLERY_ASSET', item.id, 'UPLOAD', null, { title: item.title }, req.user.id);
+          }
+
+          uploadedItems.push(item);
+        } catch (dbErr) {
+          // Rollback Cloudinary upload if DB fails
+          if (uploadResult.public_id) {
+            await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: 'image' });
+          }
+          return res.status(500).json({ success: false, message: 'Database transaction failed, image rolled back. ' + dbErr.message });
+        }
+      }
+      return res.json({ success: true, data: uploadedItems });
+    } else if (req.body.imageUrl) {
+      // Allow passing external URLs directly
+      const item = await prisma.tripGallery.create({
+        data: { tripId, title, imageUrl: req.body.imageUrl, category: category || 'General' }
+      });
+      return res.json({ success: true, data: [item] });
+    } else {
+      return res.status(400).json({ success: false, message: 'No image file or URL provided' });
+    }
   } catch (e) { next(e); }
 };
 
@@ -974,5 +1088,22 @@ exports.bulkCreateTrips = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+// ── TAB 11: ACTIVITY LOG ──
+exports.getActivityLog = async (req, res, next) => {
+  try {
+    const { tripId } = req.params;
+    const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+    if (!workspace) return res.status(404).json({ success: false, message: 'Workspace not found' });
+
+    const logs = await prisma.travelDeskAuditLog.findMany({
+      where: { workspaceId: workspace.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
+
+    res.json({ success: true, data: logs });
+  } catch (e) { next(e); }
 };
 

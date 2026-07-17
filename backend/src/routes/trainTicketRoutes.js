@@ -16,9 +16,12 @@ const {
   getApprovalsQueue,
   getAlerts,
   getTemplates,
+  getEffectiveTemplates,
   createTemplate,
   updateTemplate,
-  deleteTemplate
+  deleteTemplate,
+  archiveTemplate,
+  restoreTemplate
 } = require('../controllers/trainTicketController');
 const { authenticate, requirePermission } = require('../middleware/auth');
 
@@ -30,10 +33,13 @@ router.get('/approvals', requirePermission('tickets.view'), getApprovalsQueue);
 router.get('/alerts', requirePermission('tickets.alerts.view'), getAlerts);
 
 // Train Templates
+router.get('/templates/effective', requirePermission('tickets.view'), getEffectiveTemplates);
 router.get('/templates', requirePermission('tickets.view'), getTemplates);
 router.post('/templates', requirePermission('tickets.templates.manage'), createTemplate);
 router.patch('/templates/:id', requirePermission('tickets.templates.manage'), updateTemplate);
 router.delete('/templates/:id', requirePermission('tickets.templates.manage'), deleteTemplate);
+router.post('/templates/:id/archive', requirePermission('tickets.templates.manage'), archiveTemplate);
+router.post('/templates/:id/restore', requirePermission('tickets.templates.manage'), restoreTemplate);
 
 // Booking-level ticket operations
 router.get('/booking/:bookingId', requirePermission('tickets.view'), getTicketsByBooking);

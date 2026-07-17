@@ -108,6 +108,7 @@ const authenticate = async (req, res, next) => {
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expired', status: 401, success: false, message: 'Token expired' });
     }
+    console.error('JWT Verification Error:', err);
     return res.status(401).json({ error: 'Invalid or expired token', status: 401, success: false, message: 'Invalid or expired token' });
   }
 };
