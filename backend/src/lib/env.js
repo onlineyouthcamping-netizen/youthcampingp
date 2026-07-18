@@ -38,6 +38,7 @@ const failStartup = (message) => {
 };
 
 if (nodeEnv === 'development' || nodeEnv === 'test') {
+  console.log('[DEBUG env.js] envLocalPath resolved to:', envLocalPath, 'exists:', fs.existsSync(envLocalPath));
   // Local development/test requires .env.local
   if (!fs.existsSync(envLocalPath)) {
     console.error('\x1b[31m%s\x1b[0m', '🛑 FATAL SECURITY VIOLATION:');
@@ -82,13 +83,15 @@ for (const variableName of ['DATABASE_URL', 'DIRECT_URL']) {
   }
 
   const isLocalOrIsolated = LOCAL_DATABASE_HOSTS.has(host);
+  console.log(`[DEBUG env.js] ALLOW_PRODUCTION_DATABASE value:`, JSON.stringify(process.env.ALLOW_PRODUCTION_DATABASE));
   console.log(`[DEBUG env.js] variableName: ${variableName}, configured: ${Boolean(value)}, host: ${host}, nodeEnv: ${nodeEnv}, isLocalOrIsolated: ${isLocalOrIsolated}`);
-  if ((nodeEnv === 'development' || nodeEnv === 'test') && !isLocalOrIsolated && process.env.ALLOW_PRODUCTION_DATABASE !== 'true') {
+  const allowProdDb = String(process.env.ALLOW_PRODUCTION_DATABASE || '').trim() === 'true';
+  if ((nodeEnv === 'development' || nodeEnv === 'test') && !isLocalOrIsolated && !allowProdDb) {
     failStartup(`Refusing to start local development because ${variableName} is not an approved local database host.`);
   }
 
   if (!isLocalOrIsolated) {
-    if (process.env.ALLOW_PRODUCTION_DATABASE !== 'true') {
+    if (!allowProdDb) {
       failStartup(`Remote database access through ${variableName} requires ALLOW_PRODUCTION_DATABASE=true.`);
     }
   }

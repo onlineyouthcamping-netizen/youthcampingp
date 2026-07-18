@@ -1107,3 +1107,58 @@ exports.getActivityLog = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
+exports.updateDocumentMetadata = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, name, visibility, status, description, category, sortOrder } = req.body;
+
+    const doc = await prisma.tripDocument.findUnique({ where: { id } });
+    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+
+    if (req.user.role !== 'superadmin' && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only admins can modify document metadata' });
+    }
+
+    let updatedDetails = typeof doc.approvalDetails === 'object' && doc.approvalDetails !== null ? doc.approvalDetails : {};
+    if (description !== undefined) {
+      updatedDetails = { ...updatedDetails, description };
+    }
+    if (sortOrder !== undefined) {
+      updatedDetails = { ...updatedDetails, sortOrder: parseInt(sortOrder) || 0 };
+    }
+
+    const updatedDoc = await prisma.tripDocument.update({
+      where: { id },
+      data: {
+        title: title !== undefined ? title : doc.title,
+        name: name !== undefined ? name : doc.name,
+        visibility: visibility !== undefined ? visibility : doc.visibility,
+        status: status !== undefined ? status : doc.status,
+        category: category !== undefined ? category : doc.category,
+        approvalDetails: updatedDetails
+      }
+    });
+
+    res.json({ success: true, data: updatedDoc });
+  } catch (e) { next(e); }
+};
+
+exports.viewDocumentInline = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const doc = await prisma.tripDocument.findUnique({ where: { id } });
+    if (!doc || !doc.fileUrl) {
+      return res.status(404).json({ success: false, message: 'Document not found' });
+    }
+
+    const axios = require('axios');
+    const response = await axios.get(doc.fileUrl, { responseType: 'arraybuffer' });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="' + doc.name + '"');
+    res.send(Buffer.from(response.data));
+  } catch (e) {
+    next(e);
+  }
+};
+

@@ -54,8 +54,10 @@ router.put('/sops/:id', protect, validateSop, controller.updateSop);
 router.delete('/sops/:id', protect, controller.deleteSop);
 
 // ── TAB 5: DOCUMENTS ──
+router.get('/documents/:id/view', controller.viewDocumentInline);
 router.get('/documents/:tripId', protect, controller.getDocuments);
 router.post('/documents/upload', protect, upload.array('files'), controller.uploadDocuments);
+router.patch('/documents/:id', protect, controller.updateDocumentMetadata);
 router.put('/documents/:id/status', protect, controller.reviewDocument);
 router.delete('/documents/:id', protect, controller.deleteDocument);
 

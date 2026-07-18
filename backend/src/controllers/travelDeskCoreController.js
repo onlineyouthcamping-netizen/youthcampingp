@@ -247,7 +247,7 @@ exports.getOfficialItinerary = async (req, res, next) => {
     // Always fetch from master Trip module
     const trip = await prisma.trip.findUnique({
       where: { id: tripId },
-      select: { itinerary: true, itineraryVersions: true }
+      select: { itinerary: true, itineraryVersions: true, inclusions: true, exclusions: true }
     });
     
     if (!trip || (!trip.itinerary && !trip.itineraryVersions)) {

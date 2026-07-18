@@ -28,6 +28,64 @@ exports.getArticles = async (req, res, next) => {
       include: { category: true }
     });
 
+    // Auto-seed Inclusions & Exclusions from Trip table if empty
+    const incExcCategory = await prisma.travelDeskCategory.findFirst({
+      where: { workspaceId: workspace.id, slug: 'inclusions-&-exclusions' }
+    });
+    
+    if (incExcCategory) {
+      const existingIncExc = articles.filter(a => a.categoryId === incExcCategory.id);
+      if (existingIncExc.length === 0) {
+        // Fetch original Trip
+        const trip = await prisma.trip.findFirst({
+          where: { OR: [{ id: tripId }, { slug: tripId }] }
+        });
+        
+        if (trip && (trip.inclusions || trip.exclusions)) {
+          const seededArticles = [];
+          if (trip.inclusions && Array.isArray(trip.inclusions) && trip.inclusions.length > 0) {
+            const contentHtml = trip.inclusions.map(inc => `<li>${inc}</li>`).join('\n');
+            const incArt = await prisma.travelDeskArticle.create({
+              data: {
+                workspaceId: workspace.id,
+                categoryId: incExcCategory.id,
+                title: 'Trip Inclusions',
+                summary: 'Standard inclusions package',
+                content: `<ul>\n${contentHtml}\n</ul>`,
+                status: 'PUBLISHED',
+                visibility: 'PUBLIC',
+                version: 1
+              },
+              include: { category: true }
+            });
+            seededArticles.push(incArt);
+          }
+          
+          if (trip.exclusions && Array.isArray(trip.exclusions) && trip.exclusions.length > 0) {
+            const contentHtml = trip.exclusions.map(exc => `<li>${exc}</li>`).join('\n');
+            const excArt = await prisma.travelDeskArticle.create({
+              data: {
+                workspaceId: workspace.id,
+                categoryId: incExcCategory.id,
+                title: 'Trip Exclusions',
+                summary: 'Standard exclusions package',
+                content: `<ul>\n${contentHtml}\n</ul>`,
+                status: 'PUBLISHED',
+                visibility: 'PUBLIC',
+                version: 1
+              },
+              include: { category: true }
+            });
+            seededArticles.push(excArt);
+          }
+          
+          if (seededArticles.length > 0) {
+            articles = [...articles, ...seededArticles];
+          }
+        }
+      }
+    }
+
     // Derive effective expiry
     articles = articles.map(a => {
       if (a.expiresAt && a.expiresAt <= now) {

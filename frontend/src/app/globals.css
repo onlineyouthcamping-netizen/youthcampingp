@@ -7,7 +7,6 @@
 
 .force-single-line {
   white-space: nowrap !important;
-  text-wrap: nowrap !important;
 }
 
 @theme inline {
@@ -257,8 +256,8 @@
   .backdrop-blur-lg,
   .backdrop-blur-xl,
   .heavy-effect {
-    backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
     filter: none !important;
   }
 
@@ -292,7 +291,6 @@
     font-size: 20px !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
-    text-wrap: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
   }
@@ -355,7 +353,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    -webkit-overflow-scrolling: touch;
   }
   body {
     background: var(--background);
@@ -615,8 +612,8 @@
     overflow: hidden;
     transform: scale(1.001);
     will-change: transform;
-    backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
     /* On desktop, pull hero up behind fixed navbar for immersive full-bleed */
     margin-top: calc(-1 * var(--navbar-height, 80px));
   }

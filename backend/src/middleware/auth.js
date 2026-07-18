@@ -14,7 +14,11 @@ const ADMIN_CACHE_TTL = 60 * 1000; // 60 seconds
 const authenticate = async (req, res, next) => {
   const authStart = Date.now();
   try {
-    const authHeader = req.headers.authorization || '';
+    console.log('[AUTH DEBUG] Path:', req.path, 'Auth Header:', req.headers.authorization, 'Query Token:', req.query.token);
+    let authHeader = req.headers.authorization || '';
+    if (!authHeader && req.query.token) {
+      authHeader = `Bearer ${req.query.token}`;
+    }
     if (!authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ success: false, message: 'Missing Bearer token' });
     }
