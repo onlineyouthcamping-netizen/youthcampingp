@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { logAction } = require('../utils/auditLogger');
 const { sanitizeUser } = require('../utils/sanitize');
+const { ROLE_PERMISSIONS, PERMISSIONS } = require('../config/permissions');
 
 // Generate JWT with tenantId and tokenVersion
 const generateToken = (id, role, tenantId = 'default', tokenVersion = 0) => {
@@ -68,7 +69,14 @@ exports.adminLogin = async (req, res, next) => {
           success: true,
           data: {
             token: generateToken(admin.id, admin.role, admin.tenantId, admin.tokenVersion),
-            admin: { id: admin.id, name: admin.name, email: admin.email, role: admin.role, tenantId: admin.tenantId }
+            admin: {
+              id: admin.id,
+              name: admin.name,
+              email: admin.email,
+              role: admin.role,
+              tenantId: admin.tenantId,
+              permissions: admin.role === 'superadmin' ? PERMISSIONS : (ROLE_PERMISSIONS[admin.role] || [])
+            }
           }
         });
       }
@@ -104,6 +112,9 @@ exports.getMe = async (req, res, next) => {
         isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true
       }
     });
+    if (admin) {
+      admin.permissions = admin.role === 'superadmin' ? PERMISSIONS : (ROLE_PERMISSIONS[admin.role] || []);
+    }
     res.json({ success: true, data: sanitizeUser(admin) });
   } catch (error) {
     next(error);

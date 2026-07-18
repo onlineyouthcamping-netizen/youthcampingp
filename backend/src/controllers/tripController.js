@@ -66,8 +66,13 @@ exports.getTrips = async (req, res, next) => {
       where.status = 'published';
     }
 
+    const select = req.query.compact === 'true'
+      ? { id: true, title: true, shortName: true, status: true, availableDates: true }
+      : undefined;
+
     const trips = await prisma.trip.findMany({
       where,
+      select,
       orderBy: [
         { order: 'asc' },
         { createdAt: 'desc' }
