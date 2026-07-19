@@ -37,35 +37,7 @@ interface BlogSectionProps {
   bottomColor?: string;
 }
 
-const defaultBlogs: BlogItem[] = [
-  {
-    title: "The Pristine Colors of Kasol: Riverside Cafes & Parvati Valley Trails",
-    author: "Siddharth",
-    readTime: "5 MIN READ",
-    image: "https://images.unsplash.com/photo-1597037750734-450f6f406560?auto=format&fit=crop&w=800&q=80",
-    status: "published",
-    slug: "pristine-colors-of-kasol-riverside-cafes-parvati-valley-trails",
-    excerpt: "From the serene banks of the Parvati River to the hidden high-altitude trails..."
-  },
-  {
-    title: "Spiti Valley in Winter: Surviving & Thriving at -20°C",
-    author: "Karan Johar",
-    readTime: "12 MIN READ",
-    image: "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
-    status: "published",
-    slug: "spiti-valley-in-winter-surviving-thriving-at-20c",
-    excerpt: "The quietude of Spiti in winter is deafening. With frozen waterfalls and snow-covered monasteries..."
-  },
-  {
-    title: "Walking the Frozen Zanskar River: The Ultimate Chadar Trek Guide",
-    author: "Aman Sharma",
-    readTime: "8 MIN READ",
-    image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80",
-    status: "published",
-    slug: "walking-the-frozen-zanskar-river-the-ultimate-chadar-trek-guide",
-    excerpt: "The Chadar Trek is not just a journey; it is a pilgrimage through ice located in Ladakh..."
-  }
-];
+const defaultBlogs: BlogItem[] = [];
 
 export default function BlogSection({ 
   blogs = [],
@@ -79,7 +51,8 @@ export default function BlogSection({
   topColor = "#ffffff",
   bottomColor = "#ffffff",
 }: BlogSectionProps) {
-  const displayBlogs = (blogs && blogs.length > 0) ? blogs : defaultBlogs;
+  const displayBlogs = blogs;
+  if (!displayBlogs || displayBlogs.length === 0) return null;
   const prefersReducedMotion = useReducedMotion();
   const isMobile = useIsMobile();
   const reduceMotion = prefersReducedMotion || isMobile;

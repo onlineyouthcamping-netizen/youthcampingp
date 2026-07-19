@@ -55,6 +55,21 @@ exports.createInquiry = async (req, res, next) => {
       }
     });
 
+    const { publishEvent } = require('../utils/eventBus');
+    await publishEvent('inquiry.created', {
+      entityType: 'Inquiry',
+      entityId: inquiry.id,
+      actorUserId: salesAdminId || 'system',
+      actorName: req.body.name || 'System',
+      title: `New Inquiry Created`,
+      description: `Inquiry for trip ${req.body.tripTitle || req.body.tripId}`,
+      moduleName: 'Sales',
+      priority: 'Medium',
+      actionUrl: `/admin/inquiries`,
+      notify: true,
+      assigneeId: salesAdminId
+    });
+
     res.status(201).json({ success: true, data: inquiry, isDuplicate: !!duplicate });
   } catch (error) {
     next(error);
@@ -169,6 +184,29 @@ exports.updateInquiryStatus = async (req, res, next) => {
       where,
       data: { status, adminNotes }
     });
+
+    const afterInquiry = await prisma.inquiry.findFirst({ where });
+    
+    if (status !== beforeInquiry.status) {
+      const { publishEvent } = require('../utils/eventBus');
+      await publishEvent('inquiry.status_updated', {
+        entityType: 'Inquiry',
+        entityId: id,
+        actorUserId: req.user.id,
+        actorName: req.user.name || 'Admin',
+        title: `Inquiry status changed to ${status}`,
+        description: `Previous status: ${beforeInquiry.status}`,
+        moduleName: 'Sales',
+        priority: 'Low',
+        actionUrl: `/admin/inquiries/${id}`,
+        notify: false,
+        audit: {
+          action: 'STATUS_UPDATE',
+          beforeData: { status: beforeInquiry.status },
+          afterData: { status: afterInquiry.status }
+        }
+      });
+    }
 
     res.json({ success: true, message: 'Inquiry updated' });
   } catch (error) {

@@ -61,38 +61,7 @@ function getDestinationPhoto(dest: Destination): string {
   return DESTINATION_FALLBACK;
 }
 
-const defaultDestinations: Destination[] = [
-  { 
-    name: "Bali", 
-    img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80",
-    duration: "7 Days 6 Nights",
-    subtext: "Spiritual retreats and world-famous surf breaks"
-  },
-  { 
-    name: "Maldives", 
-    img: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80",
-    duration: "5 Days 4 Nights",
-    subtext: "Luxury overwater villas and crystal clear lagoons"
-  },
-  { 
-    name: "Thailand", 
-    img: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=800&q=80",
-    duration: "6 Days 5 Nights",
-    subtext: "Tropical beaches and vibrant street life"
-  },
-  { 
-    name: "Singapore", 
-    img: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=80",
-    duration: "4 Days 3 Nights",
-    subtext: "City in a garden and world-class attractions"
-  },
-  { 
-    name: "Himachal Expedition", 
-    img: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
-    duration: "6 Days 5 Nights",
-    subtext: "Snowy peaks, valley treks, and serene monasteries"
-  },
-];
+const defaultDestinations: Destination[] = [];
 
 /** Individual destination card with loading skeleton and error fallback */
 function DestinationCard({ dest, index, reduceMotion, onClick }: {
@@ -244,7 +213,8 @@ export default function Destinations({
   topColor = "#ffffff",
   bottomColor = "#ffffff",
 }: DestinationsProps) {
-  const rawItems = (destinations && destinations.length > 0) ? destinations : defaultDestinations;
+  const rawItems = destinations;
+  if (!rawItems || rawItems.length === 0) return null;
   const items = rawItems.map(d => ({
     ...d,
     img: getDestinationPhoto(d)

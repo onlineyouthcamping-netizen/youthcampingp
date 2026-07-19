@@ -282,6 +282,21 @@ router.post('/', authenticate, requirePermission('quotations.create'), async (re
           tenantId: req.user?.tenantId || 'default'
         }
       });
+
+      const { publishEvent } = require('../utils/eventBus');
+      await publishEvent('quotation.created', {
+        entityType: 'Quotation',
+        entityId: quotation.id,
+        actorUserId: req.user?.id || 'system',
+        actorName: req.user?.name || req.user?.email || 'System',
+        title: `Quotation Created: ${finalTitle}`,
+        description: `Quotation for ${finalClient} was created.`,
+        moduleName: 'Sales',
+        priority: 'Low',
+        actionUrl: `/admin/quotations/${quotation.id}`,
+        notify: false,
+        audit: { action: 'QUOTATION_CREATED', afterData: quotation }
+      });
     }
 
     const jwt = require('jsonwebtoken');

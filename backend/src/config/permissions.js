@@ -79,7 +79,36 @@ const PERMISSIONS = [
   'package.vendor.select',
   'ops.vendor.allocate',
   'ops.vendor.confirm',
-  'ops.vendor.rate.override'
+  'ops.vendor.rate.override',
+  
+  // Notification Center
+  'notifications.view_own',
+  'notifications.mark_read',
+  
+  // Activity Timeline
+  'activity.view',
+  
+  // Company Documents
+  'company_documents.view',
+  'company_documents.upload',
+  'company_documents.edit',
+  'company_documents.download',
+  'company_documents.archive',
+  'company_documents.manage_categories',
+  
+  // Audit Logs
+  'audit_logs.view',
+  
+  // Recurring Tasks
+  'recurring_tasks.view',
+  'recurring_tasks.create',
+  'recurring_tasks.edit',
+  'recurring_tasks.pause',
+  'recurring_tasks.assign',
+  
+  // Customer Timeline
+  'customers.timeline.view',
+  'customers.timeline.view_finance'
 ];
 
 const ROLE_PERMISSIONS = {
@@ -175,7 +204,14 @@ const ROLE_PERMISSIONS = {
     'emails.send_bulk',
     'emails.view_logs',
     'vendors.view',
-    'package.vendor.select'
+    'package.vendor.select',
+    'notifications.view_own',
+    'notifications.mark_read',
+    'activity.view',
+    'customers.view',
+    'customers.timeline.view',
+    'company_documents.view',
+    'recurring_tasks.view'
   ],
 
   operations: [
@@ -209,7 +245,13 @@ const ROLE_PERMISSIONS = {
     'package.vendor.select',
     'ops.vendor.allocate',
     'ops.vendor.confirm',
-    'ops.vendor.rate.override'
+    'ops.vendor.rate.override',
+    'notifications.view_own',
+    'notifications.mark_read',
+    'activity.view',
+    'company_documents.view',
+    'recurring_tasks.view',
+    'recurring_tasks.assign'
   ],
 
   finance: [

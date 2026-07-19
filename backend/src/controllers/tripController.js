@@ -643,7 +643,17 @@ exports.deleteTrip = async (req, res, next) => {
       prisma.opsTripExpense.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
       prisma.opsTripLeader.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
       prisma.tripAssignment.deleteMany({ where: { tripId: id } }).catch(() => {}),
-      prisma.tripVendor.deleteMany({ where: { tripId: id } }).catch(() => {})
+      prisma.tripVendor.deleteMany({ where: { tripId: id } }).catch(() => {}),
+      prisma.opsRoomInventory.deleteMany({ where: { tripId: id } }).catch(() => {}),
+      prisma.opsAllocationRun.deleteMany({ where: { tripId: id } }).catch(() => {}),
+      prisma.opsVehicleAllocation.deleteMany({ where: { tripId: id } }).catch(() => {}),
+      prisma.opsRoomAllocation.deleteMany({ where: { tripId: id } }).catch(() => {}),
+      prisma.opsDayItinerary.deleteMany({ where: { tripId: id } }).catch(() => {}),
+      prisma.opsActivity.deleteMany({ where: { tripId: id } }).catch(() => {}),
+      prisma.opsVendorPayment.deleteMany({ where: { tripId: id } }).catch(() => {}),
+      prisma.opsDocument.deleteMany({ where: { tripId: id } }).catch(() => {}),
+      prisma.opsMessage.deleteMany({ where: { tripId: id } }).catch(() => {}),
+      prisma.tripDocument.deleteMany({ where: { tripId: id } }).catch(() => {})
     ]);
 
     // Delete the trip

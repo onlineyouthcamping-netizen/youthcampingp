@@ -64,18 +64,29 @@ function redactSensitive(data) {
     'password_hash',
     'token',
     'jwt',
+    'otp',
+    'resettoken',
+    'reset_token',
     'secret',
-    'apiKey',
+    'apikey',
     'api_key',
     'key',
-    'cloudinarySecret',
+    'authorization',
     'signature',
-    'tokenHash'
+    'tokenhash',
+    'bankaccount',
+    'accountnumber',
+    'cardnumber',
+    'cvv',
+    'routingnumber',
+    'upi',
+    'cloudinarysecret'
   ];
 
   const result = {};
   for (const [key, value] of Object.entries(data)) {
-    if (keysToRedact.some(k => key.toLowerCase().includes(k))) {
+    const lowerKey = key.toLowerCase();
+    if (keysToRedact.some(k => lowerKey.includes(k))) {
       result[key] = '[REDACTED]';
     } else if (typeof value === 'object') {
       result[key] = redactSensitive(value);

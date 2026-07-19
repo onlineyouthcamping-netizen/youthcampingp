@@ -20,7 +20,9 @@ async function logBookingActivity({
       console.warn('⚠️ [bookingActivityLogger] Missing bookingId, skipping log.');
       return;
     }
-    await prisma.bookingActivityLog.create({
+    const { publishEvent } = require('./eventBus');
+    
+    const log = await prisma.bookingActivityLog.create({
       data: {
         bookingId,
         action,
@@ -28,6 +30,21 @@ async function logBookingActivity({
         performedByAdminId
       }
     });
+
+    // Also trigger central event bus for cross-module features
+    await publishEvent(`booking.${action.toLowerCase()}`, {
+      entityType: 'Booking',
+      entityId: bookingId,
+      actorUserId: performedByAdminId || 'system',
+      actorName: 'Admin', // Would be better to fetch actual name if possible
+      title: `Booking: ${action}`,
+      description: details,
+      moduleName: 'Bookings',
+      priority: action === 'CREATE' ? 'High' : 'Low',
+      actionUrl: `/admin/bookings/${bookingId}`,
+      notify: true
+    });
+
   } catch (error) {
     console.error('⚠️ [bookingActivityLogger] Error recording log:', error.message);
   }

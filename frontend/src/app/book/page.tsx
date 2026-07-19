@@ -639,7 +639,7 @@ function BookingForm() {
       const data = await res.json();
       const bId = data?.data?.bookingId || data?.data?.id || data?.data?._id || 'YC-SUCCESS';
       if (res.ok || data.success) {
-        router.push(`/book/confirmation?bookingId=${bId}&tripName=${encodeURIComponent(initialParams.tripName || '')}&date=${encodeURIComponent(initialParams.date || '')}&city=${encodeURIComponent(selectedCity?.cityName || 'Delhi')}`);
+        router.push(`/book/confirmation?bookingId=${bId}&tripName=${encodeURIComponent(initialParams.tripName || '')}&date=${encodeURIComponent(initialParams.date || '')}&city=${encodeURIComponent(selectedCity?.cityName || 'Delhi')}&name=${encodeURIComponent(formData.name || formData.fullName || '')}`);
       } else {
         if (data.errors && Array.isArray(data.errors)) {
           const detailMsgs = data.errors.map((e: any) => `${e.field}: ${e.message}`).join(', ');

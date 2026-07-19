@@ -19,6 +19,7 @@ export default function PhotoGrid({
   backgroundColor = "#ffffff",
   padding = "80px"
 }: PhotoGridProps) {
+  if (!images || images.length === 0) return null;
   return (
     <section 
       style={{ backgroundColor, paddingTop: padding, paddingBottom: padding }}

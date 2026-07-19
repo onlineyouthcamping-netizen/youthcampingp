@@ -156,6 +156,24 @@ exports.addClientPayment = async (req, res) => {
       });
     }
 
+    const { publishEvent } = require('../utils/eventBus');
+    await publishEvent('payment.created', {
+      entityType: 'Booking',
+      entityId: booking.id,
+      actorUserId: req.user?.id || 'system',
+      actorName: req.user?.name || req.user?.email || 'System',
+      title: `Payment of ₹${amount} Recorded`,
+      description: `Payment for booking ${bookingId} via ${paymentMode}. Status: ${status || 'Pending Verification'}`,
+      moduleName: 'Finance',
+      priority: 'Medium',
+      actionUrl: `/admin/bookings/${booking.id}`,
+      notify: true,
+      audit: {
+        action: 'PAYMENT_RECORDED',
+        afterData: receipt
+      }
+    });
+
     return res.json({ success: true, data: receipt });
   } catch (err) {
     console.error('addClientPayment error:', err);

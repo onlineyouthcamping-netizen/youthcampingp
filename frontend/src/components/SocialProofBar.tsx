@@ -52,17 +52,13 @@ interface SocialProofBarProps {
   stats?: Stat[];
 }
 
-const defaultStats = [
-  { icon: "Users", label: "10,000+ Travelers" },
-  { icon: "Trophy", label: "Trusted Since 2019" },
-  { icon: "ShieldCheck", label: "Gujarat Tourism Registered" },
-  { icon: "Calendar", label: "Weekly Departures" },
-];
+const defaultStats: any[] = [];
 
 export default function SocialProofBar({ 
   stats, 
 }: SocialProofBarProps) {
-  const displayStats = (stats && stats.length > 0) ? stats : defaultStats;
+  const displayStats = stats;
+  if (!displayStats || displayStats.length === 0) return null;
   const prefersReducedMotion = useReducedMotion();
   const isMobile = useIsMobile();
   const reduceMotion = prefersReducedMotion || isMobile;

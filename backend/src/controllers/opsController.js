@@ -2061,6 +2061,20 @@ exports.overrideAllocation = async (req, res) => {
         actorId: req.user.id
       }
     });
+    const { publishEvent } = require('../utils/eventBus');
+    await publishEvent('hotel.confirmed', {
+      entityType: 'OpsAllocationOverride',
+      entityId: override.id,
+      actorUserId: req.user?.id || 'system',
+      actorName: req.user?.name || 'Admin',
+      title: `Hotel Allocation Overridden/Confirmed`,
+      description: `Hotel rooms manually confirmed.`,
+      moduleName: 'Operations',
+      priority: 'Medium',
+      actionUrl: `/admin/departure-workspace`,
+      notify: true,
+      audit: { action: 'HOTEL_CONFIRMED', afterData: override }
+    });
 
     return res.json({ success: true, data: override });
   } catch (err) {

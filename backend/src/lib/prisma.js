@@ -3,10 +3,24 @@ const { PrismaClient } = require('@prisma/client');
 const { AsyncLocalStorage } = require('async_hooks');
 
 const requestStorage = new AsyncLocalStorage();
+let dbUrl = process.env.DATABASE_URL;
+
+if (process.env.NODE_ENV === 'test') {
+  if (!process.env.TEST_DATABASE_URL) {
+    console.error('FATAL: NODE_ENV is test but TEST_DATABASE_URL is not set.');
+    process.exit(1);
+  }
+  if (process.env.TEST_DATABASE_URL === process.env.DATABASE_URL && process.env.DATABASE_URL) {
+    console.error('FATAL: TEST_DATABASE_URL must not match DATABASE_URL to prevent production data corruption.');
+    process.exit(1);
+  }
+  dbUrl = process.env.TEST_DATABASE_URL;
+}
+
 const prisma = global.prisma || new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL
+      url: dbUrl
     }
   },
   log: ['error']

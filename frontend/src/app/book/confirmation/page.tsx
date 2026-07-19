@@ -13,6 +13,7 @@ function ConfirmationContent() {
   const queryTripName = searchParams.get('tripName');
   const queryDate = searchParams.get('date');
   const queryCity = searchParams.get('city');
+  const queryName = searchParams.get('name');
 
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<any>(null);
@@ -91,7 +92,7 @@ function ConfirmationContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white gap-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-[#FF5B00]" />
         <p className="text-xs capitalize tracking-widest text-slate-400 font-bold">Loading Booking Details...</p>
       </div>
@@ -104,11 +105,12 @@ function ConfirmationContent() {
     tripName: queryTripName || 'YouthCamping Expedition',
     departureDate: queryDate || null,
     pickupCity: queryCity || 'Selected Location',
+    name: queryName || 'Lead Traveler',
     passengers: []
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white py-16 px-4 md:px-8">
+    <div className="min-h-screen bg-slate-50 text-slate-900 py-16 px-4 md:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
         
         {/* Success Banner */}
@@ -126,19 +128,19 @@ function ConfirmationContent() {
             <span className="inline-flex items-center px-3.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
               Booking Request Pending Verification
             </span>
-            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-white pt-1 leading-tight">
+            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-slate-900 pt-1 leading-tight">
               Thanks for booking your journey with YouthCamping!
             </h1>
-            <p className="text-slate-300 text-sm md:text-base font-medium leading-relaxed pt-1">
+            <p className="text-slate-600 text-sm md:text-base font-medium leading-relaxed pt-1">
               Your booking request has been received. Please note that your reservation is currently pending and will be officially confirmed once our team verifies your payment. A confirmation email has been logged to your email address.
             </p>
           </div>
         </div>
 
         {/* Booking Card */}
-        <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-2xl">
           {/* Header ID Strip */}
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-8 py-5 border-b border-white/5 flex flex-wrap items-center justify-between gap-4">
+          <div className="bg-slate-50 px-8 py-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
             <div>
               <span className="text-[10px] text-slate-500 font-bold capitalize tracking-wider">Booking ID</span>
               <p className="text-xl font-bold font-mono text-[#FF5B00]">{displayBooking.bookingId}</p>
@@ -152,20 +154,20 @@ function ConfirmationContent() {
           <div className="p-8 md:p-10 space-y-8">
             {/* Trip Info */}
             <div className="space-y-2">
-              <span className="bg-white/5 border border-white/10 px-3 py-1 rounded text-[9px] font-bold capitalize text-slate-300">
+              <span className="bg-slate-100 border border-slate-200 px-3 py-1 rounded text-[9px] font-bold capitalize text-slate-600">
                 {displayBooking.tripId || 'Expedition'}
               </span>
-              <h2 className="text-2xl font-bold capitalize tracking-tight text-white">{displayBooking.tripName}</h2>
+              <h2 className="text-2xl font-bold capitalize tracking-tight text-slate-900">{displayBooking.tripName}</h2>
               <div className="flex flex-wrap gap-6 text-xs text-slate-400 pt-2 font-medium">
-                <div>DEPARTURE DATE: <span className="font-bold text-white">{formatDepartureDate(displayBooking.departureDate)}</span></div>
-                <div className="hidden md:block w-px h-4 bg-slate-800" />
-                <div>JOINING CITY: <span className="font-bold text-white capitalize">{displayBooking.pickupCity || 'Delhi (Direct Join)'}</span></div>
-                <div className="hidden md:block w-px h-4 bg-slate-800" />
-                <div>TRAVELERS: <span className="font-bold text-white">{displayBooking.passengers?.length || 1} Pax</span></div>
+                <div>DEPARTURE DATE: <span className="font-bold text-slate-900">{formatDepartureDate(displayBooking.departureDate)}</span></div>
+                <div className="hidden md:block w-px h-4 bg-slate-200" />
+                <div>JOINING CITY: <span className="font-bold text-slate-900 capitalize">{displayBooking.pickupCity || 'Delhi (Direct Join)'}</span></div>
+                <div className="hidden md:block w-px h-4 bg-slate-200" />
+                <div>TRAVELERS: <span className="font-bold text-slate-900">{displayBooking.passengers?.length || 1} Pax</span></div>
               </div>
             </div>
 
-            <div className="h-px bg-white/5" />
+            <div className="h-px bg-slate-100" />
 
             {/* Travelers list */}
             <div className="space-y-4">
@@ -173,22 +175,22 @@ function ConfirmationContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {displayBooking.passengers && displayBooking.passengers.length > 0 ? (
                   displayBooking.passengers.map((traveler: any, index: number) => (
-                    <div key={index} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex items-center justify-between">
+                    <div key={index} className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <p className="text-xs font-bold text-white capitalize">{traveler.name}</p>
+                        <p className="text-xs font-bold text-slate-900 capitalize">{traveler.name}</p>
                         <p className="text-[10px] text-slate-400 font-medium">
                           {traveler.gender} • Age {traveler.age || 'N/A'}
                         </p>
                       </div>
-                      <span className="text-[9px] font-bold bg-white/5 text-slate-400 px-2 py-0.5 rounded capitalize">
+                      <span className="text-[9px] font-bold bg-slate-100 text-slate-400 px-2 py-0.5 rounded capitalize">
                         Traveler {index + 1}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex items-center justify-between">
+                  <div className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <p className="text-xs font-bold text-white capitalize">{displayBooking.name || 'Lead Traveler'}</p>
+                      <p className="text-xs font-bold text-slate-900 capitalize">{displayBooking.name || 'Lead Traveler'}</p>
                       <p className="text-[10px] text-slate-400 font-medium">
                         {displayBooking.gender || 'Male'} • Age {displayBooking.age || 'N/A'}
                       </p>
@@ -201,7 +203,7 @@ function ConfirmationContent() {
               </div>
             </div>
 
-            <div className="h-px bg-white/5" />
+            <div className="h-px bg-slate-100" />
 
 
           </div>
@@ -211,7 +213,7 @@ function ConfirmationContent() {
         <div className="text-center">
           <button
             onClick={() => router.push('/')}
-            className="inline-flex items-center gap-2 text-xs font-bold capitalize tracking-widest text-slate-500 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 text-xs font-bold capitalize tracking-widest text-slate-500 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft size={12} /> Return to Expeditions
           </button>
@@ -224,7 +226,7 @@ function ConfirmationContent() {
 
 export default function BookingConfirmationPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-950"><Loader2 className="animate-spin text-[#FF5B00] w-10 h-10" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-[#FF5B00] w-10 h-10" /></div>}>
       <ConfirmationContent />
     </Suspense>
   );

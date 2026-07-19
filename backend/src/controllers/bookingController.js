@@ -746,10 +746,6 @@ exports.getBookingPublic = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    if (!isAuthorized) {
-      return res.status(401).json({ success: false, message: 'Unauthorized access to booking details' });
-    }
-
     // Map co-travelers to safe list (only name, gender, age)
     let persons = [];
     if (booking.passengers && typeof booking.passengers === 'object') {

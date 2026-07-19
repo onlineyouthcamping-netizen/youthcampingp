@@ -27,56 +27,7 @@ interface ReviewsSectionProps {
   bottomColor?: string;
 }
 
-const defaultReviews: Review[] = [
-  {
-    id: "rev-1",
-    userName: "Abhinav Sharma",
-    tripName: "Kedarnath & Chopta Trek",
-    city: "Delhi",
-    userImage: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-    rating: 5,
-    comment: "An absolutely spiritual and exhilarating journey with YouthCamping! The trek leads and campsite arrangements were top-notch.",
-    isFeatured: true,
-    photos: ["https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80"],
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "rev-2",
-    userName: "Ananya Deshmukh",
-    tripName: "Spiti Valley Winter Expedition",
-    city: "Mumbai",
-    userImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
-    rating: 5,
-    comment: "Exploring frozen waterfalls and ancient monasteries in Spiti was a dream come true. Highly professional team and cozy homestays!",
-    isFeatured: true,
-    photos: ["https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80"],
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "rev-3",
-    userName: "Siddharth Verma",
-    tripName: "Manali to Kasol Camping",
-    city: "Chandigarh",
-    userImage: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80",
-    rating: 5,
-    comment: "Perfect weekend getaway with amazing riverside camping vibes, bonfire sessions, and brilliant co-travelers!",
-    isFeatured: true,
-    photos: ["https://images.unsplash.com/photo-1597037750734-450f6f406560?auto=format&fit=crop&w=800&q=80"],
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "rev-4",
-    userName: "Priya Nair",
-    tripName: "Chadar Frozen River Trek",
-    city: "Bengaluru",
-    userImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80",
-    rating: 5,
-    comment: "Walking on the frozen Zanskar river was thrilling! YouthCamping's safety protocols and hot meals on ice kept us warm throughout.",
-    isFeatured: true,
-    photos: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80"],
-    createdAt: new Date().toISOString()
-  }
-];
+const defaultReviews: Review[] = [];
 
 export default function ReviewsSection({ 
   reviews = [],
@@ -90,7 +41,8 @@ export default function ReviewsSection({
   topColor = "#ffffff",
   bottomColor = "#ffffff",
 }: ReviewsSectionProps) {
-  const displayReviews = (reviews && reviews.length > 0) ? reviews : defaultReviews;
+  const displayReviews = reviews;
+  if (!displayReviews || displayReviews.length === 0) return null;
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const finalAlign = 'left';
