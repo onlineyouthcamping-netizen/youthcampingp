@@ -89,7 +89,7 @@ ${isUpi && collection.receivingAccount ? `<tr><td>Received In Account</td><td>${
 exports.getDashboard = async (req, res) => {
   try {
     const { tripId, departureDate, station, paymentMode, collectionStatus, salespersonId, collectorId, search } = req.query;
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user?.tenantId || 'default';
     if (!tripId || !departureDate) return res.status(400).json({ success: false, message: 'tripId and departureDate are required' });
 
     const depDate = new Date(departureDate);
@@ -203,7 +203,7 @@ exports.getDashboard = async (req, res) => {
 // ─── GET /api/station-payments/accounts ───────────────────────────────────
 exports.getAccounts = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user?.tenantId || 'default';
     const accounts = await prisma.paymentReceivingAccount.findMany({
       where: { tenantId, isActive: true },
       include: { linkedAdmin: { select: { id: true, name: true } }, approvedBy: { select: { id: true, name: true } } },
@@ -219,12 +219,12 @@ exports.getAccounts = async (req, res) => {
 // ─── POST /api/station-payments/accounts ──────────────────────────────────
 exports.createAccount = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user?.tenantId || 'default';
     const { accountName, accountHolderName, accountType, ownershipType, bankName, maskedAccountNumber, upiId, linkedAdminId } = req.body;
     if (!accountName || !accountHolderName || !accountType || !ownershipType)
       return res.status(400).json({ success: false, message: 'accountName, accountHolderName, accountType, ownershipType are required' });
     const account = await prisma.paymentReceivingAccount.create({
-      data: { tenantId, accountName, accountHolderName, accountType, ownershipType, bankName: bankName||null, maskedAccountNumber: maskedAccountNumber||null, upiId: upiId||null, linkedAdminId: linkedAdminId||null, createdByAdminId: req.user.id }
+      data: { tenantId, accountName, accountHolderName, accountType, ownershipType, bankName: bankName||null, maskedAccountNumber: maskedAccountNumber||null, upiId: upiId||null, linkedAdminId: linkedAdminId||null, createdByAdminId: req.user?.id }
     });
     return res.status(201).json({ success: true, data: account });
   } catch (err) {
@@ -239,7 +239,7 @@ exports.approveAccount = async (req, res) => {
     const { isApproved, isActive } = req.body;
     const account = await prisma.paymentReceivingAccount.update({
       where: { id: req.params.id },
-      data: { isApproved: isApproved ?? true, isActive: isActive ?? true, approvedByAdminId: req.user.id }
+      data: { isApproved: isApproved ?? true, isActive: isActive ?? true, approvedByAdminId: req.user?.id }
     });
     return res.json({ success: true, data: account });
   } catch (err) {
@@ -251,7 +251,7 @@ exports.approveAccount = async (req, res) => {
 // ─── POST /api/station-payments/collect ───────────────────────────────────
 exports.collect = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user?.tenantId || 'default';
     const { bookingId, tripId, departureDate, station, platform, paymentMode, amount, collectedFrom, collectedFromMobile, collectedAt, remarks, proofImageUrl, utrNumber, receivingAccountId } = req.body;
 
     if (!bookingId || !tripId || !departureDate || !station || !paymentMode || !amount || !collectedFrom)
@@ -283,7 +283,7 @@ exports.collect = async (req, res) => {
     }
     if (paymentMode === 'CASH') {
       const sixtySecsAgo = new Date(Date.now() - 60000);
-      const dup = await prisma.stationPaymentCollection.findFirst({ where: { tenantId, bookingId, paymentMode: 'CASH', amount: parsedAmount, collectedByAdminId: req.user.id, createdAt: { gte: sixtySecsAgo } } });
+      const dup = await prisma.stationPaymentCollection.findFirst({ where: { tenantId, bookingId, paymentMode: 'CASH', amount: parsedAmount, collectedByAdminId: req.user?.id, createdAt: { gte: sixtySecsAgo } } });
       if (dup) return res.status(409).json({ success: false, message: 'Duplicate submission detected. Wait 60 seconds.' });
     }
     if (paymentMode === 'UPI') {
@@ -305,7 +305,7 @@ exports.collect = async (req, res) => {
           station, platform: platform||null, paymentMode, amount: parsedAmount,
           previousPaid: currentPaid, newTotalPaid: isCash ? newTotalPaid : currentPaid,
           newRemaining, paymentStatus: newPaymentStatus,
-          collectedByAdminId: req.user.id,
+          collectedByAdminId: req.user?.id,
           collectedAt: collectedAt ? new Date(collectedAt) : new Date(),
           collectedFrom, collectedFromMobile: collectedFromMobile||null,
           remarks: remarks||null, proofImageUrl: proofImageUrl||null,
@@ -324,7 +324,7 @@ exports.collect = async (req, res) => {
           referenceNumber: utrNumber || receiptNumber,
           notes: `Station payment at ${station}. Receipt: ${receiptNumber}`,
           status: isCash ? 'APPROVED' : 'PENDING',
-          salespersonId: req.user.id
+          salespersonId: req.user?.id
         }
       });
 
@@ -340,7 +340,7 @@ exports.collect = async (req, res) => {
           bookingId: booking.id,
           action: isCash ? 'STATION_CASH_COLLECTED' : 'STATION_UPI_RECEIVED',
           details: isCash ? `Cash ${fmt(parsedAmount)} at ${station}. Receipt: ${receiptNumber}` : `UPI ${fmt(parsedAmount)} (UTR: ${utrNumber}) at ${station}. Pending verification. Receipt: ${receiptNumber}`,
-          performedByAdminId: req.user.id
+          performedByAdminId: req.user?.id
         }
       });
 
@@ -350,7 +350,7 @@ exports.collect = async (req, res) => {
     // Async email
     setImmediate(async () => {
       try {
-        const adminRec = await prisma.admin.findUnique({ where: { id: req.user.id }, select: { name: true } });
+        const adminRec = await prisma.admin.findUnique({ where: { id: req.user?.id }, select: { name: true } });
         const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { name: true } });
         const emailStatus = await sendReceiptEmail({ ...collection, receivingAccount: collection.receivingAccount }, booking, trip?.name || 'Trip', adminRec?.name || 'Staff');
         await prisma.stationPaymentCollection.update({ where: { id: collection.id }, data: { emailStatus, emailSentAt: emailStatus === 'SENT' ? new Date() : null } });
@@ -388,7 +388,7 @@ exports.cancel = async (req, res) => {
     const booking = await prisma.booking.findUnique({ where: { bookingId: record.bookingId } });
 
     await prisma.$transaction(async (tx) => {
-      await tx.stationPaymentCollection.update({ where: { id: record.id }, data: { collectionStatus: 'REVERSED', isReversed: true, reversedAt: new Date(), reversedByAdminId: req.user.id, reversalReason } });
+      await tx.stationPaymentCollection.update({ where: { id: record.id }, data: { collectionStatus: 'REVERSED', isReversed: true, reversedAt: new Date(), reversedByAdminId: req.user?.id, reversalReason } });
       const shouldReverse = record.paymentMode === 'CASH' || record.upiVerificationStatus === 'VERIFIED';
       if (shouldReverse && booking) {
         const newPaid = Math.max(0, (booking.advancePaid || 0) - record.amount);
@@ -396,7 +396,7 @@ exports.cancel = async (req, res) => {
         await tx.booking.update({ where: { bookingId: record.bookingId }, data: { advancePaid: newPaid, remainingAmount: Math.max(0, finalAmount - newPaid), paymentStatus: newPaid <= 0 ? 'Pending' : 'PARTIAL' } });
       }
       if (booking) {
-        await tx.bookingActivityLog.create({ data: { bookingId: booking.id, action: 'STATION_PAYMENT_REVERSED', details: `${record.receiptNumber} reversed. Reason: ${reversalReason}`, performedByAdminId: req.user.id } });
+        await tx.bookingActivityLog.create({ data: { bookingId: booking.id, action: 'STATION_PAYMENT_REVERSED', details: `${record.receiptNumber} reversed. Reason: ${reversalReason}`, performedByAdminId: req.user?.id } });
       }
     });
     return res.json({ success: true, message: 'Reversed successfully' });
@@ -411,7 +411,7 @@ exports.verifyUpi = async (req, res) => {
     if (!record) return res.status(404).json({ success: false, message: 'Not found' });
     if (record.paymentMode !== 'UPI') return res.status(400).json({ success: false, message: 'Not a UPI payment' });
     if (record.upiVerificationStatus !== 'PENDING_VERIFICATION') return res.status(409).json({ success: false, message: 'Not in PENDING_VERIFICATION state' });
-    if (record.collectedByAdminId === req.user.id) return res.status(403).json({ success: false, message: 'Cannot verify your own collection' });
+    if (record.collectedByAdminId === req.user?.id) return res.status(403).json({ success: false, message: 'Cannot verify your own collection' });
 
     const isVerify = action === 'VERIFY';
     const booking = await prisma.booking.findUnique({ where: { bookingId: record.bookingId } });
@@ -420,13 +420,13 @@ exports.verifyUpi = async (req, res) => {
     await prisma.$transaction(async (tx) => {
       const newPaid = isVerify ? (booking?.advancePaid || 0) + record.amount : (booking?.advancePaid || 0);
       const newRemaining = isVerify ? Math.max(0, finalAmount - newPaid) : finalAmount - (booking?.advancePaid || 0);
-      await tx.stationPaymentCollection.update({ where: { id: record.id }, data: { upiVerificationStatus: isVerify ? 'VERIFIED' : 'REJECTED', verifiedByAdminId: req.user.id, verifiedAt: new Date(), ...(isVerify ? { newTotalPaid: newPaid, newRemaining, paymentStatus: newRemaining <= 0 ? 'PAID' : 'PARTIAL' } : {}) } });
+      await tx.stationPaymentCollection.update({ where: { id: record.id }, data: { upiVerificationStatus: isVerify ? 'VERIFIED' : 'REJECTED', verifiedByAdminId: req.user?.id, verifiedAt: new Date(), ...(isVerify ? { newTotalPaid: newPaid, newRemaining, paymentStatus: newRemaining <= 0 ? 'PAID' : 'PARTIAL' } : {}) } });
       if (isVerify && booking) {
         await tx.booking.update({ where: { bookingId: record.bookingId }, data: { advancePaid: newPaid, remainingAmount: newRemaining, paymentStatus: newRemaining <= 0 ? 'PAID' : 'PARTIAL' } });
-        await tx.accountingEntry.updateMany({ where: { bookingId: record.bookingId, referenceNumber: record.utrNumber, status: 'PENDING' }, data: { status: 'APPROVED', actionedById: req.user.id } });
+        await tx.accountingEntry.updateMany({ where: { bookingId: record.bookingId, referenceNumber: record.utrNumber, status: 'PENDING' }, data: { status: 'APPROVED', actionedById: req.user?.id } });
       }
       if (booking) {
-        await tx.bookingActivityLog.create({ data: { bookingId: booking.id, action: isVerify ? 'STATION_UPI_VERIFIED' : 'STATION_UPI_REJECTED', details: isVerify ? `UPI ${record.receiptNumber} verified. Balance updated.` : `UPI ${record.receiptNumber} rejected. Reason: ${rejectionReason||'Not specified'}`, performedByAdminId: req.user.id } });
+        await tx.bookingActivityLog.create({ data: { bookingId: booking.id, action: isVerify ? 'STATION_UPI_VERIFIED' : 'STATION_UPI_REJECTED', details: isVerify ? `UPI ${record.receiptNumber} verified. Balance updated.` : `UPI ${record.receiptNumber} rejected. Reason: ${rejectionReason||'Not specified'}`, performedByAdminId: req.user?.id } });
       }
     });
     return res.json({ success: true, message: isVerify ? 'Verified. Booking balance updated.' : 'Rejected.' });
@@ -461,22 +461,22 @@ exports.getReceipt = async (req, res) => {
 // ─── POST /api/station-payments/handover ──────────────────────────────────
 exports.createHandover = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user?.tenantId || 'default';
     const { tripId, departureDate, station, amountHandedOver, handoverRecipientId, handoverReference, remarks } = req.body;
     if (!tripId || !departureDate || !station || !amountHandedOver || !handoverRecipientId)
       return res.status(400).json({ success: false, message: 'tripId, departureDate, station, amountHandedOver, handoverRecipientId required' });
-    if (handoverRecipientId === req.user.id)
+    if (handoverRecipientId === req.user?.id)
       return res.status(400).json({ success: false, message: 'Cannot be your own recipient' });
 
-    const cashSum = await prisma.stationPaymentCollection.aggregate({ where: { tenantId, tripId, departureDate: new Date(departureDate), paymentMode: 'CASH', collectionStatus: 'COLLECTED', collectedByAdminId: req.user.id, handoverId: null }, _sum: { amount: true } });
+    const cashSum = await prisma.stationPaymentCollection.aggregate({ where: { tenantId, tripId, departureDate: new Date(departureDate), paymentMode: 'CASH', collectionStatus: 'COLLECTED', collectedByAdminId: req.user?.id, handoverId: null }, _sum: { amount: true } });
     const amountExpected = cashSum._sum.amount || 0;
     const handedOver = parseFloat(amountHandedOver);
 
     const handover = await prisma.$transaction(async (tx) => {
       const h = await tx.stationCashHandover.create({
-        data: { tenantId, collectorId: req.user.id, tripId, departureDate: new Date(departureDate), station, amountExpected, amountHandedOver: handedOver, handoverRecipientId, handoverReference: handoverReference||null, remarks: remarks||null, shortageAmount: Math.max(0, amountExpected - handedOver), excessAmount: Math.max(0, handedOver - amountExpected), handoverStatus: 'HANDED_OVER', handoverAt: new Date() }
+        data: { tenantId, collectorId: req.user?.id, tripId, departureDate: new Date(departureDate), station, amountExpected, amountHandedOver: handedOver, handoverRecipientId, handoverReference: handoverReference||null, remarks: remarks||null, shortageAmount: Math.max(0, amountExpected - handedOver), excessAmount: Math.max(0, handedOver - amountExpected), handoverStatus: 'HANDED_OVER', handoverAt: new Date() }
       });
-      await tx.stationPaymentCollection.updateMany({ where: { tenantId, tripId, departureDate: new Date(departureDate), paymentMode: 'CASH', collectionStatus: 'COLLECTED', collectedByAdminId: req.user.id, handoverId: null }, data: { handoverId: h.id } });
+      await tx.stationPaymentCollection.updateMany({ where: { tenantId, tripId, departureDate: new Date(departureDate), paymentMode: 'CASH', collectionStatus: 'COLLECTED', collectedByAdminId: req.user?.id, handoverId: null }, data: { handoverId: h.id } });
       return h;
     });
     return res.status(201).json({ success: true, data: handover });
@@ -488,8 +488,8 @@ exports.confirmHandover = async (req, res) => {
   try {
     const handover = await prisma.stationCashHandover.findUnique({ where: { id: req.params.id } });
     if (!handover) return res.status(404).json({ success: false, message: 'Not found' });
-    if (handover.collectorId === req.user.id) return res.status(403).json({ success: false, message: 'Cannot confirm your own handover' });
-    await prisma.stationCashHandover.update({ where: { id: req.params.id }, data: { handoverStatus: 'CONFIRMED', financeConfirmedById: req.user.id, financeConfirmedAt: new Date() } });
+    if (handover.collectorId === req.user?.id) return res.status(403).json({ success: false, message: 'Cannot confirm your own handover' });
+    await prisma.stationCashHandover.update({ where: { id: req.params.id }, data: { handoverStatus: 'CONFIRMED', financeConfirmedById: req.user?.id, financeConfirmedAt: new Date() } });
     return res.json({ success: true, message: 'Handover confirmed' });
   } catch (err) { return res.status(500).json({ success: false, message: 'Server error' }); }
 };
@@ -499,9 +499,9 @@ exports.reconcileHandover = async (req, res) => {
   try {
     const handover = await prisma.stationCashHandover.findUnique({ where: { id: req.params.id } });
     if (!handover) return res.status(404).json({ success: false, message: 'Not found' });
-    if (handover.collectorId === req.user.id) return res.status(403).json({ success: false, message: 'Cannot reconcile your own handover' });
+    if (handover.collectorId === req.user?.id) return res.status(403).json({ success: false, message: 'Cannot reconcile your own handover' });
     if (handover.handoverStatus !== 'CONFIRMED') return res.status(400).json({ success: false, message: 'Must be CONFIRMED before reconciliation' });
-    await prisma.stationCashHandover.update({ where: { id: req.params.id }, data: { handoverStatus: 'RECONCILED', reconciledById: req.user.id, reconciledAt: new Date() } });
+    await prisma.stationCashHandover.update({ where: { id: req.params.id }, data: { handoverStatus: 'RECONCILED', reconciledById: req.user?.id, reconciledAt: new Date() } });
     return res.json({ success: true, message: 'Reconciled' });
   } catch (err) { return res.status(500).json({ success: false, message: 'Server error' }); }
 };
@@ -509,7 +509,7 @@ exports.reconcileHandover = async (req, res) => {
 // ─── GET /api/station-payments/reports ────────────────────────────────────
 exports.getReports = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user?.tenantId || 'default';
     const { tripId, departureDate, from, to } = req.query;
     const where = { tenantId, collectionStatus: { not: 'CANCELLED' } };
     if (tripId) where.tripId = tripId;
