@@ -467,7 +467,7 @@ exports.getBookings = async (req, res, next) => {
           baseAmount: true,
           gstAmount: true,
           sourceMeta: true,
-          passengers: true,
+          passengers: true, trainTicketStatus: true, trainTicketRequired: true,
           sourceBookingLink: {
             select: {
               id: true,
