@@ -1,0 +1,47 @@
+[
+  {
+    "id": "cmrku4043000s12xym7gi5tn2",
+    "tenantId": "default",
+    "tripId": "MKA-2",
+    "departureDate": "2026-06-06T00:00:00.000Z",
+    "senderType": "STAFF",
+    "senderId": "admin_master_prod",
+    "senderName": "Operations Staff",
+    "messageType": "STAFF",
+    "content": "API test internal operations note — 1784044631669",
+    "attachments": null,
+    "recipients": null,
+    "readBy": null,
+    "createdAt": "2026-07-14T15:57:11.955Z"
+  },
+  {
+    "id": "cmrku6wum001512xycy8ev7z8",
+    "tenantId": "default",
+    "tripId": "MKA-2",
+    "departureDate": "2026-06-06T00:00:00.000Z",
+    "senderType": "STAFF",
+    "senderId": "admin_master_prod",
+    "senderName": "Operations Staff",
+    "messageType": "STAFF",
+    "content": "API test ops note 1784044767195",
+    "attachments": null,
+    "recipients": null,
+    "readBy": null,
+    "createdAt": "2026-07-14T15:59:27.694Z"
+  },
+  {
+    "id": "cmrkul5m3000h14jueqwsss38",
+    "tenantId": "default",
+    "tripId": "MKA-2",
+    "departureDate": "2026-06-06T00:00:00.000Z",
+    "senderType": "STAFF",
+    "senderId": "admin_master_prod",
+    "senderName": "Operations Staff",
+    "messageType": "STAFF",
+    "content": "API test ops note 1784045431755",
+    "attachments": null,
+    "recipients": null,
+    "readBy": null,
+    "createdAt": "2026-07-14T16:10:32.235Z"
+  }
+]

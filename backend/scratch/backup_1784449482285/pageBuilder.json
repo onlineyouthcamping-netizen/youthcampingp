@@ -1,0 +1,377 @@
+[
+  {
+    "id": "cmprxnq2y000kubecxbv2oc61",
+    "tenantId": "default",
+    "name": "home",
+    "sections": [
+      {
+        "id": "05952387-7b17-49e0-b1bf-35cfc5412fcb",
+        "name": "Hero Section",
+        "type": "hero",
+        "draft": {
+          "slides": [
+            {
+              "url": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812108/youthcamping/trips/dy64lqw9mi84jnxaquja.jpg",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812108/youthcamping/trips/dy64lqw9mi84jnxaquja.jpg"
+            },
+            {
+              "url": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812113/youthcamping/trips/qkdacuhbykh5urotkpa0.jpg",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812113/youthcamping/trips/qkdacuhbykh5urotkpa0.jpg"
+            },
+            {
+              "url": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812123/youthcamping/trips/pa1r0ulp6eicfet8h0cw.jpg",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812123/youthcamping/trips/pa1r0ulp6eicfet8h0cw.jpg"
+            },
+            {
+              "url": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812132/youthcamping/trips/lgyx5yk3gjelwxbq3yhq.jpg",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812132/youthcamping/trips/lgyx5yk3gjelwxbq3yhq.jpg"
+            },
+            {
+              "url": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812143/youthcamping/trips/byqxujkqnqjnqkfizufx.jpg",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812143/youthcamping/trips/byqxujkqnqjnqkfizufx.jpg"
+            }
+          ],
+          "padding": "0px",
+          "headline": "Every great story starts with someone who decided to go.",
+          "videoUrl": "",
+          "subheadline": "10,000+ travelers. Trusted since 2019. Government registered.",
+          "videoEnabled": false,
+          "videoPublicId": "",
+          "videoPosterUrl": "",
+          "backgroundColor": "#ffffff",
+          "backgroundImage": ""
+        },
+        "order": 0,
+        "locked": false,
+        "visible": true
+      },
+      {
+        "id": "d2b7cea4-8009-4782-bdc6-7f3b484755b0",
+        "name": "Upcoming Trips",
+        "type": "upcoming_trips",
+        "draft": {
+          "title": "Upcoming Community Trips",
+          "months": [
+            "JUN 26",
+            "JUL 26",
+            "AUG 26",
+            "SEP 26",
+            "OCT 26"
+          ],
+          "padding": "80px",
+          "tripIds": [
+            "cmqnei19o00007mbq3d7entfa",
+            "MKA-1",
+            "MKB",
+            "MKA-2",
+            "SPT-1",
+            "cmqqajdmw0001etvledupjgwk",
+            "cmqqajdvl0003etvly2zv4kb5"
+          ],
+          "backgroundColor": "#ffffff"
+        },
+        "order": 1,
+        "locked": false,
+        "content": {
+          "tripIds": [
+            "cmqnei19o00007mbq3d7entfa"
+          ]
+        },
+        "visible": true
+      },
+      {
+        "id": "9da0928d-d2f3-45da-8e43-a57dbbc7fd46",
+        "type": "cta_slider",
+        "draft": {
+          "items": [
+            {
+              "link": "",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780569877/youthcamping/trips/re5liad08balwwrgjiz1.jpg",
+              "price": "",
+              "title": "",
+              "rating": "",
+              "tagline": ""
+            },
+            {
+              "link": "",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780569891/youthcamping/trips/ezeawqhwkopnsyffnrrf.jpg",
+              "price": "",
+              "title": "",
+              "rating": "",
+              "tagline": ""
+            },
+            {
+              "link": "",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780569908/youthcamping/trips/fbsokjocvm3qw0v8xydf.jpg",
+              "price": "",
+              "title": "",
+              "rating": "",
+              "tagline": ""
+            }
+          ],
+          "title": "OUR FLAGSHIP EXPEDITIONS",
+          "videoUrl": "https://res.cloudinary.com/ddkndagvp/video/upload/v1780810456/youthcamping/videos/nvgu8om3jtn6esqebwch.mp4",
+          "videoEnabled": true,
+          "videoPublicId": "youthcamping/videos/nvgu8om3jtn6esqebwch",
+          "videoPosterUrl": "https://res.cloudinary.com/ddkndagvp/video/upload/v1780810456/youthcamping/videos/nvgu8om3jtn6esqebwch.jpg"
+        },
+        "order": 2,
+        "locked": false,
+        "visible": true
+      },
+      {
+        "id": "691a25df-792c-4e6b-b00a-7cf401ce355c",
+        "name": "Destinations",
+        "type": "destinations",
+        "draft": {
+          "title": "Popular Destinations",
+          "padding": "80px",
+          "destinations": [
+            {
+              "img": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780385169/youthcamping/trips/yx0porx1rvsdifemvyy6.jpg",
+              "name": ""
+            },
+            {
+              "img": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780385171/youthcamping/trips/nygpsjr5yvcwputnbxjw.jpg",
+              "name": ""
+            },
+            {
+              "img": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780385177/youthcamping/trips/zlj6o0ikcrlpszrkechj.jpg",
+              "name": ""
+            },
+            {
+              "img": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780385181/youthcamping/trips/umahm74yrwe4wn6v4clw.jpg",
+              "name": ""
+            },
+            {
+              "img": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780385184/youthcamping/trips/gl2c0pnvtg4z109b49wk.jpg",
+              "name": ""
+            }
+          ],
+          "backgroundColor": "#ffffff"
+        },
+        "order": 3,
+        "locked": false,
+        "visible": true
+      },
+      {
+        "id": "75249f07-30ac-42e8-98fb-16999eca0f27",
+        "name": "New reviews",
+        "type": "reviews",
+        "draft": {
+          "title": "New reviews",
+          "images": [],
+          "padding": "80px",
+          "tripIds": [],
+          "headline": "New reviews",
+          "backgroundColor": "#ffffff"
+        },
+        "order": 4,
+        "locked": false,
+        "visible": true
+      },
+      {
+        "id": "9b513442-3d4b-4596-85c8-e22f992292d5",
+        "name": "New journal",
+        "type": "journal",
+        "draft": {
+          "title": "New journal",
+          "images": [],
+          "padding": "80px",
+          "tripIds": [],
+          "headline": "New journal",
+          "backgroundColor": "#ffffff"
+        },
+        "order": 5,
+        "locked": false,
+        "visible": true
+      }
+    ],
+    "draft": [
+      {
+        "id": "05952387-7b17-49e0-b1bf-35cfc5412fcb",
+        "name": "Hero Section",
+        "type": "hero",
+        "draft": {
+          "slides": [
+            {
+              "url": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812108/youthcamping/trips/dy64lqw9mi84jnxaquja.jpg",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812108/youthcamping/trips/dy64lqw9mi84jnxaquja.jpg"
+            },
+            {
+              "url": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812113/youthcamping/trips/qkdacuhbykh5urotkpa0.jpg",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812113/youthcamping/trips/qkdacuhbykh5urotkpa0.jpg"
+            },
+            {
+              "url": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812123/youthcamping/trips/pa1r0ulp6eicfet8h0cw.jpg",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812123/youthcamping/trips/pa1r0ulp6eicfet8h0cw.jpg"
+            },
+            {
+              "url": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812132/youthcamping/trips/lgyx5yk3gjelwxbq3yhq.jpg",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812132/youthcamping/trips/lgyx5yk3gjelwxbq3yhq.jpg"
+            },
+            {
+              "url": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812143/youthcamping/trips/byqxujkqnqjnqkfizufx.jpg",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780812143/youthcamping/trips/byqxujkqnqjnqkfizufx.jpg"
+            }
+          ],
+          "padding": "0px",
+          "headline": "Every great story starts with someone who decided to go.",
+          "videoUrl": "",
+          "subheadline": "10,000+ travelers. Trusted since 2019. Government registered.",
+          "videoEnabled": false,
+          "videoPublicId": "",
+          "videoPosterUrl": "",
+          "backgroundColor": "#ffffff",
+          "backgroundImage": ""
+        },
+        "order": 0,
+        "locked": false,
+        "visible": true
+      },
+      {
+        "id": "d2b7cea4-8009-4782-bdc6-7f3b484755b0",
+        "name": "Upcoming Trips",
+        "type": "upcoming_trips",
+        "draft": {
+          "title": "Upcoming Community Trips",
+          "months": [
+            "JUN 26",
+            "JUL 26",
+            "AUG 26",
+            "SEP 26",
+            "OCT 26"
+          ],
+          "padding": "80px",
+          "tripIds": [
+            "cmqnei19o00007mbq3d7entfa",
+            "MKA-1",
+            "MKB",
+            "MKA-2",
+            "SPT-1",
+            "cmqqajdmw0001etvledupjgwk",
+            "cmqqajdvl0003etvly2zv4kb5"
+          ],
+          "backgroundColor": "#ffffff"
+        },
+        "order": 1,
+        "locked": false,
+        "content": {
+          "tripIds": [
+            "cmqnei19o00007mbq3d7entfa"
+          ]
+        },
+        "visible": true
+      },
+      {
+        "id": "9da0928d-d2f3-45da-8e43-a57dbbc7fd46",
+        "type": "cta_slider",
+        "draft": {
+          "items": [
+            {
+              "link": "",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780569877/youthcamping/trips/re5liad08balwwrgjiz1.jpg",
+              "price": "",
+              "title": "",
+              "rating": "",
+              "tagline": ""
+            },
+            {
+              "link": "",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780569891/youthcamping/trips/ezeawqhwkopnsyffnrrf.jpg",
+              "price": "",
+              "title": "",
+              "rating": "",
+              "tagline": ""
+            },
+            {
+              "link": "",
+              "image": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780569908/youthcamping/trips/fbsokjocvm3qw0v8xydf.jpg",
+              "price": "",
+              "title": "",
+              "rating": "",
+              "tagline": ""
+            }
+          ],
+          "title": "OUR FLAGSHIP EXPEDITIONS",
+          "videoUrl": "https://res.cloudinary.com/ddkndagvp/video/upload/v1780810456/youthcamping/videos/nvgu8om3jtn6esqebwch.mp4",
+          "videoEnabled": true,
+          "videoPublicId": "youthcamping/videos/nvgu8om3jtn6esqebwch",
+          "videoPosterUrl": "https://res.cloudinary.com/ddkndagvp/video/upload/v1780810456/youthcamping/videos/nvgu8om3jtn6esqebwch.jpg"
+        },
+        "order": 2,
+        "locked": false,
+        "visible": true
+      },
+      {
+        "id": "691a25df-792c-4e6b-b00a-7cf401ce355c",
+        "name": "Destinations",
+        "type": "destinations",
+        "draft": {
+          "title": "Popular Destinations",
+          "padding": "80px",
+          "destinations": [
+            {
+              "img": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780385169/youthcamping/trips/yx0porx1rvsdifemvyy6.jpg",
+              "name": ""
+            },
+            {
+              "img": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780385171/youthcamping/trips/nygpsjr5yvcwputnbxjw.jpg",
+              "name": ""
+            },
+            {
+              "img": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780385177/youthcamping/trips/zlj6o0ikcrlpszrkechj.jpg",
+              "name": ""
+            },
+            {
+              "img": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780385181/youthcamping/trips/umahm74yrwe4wn6v4clw.jpg",
+              "name": ""
+            },
+            {
+              "img": "https://res.cloudinary.com/ddkndagvp/image/upload/v1780385184/youthcamping/trips/gl2c0pnvtg4z109b49wk.jpg",
+              "name": ""
+            }
+          ],
+          "backgroundColor": "#ffffff"
+        },
+        "order": 3,
+        "locked": false,
+        "visible": true
+      },
+      {
+        "id": "75249f07-30ac-42e8-98fb-16999eca0f27",
+        "name": "New reviews",
+        "type": "reviews",
+        "draft": {
+          "title": "New reviews",
+          "images": [],
+          "padding": "80px",
+          "tripIds": [],
+          "headline": "New reviews",
+          "backgroundColor": "#ffffff"
+        },
+        "order": 4,
+        "locked": false,
+        "visible": true
+      },
+      {
+        "id": "9b513442-3d4b-4596-85c8-e22f992292d5",
+        "name": "New journal",
+        "type": "journal",
+        "draft": {
+          "title": "New journal",
+          "images": [],
+          "padding": "80px",
+          "tripIds": [],
+          "headline": "New journal",
+          "backgroundColor": "#ffffff"
+        },
+        "order": 5,
+        "locked": false,
+        "visible": true
+      }
+    ],
+    "createdAt": "2026-05-30T05:51:29.482Z",
+    "updatedAt": "2026-06-27T08:12:12.323Z"
+  }
+]

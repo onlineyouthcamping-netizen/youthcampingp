@@ -83,6 +83,18 @@ model Admin {
   opsActivities            OpsActivity[]    @relation("OpsActivityGuide")
   opsDocuments             OpsDocument[]    @relation("OpsDocUploadedByAdmin")
 
+  // Station Payment Collection relations
+  stationPaymentsCollected   StationPaymentCollection[] @relation("CollectedByAdmin")
+  stationPaymentsReversed    StationPaymentCollection[] @relation("ReversedByAdmin")
+  stationPaymentsVerified    StationPaymentCollection[] @relation("VerifiedByAdmin")
+  cashHandoversAsCollector   StationCashHandover[]      @relation("HandoverCollector")
+  cashHandoversAsRecipient   StationCashHandover[]      @relation("HandoverRecipient")
+  cashHandoversConfirmed     StationCashHandover[]      @relation("HandoverFinanceConfirm")
+  cashHandoversReconciled    StationCashHandover[]      @relation("HandoverReconciler")
+  paymentAccountsCreated     PaymentReceivingAccount[]  @relation("AccountCreatedByAdmin")
+  paymentAccountsApproved    PaymentReceivingAccount[]  @relation("AccountApprovedByAdmin")
+  linkedReceivingAccounts    PaymentReceivingAccount[]  @relation("AccountLinkedAdmin")
+
   @@index([tenantId])
 }
 
@@ -393,8 +405,9 @@ model Booking {
   opsVehicleAllocations OpsVehicleAllocation[]
   opsRoomAllocations    OpsRoomAllocation[]
   documents             BookingDocument[]
-  ticketApprovals       TicketApproval[]
-  opsClientPayments     OpsClientPayment[]
+  ticketApprovals          TicketApproval[]
+  opsClientPayments        OpsClientPayment[]
+  stationPayments          StationPaymentCollection[]
 
   @@index([tenantId])
   @@index([status])
@@ -3497,4 +3510,176 @@ model TravelDeskAuditLog {
 
   @@index([workspaceId])
   @@index([entityType, entityId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATION PAYMENT COLLECTION MODULE
+// ═══════════════════════════════════════════════════════════════
+
+enum StationPaymentMode {
+  CASH
+  UPI
+}
+
+enum StationUpiStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+}
+
+enum StationCollectionStatus {
+  COLLECTED
+  CANCELLED
+  REVERSED
+}
+
+enum StationHandoverStatus {
+  PENDING
+  HANDED_OVER
+  CONFIRMED
+  RECONCILED
+}
+
+enum ReceivingAccountType {
+  BANK
+  UPI
+}
+
+enum ReceivingAccountOwnership {
+  COMPANY
+  STAFF
+  PARTNER
+}
+
+// ── Approved accounts that can receive station payments ──
+model PaymentReceivingAccount {
+  id                  String                   @id @default(cuid())
+  tenantId            String                   @default("default")
+  accountName         String                   // Display name shown in dropdowns
+  accountHolderName   String
+  accountType         ReceivingAccountType
+  ownershipType       ReceivingAccountOwnership
+  bankName            String?
+  maskedAccountNumber String?                  // e.g. XXXX9482
+  upiId               String?                  // Masked UPI ID: abc***@okaxis
+  linkedAdminId       String?                  // FK → Admin (for STAFF accounts)
+  isApproved          Boolean                  @default(false)
+  isActive            Boolean                  @default(true)
+  createdByAdminId    String?
+  approvedByAdminId   String?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  linkedAdmin         Admin?                   @relation("AccountLinkedAdmin", fields: [linkedAdminId], references: [id], onDelete: SetNull)
+  createdBy           Admin?                   @relation("AccountCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  approvedBy          Admin?                   @relation("AccountApprovedByAdmin", fields: [approvedByAdminId], references: [id], onDelete: SetNull)
+  collections         StationPaymentCollection[]
+
+  @@index([tenantId])
+  @@index([tenantId, isActive, isApproved])
+}
+
+// ── One record per payment event — immutable once created ──
+model StationPaymentCollection {
+  id                   String                  @id @default(cuid())
+  tenantId             String                  @default("default")
+  receiptNumber        String                  @unique  // YC-PAY-2026-000001
+
+  // Booking context
+  bookingId            String                  // refs Booking.bookingId
+  tripId               String
+  departureDate        DateTime                @db.Date
+  station              String
+  platform             String?
+
+  // Payment details
+  paymentMode          StationPaymentMode
+  amount               Float
+  previousPaid         Float                   // Snapshot at collection time
+  newTotalPaid         Float                   // previousPaid + amount (only for CASH or Verified UPI)
+  newRemaining         Float
+  paymentStatus        String                  // PAID | PARTIAL (booking payment status at time of record)
+
+  // Collection metadata
+  collectedByAdminId   String
+  collectedAt          DateTime
+  collectedFrom        String                  // Person's name
+  collectedFromMobile  String?
+  remarks              String?                 @db.Text
+  proofImageUrl        String?
+
+  // UPI-specific fields
+  utrNumber            String?                 // UTR / Transaction ID (required for UPI)
+  receivingAccountId   String?                 // FK → PaymentReceivingAccount
+  upiVerificationStatus StationUpiStatus?      // Only for UPI payments
+  verifiedByAdminId    String?
+  verifiedAt           DateTime?
+
+  // Status
+  collectionStatus     StationCollectionStatus @default(COLLECTED)
+  emailStatus          String                  @default("PENDING") // PENDING | SENT | FAILED
+  emailSentAt          DateTime?
+
+  // Reversal / Cancellation
+  isReversed           Boolean                 @default(false)
+  reversedAt           DateTime?
+  reversedByAdminId    String?
+  reversalReason       String?                 @db.Text
+
+  // Cash handover linkage
+  handoverId           String?
+
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  // Relations
+  booking              Booking                 @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  collectedBy          Admin                   @relation("CollectedByAdmin", fields: [collectedByAdminId], references: [id])
+  reversedBy           Admin?                  @relation("ReversedByAdmin", fields: [reversedByAdminId], references: [id], onDelete: SetNull)
+  verifiedBy           Admin?                  @relation("VerifiedByAdmin", fields: [verifiedByAdminId], references: [id], onDelete: SetNull)
+  receivingAccount     PaymentReceivingAccount? @relation(fields: [receivingAccountId], references: [id], onDelete: SetNull)
+  handover             StationCashHandover?    @relation(fields: [handoverId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([bookingId])
+  @@index([tripId, departureDate])
+  @@index([collectedByAdminId])
+  @@index([utrNumber])
+  @@unique([tenantId, utrNumber])  // Prevent duplicate UTR within tenant
+}
+
+// ── Physical cash handover from collector to Finance ──
+model StationCashHandover {
+  id                   String                @id @default(cuid())
+  tenantId             String                @default("default")
+  collectorId          String
+  tripId               String
+  departureDate        DateTime              @db.Date
+  station              String
+  amountExpected       Float                 // Sum of CASH collections by this collector
+  amountHandedOver     Float                 @default(0)
+  handoverStatus       StationHandoverStatus @default(PENDING)
+  handoverRecipientId  String?               // Finance Admin who receives
+  handoverAt           DateTime?
+  handoverReference    String?
+  remarks              String?               @db.Text
+  shortageAmount       Float                 @default(0)
+  excessAmount         Float                 @default(0)
+  financeConfirmedById String?               // Must ≠ collectorId
+  financeConfirmedAt   DateTime?
+  reconciledById       String?               // Must ≠ collectorId
+  reconciledAt         DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  // Relations
+  collector            Admin                 @relation("HandoverCollector", fields: [collectorId], references: [id])
+  handoverRecipient    Admin?                @relation("HandoverRecipient", fields: [handoverRecipientId], references: [id], onDelete: SetNull)
+  financeConfirmedBy   Admin?                @relation("HandoverFinanceConfirm", fields: [financeConfirmedById], references: [id], onDelete: SetNull)
+  reconciledBy         Admin?                @relation("HandoverReconciler", fields: [reconciledById], references: [id], onDelete: SetNull)
+  collections          StationPaymentCollection[]
+
+  @@index([tenantId])
+  @@index([collectorId])
+  @@index([tripId, departureDate])
 }

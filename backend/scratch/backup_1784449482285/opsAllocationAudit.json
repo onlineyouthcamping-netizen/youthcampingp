@@ -1,0 +1,110 @@
+[
+  {
+    "id": "cmrm1v7tq0001fscd07pdj1g4",
+    "tenantId": "default",
+    "tripId": "SPT-1",
+    "departureDate": "2026-07-14T00:00:00.000Z",
+    "action": "CLEAR",
+    "actorId": "test-actor-id",
+    "actorName": "test-actor-name",
+    "roomCount": 0,
+    "vehicleCount": 0,
+    "cleared": true,
+    "metadata": {
+      "clearExisting": true,
+      "requestedRooms": 0,
+      "requestedVehicles": 0
+    },
+    "createdAt": "2026-07-15T12:22:05.150Z"
+  },
+  {
+    "id": "cmrm24nyf000a8aay6mezfra5",
+    "tenantId": "default",
+    "tripId": "SPT-1",
+    "departureDate": "2026-07-14T00:00:00.000Z",
+    "action": "MANUAL_SAVE",
+    "actorId": "cmrda7nh10000gs2qzft4u5ki",
+    "actorName": null,
+    "roomCount": 1,
+    "vehicleCount": 1,
+    "cleared": false,
+    "metadata": {
+      "clearExisting": false,
+      "requestedRooms": 1,
+      "requestedVehicles": 1
+    },
+    "createdAt": "2026-07-15T12:29:25.959Z"
+  },
+  {
+    "id": "cmrnd0n7j000na730egz5ybem",
+    "tenantId": "default",
+    "tripId": "SPT-1",
+    "departureDate": "2026-07-21T00:00:00.000Z",
+    "action": "MANUAL_SAVE",
+    "actorId": "admin_master_prod",
+    "actorName": null,
+    "roomCount": 11,
+    "vehicleCount": 0,
+    "cleared": false,
+    "metadata": {
+      "clearExisting": false,
+      "requestedRooms": 11,
+      "requestedVehicles": 0
+    },
+    "createdAt": "2026-07-16T10:22:00.320Z"
+  },
+  {
+    "id": "cmrne5x070017fkf1dctenhic",
+    "tenantId": "default",
+    "tripId": "SPT-1",
+    "departureDate": "2026-07-21T00:00:00.000Z",
+    "action": "MANUAL_SAVE",
+    "actorId": "admin_master_prod",
+    "actorName": null,
+    "roomCount": 11,
+    "vehicleCount": 0,
+    "cleared": false,
+    "metadata": {
+      "clearExisting": true,
+      "requestedRooms": 11,
+      "requestedVehicles": 0
+    },
+    "createdAt": "2026-07-16T10:54:05.911Z"
+  },
+  {
+    "id": "cmrnftc48002xfkf12d8j1s06",
+    "tenantId": "default",
+    "tripId": "SPT-1",
+    "departureDate": "2026-07-21T00:00:00.000Z",
+    "action": "MANUAL_SAVE",
+    "actorId": "admin_master_prod",
+    "actorName": null,
+    "roomCount": 11,
+    "vehicleCount": 11,
+    "cleared": false,
+    "metadata": {
+      "clearExisting": false,
+      "requestedRooms": 11,
+      "requestedVehicles": 11
+    },
+    "createdAt": "2026-07-16T11:40:18.200Z"
+  },
+  {
+    "id": "cmrnjs4qa001m69ghftby6itf",
+    "tenantId": "default",
+    "tripId": "SPT-1",
+    "departureDate": "2026-07-21T00:00:00.000Z",
+    "action": "MANUAL_SAVE",
+    "actorId": "admin_master_prod",
+    "actorName": null,
+    "roomCount": 11,
+    "vehicleCount": 11,
+    "cleared": false,
+    "metadata": {
+      "clearExisting": true,
+      "requestedRooms": 11,
+      "requestedVehicles": 11
+    },
+    "createdAt": "2026-07-16T13:31:20.434Z"
+  }
+]

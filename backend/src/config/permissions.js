@@ -108,7 +108,20 @@ const PERMISSIONS = [
   
   // Customer Timeline
   'customers.timeline.view',
-  'customers.timeline.view_finance'
+  'customers.timeline.view_finance',
+
+  // Station Payment Collection
+  'station_payments.view',
+  'station_payments.collect',
+  'station_payments.edit_before_handover',
+  'station_payments.cancel',
+  'station_payments.handover',
+  'station_payments.receive',
+  'station_payments.reconcile',
+  'station_payments.export',
+  'station_payments.resend_receipt',
+  'station_payments.manage_accounts',
+  'station_payments.verify_upi'
 ];
 
 const ROLE_PERMISSIONS = {
@@ -174,7 +187,19 @@ const ROLE_PERMISSIONS = {
     'package.vendor.select',
     'ops.vendor.allocate',
     'ops.vendor.confirm',
-    'ops.vendor.rate.override'
+    'ops.vendor.rate.override',
+    // Station Payment Collection
+    'station_payments.view',
+    'station_payments.collect',
+    'station_payments.edit_before_handover',
+    'station_payments.cancel',
+    'station_payments.handover',
+    'station_payments.receive',
+    'station_payments.reconcile',
+    'station_payments.export',
+    'station_payments.resend_receipt',
+    'station_payments.manage_accounts',
+    'station_payments.verify_upi'
   ],
 
   sales: [
@@ -211,7 +236,9 @@ const ROLE_PERMISSIONS = {
     'customers.view',
     'customers.timeline.view',
     'company_documents.view',
-    'recurring_tasks.view'
+    'recurring_tasks.view',
+    // Station Payment Collection - sales view own bookings
+    'station_payments.view'
   ],
 
   operations: [
@@ -251,7 +278,14 @@ const ROLE_PERMISSIONS = {
     'activity.view',
     'company_documents.view',
     'recurring_tasks.view',
-    'recurring_tasks.assign'
+    'recurring_tasks.assign',
+    // Station Payment Collection - ops can collect and handover
+    'station_payments.view',
+    'station_payments.collect',
+    'station_payments.edit_before_handover',
+    'station_payments.cancel',
+    'station_payments.handover',
+    'station_payments.resend_receipt'
   ],
 
   finance: [
@@ -264,14 +298,24 @@ const ROLE_PERMISSIONS = {
     'accounting.view',
     'accounting.approve',
     'emails.view',
-    'emails.send'
+    'emails.send',
+    // Station Payment Collection - finance verifies, receives, reconciles
+    'station_payments.view',
+    'station_payments.receive',
+    'station_payments.reconcile',
+    'station_payments.export',
+    'station_payments.manage_accounts',
+    'station_payments.verify_upi'
   ],
 
   guide: [
     'trips.view',
     'bookings.view',
     'operations.view',
-    'operations.edit'
+    'operations.edit',
+    // Station Payment Collection - guides can view and collect for assigned departures
+    'station_payments.view',
+    'station_payments.collect'
   ],
 
   viewer: [

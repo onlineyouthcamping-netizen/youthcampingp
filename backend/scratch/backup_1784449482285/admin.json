@@ -1,0 +1,67 @@
+[
+  {
+    "id": "cmqqnir78000u3jieoddcq8x9",
+    "email": "parthyouthcamping@gmail.com",
+    "password": "$2a$10$Rkb6dSTJJfPynseJFUUEjunP7bIfpFn4zpluGM4EGPg7TVMbP.SjC",
+    "name": "Parth Patel",
+    "role": "sales",
+    "isActive": true,
+    "tokenVersion": 0,
+    "lastLoginAt": "2026-07-14T16:15:56.580Z",
+    "tenantId": "default",
+    "createdAt": "2026-06-23T12:59:37.653Z",
+    "updatedAt": "2026-07-14T16:15:56.581Z"
+  },
+  {
+    "id": "cmrj7fmv80002sy2gkrxzyt33",
+    "email": "nikkiyouthcamping@gmail.com",
+    "password": "$2a$10$IDEDtbWJKlxNWhZJcV49DuznqOAK9zE0b9xNvtmJi8cXHjFAhFl66",
+    "name": "Neeki Diyali",
+    "role": "superadmin",
+    "isActive": true,
+    "tokenVersion": 2,
+    "lastLoginAt": "2026-07-17T08:38:25.057Z",
+    "tenantId": "default",
+    "createdAt": "2026-07-13T12:34:37.316Z",
+    "updatedAt": "2026-07-17T08:38:25.058Z"
+  },
+  {
+    "id": "admin_master_prod",
+    "email": "admin@youthcamping.online",
+    "password": "$2a$10$L6DxbyzmpFg2XfD/Dv/0k.vuO7o7aMxM/yv4vjI1GO/OgcYAI37FW",
+    "name": "Super Admin",
+    "role": "superadmin",
+    "isActive": true,
+    "tokenVersion": 0,
+    "lastLoginAt": "2026-07-19T07:37:45.679Z",
+    "tenantId": "default",
+    "createdAt": "2026-06-23T06:56:27.096Z",
+    "updatedAt": "2026-07-19T07:37:45.681Z"
+  },
+  {
+    "id": "cmqqak0vf0000q8we4jj167p8",
+    "email": "admin@youthcamping.in",
+    "password": "$2a$10$r7GAE9a.n6BI1o2dapNYH.X1f5NH3VHlo52dgY8MpSsznhBczq99.",
+    "name": "YouthCamping Admin",
+    "role": "superadmin",
+    "isActive": true,
+    "tokenVersion": 0,
+    "lastLoginAt": null,
+    "tenantId": "default",
+    "createdAt": "2026-06-23T06:56:41.835Z",
+    "updatedAt": "2026-07-15T10:17:08.490Z"
+  },
+  {
+    "id": "cmrda7nh10000gs2qzft4u5ki",
+    "email": "admin@test.com",
+    "password": "$2a$10$Udi1RmbthIyedz59Bq4k9ev/la0iOwAC8ve0X/XNQshLNjg/7O71S",
+    "name": "Test Admin",
+    "role": "admin",
+    "isActive": true,
+    "tokenVersion": 0,
+    "lastLoginAt": "2026-07-15T12:29:24.409Z",
+    "tenantId": "default",
+    "createdAt": "2026-07-09T09:05:46.645Z",
+    "updatedAt": "2026-07-15T12:29:24.410Z"
+  }
+]

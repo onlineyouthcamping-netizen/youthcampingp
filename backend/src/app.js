@@ -154,6 +154,7 @@ app.use('/api/travel-desk', require('./routes/travelDeskRoutes'));
 app.use('/api/package-builder', require('./routes/packageBuilderRoutes'));
 app.use('/api/erp', require('./routes/erpRoutes'));
 app.use('/api/tickets', require('./routes/ticketApprovalRoutes'));
+app.use('/api/station-payments', require('./routes/stationPaymentRoutes'));
 
 const { protect: protectAnalytics } = require('./middleware/auth');
 const { getBookingLinksAnalytics } = require('./controllers/bookingLinkController');

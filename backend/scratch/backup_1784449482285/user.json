@@ -1,0 +1,13 @@
+[
+  {
+    "id": "cmrda7xbx0000eflausq1c92u",
+    "tenantId": "default",
+    "name": "Test Traveler",
+    "email": "traveler@test.com",
+    "password": "$2a$10$qiUEwoDwATepifRKULRqd.LBBriuN.tzojkvYS9MIDyYp22TH5jpm",
+    "phone": null,
+    "role": "user",
+    "createdAt": "2026-07-09T09:05:59.422Z",
+    "updatedAt": "2026-07-09T09:07:26.859Z"
+  }
+]

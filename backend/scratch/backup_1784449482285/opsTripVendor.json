@@ -1,0 +1,122 @@
+[
+  {
+    "id": "cmrlvn5i7001vp8kwwg7wa953",
+    "tripId": "SPT-1",
+    "vendorId": "cmrlvn5e3001tp8kw73xlrd4v",
+    "category": "HOTEL",
+    "preferred": false,
+    "priority": 0,
+    "active": true,
+    "notes": null,
+    "createdAt": "2026-07-15T09:27:51.199Z",
+    "updatedAt": "2026-07-15T09:27:51.199Z"
+  },
+  {
+    "id": "cmrlvn6870024p8kwf3mpf3x6",
+    "tripId": "SPT-1",
+    "vendorId": "cmrlvn61h0022p8kw13x5q4yj",
+    "category": "HOTEL",
+    "preferred": false,
+    "priority": 0,
+    "active": true,
+    "notes": null,
+    "createdAt": "2026-07-15T09:27:52.135Z",
+    "updatedAt": "2026-07-15T09:27:52.135Z"
+  },
+  {
+    "id": "cmrlvn6vk002dp8kwyzvl8x8p",
+    "tripId": "SPT-1",
+    "vendorId": "cmrlvn6ri002bp8kw963phwh6",
+    "category": "HOTEL",
+    "preferred": false,
+    "priority": 0,
+    "active": true,
+    "notes": null,
+    "createdAt": "2026-07-15T09:27:52.976Z",
+    "updatedAt": "2026-07-15T09:27:52.976Z"
+  },
+  {
+    "id": "cmrlvn7ck002kp8kwbyylguap",
+    "tripId": "SPT-1",
+    "vendorId": "cmrlvn78b002ip8kwywmah5bz",
+    "category": "HOTEL",
+    "preferred": false,
+    "priority": 0,
+    "active": true,
+    "notes": null,
+    "createdAt": "2026-07-15T09:27:53.589Z",
+    "updatedAt": "2026-07-15T09:27:53.589Z"
+  },
+  {
+    "id": "cmrlvn7pe002pp8kw5untv4oh",
+    "tripId": "SPT-1",
+    "vendorId": "cmrlvn7l8002np8kw6u3750hu",
+    "category": "HOTEL",
+    "preferred": false,
+    "priority": 0,
+    "active": true,
+    "notes": null,
+    "createdAt": "2026-07-15T09:27:54.051Z",
+    "updatedAt": "2026-07-15T09:27:54.051Z"
+  },
+  {
+    "id": "cmrlvn834002up8kwe90i2coe",
+    "tripId": "SPT-1",
+    "vendorId": "cmrlvn7yf002sp8kwcaxtlo0t",
+    "category": "HOTEL",
+    "preferred": false,
+    "priority": 0,
+    "active": true,
+    "notes": null,
+    "createdAt": "2026-07-15T09:27:54.544Z",
+    "updatedAt": "2026-07-15T09:27:54.544Z"
+  },
+  {
+    "id": "cmrlvn8g0002zp8kw0vsbkh3y",
+    "tripId": "SPT-1",
+    "vendorId": "cmrlvn8bn002xp8kwtk3xjc0v",
+    "category": "HOTEL",
+    "preferred": false,
+    "priority": 0,
+    "active": true,
+    "notes": null,
+    "createdAt": "2026-07-15T09:27:55.008Z",
+    "updatedAt": "2026-07-15T09:27:55.008Z"
+  },
+  {
+    "id": "cmrlvn8t00034p8kwqbgemcd6",
+    "tripId": "SPT-1",
+    "vendorId": "cmrlvn8om0032p8kw51k4mdbu",
+    "category": "HOTEL",
+    "preferred": false,
+    "priority": 0,
+    "active": true,
+    "notes": null,
+    "createdAt": "2026-07-15T09:27:55.476Z",
+    "updatedAt": "2026-07-15T09:27:55.476Z"
+  },
+  {
+    "id": "cmrlvn9600039p8kwfzsonpv9",
+    "tripId": "SPT-1",
+    "vendorId": "cmrlvn91k0037p8kw2009eroq",
+    "category": "TRANSPORT",
+    "preferred": false,
+    "priority": 0,
+    "active": true,
+    "notes": null,
+    "createdAt": "2026-07-15T09:27:55.944Z",
+    "updatedAt": "2026-07-15T09:27:55.944Z"
+  },
+  {
+    "id": "cmrlwx5go0006dr3lqa2j8582",
+    "tripId": "SPT-1",
+    "vendorId": "cmrlwx4t20000dr3lgz2lq80c",
+    "category": "HOTEL",
+    "preferred": false,
+    "priority": 0,
+    "active": true,
+    "notes": null,
+    "createdAt": "2026-07-15T10:03:37.320Z",
+    "updatedAt": "2026-07-15T10:03:37.320Z"
+  }
+]

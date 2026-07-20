@@ -7,6 +7,9 @@ const { prisma } = require('../lib/prisma');
 exports.getNotifications = async (req, res, next) => {
   try {
     const { tenantId = 'default' } = req.query;
+    if (!prisma.notification) {
+      return res.json({ success: true, data: [] });
+    }
     const notifications = await prisma.notification.findMany({
       where: {
         recipientUserId: req.user.id,

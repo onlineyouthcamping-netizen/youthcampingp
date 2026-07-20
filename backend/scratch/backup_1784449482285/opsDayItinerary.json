@@ -1,0 +1,21 @@
+[
+  {
+    "id": "cmqwbwsoo000f18mxes97rm5p",
+    "tenantId": "default",
+    "tripId": "MKA-1",
+    "departureDate": "2026-06-27T00:00:00.000Z",
+    "date": null,
+    "dayTitle": "barpa ",
+    "paxCount": 19,
+    "hotelName": "bb",
+    "hotelVerified": false,
+    "vehicleType": "twmpo",
+    "vehicleVerified": false,
+    "remarks": null,
+    "guideDriverDetails": null,
+    "guideVerified": false,
+    "checkInDone": true,
+    "createdAt": "2026-06-27T12:21:14.425Z",
+    "updatedAt": "2026-06-27T12:21:39.112Z"
+  }
+]
