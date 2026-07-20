@@ -298,6 +298,192 @@ exports.getStats = async (req, res, next) => {
     const pendingVendorsCost = (pendingVendorsResult._sum.agreedCost || 0) - (pendingVendorsResult._sum.paidAmount || 0);
     const pendingVendorsCount = pendingVendorsCountResult || 0;
 
+    // Helper functions for dynamic trip operations
+    function getDurationInDays(durationStr) {
+      const match = String(durationStr || '').match(/(\d+)\s*D/i);
+      return match ? parseInt(match[1], 10) : 7;
+    }
+
+    function getShortName(title) {
+      return title.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 4);
+    }
+
+    function formatDateDayMonth(date) {
+      return new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    }
+
+    function formatDateDayMonthYear(date) {
+      return new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    // 1. Trips Running Now (Active departures)
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(today.getDate() - 15);
+    fifteenDaysAgo.setHours(0, 0, 0, 0);
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const activeBookings = await prisma.booking.findMany({
+      where: {
+        tenantId,
+        status: { in: ['confirmed', 'Confirmed', 'paid', 'Paid'] },
+        departureDate: {
+          gte: fifteenDaysAgo,
+          lte: endOfToday
+        }
+      },
+      include: {
+        tripRef: true
+      }
+    });
+
+    const activeGroups = {};
+    for (const b of activeBookings) {
+      if (!b.departureDate || !b.tripRef) continue;
+      const durationDays = getDurationInDays(b.tripRef.duration);
+      const depTime = new Date(b.departureDate).getTime();
+      const endTime = depTime + durationDays * 24 * 60 * 60 * 1000;
+
+      if (endTime >= startOfToday.getTime()) {
+        const key = `${b.tripId}_${b.departureDate.toISOString()}`;
+        if (!activeGroups[key]) {
+          activeGroups[key] = {
+            trip: b.tripRef,
+            departureDate: b.departureDate,
+            travelers: 0
+          };
+        }
+        activeGroups[key].travelers += b.numberOfTravelers || 1;
+      }
+    }
+
+    const tripsRunningNow = Object.values(activeGroups).map((g) => {
+      const depTime = new Date(g.departureDate).getTime();
+      const currentDay = Math.floor((today.getTime() - depTime) / (24 * 60 * 60 * 1000)) + 1;
+      let stay = `Day ${currentDay}`;
+      
+      // Try to determine stay from itinerary if available
+      try {
+        if (g.trip.itinerary && Array.isArray(g.trip.itinerary)) {
+          const dayPlan = g.trip.itinerary.find(item => item.day === currentDay);
+          if (dayPlan && dayPlan.title) {
+            stay = dayPlan.title;
+          }
+        }
+      } catch (e) {}
+
+      return {
+        code: `${g.trip.shortName || getShortName(g.trip.title)} - ${formatDateDayMonth(g.departureDate)}`,
+        name: g.trip.title,
+        size: g.travelers,
+        stay
+      };
+    });
+
+    // 2. Trips Departing Next 7 Days
+    const sevenDaysLater = new Date();
+    sevenDaysLater.setDate(today.getDate() + 7);
+    sevenDaysLater.setHours(23, 59, 59, 999);
+
+    const upcomingBookings = await prisma.booking.findMany({
+      where: {
+        tenantId,
+        status: { in: ['confirmed', 'Confirmed', 'paid', 'Paid'] },
+        departureDate: {
+          gt: endOfToday,
+          lte: sevenDaysLater
+        }
+      },
+      include: {
+        tripRef: true
+      }
+    });
+
+    const upcomingGroups = {};
+    for (const b of upcomingBookings) {
+      if (!b.departureDate || !b.tripRef) continue;
+      const key = `${b.tripId}_${b.departureDate.toISOString()}`;
+      if (!upcomingGroups[key]) {
+        upcomingGroups[key] = {
+          trip: b.tripRef,
+          departureDate: b.departureDate,
+          travelers: 0
+        };
+      }
+      upcomingGroups[key].travelers += b.numberOfTravelers || 1;
+    }
+
+    const tripsDepartingNext7Days = Object.values(upcomingGroups).map((g) => {
+      const maxGroupSize = g.trip.maxGroupSize || 40;
+      return {
+        name: g.trip.title,
+        date: formatDateDayMonthYear(g.departureDate),
+        count: `${g.travelers}/${maxGroupSize}`,
+        status: g.travelers >= maxGroupSize ? 'full' : 'normal'
+      };
+    });
+
+    // 3. Today's Schedule (Booking Tasks due today)
+    const todayTasks = await prisma.bookingTask.findMany({
+      where: {
+        tenantId,
+        dueDate: {
+          gte: startOfToday,
+          lte: endOfToday
+        }
+      },
+      orderBy: {
+        dueDate: 'asc'
+      },
+      take: 10
+    });
+
+    const todaysSchedule = todayTasks.map(t => {
+      const timeStr = t.dueDate 
+        ? new Date(t.dueDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) 
+        : 'All Day';
+      return {
+        time: timeStr,
+        label: t.title,
+        color: t.status === 'COMPLETED' ? 'bg-[#16A34A]' : (t.dueDate < today ? 'bg-[#E23D4D]' : 'bg-[#2563EB]')
+      };
+    });
+
+    // 4. Cash Flow Overview
+    const todayInflow = await prisma.payment.aggregate({
+      where: {
+        tenantId,
+        status: { in: ['success', 'SUCCESS', 'Paid', 'paid'] },
+        createdAt: {
+          gte: startOfToday,
+          lte: endOfToday
+        }
+      },
+      _sum: {
+        amount: true
+      }
+    });
+
+    const todayOutflow = await prisma.opsMiscExpense.aggregate({
+      where: {
+        tenantId,
+        createdAt: {
+          gte: startOfToday,
+          lte: endOfToday
+        }
+      },
+      _sum: {
+        amount: true
+      }
+    });
+
+    const collectionToday = todayInflow._sum.amount || 0;
+    const paymentsToday = todayOutflow._sum.amount || 0;
+    const netCashInflow = collectionToday - paymentsToday;
+
     const resData = {
       bookings: totalBookings,
       trips: totalTrips,
@@ -333,7 +519,15 @@ exports.getStats = async (req, res, next) => {
         { label: "Tasks pending > 24 hours", count: tasksOver24Count, color: "bg-[#E23D4D]", urgent: true, path: "/admin/departure-workspace" },
         { label: "Missing train tickets", count: missingTicketsCount, color: "bg-[#E23D4D]", urgent: true, path: "/admin/approvals-hub?tab=ticket-approvals" },
         { label: "Missing tempo confirmation", count: tempoPendingCount, color: "bg-[#D97706]", path: "/admin/departure-workspace" }
-      ]
+      ],
+      tripsRunningNow,
+      tripsDepartingNext7Days,
+      todaysSchedule,
+      cashFlow: {
+        collectionToday,
+        paymentsToday,
+        netCashInflow
+      }
     };
 
     // Cache the data in Redis for 15 seconds
