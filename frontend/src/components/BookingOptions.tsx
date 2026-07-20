@@ -48,7 +48,7 @@ export default function BookingOptions({
 
   useEffect(() => {
     const variant = variants[selectedVariant];
-    const basePrice = variant?.discountedPrice || trip.price;
+    const basePrice = variant?.discountedPrice ?? trip.price;
     const isDirectJoin = variant?.excludeTravel === true;
     const travelDelta = isDirectJoin ? 0 : (travelOptions[selectedTravel]?.priceDelta || 0);
     const roomDelta = roomOptions[selectedRoom]?.priceDelta || 0;
