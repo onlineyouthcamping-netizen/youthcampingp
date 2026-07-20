@@ -1031,12 +1031,18 @@ exports.getEffectiveTemplates = async (req, res) => {
       return res.status(400).json({ success: false, message: 'tripId and departureDate are required' });
     }
 
+    const parsedDate = (departureDate && departureDate !== 'undefined' && departureDate !== 'null') 
+      ? new Date(departureDate) 
+      : null;
+      
+    const isValidDate = parsedDate && !isNaN(parsedDate.getTime());
+
     const templates = await prisma.trainTemplate.findMany({
       where: {
         tenantId: req.user.tenantId,
         tripId,
         isActive: true,
-        departureDate: { in: [null, new Date(departureDate)] }
+        ...(isValidDate ? { departureDate: { in: [null, parsedDate] } } : { departureDate: null })
       }
     });
 
