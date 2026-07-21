@@ -156,6 +156,7 @@ exports.getDashboard = async (req, res) => {
         id: bk.id, bookingId: bk.bookingId, name: bk.fullName || bk.name,
         phone: bk.phone || bk.mobile, email: bk.email, pickupCity: bk.pickupCity,
         salesperson: bk.salesAdmin?.name, salespersonId: bk.salesAdminId,
+        numberOfPersons: bk.numberOfTravelers || 1,
         finalAmount, previousPaid: prevPaidBeforeStation, remaining: Math.max(0, finalAmount - prevPaidBeforeStation),
         cashCollected: cashAmt, upiCollected: upiAmt, verifiedUpi: verifiedAmt, pendingUpi: pendingAmt,
         stationTotal, grandTotal, grandRemaining: remaining,
