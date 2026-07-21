@@ -252,7 +252,7 @@ exports.approveAccount = async (req, res) => {
 exports.collect = async (req, res) => {
   try {
     const tenantId = req.user?.tenantId || 'default';
-    const { bookingId, tripId, departureDate, station, platform, paymentMode, amount, collectedFrom, collectedFromMobile, collectedAt, remarks, proofImageUrl, utrNumber, receivingAccountId } = req.body;
+    const { bookingId, tripId, departureDate, station, platform, paymentMode, amount, collectedFrom, collectedFromMobile, collectedAt, remarks, proofImageUrl, utrNumber, receivingAccountId, customAccountName } = req.body;
 
     if (!bookingId || !tripId || !departureDate || !station || !paymentMode || !amount || !collectedFrom)
       return res.status(400).json({ success: false, message: 'bookingId, tripId, departureDate, station, paymentMode, amount, collectedFrom are required' });
@@ -260,8 +260,8 @@ exports.collect = async (req, res) => {
       return res.status(400).json({ success: false, message: 'paymentMode must be CASH or UPI' });
     if (paymentMode === 'UPI' && !utrNumber)
       return res.status(400).json({ success: false, message: 'UTR / Transaction ID is required for UPI payments' });
-    if (paymentMode === 'UPI' && !receivingAccountId)
-      return res.status(400).json({ success: false, message: 'Receiving account is required for UPI payments' });
+    if (paymentMode === 'UPI' && !receivingAccountId && !customAccountName)
+      return res.status(400).json({ success: false, message: 'Receiving account or custom account name is required for UPI payments' });
 
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0)
@@ -286,9 +286,14 @@ exports.collect = async (req, res) => {
       const dup = await prisma.stationPaymentCollection.findFirst({ where: { tenantId, bookingId, paymentMode: 'CASH', amount: parsedAmount, collectedByAdminId: req.user?.id, createdAt: { gte: sixtySecsAgo } } });
       if (dup) return res.status(409).json({ success: false, message: 'Duplicate submission detected. Wait 60 seconds.' });
     }
-    if (paymentMode === 'UPI') {
+    if (paymentMode === 'UPI' && receivingAccountId) {
       const acct = await prisma.paymentReceivingAccount.findFirst({ where: { id: receivingAccountId, tenantId, isActive: true, isApproved: true } });
       if (!acct) return res.status(400).json({ success: false, message: 'Selected receiving account is not active or Finance-approved' });
+    }
+    
+    let finalRemarks = remarks || '';
+    if (paymentMode === 'UPI' && customAccountName) {
+      finalRemarks = `Received in Custom Account: ${customAccountName}${finalRemarks ? ' | ' + finalRemarks : ''}`;
     }
 
     const receiptNumber = await generateReceiptNumber(tenantId);
@@ -308,9 +313,9 @@ exports.collect = async (req, res) => {
           collectedByAdminId: req.user?.id,
           collectedAt: collectedAt ? new Date(collectedAt) : new Date(),
           collectedFrom, collectedFromMobile: collectedFromMobile||null,
-          remarks: remarks||null, proofImageUrl: proofImageUrl||null,
+          remarks: finalRemarks||null, proofImageUrl: proofImageUrl||null,
           utrNumber: paymentMode === 'UPI' ? utrNumber : null,
-          receivingAccountId: paymentMode === 'UPI' ? receivingAccountId : null,
+          receivingAccountId: (paymentMode === 'UPI' && receivingAccountId) ? receivingAccountId : null,
           upiVerificationStatus: paymentMode === 'UPI' ? 'PENDING_VERIFICATION' : null,
           collectionStatus: 'COLLECTED', emailStatus: 'PENDING'
         },
@@ -351,8 +356,8 @@ exports.collect = async (req, res) => {
     setImmediate(async () => {
       try {
         const adminRec = await prisma.admin.findUnique({ where: { id: req.user?.id }, select: { name: true } });
-        const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { name: true } });
-        const emailStatus = await sendReceiptEmail({ ...collection, receivingAccount: collection.receivingAccount }, booking, trip?.name || 'Trip', adminRec?.name || 'Staff');
+        const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { title: true } });
+        const emailStatus = await sendReceiptEmail({ ...collection, receivingAccount: collection.receivingAccount }, booking, trip?.title || 'Trip', adminRec?.name || 'Staff');
         await prisma.stationPaymentCollection.update({ where: { id: collection.id }, data: { emailStatus, emailSentAt: emailStatus === 'SENT' ? new Date() : null } });
       } catch (e) { console.error('[StationPayment] Async email error:', e); }
     });
@@ -439,12 +444,15 @@ exports.resendEmail = async (req, res) => {
     const record = await prisma.stationPaymentCollection.findUnique({ where: { id: req.params.id }, include: { receivingAccount: true } });
     if (!record) return res.status(404).json({ success: false, message: 'Not found' });
     const booking = await prisma.booking.findUnique({ where: { bookingId: record.bookingId } });
-    const trip = await prisma.trip.findUnique({ where: { id: record.tripId }, select: { name: true } });
+    const trip = await prisma.trip.findUnique({ where: { id: record.tripId }, select: { title: true } });
     const admin = await prisma.admin.findUnique({ where: { id: record.collectedByAdminId }, select: { name: true } });
-    const emailStatus = await sendReceiptEmail(record, booking, trip?.name || 'Trip', admin?.name || 'Staff');
+    const emailStatus = await sendReceiptEmail(record, booking, trip?.title || 'Trip', admin?.name || 'Staff');
     await prisma.stationPaymentCollection.update({ where: { id: record.id }, data: { emailStatus, emailSentAt: emailStatus === 'SENT' ? new Date() : null } });
     return res.json({ success: true, message: emailStatus === 'SENT' ? 'Email resent' : 'Email failed' });
-  } catch (err) { return res.status(500).json({ success: false, message: 'Server error' }); }
+  } catch (err) { 
+    console.error('Error in resendEmail:', err);
+    return res.status(500).json({ success: false, message: 'Server error' }); 
+  }
 };
 
 // ─── GET /api/station-payments/receipt/:id ────────────────────────────────
@@ -453,8 +461,8 @@ exports.getReceipt = async (req, res) => {
     const record = await prisma.stationPaymentCollection.findUnique({ where: { id: req.params.id }, include: { receivingAccount: true, collectedBy: { select: { id: true, name: true } }, verifiedBy: { select: { id: true, name: true } } } });
     if (!record) return res.status(404).json({ success: false, message: 'Not found' });
     const booking = await prisma.booking.findUnique({ where: { bookingId: record.bookingId } });
-    const trip = await prisma.trip.findUnique({ where: { id: record.tripId }, select: { name: true } });
-    return res.json({ success: true, data: { collection: record, booking, tripName: trip?.name } });
+    const trip = await prisma.trip.findUnique({ where: { id: record.tripId }, select: { title: true } });
+    return res.json({ success: true, data: { collection: record, booking, tripName: trip?.title } });
   } catch (err) { return res.status(500).json({ success: false, message: 'Server error' }); }
 };
 
