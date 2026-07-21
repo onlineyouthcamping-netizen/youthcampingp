@@ -1022,15 +1022,16 @@ exports.getOpsAccountingSummary = async (req, res) => {
 
     const bookingWhere = ctx.bookingWhere;
 
-    let hotels = [], transport = [], guides = [], misc = [], expenses = [], bookings = [];
+    let hotels = [], transport = [], guides = [], misc = [], expenses = [], bookings = [], activities = [];
     try {
-      [hotels, transport, guides, misc, expenses, bookings] = await Promise.all([
+      [hotels, transport, guides, misc, expenses, bookings, activities] = await Promise.all([
         prisma.opsHotelBooking.findMany({ where: ctx.where }).catch(() => []),
         prisma.opsTransportFleet.findMany({ where: ctx.where }).catch(() => []),
         prisma.opsGuidePayment.findMany({ where: ctx.where }).catch(() => []),
         prisma.opsMiscExpense.findMany({ where: ctx.where }).catch(() => []),
         prisma.opsTripExpense.findMany({ where: ctx.where }).catch(() => []),
-        prisma.booking.findMany({ where: bookingWhere }).catch(() => [])
+        prisma.booking.findMany({ where: bookingWhere }).catch(() => []),
+        prisma.opsActivity.findMany({ where: ctx.where }).catch(() => [])
       ]);
     } catch (e) {
       console.error('Sub-query fetch warning in getOpsAccountingSummary:', e);
@@ -1041,8 +1042,9 @@ exports.getOpsAccountingSummary = async (req, res) => {
     const guideCost = (guides || []).reduce((s, g) => s + (Number(g.agreedAmount) || 0), 0);
     const miscCost = (misc || []).reduce((s, m) => s + (Number(m.amount) || 0), 0);
     const detailedExpensesCost = (expenses || []).reduce((s, e) => s + (Number(e.totalAmount) || 0), 0);
+    const activityCost = (activities || []).reduce((s, a) => s + (Number(a.actualCost) || Number(a.estimatedCost) || 0), 0);
 
-    const totalOpsCost = hotelCost + transportCost + guideCost + miscCost + detailedExpensesCost;
+    const totalOpsCost = hotelCost + transportCost + guideCost + miscCost + detailedExpensesCost + activityCost;
 
     let travelerCount = (bookings || []).reduce((s, b) => s + (Number(b.numberOfTravelers) || 1), 0);
     if (travelerCount === 0) travelerCount = 1;
@@ -1093,6 +1095,7 @@ exports.getOpsAccountingSummary = async (req, res) => {
         guideCost,
         miscCost,
         detailedExpensesCost,
+        activityCost,
         totalOpsCost,
         travelerCount,
         perPersonOpsCost,
