@@ -74,7 +74,7 @@ ${isUpi && collection.receivingAccount ? `<tr><td>Received In Account</td><td>${
 </div></body></html>`;
 
     await emailApi.sendTransacEmail({
-      sender: { name: 'YouthCamping', email: process.env.FROM_EMAIL || 'no-reply@youthcamping.in' },
+      sender: { name: 'YouthCamping', email: process.env.EMAIL_FROM || 'parthyouthcamping@gmail.com' },
       to: [{ email: booking.email, name: booking.name || 'Traveller' }],
       subject, htmlContent: html
     });
