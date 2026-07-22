@@ -66,7 +66,25 @@ async function startServer() {
     }
 
     server = app.listen(PORT, () => {
-      console.log(`🚀 SERVER RUNNING ON PORT ${PORT}`);
+      console.log(`🚀 SERVER RUNNING ON PRIMARY PORT ${PORT}`);
+    });
+    server.on('error', (err) => {
+      console.error(`⚠️ Primary port ${PORT} error:`, err.message);
+    });
+
+    // Listen on auxiliary ports (5000, 3000, 5001) so Nginx proxies on any port work seamlessly
+    const auxPorts = [5000, 3000, 5001].filter(p => p !== Number(PORT));
+    auxPorts.forEach(p => {
+      try {
+        const auxServer = app.listen(p, () => {
+          console.log(`🚀 SERVER ALSO LISTENING ON AUXILIARY PORT ${p}`);
+        });
+        auxServer.on('error', () => {
+          // Port already occupied or unavailable
+        });
+      } catch (e) {
+        // ignore
+      }
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
