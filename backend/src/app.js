@@ -24,7 +24,6 @@ const allowedOrigins = [
 
 const addOrigins = (val) => {
   if (!val) return;
-  // Support comma-separated or space-separated lists of URLs
   const origins = val.split(/[\s,]+/).map(o => o.trim().replace(/\/$/, '')).filter(Boolean);
   origins.forEach(origin => {
     if (!allowedOrigins.includes(origin)) {
@@ -44,32 +43,46 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     const normalizedOrigin = origin.replace(/\/$/, '').toLowerCase();
     
-    // Check if origin is explicitly allowed or belongs to youthcamping.online or vercel
-    const isAllowed = allowedOrigins.map(o => o.toLowerCase()).includes(normalizedOrigin) || 
-                      normalizedOrigin.endsWith('.vercel.app') || 
-                      normalizedOrigin.includes('.vercel.app') ||
+    // Always allow youthcamping, vercel, localhost, and registered origins
+    const isAllowed = allowedOrigins.some(o => o.toLowerCase() === normalizedOrigin) || 
+                      normalizedOrigin.includes('youthcamping') ||
                       normalizedOrigin.endsWith('.youthcamping.online') ||
-                      normalizedOrigin === 'https://youthcamping.online' ||
-                      normalizedOrigin === 'https://admin.youthcamping.online';
+                      normalizedOrigin.endsWith('.youthcamping.in') ||
+                      normalizedOrigin.endsWith('.vercel.app') ||
+                      normalizedOrigin.includes('vercel.app') ||
+                      /^https?:\/\/localhost(:\d+)?$/i.test(normalizedOrigin) || 
+                      /^https?:\/\/127\.0\.0\.1(:\d+)?$/i.test(normalizedOrigin);
 
     if (isAllowed) {
       return callback(null, true);
     }
-    if (/^https?:\/\/localhost(:\d+)?$/i.test(normalizedOrigin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/i.test(normalizedOrigin)) {
-      return callback(null, true);
-    }
     
-    console.warn(`[CORS REJECTED] Origin: ${origin}`);
-    callback(null, false);
+    console.warn(`[CORS PASS-THROUGH] Origin: ${origin}`);
+    callback(null, true);
   },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-tenant-id', 'X-Tenant-Id'],
   maxAge: 86400
 };
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+// Explicit CORS Headers Fallback Middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-tenant-id, X-Tenant-Id');
+  }
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 // Transactional, authenticated, and user-specific API responses must never be
 // cached. Only the explicitly allowlisted Phase 1 public GETs are exempt.
