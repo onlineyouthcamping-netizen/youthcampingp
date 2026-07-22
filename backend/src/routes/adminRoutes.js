@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { adminLogin, getMe, forgotPassword } = require('../controllers/authController');
+const { adminLogin, getMe, updateMe, updateMyPassword, forgotPassword } = require('../controllers/authController');
 const { getStats } = require('../controllers/dashboardController');
 const {
   listUsers,
@@ -18,8 +18,10 @@ const { validate, adminLoginSchema } = require('../validators');
 router.post('/login', validate(adminLoginSchema), adminLogin);
 router.post('/forgot-password', forgotPassword);
 
-// Current admin details
+// Current admin details (My Profile)
 router.get('/me', protect, getMe);
+router.put('/me', protect, updateMe);
+router.put('/me/password', protect, updateMyPassword);
 
 // Dashboard statistics
 router.get('/stats', protect, requirePermission('dashboard.view'), getStats);

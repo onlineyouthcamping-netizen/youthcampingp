@@ -99,23 +99,134 @@ exports.adminLogin = async (req, res, next) => {
   }
 };
 
-// @desc    Get current admin
+// @desc    Get current admin profile (My Profile)
 // @route   GET /api/admin/me
 // @access  Private
 exports.getMe = async (req, res, next) => {
   try {
-    const tenantId = req.user.tenantId;
-    const admin = await prisma.admin.findFirst({
-      where: { id: req.user.id, tenantId },
+    const admin = await prisma.admin.findUnique({
+      where: { id: req.user.id },
       select: {
-        id: true, name: true, email: true, role: true, tenantId: true,
-        isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+        avatarUrl: true,
+        designation: true,
+        notificationPreferences: true,
+        uiSettings: true,
+        isActive: true,
+        tenantId: true,
+        customPermissions: true,
+        lastLoginAt: true,
+        createdAt: true,
+        updatedAt: true
       }
     });
-    if (admin) {
-      admin.permissions = admin.role === 'superadmin' ? PERMISSIONS : (ROLE_PERMISSIONS[admin.role] || []);
+
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'User profile not found' });
     }
-    res.json({ success: true, data: sanitizeUser(admin) });
+
+    // Role-based permissions calculation
+    let permissions = admin.role === 'superadmin' ? PERMISSIONS : (ROLE_PERMISSIONS[admin.role] || []);
+    if (Array.isArray(admin.customPermissions)) {
+      admin.customPermissions.forEach(p => {
+        if (!permissions.includes(p)) permissions.push(p);
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        ...sanitizeUser(admin),
+        permissions
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update current logged-in user's own profile (My Profile)
+// @route   PUT /api/admin/me
+// @access  Private (Self only - NEVER accepts user ID from frontend)
+exports.updateMe = async (req, res, next) => {
+  try {
+    const { phone, avatarUrl, notificationPreferences, uiSettings } = req.body;
+
+    // Users can edit ONLY their own profile photo, phone, notification preferences, and UI settings.
+    // Strictly prevent modifying role, permissions, designation, or active status.
+    const updatedUser = await prisma.admin.update({
+      where: { id: req.user.id },
+      data: {
+        ...(phone !== undefined && { phone }),
+        ...(avatarUrl !== undefined && { avatarUrl }),
+        ...(notificationPreferences !== undefined && { notificationPreferences }),
+        ...(uiSettings !== undefined && { uiSettings })
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+        avatarUrl: true,
+        designation: true,
+        notificationPreferences: true,
+        uiSettings: true,
+        isActive: true,
+        updatedAt: true
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: sanitizeUser(updatedUser)
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Change current logged-in user's own password
+// @route   PUT /api/admin/me/password
+// @access  Private (Self only)
+exports.updateMyPassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 4) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 4 characters long' });
+    }
+
+    const admin = await prisma.admin.findUnique({ where: { id: req.user.id } });
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'Admin not found' });
+    }
+
+    // Verify current password if provided
+    if (currentPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, admin.password);
+      if (!isMatch) {
+        return res.status(400).json({ success: false, message: 'Incorrect current password' });
+      }
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await prisma.admin.update({
+      where: { id: req.user.id },
+      data: {
+        password: passwordHash,
+        tokenVersion: { increment: 1 }
+      }
+    });
+
+    res.json({ success: true, message: 'Password updated successfully' });
   } catch (error) {
     next(error);
   }

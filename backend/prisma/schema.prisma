@@ -19,6 +19,11 @@ model Admin {
   lastLoginAt  DateTime?
   tenantId     String?   @default("default")
   customPermissions Json?
+  phone                   String?
+  avatarUrl               String?
+  designation             String?
+  notificationPreferences Json?
+  uiSettings              Json?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
