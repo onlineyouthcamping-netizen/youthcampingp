@@ -358,12 +358,8 @@ function hasPermission(roleOrUser, permission) {
 
   if (role === 'superadmin') return true;
 
-  // 1. Check primary role permissions
-  const allowed = ROLE_PERMISSIONS[role] || [];
-  if (allowed.includes(permission)) return true;
-
-  // 2. Check custom permissions or granted extra roles
-  if (custom && Array.isArray(custom)) {
+  // If custom permissions array is explicitly set for this user (customized access control)
+  if (custom !== null && custom !== undefined && Array.isArray(custom)) {
     if (custom.includes(permission)) return true;
 
     for (const item of custom) {
@@ -371,9 +367,12 @@ function hasPermission(roleOrUser, permission) {
         return true;
       }
     }
+    return false;
   }
 
-  return false;
+  // Fallback to default role permissions when no customPermissions override is set
+  const allowed = ROLE_PERMISSIONS[role] || [];
+  return allowed.includes(permission);
 }
 
 module.exports = {
