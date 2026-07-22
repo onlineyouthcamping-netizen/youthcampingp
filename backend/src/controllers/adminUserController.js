@@ -1,12 +1,6 @@
 const { prisma } = require('../lib/prisma');
 const bcrypt = require('bcryptjs');
 const { logAction } = require('../utils/auditLogger');
-
-const cache = require('../lib/cache');
-
-const usersCache = new Map(); // tenantId -> { data, expiresAt }
-const USERS_CACHE_TTL = 5 * 60 * 1000;
-
 const cache = require('../lib/cache');
 
 const usersCache = new Map(); // tenantId -> { data, expiresAt }
