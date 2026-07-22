@@ -14,72 +14,17 @@ const { apiNoStore } = require('./middleware/noStore');
 const app = express();
 app.set('trust proxy', 1);
 
-// CORS Config
-const cors = require('cors');
-const allowedOrigins = [
-  'https://youthcamping.online',
-  'https://www.youthcamping.online',
-  'https://admin.youthcamping.online'
-];
-
-const addOrigins = (val) => {
-  if (!val) return;
-  const origins = val.split(/[\s,]+/).map(o => o.trim().replace(/\/$/, '')).filter(Boolean);
-  origins.forEach(origin => {
-    if (!allowedOrigins.includes(origin)) {
-      allowedOrigins.push(origin);
-    }
-  });
-};
-
-addOrigins(process.env.ALLOWED_ORIGINS);
-addOrigins(process.env.CORS_ALLOWED_ORIGINS);
-addOrigins(process.env.FRONTEND_URL);
-addOrigins(process.env.CLIENT_URL);
-addOrigins(process.env.ADMIN_URL);
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    const normalizedOrigin = origin.replace(/\/$/, '').toLowerCase();
-    
-    // Always allow youthcamping, vercel, localhost, and registered origins
-    const isAllowed = allowedOrigins.some(o => o.toLowerCase() === normalizedOrigin) || 
-                      normalizedOrigin.includes('youthcamping') ||
-                      normalizedOrigin.endsWith('.youthcamping.online') ||
-                      normalizedOrigin.endsWith('.youthcamping.in') ||
-                      normalizedOrigin.endsWith('.vercel.app') ||
-                      normalizedOrigin.includes('vercel.app') ||
-                      /^https?:\/\/localhost(:\d+)?$/i.test(normalizedOrigin) || 
-                      /^https?:\/\/127\.0\.0\.1(:\d+)?$/i.test(normalizedOrigin);
-
-    if (isAllowed) {
-      return callback(null, true);
-    }
-    
-    console.warn(`[CORS PASS-THROUGH] Origin: ${origin}`);
-    callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-tenant-id', 'X-Tenant-Id'],
-  maxAge: 86400
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
-
-// Explicit CORS Headers Fallback Middleware
+// Global Unconditional CORS & Preflight Middleware (Must be FIRST middleware)
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-tenant-id, X-Tenant-Id');
-  }
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-tenant-id, X-Tenant-Id, *');
+  res.setHeader('Access-Control-Expose-Headers', '*');
+
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
+    return res.status(204).end();
   }
   next();
 });
