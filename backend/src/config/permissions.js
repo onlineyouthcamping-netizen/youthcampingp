@@ -347,16 +347,33 @@ const ROLE_PERMISSIONS = {
 };
 
 /**
- * Check if a role is authorized for a specific permission.
+ * Check if a role or user object is authorized for a specific permission.
+ * Accepts either a role string or a user object ({ role, customPermissions }).
  */
-function hasPermission(role, permission) {
-  if (!role) return false;
+function hasPermission(roleOrUser, permission) {
+  if (!roleOrUser) return false;
+
+  const role = typeof roleOrUser === 'string' ? roleOrUser : (roleOrUser.role || 'viewer');
+  const custom = typeof roleOrUser === 'object' ? roleOrUser.customPermissions : null;
+
   if (role === 'superadmin') return true;
-  
-  const allowed = ROLE_PERMISSIONS[role];
-  if (!allowed) return false;
-  
-  return allowed.includes(permission);
+
+  // 1. Check primary role permissions
+  const allowed = ROLE_PERMISSIONS[role] || [];
+  if (allowed.includes(permission)) return true;
+
+  // 2. Check custom permissions or granted extra roles
+  if (custom && Array.isArray(custom)) {
+    if (custom.includes(permission)) return true;
+
+    for (const item of custom) {
+      if (ROLE_PERMISSIONS[item] && ROLE_PERMISSIONS[item].includes(permission)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 module.exports = {

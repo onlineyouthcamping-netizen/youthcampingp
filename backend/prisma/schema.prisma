@@ -18,6 +18,7 @@ model Admin {
   tokenVersion Int       @default(0)
   lastLoginAt  DateTime?
   tenantId     String?   @default("default")
+  customPermissions Json?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

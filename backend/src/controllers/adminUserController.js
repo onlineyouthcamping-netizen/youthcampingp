@@ -2,6 +2,8 @@ const { prisma } = require('../lib/prisma');
 const bcrypt = require('bcryptjs');
 const { logAction } = require('../utils/auditLogger');
 
+const cache = require('../lib/cache');
+
 const usersCache = new Map(); // tenantId -> { data, expiresAt }
 const USERS_CACHE_TTL = 5 * 60 * 1000;
 
@@ -23,6 +25,7 @@ exports.listUsers = async (req, res, next) => {
         name: true,
         email: true,
         role: true,
+        customPermissions: true,
         isActive: true,
         tokenVersion: true,
         lastLoginAt: true,
@@ -43,7 +46,7 @@ exports.listUsers = async (req, res, next) => {
 // @access  Private (superadmin)
 exports.createUser = async (req, res, next) => {
   try {
-    const { name, email, role, password } = req.body;
+    const { name, email, role, password, customPermissions } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress || null;
 
     if (!name || !email || !role || !password) {
@@ -67,10 +70,13 @@ exports.createUser = async (req, res, next) => {
         name,
         email: submittedEmail,
         role,
+        customPermissions: customPermissions || [],
         password: passwordHash,
         tenantId: req.user.tenantId || 'default'
       }
     });
+
+    usersCache.delete(req.user.tenantId || 'default');
 
     await logAction({
       tenantId: req.user.tenantId,
@@ -78,7 +84,7 @@ exports.createUser = async (req, res, next) => {
       action: 'user_created',
       entityType: 'admin',
       entityId: newUser.id,
-      afterData: { name, email: submittedEmail, role },
+      afterData: { name, email: submittedEmail, role, customPermissions },
       ipAddress
     });
 
@@ -96,7 +102,7 @@ exports.createUser = async (req, res, next) => {
 // @access  Private (superadmin)
 exports.updateUserRole = async (req, res, next) => {
   try {
-    const { role } = req.body;
+    const { role, customPermissions } = req.body;
     const targetUserId = req.params.id;
     const ipAddress = req.ip || req.connection.remoteAddress || null;
 
@@ -109,13 +115,18 @@ exports.updateUserRole = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Admin user not found' });
     }
 
+    const updateData = { role };
+    if (customPermissions !== undefined) {
+      updateData.customPermissions = customPermissions;
+    }
+
     const updatedUser = await prisma.admin.update({
       where: { id: targetUserId },
-      data: {
-        role,
-        tokenVersion: { increment: 1 } // Invalidate existing sessions
-      }
+      data: updateData
     });
+
+    await cache.del(`auth:${targetUserId}`);
+    usersCache.delete(req.user.tenantId || 'default');
 
     await logAction({
       tenantId: req.user.tenantId,
@@ -123,12 +134,55 @@ exports.updateUserRole = async (req, res, next) => {
       action: 'role_change',
       entityType: 'admin',
       entityId: targetUserId,
-      beforeData: { role: targetUser.role },
-      afterData: { role },
+      beforeData: { role: targetUser.role, customPermissions: targetUser.customPermissions },
+      afterData: { role, customPermissions: updatedUser.customPermissions },
       ipAddress
     });
 
-    res.json({ success: true, data: { id: updatedUser.id, role: updatedUser.role } });
+    res.json({ success: true, data: { id: updatedUser.id, role: updatedUser.role, customPermissions: updatedUser.customPermissions } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update an admin's custom permissions & role (Superadmin only)
+// @route   PUT /api/admin/users/:id/permissions
+// @access  Private (superadmin)
+exports.updateUserPermissions = async (req, res, next) => {
+  try {
+    const { role, customPermissions } = req.body;
+    const targetUserId = req.params.id;
+    const ipAddress = req.ip || req.connection.remoteAddress || null;
+
+    const targetUser = await prisma.admin.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) {
+      return res.status(404).json({ success: false, message: 'Admin user not found' });
+    }
+
+    const updateData = {};
+    if (role !== undefined) updateData.role = role;
+    if (customPermissions !== undefined) updateData.customPermissions = customPermissions;
+
+    const updatedUser = await prisma.admin.update({
+      where: { id: targetUserId },
+      data: updateData
+    });
+
+    await cache.del(`auth:${targetUserId}`);
+    usersCache.delete(req.user.tenantId || 'default');
+
+    await logAction({
+      tenantId: req.user.tenantId,
+      actorUserId: req.user.id,
+      action: 'permissions_update',
+      entityType: 'admin',
+      entityId: targetUserId,
+      beforeData: { role: targetUser.role, customPermissions: targetUser.customPermissions },
+      afterData: { role: updatedUser.role, customPermissions: updatedUser.customPermissions },
+      ipAddress
+    });
+
+    res.json({ success: true, data: { id: updatedUser.id, role: updatedUser.role, customPermissions: updatedUser.customPermissions } });
   } catch (error) {
     next(error);
   }

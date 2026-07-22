@@ -94,7 +94,10 @@ const authenticate = async (req, res, next) => {
 
     const user = {
       id: admin.id,
+      name: admin.name,
+      email: admin.email,
       role: admin.role,
+      customPermissions: admin.customPermissions || [],
       tenantId: admin.tenantId || 'default'
     };
 

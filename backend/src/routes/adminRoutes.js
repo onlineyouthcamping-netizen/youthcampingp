@@ -6,6 +6,7 @@ const {
   listUsers,
   createUser,
   updateUserRole,
+  updateUserPermissions,
   toggleUserActive,
   resetUserPassword,
   listAuditLogs
@@ -27,6 +28,7 @@ router.get('/stats', protect, requirePermission('dashboard.view'), getStats);
 router.get('/users', protect, requirePermission('users.view'), listUsers);
 router.post('/users', protect, requirePermission('users.manage'), createUser);
 router.put('/users/:id/role', protect, requirePermission('roles.manage'), updateUserRole);
+router.put('/users/:id/permissions', protect, requirePermission('roles.manage'), updateUserPermissions);
 router.put('/users/:id/toggle-active', protect, requirePermission('users.manage'), toggleUserActive);
 router.put('/users/:id/reset-password', protect, requirePermission('users.manage'), resetUserPassword);
 
