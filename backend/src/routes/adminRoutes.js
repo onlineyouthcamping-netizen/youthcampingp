@@ -11,7 +11,7 @@ const {
   resetUserPassword,
   listAuditLogs
 } = require('../controllers/adminUserController');
-const { protect, requirePermission } = require('../middleware/auth');
+const { protect, requirePermission, requireFounder } = require('../middleware/auth');
 const { validate, adminLoginSchema } = require('../validators');
 
 // Public login
@@ -26,15 +26,18 @@ router.put('/me/password', protect, updateMyPassword);
 // Dashboard statistics
 router.get('/stats', protect, requirePermission('dashboard.view'), getStats);
 
-// User Management (Superadmin only)
-router.get('/users', protect, requirePermission('users.view'), listUsers);
-router.post('/users', protect, requirePermission('users.manage'), createUser);
-router.put('/users/:id/role', protect, requirePermission('roles.manage'), updateUserRole);
-router.put('/users/:id/permissions', protect, requirePermission('roles.manage'), updateUserPermissions);
-router.put('/users/:id/toggle-active', protect, requirePermission('users.manage'), toggleUserActive);
-router.put('/users/:id/reset-password', protect, requirePermission('users.manage'), resetUserPassword);
+// User & Staff Profile Management (Founder Only)
+router.get('/users', protect, requireFounder, listUsers);
+router.post('/users', protect, requireFounder, createUser);
+router.get('/staff-profiles', protect, requireFounder, listUsers);
+router.get('/staff-profiles/:id', protect, requireFounder, listUsers);
+router.post('/staff-profiles', protect, requireFounder, createUser);
+router.put('/users/:id/role', protect, requireFounder, updateUserRole);
+router.put('/users/:id/permissions', protect, requireFounder, updateUserPermissions);
+router.put('/users/:id/toggle-active', protect, requireFounder, toggleUserActive);
+router.put('/users/:id/reset-password', protect, requireFounder, resetUserPassword);
 
-// Audit Logging (Superadmin only)
-router.get('/audit-logs', protect, requirePermission('audit.view'), listAuditLogs);
+// Audit Logging (Founder only)
+router.get('/audit-logs', protect, requireFounder, listAuditLogs);
 
 module.exports = router;

@@ -152,11 +152,19 @@ exports.getDashboard = async (req, res) => {
       if (cashPmts.length > 0 || verifiedUpi.length > 0) collStat = remaining <= 0 ? 'FULLY_COLLECTED' : 'PARTIALLY_COLLECTED';
       else if (pendingUpi.length > 0) collStat = 'UPI_PENDING';
 
+      let members = [];
+      if (bk.passengers) {
+        if (Array.isArray(bk.passengers)) members = bk.passengers;
+        else if (bk.passengers.persons && Array.isArray(bk.passengers.persons)) members = bk.passengers.persons;
+      }
+      const mappedMembers = members.map(m => ({ name: m.name || '', phone: m.phone || m.mobile || '' }));
+
       bookingRows.push({
         id: bk.id, bookingId: bk.bookingId, name: bk.fullName || bk.name,
         phone: bk.phone || bk.mobile, email: bk.email, pickupCity: bk.pickupCity,
         salesperson: bk.salesAdmin?.name, salespersonId: bk.salesAdminId,
         numberOfPersons: bk.numberOfTravelers || 1,
+        members: mappedMembers,
         finalAmount, previousPaid: prevPaidBeforeStation, remaining: Math.max(0, finalAmount - prevPaidBeforeStation),
         cashCollected: cashAmt, upiCollected: upiAmt, verifiedUpi: verifiedAmt, pendingUpi: pendingAmt,
         stationTotal, grandTotal, grandRemaining: remaining,

@@ -10,8 +10,7 @@ const USERS_CACHE_TTL = 5 * 60 * 1000;
 const isFounderAccess = (user) => {
   if (!user) return false;
   const email = (user.email || '').toLowerCase().trim();
-  const name = (user.name || '').toLowerCase().trim();
-  return email.includes('hemal') || name.includes('hemal') || email === 'hemal.patel@youthcamping.online';
+  return user.role === 'superadmin' && (email === 'hemal.patel@youthcamping.online' || email.includes('hemal'));
 };
 
 // @desc    List all admin users (Founder Hemal Patel only)

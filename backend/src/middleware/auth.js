@@ -242,6 +242,20 @@ const enforceOwnership = (modelName) => {
   };
 };
 
+const requireFounder = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Unauthenticated' });
+  }
+  const email = (req.user.email || '').toLowerCase().trim();
+  const isFounderUser = req.user.role === 'superadmin' && (
+    email === 'hemal.patel@youthcamping.online' || email.includes('hemal')
+  );
+  if (isFounderUser) {
+    return next();
+  }
+  return res.status(403).json({ success: false, message: 'Access Denied: Founder privileges required.' });
+};
+
 const protect = authenticate;
 const protectUser = authenticate;
 const protectAny = authenticate;
@@ -253,5 +267,6 @@ module.exports = {
   protectAny,
   requirePermission,
   requireRole,
+  requireFounder,
   enforceOwnership
 };
