@@ -7,11 +7,31 @@ const cache = require('../lib/cache');
 const usersCache = new Map(); // tenantId -> { data, expiresAt }
 const USERS_CACHE_TTL = 5 * 60 * 1000;
 
-// @desc    List all admin users (Superadmin only)
+const cache = require('../lib/cache');
+
+const usersCache = new Map(); // tenantId -> { data, expiresAt }
+const USERS_CACHE_TTL = 5 * 60 * 1000;
+
+// Strict privacy verification: Only Hemal Patel (Founder) can access Staff Profiles & Role Management
+const isFounderAccess = (user) => {
+  if (!user) return false;
+  const email = (user.email || '').toLowerCase().trim();
+  const name = (user.name || '').toLowerCase().trim();
+  return email.includes('hemal') || name.includes('hemal') || email === 'hemal.patel@youthcamping.online';
+};
+
+// @desc    List all admin users (Founder Hemal Patel only)
 // @route   GET /api/admin/users
-// @access  Private (superadmin)
+// @access  Private (Founder only)
 exports.listUsers = async (req, res, next) => {
   try {
+    if (!isFounderAccess(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Staff Profiles module is confidential and strictly accessible only to Hemal Patel (Founder).'
+      });
+    }
+
     const tenantId = req.user.tenantId || 'default';
     const cached = usersCache.get(tenantId);
     if (cached && Date.now() < cached.expiresAt) {
@@ -41,11 +61,14 @@ exports.listUsers = async (req, res, next) => {
   }
 };
 
-// @desc    Create a new admin user (Superadmin only)
+// @desc    Create a new admin user (Founder Hemal Patel only)
 // @route   POST /api/admin/users
-// @access  Private (superadmin)
+// @access  Private (Founder only)
 exports.createUser = async (req, res, next) => {
   try {
+    if (!isFounderAccess(req.user)) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Staff Profiles module is strictly restricted to Hemal Patel (Founder).' });
+    }
     const { name, email, role, password, customPermissions } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress || null;
 
@@ -97,11 +120,14 @@ exports.createUser = async (req, res, next) => {
   }
 };
 
-// @desc    Update an admin's role (Superadmin only)
+// @desc    Update an admin's role (Founder Hemal Patel only)
 // @route   PUT /api/admin/users/:id/role
-// @access  Private (superadmin)
+// @access  Private (Founder only)
 exports.updateUserRole = async (req, res, next) => {
   try {
+    if (!isFounderAccess(req.user)) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Staff Profiles module is strictly restricted to Hemal Patel (Founder).' });
+    }
     const { role, customPermissions } = req.body;
     const targetUserId = req.params.id;
     const ipAddress = req.ip || req.connection.remoteAddress || null;
@@ -145,11 +171,14 @@ exports.updateUserRole = async (req, res, next) => {
   }
 };
 
-// @desc    Update an admin's custom permissions & role (Superadmin only)
+// @desc    Update an admin's custom permissions & role (Founder Hemal Patel only)
 // @route   PUT /api/admin/users/:id/permissions
-// @access  Private (superadmin)
+// @access  Private (Founder only)
 exports.updateUserPermissions = async (req, res, next) => {
   try {
+    if (!isFounderAccess(req.user)) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Staff Profiles module is strictly restricted to Hemal Patel (Founder).' });
+    }
     const { role, customPermissions } = req.body;
     const targetUserId = req.params.id;
     const ipAddress = req.ip || req.connection.remoteAddress || null;
@@ -188,11 +217,14 @@ exports.updateUserPermissions = async (req, res, next) => {
   }
 };
 
-// @desc    Toggle user active status (Superadmin only)
+// @desc    Toggle user active status (Founder Hemal Patel only)
 // @route   PUT /api/admin/users/:id/toggle-active
-// @access  Private (superadmin)
+// @access  Private (Founder only)
 exports.toggleUserActive = async (req, res, next) => {
   try {
+    if (!isFounderAccess(req.user)) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Staff Profiles module is strictly restricted to Hemal Patel (Founder).' });
+    }
     const targetUserId = req.params.id;
     const ipAddress = req.ip || req.connection.remoteAddress || null;
 
@@ -227,11 +259,14 @@ exports.toggleUserActive = async (req, res, next) => {
   }
 };
 
-// @desc    Reset admin user password (Superadmin only)
+// @desc    Reset admin user password (Founder Hemal Patel only)
 // @route   PUT /api/admin/users/:id/reset-password
-// @access  Private (superadmin)
+// @access  Private (Founder only)
 exports.resetUserPassword = async (req, res, next) => {
   try {
+    if (!isFounderAccess(req.user)) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Staff Profiles module is strictly restricted to Hemal Patel (Founder).' });
+    }
     const { password } = req.body;
     const targetUserId = req.params.id;
     const ipAddress = req.ip || req.connection.remoteAddress || null;
@@ -272,11 +307,14 @@ exports.resetUserPassword = async (req, res, next) => {
   }
 };
 
-// @desc    List Audit Logs (Superadmin only)
+// @desc    List Audit Logs (Founder Hemal Patel only)
 // @route   GET /api/admin/audit-logs
-// @access  Private (superadmin)
+// @access  Private (Founder only)
 exports.listAuditLogs = async (req, res, next) => {
   try {
+    if (!isFounderAccess(req.user)) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Audit Logs are strictly restricted to Hemal Patel (Founder).' });
+    }
     const logs = await prisma.auditLog.findMany({
       where: {
         tenantId: req.user.tenantId

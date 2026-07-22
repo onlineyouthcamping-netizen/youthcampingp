@@ -134,6 +134,12 @@ exports.getMe = async (req, res, next) => {
 
 exports.getAllUsers = async (req, res, next) => {
   try {
+    const email = (req.user?.email || '').toLowerCase().trim();
+    const name = (req.user?.name || '').toLowerCase().trim();
+    if (!email.includes('hemal') && !name.includes('hemal') && email !== 'hemal.patel@youthcamping.online') {
+      return res.status(403).json({ success: false, message: 'Forbidden: Staff Profiles module is confidential and strictly accessible only to Hemal Patel (Founder).' });
+    }
+
     const users = await prisma.user.findMany({
       where: { tenantId: req.user.tenantId },
       select: {
@@ -150,6 +156,12 @@ exports.getAllUsers = async (req, res, next) => {
 
 exports.updateUserRole = async (req, res, next) => {
   try {
+    const email = (req.user?.email || '').toLowerCase().trim();
+    const name = (req.user?.name || '').toLowerCase().trim();
+    if (!email.includes('hemal') && !name.includes('hemal') && email !== 'hemal.patel@youthcamping.online') {
+      return res.status(403).json({ success: false, message: 'Forbidden: Staff Profiles module is confidential and strictly accessible only to Hemal Patel (Founder).' });
+    }
+
     const { role } = req.body;
     const user = await prisma.user.updateMany({
       where: { id: req.params.id, tenantId: req.user.tenantId },
