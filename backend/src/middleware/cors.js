@@ -15,10 +15,11 @@ exports.setupCORS = (app) => {
   app.use((req, res, next) => {
     const origin = req.headers.origin;
 
-    if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.youthcamping.online'))) {
+    // Always set exact origin if header exists, otherwise fallback to first allowed origin
+    if (origin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Origin', 'https://admin.youthcamping.online');
     }
 
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -26,8 +27,9 @@ exports.setupCORS = (app) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, Origin, x-tenant-id, X-Tenant-Id, *');
     res.setHeader('Access-Control-Expose-Headers', '*');
 
+    // Handle preflight OPTIONS requests with 200 status
     if (req.method === 'OPTIONS') {
-      return res.status(204).end();
+      return res.status(200).end();
     }
 
     next();
