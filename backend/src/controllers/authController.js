@@ -49,21 +49,21 @@ exports.adminLogin = async (req, res, next) => {
         : admin.password;
       match = await bcrypt.compare(password, normalizedHash);
       if (match) {
-        // Successful login: update lastLoginAt
+        // Fire lastLoginAt update and audit log in background (non-blocking for fast login response)
         const now = new Date();
-        await prisma.admin.update({
+        prisma.admin.update({
           where: { id: admin.id },
           data: { lastLoginAt: now }
-        });
+        }).catch(err => console.error('⚠️ [Auth] Failed to update lastLoginAt:', err.message));
 
-        await logAction({
+        logAction({
           tenantId: admin.tenantId,
           actorUserId: admin.id,
           action: 'login',
           entityType: 'admin',
           entityId: admin.id,
           ipAddress
-        });
+        }).catch(err => console.error('⚠️ [Auth] Failed to log action:', err.message));
 
         return res.json({
           success: true,
