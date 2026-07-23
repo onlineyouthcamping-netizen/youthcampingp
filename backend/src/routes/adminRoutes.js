@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { adminLogin, getMe, updateMe, updateMyPassword, forgotPassword } = require('../controllers/authController');
+const { adminLogin, forgotPassword } = require('../controllers/authController');
 const { getStats } = require('../controllers/dashboardController');
 const {
   listUsers,
@@ -11,13 +11,18 @@ const {
   resetUserPassword,
   listAuditLogs
 } = require('../controllers/adminUserController');
-const { protect, requirePermission, requireFounder } = require('../middleware/auth');
+const { protect, requirePermission, requireFounder, requireAdmin } = require('../middleware/auth');
+const { passwordChangeLimiter, apiKeyGenerationLimiter } = require('../middleware/rateLimiter');
 const { validate, adminLoginSchema } = require('../validators');
 
 const {
+  getProfile,
+  updateProfile,
+  uploadAvatar,
+  changePassword,
   getSessions,
   logoutSession,
-  logoutAllExceptCurrent,
+  logoutAllExcept,
   getActivityLogs,
   exportAuditLog,
   getAPIKeys,
@@ -34,31 +39,32 @@ const {
 router.post('/login', validate(adminLoginSchema), adminLogin);
 router.post('/forgot-password', forgotPassword);
 
-// Current admin details (My Profile & Settings)
-router.get('/me', protect, getMe);
-router.put('/me', protect, updateMe);
-router.put('/me/password', protect, updateMyPassword);
+// 1. Profile & Account Settings
+router.get('/me', protect, getProfile);
+router.put('/me', protect, updateProfile);
+router.post('/me/avatar', protect, uploadAvatar);
+router.put('/me/password', protect, passwordChangeLimiter, changePassword);
 router.delete('/me', protect, deleteAccount);
 router.get('/me/export', protect, exportUserData);
 
-// Connected Sessions
+// 2. Connected Sessions
 router.get('/me/sessions', protect, getSessions);
 router.delete('/me/sessions/:sessionId', protect, logoutSession);
-router.post('/me/sessions/logout-all-except-current', protect, logoutAllExceptCurrent);
+router.post('/me/sessions/logout-all-except-current', protect, logoutAllExcept);
 
-// Activity Logs & Audit
-router.get('/me/activity-logs', protect, getActivityLogs);
-router.get('/me/audit', protect, exportAuditLog);
+// 3. Activity Logs & Audit Trail (Founder + Admin)
+router.get('/me/activity-logs', protect, requireAdmin, getActivityLogs);
+router.get('/me/audit', protect, requireAdmin, exportAuditLog);
 
-// API Keys (Founder & Developer)
-router.get('/me/api-keys', protect, getAPIKeys);
-router.post('/me/api-keys', protect, generateAPIKey);
-router.delete('/me/api-keys/:keyId', protect, deleteAPIKey);
+// 4. API Keys (Founder + Developer)
+router.get('/me/api-keys', protect, requireFounder, getAPIKeys);
+router.post('/me/api-keys', protect, requireFounder, apiKeyGenerationLimiter, generateAPIKey);
+router.delete('/me/api-keys/:keyId', protect, requireFounder, deleteAPIKey);
 
-// Integrations (Founder & Admin)
-router.get('/me/integrations', protect, getIntegrations);
-router.post('/me/integrations/:service/connect', protect, connectIntegration);
-router.post('/me/integrations/:service/test', protect, testIntegration);
+// 5. Integrations (Founder + Admin)
+router.get('/me/integrations', protect, requireAdmin, getIntegrations);
+router.post('/me/integrations/:service/connect', protect, requireFounder, connectIntegration);
+router.post('/me/integrations/:service/test', protect, requireAdmin, testIntegration);
 
 // Dashboard statistics
 router.get('/stats', protect, requirePermission('dashboard.view'), getStats);

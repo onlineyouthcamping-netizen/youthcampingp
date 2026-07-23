@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const { logAction } = require('../utils/auditLogger');
 const crypto = require('crypto');
 
-// Helper to encrypt sensitive string (e.g., API key secrets)
+// AES-256 Encryption helpers
 const ALGORITHM = 'aes-256-cbc';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_SECRET || 'youthcamping_secret_key_32_bytes!';
 const IV_LENGTH = 16;
@@ -28,14 +28,184 @@ function decrypt(text) {
   return decrypted;
 }
 
-// Memory stores for Sessions, API Keys, Integrations, and Activity Logs per user if db table is dynamic
+// Memory stores for Sessions, API Keys, and Integrations
 const inMemorySessions = new Map();
 const inMemoryAPIKeys = new Map();
 const inMemoryIntegrations = new Map();
 
-// @desc    Get active login sessions for current user
-// @route   GET /api/admin/me/sessions
-// @access  Private
+// Helper to sanitize admin user object
+function sanitizeUser(admin) {
+  if (!admin) return null;
+  const { password, ...rest } = admin;
+  return rest;
+}
+
+// 1. GET /api/admin/me (getProfile)
+exports.getProfile = async (req, res, next) => {
+  try {
+    const admin = await prisma.admin.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+        avatarUrl: true,
+        designation: true,
+        notificationPreferences: true,
+        uiSettings: true,
+        isActive: true,
+        tenantId: true,
+        customPermissions: true,
+        lastLoginAt: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'User profile not found' });
+    }
+
+    res.json({
+      success: true,
+      data: sanitizeUser(admin)
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 2. PUT /api/admin/me (updateProfile)
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const { phone, avatarUrl, notificationPreferences, uiSettings, location, bio, preferences } = req.body;
+
+    let mergedUiSettings = uiSettings;
+    if (location !== undefined || bio !== undefined || preferences !== undefined) {
+      const current = await prisma.admin.findUnique({ where: { id: req.user.id }, select: { uiSettings: true } });
+      const currentUi = (current && typeof current.uiSettings === 'object' && current.uiSettings) || {};
+      mergedUiSettings = {
+        ...currentUi,
+        ...(uiSettings || {}),
+        ...(location !== undefined && { location }),
+        ...(bio !== undefined && { bio }),
+        ...(preferences !== undefined && { preferences })
+      };
+    }
+
+    const updatedUser = await prisma.admin.update({
+      where: { id: req.user.id },
+      data: {
+        ...(phone !== undefined && { phone }),
+        ...(avatarUrl !== undefined && { avatarUrl }),
+        ...(notificationPreferences !== undefined && { notificationPreferences }),
+        ...(mergedUiSettings !== undefined && { uiSettings: mergedUiSettings })
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+        avatarUrl: true,
+        designation: true,
+        notificationPreferences: true,
+        uiSettings: true,
+        isActive: true,
+        updatedAt: true
+      }
+    });
+
+    if (logAction) {
+      await logAction({ actorUserId: req.user.id, action: 'UPDATE_PROFILE', entityType: 'Admin', entityId: updatedUser.id, afterData: { phone, avatarUrl }, ipAddress: req.ip });
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: sanitizeUser(updatedUser)
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 3. POST /api/admin/me/avatar (uploadAvatar)
+exports.uploadAvatar = async (req, res, next) => {
+  try {
+    const { avatarUrl } = req.body;
+    if (!avatarUrl) {
+      return res.status(400).json({ success: false, message: 'Avatar image URL or data string is required' });
+    }
+
+    const updatedUser = await prisma.admin.update({
+      where: { id: req.user.id },
+      data: { avatarUrl }
+    });
+
+    if (logAction) {
+      await logAction({ actorUserId: req.user.id, action: 'UPLOAD_AVATAR', entityType: 'Admin', entityId: updatedUser.id, afterData: { avatarUrl }, ipAddress: req.ip });
+    }
+
+    res.json({
+      success: true,
+      message: 'Avatar uploaded successfully',
+      avatarUrl: updatedUser.avatarUrl
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 4. PUT /api/admin/me/password (changePassword)
+exports.changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (confirmPassword && newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'New password and confirm password do not match' });
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 8 characters long' });
+    }
+
+    const admin = await prisma.admin.findUnique({ where: { id: req.user.id } });
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'Admin profile not found' });
+    }
+
+    if (currentPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, admin.password);
+      if (!isMatch) {
+        return res.status(400).json({ success: false, message: 'Incorrect current password' });
+      }
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await prisma.admin.update({
+      where: { id: req.user.id },
+      data: {
+        password: passwordHash,
+        tokenVersion: { increment: 1 }
+      }
+    });
+
+    if (logAction) {
+      await logAction({ actorUserId: req.user.id, action: 'CHANGE_PASSWORD', entityType: 'Admin', entityId: req.user.id, afterData: { action: 'password_updated' }, ipAddress: req.ip });
+    }
+
+    res.json({ success: true, message: 'Password changed successfully. Token version updated.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 5. GET /api/admin/me/sessions (getSessions)
 exports.getSessions = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -69,9 +239,7 @@ exports.getSessions = async (req, res, next) => {
   }
 };
 
-// @desc    Logout single device session
-// @route   DELETE /api/admin/me/sessions/:sessionId
-// @access  Private
+// 6. DELETE /api/admin/me/sessions/:sessionId (logoutSession)
 exports.logoutSession = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -96,10 +264,8 @@ exports.logoutSession = async (req, res, next) => {
   }
 };
 
-// @desc    Logout all other devices except current
-// @route   POST /api/admin/me/sessions/logout-all-except-current
-// @access  Private
-exports.logoutAllExceptCurrent = async (req, res, next) => {
+// 7. POST /api/admin/me/sessions/logout-all-except-current (logoutAllExcept / logoutAllExceptCurrent)
+exports.logoutAllExcept = async (req, res, next) => {
   try {
     const userId = req.user.id;
     let sessions = inMemorySessions.get(userId) || [];
@@ -112,10 +278,9 @@ exports.logoutAllExceptCurrent = async (req, res, next) => {
     next(error);
   }
 };
+exports.logoutAllExceptCurrent = exports.logoutAllExcept;
 
-// @desc    Get paginated activity logs for user or system
-// @route   GET /api/admin/me/activity-logs
-// @access  Private (Founder / Admin)
+// 8. GET /api/admin/me/activity-logs (getActivityLogs)
 exports.getActivityLogs = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page || '1', 10);
@@ -153,9 +318,7 @@ exports.getActivityLogs = async (req, res, next) => {
   }
 };
 
-// @desc    Export audit log to CSV
-// @route   GET /api/admin/me/audit
-// @access  Private (Founder / Admin)
+// 9. GET /api/admin/me/audit (exportAuditLog)
 exports.exportAuditLog = async (req, res, next) => {
   try {
     const csvHeader = 'Timestamp,Action,Resource,Details,Status,IPAddress\n';
@@ -172,9 +335,7 @@ exports.exportAuditLog = async (req, res, next) => {
   }
 };
 
-// @desc    Get API keys list
-// @route   GET /api/admin/me/api-keys
-// @access  Private (Founder / Developer)
+// 10. GET /api/admin/me/api-keys (getAPIKeys)
 exports.getAPIKeys = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -199,9 +360,7 @@ exports.getAPIKeys = async (req, res, next) => {
   }
 };
 
-// @desc    Generate new API Key
-// @route   POST /api/admin/me/api-keys
-// @access  Private (Founder / Developer)
+// 11. POST /api/admin/me/api-keys (generateAPIKey)
 exports.generateAPIKey = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -214,6 +373,7 @@ exports.generateAPIKey = async (req, res, next) => {
     const secretBytes = crypto.randomBytes(16).toString('hex');
     const fullSecret = `sk_prod_${secretBytes}`;
     const preview = `sk_prod_••••••••••••${secretBytes.slice(-4)}`;
+    const encryptedSecret = encrypt(fullSecret);
 
     const newKeyItem = {
       id: `key_${Date.now()}`,
@@ -223,12 +383,17 @@ exports.generateAPIKey = async (req, res, next) => {
       permissions: Array.isArray(permissions) && permissions.length > 0 ? permissions : ['read'],
       isExpired: false,
       expiresAt: expiresAt || null,
-      keyPreview: preview
+      keyPreview: preview,
+      encryptedSecret
     };
 
     const keys = inMemoryAPIKeys.get(userId) || [];
     keys.unshift(newKeyItem);
     inMemoryAPIKeys.set(userId, keys);
+
+    if (logAction) {
+      await logAction({ actorUserId: userId, action: 'GENERATE_API_KEY', entityType: 'ApiKey', entityId: newKeyItem.id, afterData: { name }, ipAddress: req.ip });
+    }
 
     res.json({
       success: true,
@@ -243,17 +408,24 @@ exports.generateAPIKey = async (req, res, next) => {
   }
 };
 
-// @desc    Delete API Key
-// @route   DELETE /api/admin/me/api-keys/:keyId
-// @access  Private (Founder / Developer)
+// 12. DELETE /api/admin/me/api-keys/:keyId (deleteAPIKey)
 exports.deleteAPIKey = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { keyId } = req.params;
 
     let keys = inMemoryAPIKeys.get(userId) || [];
+    const target = keys.find(k => k.id === keyId);
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'API key not found' });
+    }
+
     keys = keys.filter(k => k.id !== keyId);
     inMemoryAPIKeys.set(userId, keys);
+
+    if (logAction) {
+      await logAction({ actorUserId: userId, action: 'REVOKE_API_KEY', entityType: 'ApiKey', entityId: keyId, afterData: { name: target.name }, ipAddress: req.ip });
+    }
 
     res.json({ success: true, message: 'API key revoked successfully' });
   } catch (error) {
@@ -261,9 +433,7 @@ exports.deleteAPIKey = async (req, res, next) => {
   }
 };
 
-// @desc    Export user data as JSON
-// @route   GET /api/admin/me/export
-// @access  Private
+// 13. GET /api/admin/me/export (exportUserData)
 exports.exportUserData = async (req, res, next) => {
   try {
     const admin = await prisma.admin.findUnique({
@@ -275,20 +445,14 @@ exports.exportUserData = async (req, res, next) => {
     }
 
     const exportPayload = {
-      user: {
-        id: admin.id,
-        name: admin.name,
-        email: admin.email,
-        role: admin.role,
-        phone: admin.phone,
-        designation: admin.designation,
-        notificationPreferences: admin.notificationPreferences,
-        uiSettings: admin.uiSettings,
-        createdAt: admin.createdAt
-      },
+      user: sanitizeUser(admin),
       exportTimestamp: new Date().toISOString(),
       system: 'YouthCamping OS'
     };
+
+    if (logAction) {
+      await logAction({ actorUserId: req.user.id, action: 'EXPORT_USER_DATA', entityType: 'Admin', entityId: admin.id, afterData: {}, ipAddress: req.ip });
+    }
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="youthcamping_data_${admin.id}_${new Date().toISOString().split('T')[0]}.json"`);
@@ -298,9 +462,7 @@ exports.exportUserData = async (req, res, next) => {
   }
 };
 
-// @desc    Delete account (with password confirmation)
-// @route   DELETE /api/admin/me
-// @access  Private
+// 14. DELETE /api/admin/me (deleteAccount)
 exports.deleteAccount = async (req, res, next) => {
   try {
     const { password } = req.body;
@@ -318,7 +480,6 @@ exports.deleteAccount = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Incorrect password. Account deletion aborted.' });
     }
 
-    // Safety guard: Prevent Founder account deletion
     if (admin.role === 'superadmin' && admin.email === 'hemal.patel@youthcamping.online') {
       return res.status(403).json({ success: false, message: 'Founder account cannot be deleted via automated API.' });
     }
@@ -328,15 +489,17 @@ exports.deleteAccount = async (req, res, next) => {
       data: { isActive: false }
     });
 
+    if (logAction) {
+      await logAction({ actorUserId: req.user.id, action: 'DELETE_ACCOUNT', entityType: 'Admin', entityId: admin.id, afterData: { action: 'deactivated' }, ipAddress: req.ip });
+    }
+
     res.json({ success: true, message: 'Account deactivated and scheduled for deletion' });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Get connected integrations
-// @route   GET /api/admin/me/integrations
-// @access  Private (Founder / Admin)
+// 15. GET /api/admin/me/integrations (getIntegrations)
 exports.getIntegrations = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -356,9 +519,7 @@ exports.getIntegrations = async (req, res, next) => {
   }
 };
 
-// @desc    Connect or update an integration
-// @route   POST /api/admin/me/integrations/:service/connect
-// @access  Private (Founder / Admin)
+// Integration connect & test helpers
 exports.connectIntegration = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -388,9 +549,6 @@ exports.connectIntegration = async (req, res, next) => {
   }
 };
 
-// @desc    Test integration connectivity
-// @route   POST /api/admin/me/integrations/:service/test
-// @access  Private (Founder / Admin)
 exports.testIntegration = async (req, res, next) => {
   try {
     const { service } = req.params;

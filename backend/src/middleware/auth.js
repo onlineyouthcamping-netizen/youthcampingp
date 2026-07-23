@@ -256,6 +256,16 @@ const requireFounder = (req, res, next) => {
   return res.status(403).json({ success: false, message: 'Access Denied: Founder privileges required.' });
 };
 
+const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Unauthenticated' });
+  }
+  if (['superadmin', 'admin'].includes(req.user.role)) {
+    return next();
+  }
+  return res.status(403).json({ success: false, message: 'Access Denied: Admin privileges required.' });
+};
+
 const protect = authenticate;
 const protectUser = authenticate;
 const protectAny = authenticate;
@@ -268,5 +278,6 @@ module.exports = {
   requirePermission,
   requireRole,
   requireFounder,
+  requireAdmin,
   enforceOwnership
 };
