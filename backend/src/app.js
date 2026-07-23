@@ -10,24 +10,14 @@ const compression = require('compression');
 const path = require('path');
 const { apiNoStore } = require('./middleware/noStore');
 
+const { setupCORS } = require('./middleware/cors');
+
 // 1. App initialization
 const app = express();
 app.set('trust proxy', 1);
 
-// Global Unconditional CORS & Preflight Middleware (Must be FIRST middleware)
-app.use((req, res, next) => {
-  const origin = req.headers.origin || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-tenant-id, X-Tenant-Id, *');
-  res.setHeader('Access-Control-Expose-Headers', '*');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-  next();
-});
+// Global CORS & Preflight Middleware (Must be FIRST middleware)
+setupCORS(app);
 
 // Transactional, authenticated, and user-specific API responses must never be
 // cached. Only the explicitly allowlisted Phase 1 public GETs are exempt.
