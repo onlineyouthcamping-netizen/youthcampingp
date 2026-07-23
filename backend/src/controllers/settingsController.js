@@ -491,33 +491,57 @@ exports.changePassword = async (req, res, next) => {
   }
 };
 
+function parseDeviceInfo(req) {
+  const ua = req.headers['user-agent'] || '';
+  let browser = 'Chrome';
+  let os = 'macOS';
+
+  if (ua.includes('Firefox')) browser = 'Firefox';
+  else if (ua.includes('Edg')) browser = 'Microsoft Edge';
+  else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+  else if (ua.includes('Chrome')) browser = 'Chrome';
+
+  if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+  else if (ua.includes('Android')) os = 'Android';
+  else if (ua.includes('Windows')) os = 'Windows';
+  else if (ua.includes('Macintosh') || ua.includes('Mac OS')) os = 'macOS';
+  else if (ua.includes('Linux')) os = 'Linux';
+
+  const rawIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip || '127.0.0.1';
+  const ipAddress = rawIp.split(',')[0].trim();
+
+  return {
+    deviceName: `${browser} on ${os}`,
+    ipAddress,
+    location: ipAddress.startsWith('127') || ipAddress.startsWith('192.168') || ipAddress === '::1' ? 'Local Workspace' : 'Ahmedabad, India'
+  };
+}
+
 exports.getSessions = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const userAgent = req.headers['user-agent'] || 'Chrome on macOS';
+    const currentDevice = parseDeviceInfo(req);
 
-    if (!inMemorySessions.has(userId)) {
-      inMemorySessions.set(userId, [
-        {
-          id: 'sess_current_1',
-          deviceName: userAgent.includes('Mobile') ? 'Mobile Browser' : 'Chrome on Desktop',
-          ipAddress: '192.xxx.10.4',
-          location: 'Mumbai, India',
-          lastActivityAt: new Date().toISOString(),
-          isCurrent: true
-        },
-        {
-          id: 'sess_backup_2',
-          deviceName: 'Safari on iPhone',
-          ipAddress: '192.xxx.44.82',
-          location: 'Pune, India',
-          lastActivityAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-          isCurrent: false
-        }
-      ]);
-    }
+    const sessions = [
+      {
+        id: 'sess_current_1',
+        deviceName: currentDevice.deviceName,
+        ipAddress: currentDevice.ipAddress,
+        location: currentDevice.location,
+        lastActivityAt: new Date().toISOString(),
+        isCurrent: true
+      },
+      {
+        id: 'sess_backup_2',
+        deviceName: 'Safari on iPhone',
+        ipAddress: '192.168.44.82',
+        location: 'Ahmedabad, India',
+        lastActivityAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+        isCurrent: false
+      }
+    ];
 
-    const sessions = inMemorySessions.get(userId);
+    inMemorySessions.set(userId, sessions);
     res.json({ success: true, sessions, totalCount: sessions.length });
   } catch (error) {
     next(error);
