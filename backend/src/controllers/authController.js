@@ -154,17 +154,28 @@ exports.getMe = async (req, res, next) => {
 // @access  Private (Self only - NEVER accepts user ID from frontend)
 exports.updateMe = async (req, res, next) => {
   try {
-    const { phone, avatarUrl, notificationPreferences, uiSettings } = req.body;
+    const { phone, avatarUrl, notificationPreferences, uiSettings, location, bio, preferences } = req.body;
 
-    // Users can edit ONLY their own profile photo, phone, notification preferences, and UI settings.
-    // Strictly prevent modifying role, permissions, designation, or active status.
+    let mergedUiSettings = uiSettings;
+    if (location !== undefined || bio !== undefined || preferences !== undefined) {
+      const current = await prisma.admin.findUnique({ where: { id: req.user.id }, select: { uiSettings: true } });
+      const currentUi = (current && typeof current.uiSettings === 'object' && current.uiSettings) || {};
+      mergedUiSettings = {
+        ...currentUi,
+        ...(uiSettings || {}),
+        ...(location !== undefined && { location }),
+        ...(bio !== undefined && { bio }),
+        ...(preferences !== undefined && { preferences })
+      };
+    }
+
     const updatedUser = await prisma.admin.update({
       where: { id: req.user.id },
       data: {
         ...(phone !== undefined && { phone }),
         ...(avatarUrl !== undefined && { avatarUrl }),
         ...(notificationPreferences !== undefined && { notificationPreferences }),
-        ...(uiSettings !== undefined && { uiSettings })
+        ...(mergedUiSettings !== undefined && { uiSettings: mergedUiSettings })
       },
       select: {
         id: true,
@@ -183,7 +194,7 @@ exports.updateMe = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Profile updated successfully',
+      message: 'Profile and settings updated successfully',
       data: sanitizeUser(updatedUser)
     });
   } catch (error) {
