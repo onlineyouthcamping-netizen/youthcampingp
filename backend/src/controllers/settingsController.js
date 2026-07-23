@@ -2,8 +2,311 @@ const { prisma } = require('../lib/prisma');
 const bcrypt = require('bcryptjs');
 const { logAction } = require('../utils/auditLogger');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const cloudinary = require('cloudinary').v2;
 
-// AES-256 Encryption helpers
+// ==========================================
+// SECTION 1: SITE & WEBSITE SETTINGS
+// ==========================================
+
+const SETTINGS_KEY = 'global_settings';
+
+const defaultFooterConfig = {
+  brandName: "YOUTHCAMPING",
+  address: "Money Plant High Street, A 738, Jagatpur Rd, Gota, Ahmedabad, Gujarat 382470",
+  phone: "+91-99242 46267",
+  email: "info@youthcamping.com",
+  website: "youthcamping.in",
+  copyright: "ALL RIGHTS RESERVED.",
+  logoUrl: "/logo-stacked.png",
+  showSocial: true,
+  showAddress: true,
+  showContact: true,
+  showCopyright: true,
+  socialLinks: [
+    { platform: "facebook", url: "https://facebook.com/youthcamping" },
+    { platform: "instagram", url: "https://instagram.com/youthcamping" },
+    { platform: "linkedin", url: "https://linkedin.com/company/youthcamping" },
+    { platform: "youtube", url: "https://youtube.com/youthcamping" }
+  ],
+  columns: [
+    {
+      id: "col-intl",
+      title: "International Trips",
+      visible: true,
+      links: [
+        { id: "l-intl-1", label: "Europe", href: "/trips", visible: true },
+        { id: "l-intl-2", label: "Bali", href: "/trips", visible: true },
+        { id: "l-intl-3", label: "Vietnam", href: "/trips", visible: true },
+        { id: "l-intl-4", label: "Thailand", href: "/trips", visible: true },
+        { id: "l-intl-5", label: "Kazakhstan", href: "/trips", visible: true },
+        { id: "l-intl-6", label: "Singapore", href: "/trips", visible: true },
+        { id: "l-intl-7", label: "Bhutan", href: "/trips", visible: true },
+        { id: "l-intl-8", label: "Maldives", href: "/trips", visible: true },
+        { id: "l-intl-9", label: "Dubai", href: "/trips", visible: true },
+        { id: "l-intl-10", label: "Malaysia", href: "/trips", visible: true }
+      ]
+    },
+    {
+      id: "col-india",
+      title: "India Trips",
+      visible: true,
+      links: [
+        { id: "l-ind-1", label: "Ladakh", href: "/trips", visible: true },
+        { id: "l-ind-2", label: "Spiti Valley", href: "/trips", visible: true },
+        { id: "l-ind-3", label: "Meghalaya", href: "/trips", visible: true },
+        { id: "l-ind-4", label: "Kashmir", href: "/trips", visible: true },
+        { id: "l-ind-5", label: "Himachal Pradesh", href: "/trips", visible: true },
+        { id: "l-ind-6", label: "Andaman", href: "/trips", visible: true },
+        { id: "l-ind-7", label: "Kerala", href: "/trips", visible: true },
+        { id: "l-ind-8", label: "Rajasthan", href: "/trips", visible: true },
+        { id: "l-ind-9", label: "Nagaland", href: "/trips", visible: true }
+      ]
+    },
+    {
+      id: "col-special",
+      title: "YouthCamping Special",
+      visible: true,
+      links: [
+        { id: "l-sp-1", label: "Community Trips", href: "/trips", visible: true },
+        { id: "l-sp-2", label: "Honeymoon Trips", href: "/trips", visible: true },
+        { id: "l-sp-3", label: "Corporate Trips", href: "/trips", visible: true },
+        { id: "l-sp-4", label: "Weekend Getaways", href: "/trips", visible: true }
+      ]
+    },
+    {
+      id: "col-quick",
+      title: "Quick Links",
+      visible: true,
+      links: [
+        { id: "l-ql-1", label: "About Us", href: "/about-us", visible: true },
+        { id: "l-ql-2", label: "Privacy Policy", href: "/privacy", visible: true },
+        { id: "l-ql-3", label: "Terms & Conditions", href: "/terms", visible: true },
+        { id: "l-ql-4", label: "Customer Success & Support", href: "/questions", visible: true },
+        { id: "l-ql-5", label: "Disclaimer", href: "/terms#disclaimer", visible: true },
+        { id: "l-ql-6", label: "Careers", href: "/contact", visible: true },
+        { id: "l-ql-7", label: "Blogs", href: "/blogs", visible: true },
+        { id: "l-ql-8", label: "Payments", href: "/trips", visible: true }
+      ]
+    }
+  ]
+};
+
+const settingsCache = new Map();
+const SETTINGS_CACHE_TTL = 10 * 60 * 1000;
+
+exports.getSettings = async (req, res) => {
+  try {
+    const cached = settingsCache.get('settings');
+    if (cached && Date.now() < cached.expiresAt) {
+      return res.json({ success: true, data: cached.data });
+    }
+
+    const setting = await prisma.setting.findUnique({
+      where: { key: SETTINGS_KEY }
+    });
+
+    if (!setting) {
+      const defaultData = {
+        bookingForm: {
+          roomSharingOptions: [
+            { label: 'Triple Sharing', priceAdjustment: 0 },
+            { label: 'Twin Sharing', priceAdjustment: 1500 },
+            { label: 'Quad Sharing', priceAdjustment: -1000 }
+          ],
+          trainOptions: [
+            { label: 'Non AC', priceAdjustment: 0 },
+            { label: '3AC', priceAdjustment: 2500 },
+            { label: 'No', priceAdjustment: -1500 }
+          ],
+          submitButtonText: 'Confirm Booking',
+          gstOption: 'full'
+        },
+        inquiryPopup: {
+          enabled: true,
+          delay: 12,
+          title: "Plan Your Next Trip",
+          description: "Connect with our destination experts"
+        }
+      };
+      settingsCache.set('settings', { data: defaultData, expiresAt: Date.now() + SETTINGS_CACHE_TTL });
+      return res.json({ success: true, data: defaultData });
+    }
+
+    settingsCache.set('settings', { data: setting.value, expiresAt: Date.now() + SETTINGS_CACHE_TTL });
+    res.json({ success: true, data: setting.value });
+  } catch (error) {
+    console.error("Settings Fetch Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getPublicSettings = async (req, res) => {
+  try {
+    const cached = settingsCache.get('public_settings');
+    if (cached && Date.now() < cached.expiresAt) {
+      res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=600');
+      return res.json({ success: true, data: cached.data });
+    }
+
+    const setting = await prisma.setting.findUnique({
+      where: { key: SETTINGS_KEY },
+      select: { value: true }
+    });
+    const value = setting?.value && typeof setting.value === 'object'
+      ? setting.value
+      : {};
+
+    settingsCache.set('public_settings', { data: value, expiresAt: Date.now() + SETTINGS_CACHE_TTL });
+    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=600');
+    res.json({ success: true, data: value });
+  } catch (error) {
+    console.error("Public Settings Fetch Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateSettings = async (req, res) => {
+  try {
+    const updatedSetting = await prisma.setting.upsert({
+      where: { key: SETTINGS_KEY },
+      update: { value: req.body },
+      create: { key: SETTINGS_KEY, value: req.body }
+    });
+
+    settingsCache.clear();
+    res.json({ success: true, data: updatedSetting.value });
+  } catch (error) {
+    console.error("Settings Update Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getDraftSettings = async (req, res) => {
+  try {
+    const setting = await prisma.setting.findUnique({
+      where: { key: SETTINGS_KEY }
+    });
+    res.json({ success: true, data: setting?.value || {} });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.uploadHeroVideo = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No video file provided' });
+    }
+    const heroDir = path.join(__dirname, '../../public/uploads/hero');
+    if (!fs.existsSync(heroDir)) {
+      fs.mkdirSync(heroDir, { recursive: true });
+    }
+    const filename = `hero-${Date.now()}${path.extname(req.file.originalname)}`;
+    const filePath = path.join(heroDir, filename);
+    fs.writeFileSync(filePath, req.file.buffer);
+
+    const videoUrl = `/uploads/hero/${filename}`;
+    const publicId = `local_${filename}`;
+
+    const existingSetting = await prisma.setting.findUnique({ where: { key: SETTINGS_KEY } });
+    const settingsData = existingSetting?.value ? { ...existingSetting.value } : {};
+    settingsData.heroVideoUrl = videoUrl;
+    settingsData.heroVideoPublicId = publicId;
+    settingsData.heroVideoEnabled = true;
+
+    const updatedSetting = await prisma.setting.upsert({
+      where: { key: SETTINGS_KEY },
+      update: { value: settingsData },
+      create: { key: SETTINGS_KEY, value: settingsData }
+    });
+
+    res.json({ success: true, data: updatedSetting.value });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.deleteHeroVideo = async (req, res) => {
+  try {
+    const existingSetting = await prisma.setting.findUnique({ where: { key: SETTINGS_KEY } });
+    if (!existingSetting || !existingSetting.value) {
+      return res.status(404).json({ success: false, message: 'Settings not found' });
+    }
+
+    const settingsData = { ...existingSetting.value };
+    settingsData.heroVideoUrl = null;
+    settingsData.heroVideoPublicId = null;
+    settingsData.heroVideoEnabled = false;
+
+    const updatedSetting = await prisma.setting.update({
+      where: { key: SETTINGS_KEY },
+      data: { value: settingsData }
+    });
+
+    res.json({ success: true, data: updatedSetting.value });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.toggleHeroVideo = async (req, res) => {
+  try {
+    const existingSetting = await prisma.setting.findUnique({ where: { key: SETTINGS_KEY } });
+    if (!existingSetting || !existingSetting.value) {
+      return res.status(404).json({ success: false, message: 'Settings not found' });
+    }
+
+    const settingsData = { ...existingSetting.value };
+    settingsData.heroVideoEnabled = !settingsData.heroVideoEnabled;
+
+    const updatedSetting = await prisma.setting.update({
+      where: { key: SETTINGS_KEY },
+      data: { value: settingsData }
+    });
+
+    res.json({ success: true, data: updatedSetting.value });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getFooterSettings = async (req, res) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: SETTINGS_KEY } });
+    if (!setting || !setting.value || !setting.value.footerConfig) {
+      return res.json({ success: true, data: defaultFooterConfig });
+    }
+    res.json({ success: true, data: setting.value.footerConfig });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateFooterSettings = async (req, res) => {
+  try {
+    const existingSetting = await prisma.setting.findUnique({ where: { key: SETTINGS_KEY } });
+    const settingsData = existingSetting?.value ? { ...existingSetting.value } : {};
+    settingsData.footerConfig = req.body;
+
+    const updatedSetting = await prisma.setting.upsert({
+      where: { key: SETTINGS_KEY },
+      update: { value: settingsData },
+      create: { key: SETTINGS_KEY, value: settingsData }
+    });
+
+    res.json({ success: true, data: updatedSetting.value.footerConfig });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+// ==========================================
+// SECTION 2: USER PROFILE & OS SETTINGS
+// ==========================================
+
 const ALGORITHM = 'aes-256-cbc';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_SECRET || 'youthcamping_secret_key_32_bytes!';
 const IV_LENGTH = 16;
@@ -17,30 +320,16 @@ function encrypt(text) {
   return `${iv.toString('hex')}:${encrypted}`;
 }
 
-function decrypt(text) {
-  if (!text || !text.includes(':')) return text;
-  const [ivHex, encryptedHex] = text.split(':');
-  const iv = Buffer.from(ivHex, 'hex');
-  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
-}
-
-// Memory stores for Sessions, API Keys, and Integrations
 const inMemorySessions = new Map();
 const inMemoryAPIKeys = new Map();
 const inMemoryIntegrations = new Map();
 
-// Helper to sanitize admin user object
 function sanitizeUser(admin) {
   if (!admin) return null;
   const { password, ...rest } = admin;
   return rest;
 }
 
-// 1. GET /api/admin/me (getProfile)
 exports.getProfile = async (req, res, next) => {
   try {
     const admin = await prisma.admin.findUnique({
@@ -77,7 +366,6 @@ exports.getProfile = async (req, res, next) => {
   }
 };
 
-// 2. PUT /api/admin/me (updateProfile)
 exports.updateProfile = async (req, res, next) => {
   try {
     const { phone, avatarUrl, notificationPreferences, uiSettings, location, bio, preferences } = req.body;
@@ -132,7 +420,6 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
-// 3. POST /api/admin/me/avatar (uploadAvatar)
 exports.uploadAvatar = async (req, res, next) => {
   try {
     const { avatarUrl } = req.body;
@@ -159,7 +446,6 @@ exports.uploadAvatar = async (req, res, next) => {
   }
 };
 
-// 4. PUT /api/admin/me/password (changePassword)
 exports.changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword, confirmPassword } = req.body;
@@ -205,7 +491,6 @@ exports.changePassword = async (req, res, next) => {
   }
 };
 
-// 5. GET /api/admin/me/sessions (getSessions)
 exports.getSessions = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -239,7 +524,6 @@ exports.getSessions = async (req, res, next) => {
   }
 };
 
-// 6. DELETE /api/admin/me/sessions/:sessionId (logoutSession)
 exports.logoutSession = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -264,7 +548,6 @@ exports.logoutSession = async (req, res, next) => {
   }
 };
 
-// 7. POST /api/admin/me/sessions/logout-all-except-current (logoutAllExcept / logoutAllExceptCurrent)
 exports.logoutAllExcept = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -280,7 +563,6 @@ exports.logoutAllExcept = async (req, res, next) => {
 };
 exports.logoutAllExceptCurrent = exports.logoutAllExcept;
 
-// 8. GET /api/admin/me/activity-logs (getActivityLogs)
 exports.getActivityLogs = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page || '1', 10);
@@ -318,7 +600,6 @@ exports.getActivityLogs = async (req, res, next) => {
   }
 };
 
-// 9. GET /api/admin/me/audit (exportAuditLog)
 exports.exportAuditLog = async (req, res, next) => {
   try {
     const csvHeader = 'Timestamp,Action,Resource,Details,Status,IPAddress\n';
@@ -335,7 +616,6 @@ exports.exportAuditLog = async (req, res, next) => {
   }
 };
 
-// 10. GET /api/admin/me/api-keys (getAPIKeys)
 exports.getAPIKeys = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -360,7 +640,6 @@ exports.getAPIKeys = async (req, res, next) => {
   }
 };
 
-// 11. POST /api/admin/me/api-keys (generateAPIKey)
 exports.generateAPIKey = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -408,7 +687,6 @@ exports.generateAPIKey = async (req, res, next) => {
   }
 };
 
-// 12. DELETE /api/admin/me/api-keys/:keyId (deleteAPIKey)
 exports.deleteAPIKey = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -433,7 +711,6 @@ exports.deleteAPIKey = async (req, res, next) => {
   }
 };
 
-// 13. GET /api/admin/me/export (exportUserData)
 exports.exportUserData = async (req, res, next) => {
   try {
     const admin = await prisma.admin.findUnique({
@@ -462,7 +739,6 @@ exports.exportUserData = async (req, res, next) => {
   }
 };
 
-// 14. DELETE /api/admin/me (deleteAccount)
 exports.deleteAccount = async (req, res, next) => {
   try {
     const { password } = req.body;
@@ -499,7 +775,6 @@ exports.deleteAccount = async (req, res, next) => {
   }
 };
 
-// 15. GET /api/admin/me/integrations (getIntegrations)
 exports.getIntegrations = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -519,7 +794,6 @@ exports.getIntegrations = async (req, res, next) => {
   }
 };
 
-// Integration connect & test helpers
 exports.connectIntegration = async (req, res, next) => {
   try {
     const userId = req.user.id;
