@@ -419,6 +419,9 @@ const sanitizeTripData = (data) => {
   
   // List of relation fields and non-db/ui-only fields to exclude
   const fieldsToRemove = [
+    'features',
+    'overview',
+    'tripCode',
     'bookings',
     'assignments',
     'guideAssignments',
