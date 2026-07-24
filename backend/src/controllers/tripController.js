@@ -460,19 +460,45 @@ const sanitizeTripData = (data) => {
 exports.createTrip = async (req, res, next) => {
   try {
     const tripData = sanitizeTripData(req.body);
-    const tenantId = req.user.tenantId;
+    const tenantId = req.user?.tenantId || "default";
 
     if (req.body.reviews) {
       tripData.tripReviews = req.body.reviews;
     }
 
-    // Support manual ID (Trip Code)
-    const customId = req.body.id || req.body.tripCode || req.body.shortName;
+    // Support manual ID (Trip Code) with duplicate check
+    const customId = (req.body.id || req.body.tripCode || req.body.shortName || "").trim();
     if (customId) {
-      tripData.id = customId.toUpperCase();
+      const formattedId = customId.toUpperCase().replace(/\s+/g, '-');
+      const existingTrip = await prisma.trip.findFirst({ where: { id: formattedId, tenantId } });
+      if (existingTrip) {
+        tripData.id = `${formattedId}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+      } else {
+        tripData.id = formattedId;
+      }
     } else {
       delete tripData.id;
     }
+
+    // Ensure required schema field 'slug' is always present and unique
+    if (!tripData.slug && tripData.title) {
+      const baseSlug = tripData.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '');
+      const uniqueSuffix = Math.floor(1000 + Math.random() * 9000);
+      tripData.slug = `${baseSlug}-${uniqueSuffix}`;
+    } else if (!tripData.slug) {
+      tripData.slug = `trip-${Date.now()}`;
+    }
+
+    // Ensure required schema field 'description' is present
+    if (!tripData.description) {
+      tripData.description = tripData.overview || `${tripData.title || 'Trip'} expedition in ${tripData.location || 'destination'}.`;
+    }
+
+    // Default required numeric/string fields
+    if (!tripData.duration) tripData.duration = "5 Days / 4 Nights";
 
     const trip = await prisma.trip.create({
       data: {
@@ -485,6 +511,7 @@ exports.createTrip = async (req, res, next) => {
 
     res.status(201).json({ success: true, data: trip });
   } catch (error) {
+    console.error("Error creating trip:", error);
     next(error);
   }
 };
