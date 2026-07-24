@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const email = 'hemal.patel@youthcamping.online';
-  const password = process.env.ADMIN_PASSWORD || 'YouthCamping@2026';
+  const password = process.env.ADMIN_PASSWORD || 'Hemal@007';
   const hash = await bcrypt.hash(password, 10);
 
   const admin = await prisma.admin.upsert({
