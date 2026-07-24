@@ -1,0 +1,46 @@
+[
+  {
+    "id": "cmrrlgdr5004iup8w0ed77xzo",
+    "tenantId": "default",
+    "bookingId": "cmrrlf1qn0047up8wjw5gnvcu",
+    "amount": 3000,
+    "status": "success",
+    "transactionId": null,
+    "paymentMode": "UPI",
+    "createdAt": "2026-07-19T09:29:16.193Z",
+    "updatedAt": "2026-07-19T09:29:16.193Z"
+  },
+  {
+    "id": "cmrrlql77005iup8wmfthisu7",
+    "tenantId": "default",
+    "bookingId": "cmrrlp4qq0057up8w35iqk3e3",
+    "amount": 12000,
+    "status": "success",
+    "transactionId": null,
+    "paymentMode": "UPI",
+    "createdAt": "2026-07-19T09:37:12.403Z",
+    "updatedAt": "2026-07-19T09:37:12.403Z"
+  },
+  {
+    "id": "cmrt8kq70002k5qenr7xislc3",
+    "tenantId": "default",
+    "bookingId": "cmrt8h2cl00275qenyabdpj6k",
+    "amount": 10000,
+    "status": "success",
+    "transactionId": null,
+    "paymentMode": "UPI",
+    "createdAt": "2026-07-20T13:04:16.285Z",
+    "updatedAt": "2026-07-20T13:04:16.285Z"
+  },
+  {
+    "id": "cmryjveix001djqbpr8gvfc1i",
+    "tenantId": "default",
+    "bookingId": "cmryjkz22000yjqbphjscafq1",
+    "amount": 5250,
+    "status": "success",
+    "transactionId": null,
+    "paymentMode": "UPI",
+    "createdAt": "2026-07-24T06:19:21.033Z",
+    "updatedAt": "2026-07-24T06:19:21.033Z"
+  }
+]

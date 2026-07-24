@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cmr938p7z00028sjqfieeq8fv",
+    "userId": "admin_master_prod",
+    "expandedModule": "Business",
+    "updatedAt": "2026-07-19T07:53:08.884Z"
+  },
+  {
+    "id": "cmrj7h9rm0005sy2gzkm2i05z",
+    "userId": "cmrj7fmv80002sy2gkrxzyt33",
+    "expandedModule": "Operations",
+    "updatedAt": "2026-07-13T12:38:22.555Z"
+  },
+  {
+    "id": "cmrvzid6g0001k9r8mcark1sm",
+    "userId": "cmrvyuvxr0000v13a1wgkotkg",
+    "expandedModule": "Sales",
+    "updatedAt": "2026-07-24T06:17:52.665Z"
+  },
+  {
+    "id": "cmrrjc2pd003bup8w5zkblf2t",
+    "userId": "cmrrjbljo0000wk4bzcf97xlj",
+    "expandedModule": "Operations",
+    "updatedAt": "2026-07-24T06:26:00.608Z"
+  },
+  {
+    "id": "cmryo9n1m004mjqbp046oyqd5",
+    "userId": "cmrvyuwsh0001v13aw0ws30yy",
+    "expandedModule": "Approval Center",
+    "updatedAt": "2026-07-24T08:22:27.784Z"
+  }
+]

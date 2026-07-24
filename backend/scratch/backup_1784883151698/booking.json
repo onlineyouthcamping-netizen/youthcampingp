@@ -1,0 +1,796 @@
+[
+  {
+    "id": "cmrrlf1qn0047up8wjw5gnvcu",
+    "tenantId": "default",
+    "bookingId": "BK-R84NMQPD89K9",
+    "tripId": "MKA-1",
+    "tripName": "Manali Kasol Amritsar Backpacking Trip",
+    "status": "confirmed",
+    "name": "patel neel",
+    "fullName": "patel neel",
+    "phone": "7383504400",
+    "mobile": "7383504400",
+    "email": "parthpatel07902@gmail.com",
+    "age": null,
+    "gender": null,
+    "numberOfTravelers": 1,
+    "baseAmount": 15000,
+    "gstAmount": 750,
+    "depositGst": 150,
+    "totalAmount": 15000,
+    "amount": 3150,
+    "advancePaid": 3000,
+    "remainingAmount": 12000,
+    "paymentMode": "UPI",
+    "paymentStatus": "Partial",
+    "payment_status": "pending",
+    "payment_method": "upi",
+    "upi_reference": null,
+    "notes": "City/State: ahmedabad. Requests: . WhatsApp Opt-in: Yes",
+    "adminNotes": null,
+    "sourceBookingLinkId": "cmrrl9qkz003uup8w1tb4r3hq",
+    "salesAdminId": "cmrrjbljo0000wk4bzcf97xlj",
+    "sourceMeta": {
+      "tripId": "MKA-1",
+      "tripName": "Manali Kasol Amritsar Backpacking Trip",
+      "expiresAt": "2026-07-20T09:24:06.192Z",
+      "pickupCity": "TBD",
+      "paymentMode": "Partial Payment",
+      "bookingItems": [
+        {
+          "id": "3_ac_train",
+          "qty": 1,
+          "name": "Pickup: AHMEDABAD/GANDHINAGAR , Drop: HIMACHAL PRADESH & PUNJAB 3TIER AC Sleeper",
+          "rate": 15000
+        },
+        {
+          "id": "quad_sharing_(4_person)",
+          "qty": 1,
+          "name": "Quad Sharing (4 Person)",
+          "rate": 0
+        },
+        {
+          "id": "gst_discount__1784453344010",
+          "qty": 1,
+          "name": "gst discount ",
+          "rate": -750,
+          "isCustom": true
+        }
+      ],
+      "customAmount": 3000,
+      "departureDate": "2026-09-13T00:00:00.000Z"
+    },
+    "departureDate": "2026-09-13T00:00:00.000Z",
+    "pickupCity": "Ahmedabad/Gandhinagar ",
+    "skipDays": 0,
+    "adjustedPrice": 12999,
+    "joiningDate": null,
+    "reminderSent": false,
+    "passengers": {
+      "details": {
+        "roomType": "Quad Sharing (4 Person)",
+        "basePrice": 12999,
+        "gstAmount": 750,
+        "depositGst": 150,
+        "trainClass": "3 AC TRAIN",
+        "ticketStatus": "Not Booked"
+      },
+      "persons": [
+        {
+          "age": 23,
+          "name": "Patel Neel",
+          "email": null,
+          "phone": "7383504400",
+          "gender": "Male",
+          "roomSharing": "Quad Sharing (4 Person)",
+          "trainOption": "3 AC TRAIN",
+          "foodPreference": "Normal Food"
+        }
+      ]
+    },
+    "trainTicketRequired": false,
+    "trainTicketStatus": "PENDING",
+    "createdAt": "2026-07-19T09:28:13.967Z",
+    "updatedAt": "2026-07-19T09:30:16.428Z"
+  },
+  {
+    "id": "cmrt2qufj0001m3t0za3mcl81",
+    "tenantId": "default",
+    "bookingId": "BK-SPITI-G1",
+    "tripId": "SPT-1",
+    "tripName": "Spiti Valley Road Trip",
+    "status": "confirmed",
+    "name": "Meetkumar",
+    "fullName": "Meetkumar",
+    "phone": "9106076839",
+    "mobile": "9106076839",
+    "email": "meetkumar@test.com",
+    "age": 21,
+    "gender": "Male",
+    "numberOfTravelers": 3,
+    "baseAmount": 70500,
+    "gstAmount": null,
+    "depositGst": null,
+    "totalAmount": 70500,
+    "amount": 70500,
+    "advancePaid": 52000,
+    "remainingAmount": 18500,
+    "paymentMode": "UPI",
+    "paymentStatus": "PARTIAL",
+    "payment_status": "partial",
+    "payment_method": "upi",
+    "upi_reference": "UPI",
+    "notes": null,
+    "adminNotes": "Group Booking 1 to 3",
+    "sourceBookingLinkId": null,
+    "salesAdminId": "cmrrjbljo0000wk4bzcf97xlj",
+    "sourceMeta": null,
+    "departureDate": "2026-07-21T00:00:00.000Z",
+    "pickupCity": null,
+    "skipDays": 0,
+    "adjustedPrice": null,
+    "joiningDate": null,
+    "reminderSent": false,
+    "passengers": {
+      "details": {
+        "roomType": null,
+        "gstAmount": 0
+      },
+      "persons": [
+        {
+          "age": 21,
+          "name": "Meetkumar",
+          "phone": "9106076839",
+          "gender": "Male"
+        },
+        {
+          "age": 27,
+          "name": "Rahul",
+          "phone": "7600908899",
+          "gender": "Male"
+        },
+        {
+          "age": 26,
+          "name": "Tarang",
+          "phone": "7806043179",
+          "gender": "Male"
+        }
+      ]
+    },
+    "trainTicketRequired": true,
+    "trainTicketStatus": "CONFIRMED",
+    "createdAt": "2026-07-20T10:21:04.015Z",
+    "updatedAt": "2026-07-24T06:09:35.182Z"
+  },
+  {
+    "id": "cmrrlp4qq0057up8w35iqk3e3",
+    "tenantId": "default",
+    "bookingId": "BK-RWSV21T9KTXS",
+    "tripId": "MKA-1",
+    "tripName": "Manali Kasol Amritsar Backpacking Trip",
+    "status": "confirmed",
+    "name": " PATEL NEEL ",
+    "fullName": " PATEL NEEL ",
+    "phone": "9023288082",
+    "mobile": "9023288082",
+    "email": "pneel6879@gmail.com",
+    "age": null,
+    "gender": null,
+    "numberOfTravelers": 4,
+    "baseAmount": 60000,
+    "gstAmount": 3000,
+    "depositGst": 600,
+    "totalAmount": 60000,
+    "amount": 12600,
+    "advancePaid": 12000,
+    "remainingAmount": 48000,
+    "paymentMode": "UPI",
+    "paymentStatus": "Partial",
+    "payment_status": "pending",
+    "payment_method": "upi",
+    "upi_reference": null,
+    "notes": "City/State: Ahmedabad . Requests: . WhatsApp Opt-in: Yes",
+    "adminNotes": null,
+    "sourceBookingLinkId": "cmrrlidwn004xup8w7n7jn35a",
+    "salesAdminId": "cmrrjbljo0000wk4bzcf97xlj",
+    "sourceMeta": {
+      "tripId": "MKA-1",
+      "tripName": "Manali Kasol Amritsar Backpacking Trip",
+      "expiresAt": "2026-07-20T09:30:49.678Z",
+      "pickupCity": "TBD",
+      "paymentMode": "Partial Payment",
+      "bookingItems": [
+        {
+          "id": "3_ac_train",
+          "qty": 4,
+          "name": "Pickup: AHMEDABAD/GANDHINAGAR , Drop: HIMACHAL PRADESH & PUNJAB 3TIER AC Sleeper",
+          "rate": 15000
+        },
+        {
+          "id": "quad_sharing_(4_person)",
+          "qty": 4,
+          "name": "Quad Sharing (4 Person)",
+          "rate": 0
+        },
+        {
+          "id": "gst_discount_1784453813444",
+          "qty": 4,
+          "name": "GST DISCOUNT",
+          "rate": -750,
+          "isCustom": true
+        }
+      ],
+      "customAmount": 3000,
+      "departureDate": "2026-09-13T00:00:00.000Z"
+    },
+    "departureDate": "2026-09-13T00:00:00.000Z",
+    "pickupCity": "Ahmedabad/Gandhinagar ",
+    "skipDays": 0,
+    "adjustedPrice": 12999,
+    "joiningDate": null,
+    "reminderSent": false,
+    "passengers": {
+      "details": {
+        "roomType": "Quad Sharing (4 Person)",
+        "basePrice": 12999,
+        "gstAmount": 3000,
+        "depositGst": 600,
+        "trainClass": "3 AC TRAIN",
+        "ticketStatus": "Not Booked"
+      },
+      "persons": [
+        {
+          "id": "main",
+          "age": 20,
+          "name": " PATEL NEEL ",
+          "type": "3 AC TRAIN Train",
+          "email": "pneel6879@gmail.com",
+          "phone": "9023288082",
+          "gender": "Male",
+          "status": "Form complete",
+          "roomSharing": "Double",
+          "foodPreference": "Normal Food"
+        },
+        {
+          "id": "p-1",
+          "age": 21,
+          "name": "Patel Priya",
+          "type": "3 AC TRAIN Train",
+          "email": "Not specified",
+          "phone": "6352302591",
+          "gender": "Female",
+          "status": "Form complete",
+          "roomSharing": "Quad Sharing (4 Person)",
+          "foodPreference": "Normal Food"
+        },
+        {
+          "id": "p-2",
+          "age": 21,
+          "name": "Patel Nehal",
+          "type": "3 AC TRAIN Train",
+          "email": "Not specified",
+          "phone": "9924389826",
+          "gender": "Female",
+          "status": "Form complete",
+          "roomSharing": "Quad Sharing (4 Person)",
+          "foodPreference": "Normal Food"
+        },
+        {
+          "id": "p-3",
+          "age": 32,
+          "name": "Patel Bhumi",
+          "type": "3 AC TRAIN Train",
+          "email": "Not specified",
+          "phone": "9313381720",
+          "gender": "Female",
+          "status": "Form complete",
+          "roomSharing": "Quad Sharing (4 Person)",
+          "foodPreference": "Normal Food"
+        }
+      ]
+    },
+    "trainTicketRequired": false,
+    "trainTicketStatus": "BOOKED",
+    "createdAt": "2026-07-19T09:36:04.418Z",
+    "updatedAt": "2026-07-19T09:38:32.345Z"
+  },
+  {
+    "id": "cmrt7yg2g001p5qen681ur1oo",
+    "tenantId": "default",
+    "bookingId": "BK-UVWO9ANHCWZ0",
+    "tripId": "SPT-1",
+    "tripName": "Spiti Valley Road Trip",
+    "status": "pending",
+    "name": "YouthCamping Online",
+    "fullName": "YouthCamping Online",
+    "phone": "9999887787",
+    "mobile": "9999887787",
+    "email": "onlineyouthcamping@gmail.com",
+    "age": null,
+    "gender": null,
+    "numberOfTravelers": 1,
+    "baseAmount": 23499,
+    "gstAmount": 1175,
+    "depositGst": 250,
+    "totalAmount": 24674,
+    "amount": 5250,
+    "advancePaid": 5250,
+    "remainingAmount": 19424,
+    "paymentMode": "UPI",
+    "paymentStatus": "Pending / Manual Verification",
+    "payment_status": "pending",
+    "payment_method": "upi",
+    "upi_reference": null,
+    "notes": "City/State: H. Requests: . WhatsApp Opt-in: Yes",
+    "adminNotes": null,
+    "sourceBookingLinkId": "cmrt7xhu2001j5qenc2m7k7if",
+    "salesAdminId": "cmrrjbljo0000wk4bzcf97xlj",
+    "sourceMeta": {
+      "tripId": "SPT-1",
+      "tripName": "Spiti Valley Road Trip",
+      "expiresAt": "2026-07-21T12:46:12.333Z",
+      "pickupCity": "TBD",
+      "paymentMode": "Partial Payment",
+      "customAmount": 5000,
+      "departureDate": "2026-09-01T00:00:00.000Z"
+    },
+    "departureDate": "2026-09-01T00:00:00.000Z",
+    "pickupCity": "Ahmedabad ",
+    "skipDays": 0,
+    "adjustedPrice": 21499,
+    "joiningDate": null,
+    "reminderSent": false,
+    "passengers": {
+      "details": {
+        "roomType": "QUAD SHARING ",
+        "basePrice": 21499,
+        "gstAmount": 1175,
+        "depositGst": 250,
+        "trainClass": "3 TIER AC TRAIN ",
+        "ticketStatus": "Not Booked"
+      },
+      "persons": [
+        {
+          "age": 6,
+          "name": "YouthCamping Online",
+          "email": null,
+          "phone": "9999887787",
+          "gender": "Male",
+          "roomSharing": "QUAD SHARING ",
+          "trainOption": "3 TIER AC TRAIN ",
+          "foodPreference": "Normal Food"
+        }
+      ]
+    },
+    "trainTicketRequired": false,
+    "trainTicketStatus": "NOT_REQUIRED",
+    "createdAt": "2026-07-20T12:46:56.728Z",
+    "updatedAt": "2026-07-24T06:09:35.182Z"
+  },
+  {
+    "id": "cmrt2quru0005m3t0cmdvcpf4",
+    "tenantId": "default",
+    "bookingId": "BK-SPITI-G2",
+    "tripId": "SPT-1",
+    "tripName": "Spiti Valley Road Trip",
+    "status": "confirmed",
+    "name": "Nirav",
+    "fullName": "Nirav",
+    "phone": "6351405947",
+    "mobile": "6351405947",
+    "email": "parthpatel07902@gmail.com",
+    "age": 25,
+    "gender": "Male",
+    "numberOfTravelers": 2,
+    "baseAmount": 53000,
+    "gstAmount": null,
+    "depositGst": null,
+    "totalAmount": 53000,
+    "amount": 53000,
+    "advancePaid": 53000,
+    "remainingAmount": 0,
+    "paymentMode": "UPI",
+    "paymentStatus": "PAID",
+    "payment_status": "paid",
+    "payment_method": "upi",
+    "upi_reference": "CHAKABHAI AC",
+    "notes": null,
+    "adminNotes": "1 ROOM - Double Sharing",
+    "sourceBookingLinkId": null,
+    "salesAdminId": "cmrrjbljo0000wk4bzcf97xlj",
+    "sourceMeta": null,
+    "departureDate": "2026-07-21T00:00:00.000Z",
+    "pickupCity": null,
+    "skipDays": 0,
+    "adjustedPrice": null,
+    "joiningDate": null,
+    "reminderSent": false,
+    "passengers": {
+      "details": {
+        "roomType": "Double Sharing",
+        "gstAmount": 0,
+        "personsRoomDetails": {
+          "Nirav": {
+            "roomNo": "Room 1",
+            "roomType": "Couple",
+            "coupleWith": "Jayshree"
+          },
+          "Jayshree": {
+            "roomNo": "Room 1",
+            "roomType": "Couple",
+            "coupleWith": "Nirav"
+          }
+        }
+      },
+      "persons": [
+        {
+          "id": "main",
+          "age": 25,
+          "name": "Nirav",
+          "type": "Sleeper Train",
+          "email": "parthpatel07902@gmail.com",
+          "phone": "6351405947",
+          "gender": "Male",
+          "status": "Form complete",
+          "roomSharing": "Double",
+          "foodPreference": "Normal Food"
+        },
+        {
+          "id": "p-1",
+          "age": 30,
+          "name": "Jayshree",
+          "type": "Sleeper Train",
+          "email": "Not specified",
+          "phone": "Not specified",
+          "gender": "Female",
+          "status": "Form complete",
+          "roomSharing": "Double",
+          "foodPreference": "Normal Food"
+        }
+      ]
+    },
+    "trainTicketRequired": true,
+    "trainTicketStatus": "CONFIRMED",
+    "createdAt": "2026-07-20T10:21:04.458Z",
+    "updatedAt": "2026-07-24T06:09:35.182Z"
+  },
+  {
+    "id": "cmrt2qvdb000dm3t06ns133od",
+    "tenantId": "default",
+    "bookingId": "BK-SPITI-G4",
+    "tripId": "SPT-1",
+    "tripName": "Spiti Valley Road Trip",
+    "status": "confirmed",
+    "name": "Prithviraj",
+    "fullName": "Prithviraj",
+    "phone": "9875948006",
+    "mobile": "9875948006",
+    "email": "prithviraj@test.com",
+    "age": 18,
+    "gender": "Male",
+    "numberOfTravelers": 1,
+    "baseAmount": 23750,
+    "gstAmount": null,
+    "depositGst": null,
+    "totalAmount": 23750,
+    "amount": 23750,
+    "advancePaid": 23750,
+    "remainingAmount": 0,
+    "paymentMode": "UPI",
+    "paymentStatus": "PAID",
+    "payment_status": "paid",
+    "payment_method": "upi",
+    "upi_reference": "YAC",
+    "notes": null,
+    "adminNotes": "Booking 11",
+    "sourceBookingLinkId": null,
+    "salesAdminId": "cmrrjbljo0000wk4bzcf97xlj",
+    "sourceMeta": null,
+    "departureDate": "2026-07-21T00:00:00.000Z",
+    "pickupCity": null,
+    "skipDays": 0,
+    "adjustedPrice": null,
+    "joiningDate": null,
+    "reminderSent": false,
+    "passengers": {
+      "details": {
+        "roomType": null,
+        "gstAmount": 0
+      },
+      "persons": [
+        {
+          "age": 18,
+          "name": "Prithviraj",
+          "phone": "9875948006",
+          "gender": "Male"
+        }
+      ]
+    },
+    "trainTicketRequired": true,
+    "trainTicketStatus": "CONFIRMED",
+    "createdAt": "2026-07-20T10:21:05.231Z",
+    "updatedAt": "2026-07-24T06:09:35.182Z"
+  },
+  {
+    "id": "cmrt2qv2g0009m3t0ygcf026c",
+    "tenantId": "default",
+    "bookingId": "BK-SPITI-G3",
+    "tripId": "SPT-1",
+    "tripName": "Spiti Valley Road Trip",
+    "status": "confirmed",
+    "name": "Jainish",
+    "fullName": "Jainish",
+    "phone": "8160399755",
+    "mobile": "8160399755",
+    "email": "jainish@test.com",
+    "age": 19,
+    "gender": "Male",
+    "numberOfTravelers": 5,
+    "baseAmount": 115000,
+    "gstAmount": null,
+    "depositGst": null,
+    "totalAmount": 115000,
+    "amount": 115000,
+    "advancePaid": 115000,
+    "remainingAmount": 0,
+    "paymentMode": "CASH",
+    "paymentStatus": "PAID",
+    "payment_status": "paid",
+    "payment_method": "upi",
+    "upi_reference": "OFFICE CASH",
+    "notes": null,
+    "adminNotes": "Group Booking 6 to 10",
+    "sourceBookingLinkId": null,
+    "salesAdminId": "cmrrjbljo0000wk4bzcf97xlj",
+    "sourceMeta": null,
+    "departureDate": "2026-07-21T00:00:00.000Z",
+    "pickupCity": null,
+    "skipDays": 0,
+    "adjustedPrice": null,
+    "joiningDate": null,
+    "reminderSent": false,
+    "passengers": {
+      "details": {
+        "roomType": null,
+        "gstAmount": 0
+      },
+      "persons": [
+        {
+          "age": 19,
+          "name": "Jainish",
+          "phone": "8160399755",
+          "gender": "Male"
+        },
+        {
+          "age": 18,
+          "name": "Namankumar",
+          "gender": "Male"
+        },
+        {
+          "age": 18,
+          "name": "Harsh",
+          "gender": "Male"
+        },
+        {
+          "age": 19,
+          "name": "Dhruv",
+          "gender": "Male"
+        },
+        {
+          "age": 19,
+          "name": "Omkumar",
+          "phone": "7990706241",
+          "gender": "Male"
+        }
+      ]
+    },
+    "trainTicketRequired": true,
+    "trainTicketStatus": "CONFIRMED",
+    "createdAt": "2026-07-20T10:21:04.841Z",
+    "updatedAt": "2026-07-24T06:09:35.182Z"
+  },
+  {
+    "id": "cmrt8h2cl00275qenyabdpj6k",
+    "tenantId": "default",
+    "bookingId": "BK-IIK8WAVAA7XN",
+    "tripId": "SPT-1",
+    "tripName": "Spiti Valley Road Trip",
+    "status": "confirmed",
+    "name": "sewani Harsh jayeshkumar",
+    "fullName": "sewani Harsh jayeshkumar",
+    "phone": "7874154040",
+    "mobile": "7874154040",
+    "email": "harshsewani547@gmail.com",
+    "age": null,
+    "gender": null,
+    "numberOfTravelers": 2,
+    "baseAmount": 46000,
+    "gstAmount": 2300,
+    "depositGst": 500,
+    "totalAmount": 46000,
+    "amount": 10500,
+    "advancePaid": 10000,
+    "remainingAmount": 36000,
+    "paymentMode": "UPI",
+    "paymentStatus": "Partial",
+    "payment_status": "pending",
+    "payment_method": "upi",
+    "upi_reference": null,
+    "notes": "City/State: Ahmedabad . Requests: . WhatsApp Opt-in: Yes",
+    "adminNotes": null,
+    "sourceBookingLinkId": "cmrt7z1qr001v5qeneahhsoma",
+    "salesAdminId": "cmrrjbljo0000wk4bzcf97xlj",
+    "sourceMeta": {
+      "tripId": "SPT-1",
+      "tripName": "Spiti Valley Road Trip",
+      "expiresAt": "2026-07-21T12:47:24.788Z",
+      "pickupCity": "TBD",
+      "paymentMode": "Partial Payment",
+      "bookingItems": [
+        {
+          "id": "3_tier_ac_train_",
+          "qty": 2,
+          "name": "Pickup: AHMEDABAD , Drop: HIMACHAL PRADESH 3TIER AC Sleeper",
+          "rate": 23000
+        },
+        {
+          "id": "quad_sharing_",
+          "qty": 2,
+          "name": "QUAD SHARING ",
+          "rate": 0
+        },
+        {
+          "id": "gst_discount_1784552640242",
+          "qty": 2,
+          "name": "gst discount",
+          "rate": -1150,
+          "isCustom": true
+        }
+      ],
+      "customAmount": 5000,
+      "departureDate": "2026-09-01T00:00:00.000Z"
+    },
+    "departureDate": "2026-09-01T00:00:00.000Z",
+    "pickupCity": "Ahmedabad ",
+    "skipDays": 0,
+    "adjustedPrice": 21499,
+    "joiningDate": null,
+    "reminderSent": false,
+    "passengers": {
+      "details": {
+        "roomType": "QUAD SHARING ",
+        "basePrice": 21499,
+        "gstAmount": 2300,
+        "depositGst": 500,
+        "trainClass": "3 TIER AC TRAIN ",
+        "ticketStatus": "Not Booked"
+      },
+      "persons": [
+        {
+          "id": "main",
+          "age": 20,
+          "name": "sewani Harsh jayeshkumar",
+          "type": "3 TIER AC TRAIN  Train",
+          "email": "harshsewani547@gmail.com",
+          "phone": "7874154040",
+          "gender": "Male",
+          "status": "Form complete",
+          "roomSharing": "Double",
+          "foodPreference": "Normal Food"
+        },
+        {
+          "id": "p-1",
+          "age": 20,
+          "name": "Satvani Anish Hargovindbhai",
+          "type": "3 TIER AC TRAIN  Train",
+          "email": "Not specified",
+          "phone": "9998070653",
+          "gender": "Male",
+          "status": "Form complete",
+          "roomSharing": "QUAD SHARING ",
+          "foodPreference": "Normal Food"
+        }
+      ]
+    },
+    "trainTicketRequired": false,
+    "trainTicketStatus": "BOOKED",
+    "createdAt": "2026-07-20T13:01:25.413Z",
+    "updatedAt": "2026-07-24T06:09:35.182Z"
+  },
+  {
+    "id": "cmryjkz22000yjqbphjscafq1",
+    "tenantId": "default",
+    "bookingId": "BK-H3MDZ80U6LQH",
+    "tripId": "SPT-1",
+    "tripName": "Spiti Valley Road Trip",
+    "status": "confirmed",
+    "name": "Meet Maheshbhai Patel",
+    "fullName": "Meet Maheshbhai Patel",
+    "phone": "6353656982",
+    "mobile": "6353656982",
+    "email": "meetpatel.official1729@gmail.com ",
+    "age": null,
+    "gender": null,
+    "numberOfTravelers": 1,
+    "baseAmount": 23500,
+    "gstAmount": 1175,
+    "depositGst": 250,
+    "totalAmount": 23750,
+    "amount": 5250,
+    "advancePaid": 5250,
+    "remainingAmount": 18500,
+    "paymentMode": "UPI",
+    "paymentStatus": "Partial",
+    "payment_status": "pending",
+    "payment_method": "upi",
+    "upi_reference": null,
+    "notes": "City/State: ahmedabad . Requests: . WhatsApp Opt-in: Yes",
+    "adminNotes": null,
+    "sourceBookingLinkId": "cmryjh8tb000jjqbpcq66xyez",
+    "salesAdminId": "cmrvyuvxr0000v13a1wgkotkg",
+    "sourceMeta": {
+      "tripId": "SPT-1",
+      "tripName": "Spiti Valley Road Trip",
+      "expiresAt": "2026-07-25T06:08:20.395Z",
+      "pickupCity": "TBD",
+      "paymentMode": "Full Payment",
+      "bookingItems": [
+        {
+          "id": "3_tier_ac_train_",
+          "qty": 1,
+          "name": "Pickup: AHMEDABAD , Drop: HIMACHAL PRADESH 3TIER AC Sleeper",
+          "rate": 23500
+        },
+        {
+          "id": "quad_sharing_",
+          "qty": 1,
+          "name": "QUAD SHARING ",
+          "rate": 0
+        },
+        {
+          "id": "gst_discount__1784873936895",
+          "qty": 1,
+          "name": "gst discount ",
+          "rate": -925,
+          "isCustom": true
+        }
+      ],
+      "customAmount": 5000,
+      "departureDate": "2026-09-22T00:00:00.000Z"
+    },
+    "departureDate": "2026-09-22T00:00:00.000Z",
+    "pickupCity": "Ahmedabad ",
+    "skipDays": 0,
+    "adjustedPrice": 21499,
+    "joiningDate": null,
+    "reminderSent": false,
+    "passengers": {
+      "details": {
+        "roomType": "QUAD SHARING ",
+        "basePrice": 21499,
+        "gstAmount": 1175,
+        "depositGst": 250,
+        "trainClass": "3 TIER AC TRAIN ",
+        "ticketStatus": "Not Booked"
+      },
+      "persons": [
+        {
+          "id": "main",
+          "age": 20,
+          "name": "Meet Maheshbhai Patel",
+          "type": "3 TIER AC TRAIN  Train",
+          "email": "meetpatel.official1729@gmail.com ",
+          "phone": "6353656982",
+          "gender": "Male",
+          "status": "Form complete",
+          "roomSharing": "Double",
+          "foodPreference": "Normal Food"
+        }
+      ]
+    },
+    "trainTicketRequired": false,
+    "trainTicketStatus": "BOOKED",
+    "createdAt": "2026-07-24T06:11:14.426Z",
+    "updatedAt": "2026-07-24T06:20:23.651Z"
+  }
+]

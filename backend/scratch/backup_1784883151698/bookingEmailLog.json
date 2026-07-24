@@ -1,0 +1,147 @@
+[
+  {
+    "id": "cmrrlgfab004qup8wzk1uy1zq",
+    "bookingId": "cmrrlf1qn0047up8wjw5gnvcu",
+    "type": "confirmation",
+    "recipient": "parthpatel07902@gmail.com",
+    "subject": "Booking Confirmation – Manali Kasol Amritsar Backpacking Trip | Booking ID: BK-R84NMQPD89K9",
+    "status": "success",
+    "error": null,
+    "sentAt": "2026-07-19T09:29:18.180Z",
+    "metadata": {
+      "messageId": "<202607190929.75203821403@smtp-relay.mailin.fr>",
+      "hasAttachment": true
+    }
+  },
+  {
+    "id": "cmrrlhr9x004vup8wd3458wrq",
+    "bookingId": "cmrrlf1qn0047up8wjw5gnvcu",
+    "type": "confirmation",
+    "recipient": "parthpatel07902@gmail.com",
+    "subject": "Booking Confirmation – Manali Kasol Amritsar Backpacking Trip | Booking ID: BK-R84NMQPD89K9",
+    "status": "success",
+    "error": null,
+    "sentAt": "2026-07-19T09:30:20.374Z",
+    "metadata": {
+      "messageId": "<202607190930.64572457309@smtp-relay.mailin.fr>",
+      "hasAttachment": true
+    }
+  },
+  {
+    "id": "cmrrlqmc80068up8w1n2g4jln",
+    "bookingId": "cmrrlp4qq0057up8w35iqk3e3",
+    "type": "confirmation",
+    "recipient": "panchalzeel202@gmail.com",
+    "subject": "Booking Confirmation – Manali Kasol Amritsar Backpacking Trip | Booking ID: BK-RWSV21T9KTXS",
+    "status": "success",
+    "error": null,
+    "sentAt": "2026-07-19T09:37:13.881Z",
+    "metadata": {
+      "messageId": "<202607190937.95437331986@smtp-relay.mailin.fr>",
+      "hasAttachment": true
+    }
+  },
+  {
+    "id": "cmrrlsj7q006dup8wpxdklwse",
+    "bookingId": "cmrrlp4qq0057up8w35iqk3e3",
+    "type": "confirmation",
+    "recipient": "pneel6879@gmail.com",
+    "subject": "Booking Confirmation – Manali Kasol Amritsar Backpacking Trip | Booking ID: BK-RWSV21T9KTXS",
+    "status": "success",
+    "error": null,
+    "sentAt": "2026-07-19T09:38:43.142Z",
+    "metadata": {
+      "messageId": "<202607190938.97323841396@smtp-relay.mailin.fr>",
+      "hasAttachment": true
+    }
+  },
+  {
+    "id": "cmrt8ksqa002y5qenggzec4cp",
+    "bookingId": "cmrt8h2cl00275qenyabdpj6k",
+    "type": "confirmation",
+    "recipient": "panchalzeel202@gmail.com",
+    "subject": "Booking Confirmation – Spiti Valley Road Trip | Booking ID: BK-IIK8WAVAA7XN",
+    "status": "success",
+    "error": null,
+    "sentAt": "2026-07-20T13:04:19.571Z",
+    "metadata": {
+      "messageId": "<202607201304.79122365089@smtp-relay.mailin.fr>",
+      "hasAttachment": true
+    }
+  },
+  {
+    "id": "cmrt8n1kp00335qenv39hhuze",
+    "bookingId": "cmrt8h2cl00275qenyabdpj6k",
+    "type": "confirmation",
+    "recipient": "harshsewani547@gmail.com",
+    "subject": "Booking Confirmation – Spiti Valley Road Trip | Booking ID: BK-IIK8WAVAA7XN",
+    "status": "failed",
+    "error": "Unauthorized",
+    "sentAt": "2026-07-20T13:06:04.346Z",
+    "metadata": null
+  },
+  {
+    "id": "cmrt8nc3600355qen9mgdp8mg",
+    "bookingId": "cmrt8h2cl00275qenyabdpj6k",
+    "type": "confirmation",
+    "recipient": "harshsewani547@gmail.com",
+    "subject": "Booking Confirmation – Spiti Valley Road Trip | Booking ID: BK-IIK8WAVAA7XN",
+    "status": "failed",
+    "error": "Unauthorized",
+    "sentAt": "2026-07-20T13:06:17.970Z",
+    "metadata": null
+  },
+  {
+    "id": "cmrt8ndyp00375qendi2s9qdc",
+    "bookingId": "cmrt8h2cl00275qenyabdpj6k",
+    "type": "confirmation",
+    "recipient": "harshsewani547@gmail.com",
+    "subject": "Booking Confirmation – Spiti Valley Road Trip | Booking ID: BK-IIK8WAVAA7XN",
+    "status": "failed",
+    "error": "Unauthorized",
+    "sentAt": "2026-07-20T13:06:20.402Z",
+    "metadata": null
+  },
+  {
+    "id": "cmrt8oubo00395qentkq4dacd",
+    "bookingId": "cmrt8h2cl00275qenyabdpj6k",
+    "type": "confirmation",
+    "recipient": "harshsewani547@gmail.com",
+    "subject": "Booking Confirmation – Spiti Valley Road Trip | Booking ID: BK-IIK8WAVAA7XN",
+    "status": "success",
+    "error": null,
+    "sentAt": "2026-07-20T13:07:28.261Z",
+    "metadata": {
+      "messageId": "<202607201307.49258799513@smtp-relay.mailin.fr>",
+      "hasAttachment": true
+    }
+  },
+  {
+    "id": "cmryjvgkj001ljqbpxjcm14jk",
+    "bookingId": "cmryjkz22000yjqbphjscafq1",
+    "type": "confirmation",
+    "recipient": "panchalzeel202@gmail.com",
+    "subject": "Booking Confirmation – Spiti Valley Road Trip | Booking ID: BK-H3MDZ80U6LQH",
+    "status": "success",
+    "error": null,
+    "sentAt": "2026-07-24T06:19:23.683Z",
+    "metadata": {
+      "messageId": "<202607240619.27988805637@smtp-relay.mailin.fr>",
+      "hasAttachment": true
+    }
+  },
+  {
+    "id": "cmryjwt8z001qjqbp6dv93gub",
+    "bookingId": "cmryjkz22000yjqbphjscafq1",
+    "type": "confirmation",
+    "recipient": "meetpatel.official1729@gmail.com ",
+    "subject": "Booking Confirmation – Spiti Valley Road Trip | Booking ID: BK-H3MDZ80U6LQH",
+    "status": "success",
+    "error": null,
+    "sentAt": "2026-07-24T06:20:26.771Z",
+    "metadata": {
+      "messageId": "<202607240620.30174731498@smtp-relay.mailin.fr>",
+      "hasAttachment": true
+    }
+  }
+]

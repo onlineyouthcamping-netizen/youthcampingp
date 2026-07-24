@@ -1,0 +1,52 @@
+[
+  {
+    "id": "cmroom29f0002mcvths8pb045",
+    "tripId": "MKA-1",
+    "label": "IRCTC Agent Portal",
+    "val": "irctc",
+    "icon": "Ticket",
+    "linkUrl": "https://irctc.co.in",
+    "createdAt": "2026-07-17T08:34:21.556Z",
+    "updatedAt": "2026-07-17T08:34:21.556Z"
+  },
+  {
+    "id": "cmroonxks0002zcrwgc5nm0ku",
+    "tripId": "MKA-1",
+    "label": "IRCTC Agent Portal",
+    "val": "irctc",
+    "icon": "Ticket",
+    "linkUrl": "https://irctc.co.in",
+    "createdAt": "2026-07-17T08:35:48.796Z",
+    "updatedAt": "2026-07-17T08:35:48.796Z"
+  },
+  {
+    "id": "cmroop8wx0009zcrw5guylq26",
+    "tripId": "MKA-1",
+    "label": "IRCTC Agent Portal",
+    "val": "irctc",
+    "icon": "Ticket",
+    "linkUrl": "https://irctc.co.in",
+    "createdAt": "2026-07-17T08:36:50.146Z",
+    "updatedAt": "2026-07-17T08:36:50.146Z"
+  },
+  {
+    "id": "cmrooq6en000213dfzlp4jsly",
+    "tripId": "MKA-1",
+    "label": "IRCTC Agent Portal",
+    "val": "irctc",
+    "icon": "Ticket",
+    "linkUrl": "https://irctc.co.in",
+    "createdAt": "2026-07-17T08:37:33.552Z",
+    "updatedAt": "2026-07-17T08:37:33.552Z"
+  },
+  {
+    "id": "cmrooraga0002xdjyotadjmek",
+    "tripId": "MKA-1",
+    "label": "IRCTC Agent Portal",
+    "val": "irctc",
+    "icon": "Ticket",
+    "linkUrl": "https://irctc.co.in",
+    "createdAt": "2026-07-17T08:38:25.450Z",
+    "updatedAt": "2026-07-17T08:38:25.450Z"
+  }
+]

@@ -1,0 +1,137 @@
+[
+  {
+    "id": "fed49446-5ac9-4f5a-ac0c-cd5977fea382",
+    "tenantId": "default",
+    "title": "Ddd",
+    "slug": "ddd-c8fcb",
+    "clientName": "Parth Patel",
+    "totalAmount": 99,
+    "status": "Published",
+    "data": {
+      "id": "fed49446-5ac9-4f5a-ac0c-cd5977fea382",
+      "pax": 2,
+      "slug": "ddd-c8fcb",
+      "expert": {
+        "name": "Suresh Chaudhary",
+        "whatsapp": "919000000000",
+        "designation": "YOUTHCAMPING Destination Expert"
+      },
+      "status": "Published",
+      "discount": 0,
+      "duration": "",
+      "overview": "",
+      "expiresAt": "2026-07-07T07:26:20.848Z",
+      "itinerary": [],
+      "mealsInfo": "",
+      "roomsInfo": "",
+      "tripTitle": "Ddd",
+      "coverImage": "",
+      "exclusions": [],
+      "finalPrice": 99,
+      "heroImages": [],
+      "inclusions": [],
+      "totalPrice": 99,
+      "travelling": [],
+      "destination": "Ddd",
+      "expiryHours": 48,
+      "staySummary": [],
+      "travelDates": {
+        "to": "",
+        "from": ""
+      },
+      "customerName": "Parth Patel",
+      "customerEmail": "Trr@rr.co",
+      "customerPhone": "7383504400",
+      "lowLevelPrice": 99,
+      "experiencePhotos": []
+    },
+    "salesAdminId": null,
+    "createdAt": "2026-07-05T07:25:35.207Z",
+    "updatedAt": "2026-07-05T07:26:20.850Z"
+  },
+  {
+    "id": "69d3c1b0-7484-4e5f-98bc-f432e36256a9",
+    "tenantId": "default",
+    "title": "Kerala Premium Tour Package",
+    "slug": "kerala-premium-tour-package-xsff2",
+    "clientName": "Neel Mehta",
+    "totalAmount": 0,
+    "status": "Published",
+    "data": {
+      "id": "69d3c1b0-7484-4e5f-98bc-f432e36256a9",
+      "pax": 2,
+      "slug": "kerala-premium-tour-package-xsff2",
+      "expert": {
+        "name": "Suresh Chaudhary",
+        "whatsapp": "919000000000",
+        "designation": "YOUTHCAMPING Destination Expert"
+      },
+      "status": "Published",
+      "discount": 0,
+      "duration": "",
+      "overview": "",
+      "itinerary": [
+        {
+          "id": "b426f8c3-371c-49d0-8ffd-4b95c0c12b80",
+          "day": 1,
+          "stay": "Holiday Inn Cochin",
+          "meals": "B",
+          "title": "Kochi",
+          "photos": [],
+          "description": "Fort Kochi Sightseeing Tour. Route: Airport Pickup to Cochin Hotel stay"
+        },
+        {
+          "id": "76531661-5e3d-4161-b7d3-52e090d24b79",
+          "day": 2,
+          "stay": "Blanket Hotel & Spa",
+          "meals": "B",
+          "title": "Munnar",
+          "photos": [],
+          "description": "Mattupetty Dam Speedboat Ride. Route: Scenic highway transfer (130 KM)"
+        },
+        {
+          "id": "f8fb4de2-d9a0-4b90-b92d-c71cf1d99ffd",
+          "day": 3,
+          "stay": "Blanket Hotel & Spa",
+          "meals": "B",
+          "title": "Munnar",
+          "photos": [],
+          "description": "Eravikulam National Park Safari. Route: Local sightseeing route coverage"
+        },
+        {
+          "id": "191e2707-f744-437d-b8fc-6a1691d7fcd4",
+          "day": 4,
+          "stay": "Lake Palace Resort",
+          "meals": "B",
+          "title": "Alleppey",
+          "photos": [],
+          "description": "Alleppey Sunset Houseboat Cruise. Route: Transfer to Houseboat jetty"
+        }
+      ],
+      "mealsInfo": "",
+      "roomsInfo": "",
+      "tripTitle": "Kerala Premium Tour Package",
+      "coverImage": "",
+      "exclusions": [],
+      "finalPrice": 0,
+      "heroImages": [],
+      "inclusions": [],
+      "totalPrice": 0,
+      "travelling": [],
+      "destination": "Kerala",
+      "expiryHours": 48,
+      "staySummary": [],
+      "travelDates": {
+        "to": "",
+        "from": ""
+      },
+      "customerName": "Neel Mehta",
+      "customerEmail": "",
+      "customerPhone": "+91 98765 43210",
+      "experiencePhotos": []
+    },
+    "salesAdminId": null,
+    "createdAt": "2026-07-07T12:20:13.891Z",
+    "updatedAt": "2026-07-07T12:20:13.891Z"
+  }
+]

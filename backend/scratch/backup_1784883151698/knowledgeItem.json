@@ -1,0 +1,50 @@
+[
+  {
+    "id": "cmrq1ibiv0003jm29dm2tbcau",
+    "tripId": "MKA-1",
+    "documentId": "cmrq1ibab0001jm29kbrwzu63",
+    "sourceDocName": "Assignment - 3.pdf",
+    "pageNumber": 1,
+    "title": "Assignment - 3 - Page 1",
+    "content": "Fallback PDF Text for Assignment - 3.pdf",
+    "category": "Trip Overview",
+    "version": 1,
+    "status": "DRAFT",
+    "approvedBy": null,
+    "approvedAt": null,
+    "createdAt": "2026-07-18T07:23:08.120Z",
+    "updatedAt": "2026-07-18T07:23:08.120Z"
+  },
+  {
+    "id": "cmrym5dic001wjqbpkzqm83gl",
+    "tripId": "MKA-1",
+    "documentId": "cmrym5dh7001ujqbpgf24dxuq",
+    "sourceDocName": "Student Portal.pdf",
+    "pageNumber": 1,
+    "title": "Student Portal - Page 1",
+    "content": "Fallback PDF Text for Student Portal.pdf",
+    "category": "Trip Overview",
+    "version": 1,
+    "status": "DRAFT",
+    "approvedBy": null,
+    "approvedAt": null,
+    "createdAt": "2026-07-24T07:23:05.508Z",
+    "updatedAt": "2026-07-24T07:23:05.508Z"
+  },
+  {
+    "id": "cmryn8m76004ijqbpxachl1qw",
+    "tripId": "BLI",
+    "documentId": "cmryn8m5w004gjqbpgu72vvac",
+    "sourceDocName": "Bali Group Trip 2026 - Avian.pdf",
+    "pageNumber": 1,
+    "title": "Bali Group Trip 2026 - Avian - Page 1",
+    "content": "Fallback PDF Text for Bali Group Trip 2026 - Avian.pdf",
+    "category": "Trip Overview",
+    "version": 1,
+    "status": "DRAFT",
+    "approvedBy": null,
+    "approvedAt": null,
+    "createdAt": "2026-07-24T07:53:36.355Z",
+    "updatedAt": "2026-07-24T07:53:36.355Z"
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cmr0lvv6h000hjsyahiegeg1x",
+    "tenantId": "default",
+    "tripId": "MKA-1",
+    "tripTitle": "Manali Kasol Amritsar Backpacking Trip",
+    "departureDate": null,
+    "scope": "TRIP",
+    "transportMode": "TRAIN",
+    "trainName": "yeryr",
+    "trainNumber": "w4rrytger",
+    "source": null,
+    "destination": null,
+    "defaultClass": null,
+    "defaultCoach": null,
+    "journeyDate": null,
+    "boardingPoint": null,
+    "droppingPoint": null,
+    "flightAirline": null,
+    "flightNumber": null,
+    "flightOrigin": null,
+    "flightDestination": null,
+    "flightTerminal": null,
+    "baggageGuidance": null,
+    "reportingTime": null,
+    "arrivalTime": null,
+    "waitlistDisclaimer": null,
+    "isActive": false,
+    "createdAt": "2026-06-30T12:11:31.865Z",
+    "updatedAt": "2026-07-18T05:48:34.769Z"
+  }
+]

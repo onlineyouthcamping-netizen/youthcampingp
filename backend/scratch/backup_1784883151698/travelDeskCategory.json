@@ -1,0 +1,802 @@
+[
+  {
+    "id": "cmromhd4i0005vew1n71519zw",
+    "workspaceId": "cmromhd230003vew12gx97pj6",
+    "name": "Trip Overview",
+    "slug": "trip-overview",
+    "description": null,
+    "sortOrder": 0,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmromhd6e0007vew1qne736h2",
+    "workspaceId": "cmromhd230003vew12gx97pj6",
+    "name": "Sales Guide",
+    "slug": "sales-guide",
+    "description": null,
+    "sortOrder": 1,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmromhd870009vew1e1nvmpez",
+    "workspaceId": "cmromhd230003vew12gx97pj6",
+    "name": "Customer FAQs",
+    "slug": "customer-faqs",
+    "description": null,
+    "sortOrder": 2,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmromhd9z000bvew162dlynz9",
+    "workspaceId": "cmromhd230003vew12gx97pj6",
+    "name": "Inclusions & Exclusions",
+    "slug": "inclusions-&-exclusions",
+    "description": null,
+    "sortOrder": 3,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmromhdbh000dvew13e6smx0y",
+    "workspaceId": "cmromhd230003vew12gx97pj6",
+    "name": "Ticketing Information",
+    "slug": "ticketing-information",
+    "description": null,
+    "sortOrder": 4,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmromhdd3000fvew1m2g2n7x8",
+    "workspaceId": "cmromhd230003vew12gx97pj6",
+    "name": "SOPs & Processes",
+    "slug": "sops-&-processes",
+    "description": null,
+    "sortOrder": 5,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmromhdev000hvew1fkwl1ma8",
+    "workspaceId": "cmromhd230003vew12gx97pj6",
+    "name": "Emergency Center",
+    "slug": "emergency-center",
+    "description": null,
+    "sortOrder": 6,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmromhdgm000jvew17b1bfzsh",
+    "workspaceId": "cmromhd230003vew12gx97pj6",
+    "name": "Past Learnings",
+    "slug": "past-learnings",
+    "description": null,
+    "sortOrder": 7,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfrxi0010up8w2of2tn58",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Trip Overview",
+    "slug": "trip-overview",
+    "description": null,
+    "sortOrder": 0,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfrxu0012up8wxqinvxaj",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Sales Guide",
+    "slug": "sales-guide",
+    "description": null,
+    "sortOrder": 1,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfry60014up8wzo7cgg1w",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Customer FAQs",
+    "slug": "customer-faqs",
+    "description": null,
+    "sortOrder": 2,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfryj0016up8wxv0i1uvg",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Inclusions & Exclusions",
+    "slug": "inclusions-&-exclusions",
+    "description": null,
+    "sortOrder": 3,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfryw0018up8wg6k8k7r1",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Ticketing Info",
+    "slug": "ticketing-info",
+    "description": null,
+    "sortOrder": 4,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfrz8001aup8wp35tp3nr",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Visa & Entry",
+    "slug": "visa-&-entry",
+    "description": null,
+    "sortOrder": 5,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfrzk001cup8w4mnwldrc",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Destination Guide",
+    "slug": "destination-guide",
+    "description": null,
+    "sortOrder": 6,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfrzw001eup8wrqsclf4d",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Packing Guide",
+    "slug": "packing-guide",
+    "description": null,
+    "sortOrder": 7,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfs07001gup8wxjuzm4tl",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "SOPs & Processes",
+    "slug": "sops-&-processes",
+    "description": null,
+    "sortOrder": 8,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfs0j001iup8wohofl9fj",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Emergency Center",
+    "slug": "emergency-center",
+    "description": null,
+    "sortOrder": 9,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfs0v001kup8wha8i0rj3",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Pricing & Policy",
+    "slug": "pricing-&-policy",
+    "description": null,
+    "sortOrder": 10,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrotfs16001mup8wprfqgruh",
+    "workspaceId": "cmrotfrx4000yup8w9y46ktc8",
+    "name": "Past Learnings",
+    "slug": "past-learnings",
+    "description": null,
+    "sortOrder": 11,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxasu400098z5j2628awb0",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Trip Overview",
+    "slug": "trip-overview",
+    "description": null,
+    "sortOrder": 0,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxasun000b8z5jgekea0fz",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Sales Guide",
+    "slug": "sales-guide",
+    "description": null,
+    "sortOrder": 1,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxasv0000d8z5jsd6hoxvj",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Customer FAQs",
+    "slug": "customer-faqs",
+    "description": null,
+    "sortOrder": 2,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxasvb000f8z5jc7cqdmlh",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Inclusions & Exclusions",
+    "slug": "inclusions-&-exclusions",
+    "description": null,
+    "sortOrder": 3,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxasvo000h8z5jstgyclpm",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Ticketing Info",
+    "slug": "ticketing-info",
+    "description": null,
+    "sortOrder": 4,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxasw2000j8z5j1vsw3nrf",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Visa & Entry",
+    "slug": "visa-&-entry",
+    "description": null,
+    "sortOrder": 5,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxaswd000l8z5jo0j6adh9",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Destination Guide",
+    "slug": "destination-guide",
+    "description": null,
+    "sortOrder": 6,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxaswo000n8z5jxd6oapma",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Packing Guide",
+    "slug": "packing-guide",
+    "description": null,
+    "sortOrder": 7,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxasx0000p8z5j3x6ddwoq",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "SOPs & Processes",
+    "slug": "sops-&-processes",
+    "description": null,
+    "sortOrder": 8,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxasxc000r8z5j148f94a1",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Emergency Center",
+    "slug": "emergency-center",
+    "description": null,
+    "sortOrder": 9,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxasxo000t8z5jqbi2ntvo",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Pricing & Policy",
+    "slug": "pricing-&-policy",
+    "description": null,
+    "sortOrder": 10,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxasxy000v8z5jsg2bhsmj",
+    "workspaceId": "cmrsxastl00078z5jp5ojnwd4",
+    "name": "Past Learnings",
+    "slug": "past-learnings",
+    "description": null,
+    "sortOrder": 11,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxaust00128z5jiu3h6xxu",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Trip Overview",
+    "slug": "trip-overview",
+    "description": null,
+    "sortOrder": 0,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxaut500148z5jp3qyqczo",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Sales Guide",
+    "slug": "sales-guide",
+    "description": null,
+    "sortOrder": 1,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxauth00168z5jxbhho429",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Customer FAQs",
+    "slug": "customer-faqs",
+    "description": null,
+    "sortOrder": 2,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxautt00188z5jff4ezlfj",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Inclusions & Exclusions",
+    "slug": "inclusions-&-exclusions",
+    "description": null,
+    "sortOrder": 3,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxauu5001a8z5jmqd0q7lf",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Ticketing Info",
+    "slug": "ticketing-info",
+    "description": null,
+    "sortOrder": 4,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxauui001c8z5jwm1k1bbj",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Visa & Entry",
+    "slug": "visa-&-entry",
+    "description": null,
+    "sortOrder": 5,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxauuw001e8z5jufdpxud9",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Destination Guide",
+    "slug": "destination-guide",
+    "description": null,
+    "sortOrder": 6,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxauvf001g8z5j5rpirjho",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Packing Guide",
+    "slug": "packing-guide",
+    "description": null,
+    "sortOrder": 7,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxauvt001i8z5jd7jzsu29",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "SOPs & Processes",
+    "slug": "sops-&-processes",
+    "description": null,
+    "sortOrder": 8,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxauw5001k8z5jbm4hlfo2",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Emergency Center",
+    "slug": "emergency-center",
+    "description": null,
+    "sortOrder": 9,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxauwg001m8z5jyrciwil2",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Pricing & Policy",
+    "slug": "pricing-&-policy",
+    "description": null,
+    "sortOrder": 10,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrsxauwt001o8z5jgyo4z75x",
+    "workspaceId": "cmrsxausj00108z5jtth7istl",
+    "name": "Past Learnings",
+    "slug": "past-learnings",
+    "description": null,
+    "sortOrder": 11,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z1q0023jqbpnsvhxtpv",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Trip Overview",
+    "slug": "trip-overview",
+    "description": null,
+    "sortOrder": 0,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z260025jqbprdtbo9gm",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Sales Guide",
+    "slug": "sales-guide",
+    "description": null,
+    "sortOrder": 1,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z2h0027jqbpsxu2928t",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Customer FAQs",
+    "slug": "customer-faqs",
+    "description": null,
+    "sortOrder": 2,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z2t0029jqbpeiq499hx",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Inclusions & Exclusions",
+    "slug": "inclusions-&-exclusions",
+    "description": null,
+    "sortOrder": 3,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z35002bjqbpgltnnwbl",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Ticketing Info",
+    "slug": "ticketing-info",
+    "description": null,
+    "sortOrder": 4,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z3h002djqbpgf55dfys",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Visa & Entry",
+    "slug": "visa-&-entry",
+    "description": null,
+    "sortOrder": 5,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z3t002fjqbpd2mae1fa",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Destination Guide",
+    "slug": "destination-guide",
+    "description": null,
+    "sortOrder": 6,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z44002hjqbpwhy3uxpq",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Packing Guide",
+    "slug": "packing-guide",
+    "description": null,
+    "sortOrder": 7,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z4f002jjqbpvwuuxpga",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "SOPs & Processes",
+    "slug": "sops-&-processes",
+    "description": null,
+    "sortOrder": 8,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z4q002ljqbp4yw8cvdg",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Emergency Center",
+    "slug": "emergency-center",
+    "description": null,
+    "sortOrder": 9,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z55002njqbp1e4y6wix",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Pricing & Policy",
+    "slug": "pricing-&-policy",
+    "description": null,
+    "sortOrder": 10,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym5z5n002pjqbpz6hsvu2l",
+    "workspaceId": "cmrym5z160021jqbpzhpehwpi",
+    "name": "Past Learnings",
+    "slug": "past-learnings",
+    "description": null,
+    "sortOrder": 11,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68rj002wjqbpoxxoes5n",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Trip Overview",
+    "slug": "trip-overview",
+    "description": null,
+    "sortOrder": 0,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68ru002yjqbp862swvo8",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Sales Guide",
+    "slug": "sales-guide",
+    "description": null,
+    "sortOrder": 1,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68s50030jqbpv34forql",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Customer FAQs",
+    "slug": "customer-faqs",
+    "description": null,
+    "sortOrder": 2,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68sg0032jqbpf24z837z",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Inclusions & Exclusions",
+    "slug": "inclusions-&-exclusions",
+    "description": null,
+    "sortOrder": 3,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68sr0034jqbpbmyu0xhy",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Ticketing Info",
+    "slug": "ticketing-info",
+    "description": null,
+    "sortOrder": 4,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68t20036jqbpuexuc4w7",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Visa & Entry",
+    "slug": "visa-&-entry",
+    "description": null,
+    "sortOrder": 5,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68td0038jqbpulrsjlk4",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Destination Guide",
+    "slug": "destination-guide",
+    "description": null,
+    "sortOrder": 6,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68to003ajqbppg6omouq",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Packing Guide",
+    "slug": "packing-guide",
+    "description": null,
+    "sortOrder": 7,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68u1003cjqbp3qwzpii5",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "SOPs & Processes",
+    "slug": "sops-&-processes",
+    "description": null,
+    "sortOrder": 8,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68ue003ejqbpjo0x5f7a",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Emergency Center",
+    "slug": "emergency-center",
+    "description": null,
+    "sortOrder": 9,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68up003gjqbpzc43vw8d",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Pricing & Policy",
+    "slug": "pricing-&-policy",
+    "description": null,
+    "sortOrder": 10,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmrym68v2003ijqbpsvtf9ml1",
+    "workspaceId": "cmrym68r8002ujqbp1d4lul25",
+    "name": "Past Learnings",
+    "slug": "past-learnings",
+    "description": null,
+    "sortOrder": 11,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6spk003qjqbpgvbu1bbw",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Trip Overview",
+    "slug": "trip-overview",
+    "description": null,
+    "sortOrder": 0,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6spw003sjqbp1guz7w0f",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Sales Guide",
+    "slug": "sales-guide",
+    "description": null,
+    "sortOrder": 1,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6sq8003ujqbpd6l0mp7g",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Customer FAQs",
+    "slug": "customer-faqs",
+    "description": null,
+    "sortOrder": 2,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6sqj003wjqbpwrq0fndn",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Inclusions & Exclusions",
+    "slug": "inclusions-&-exclusions",
+    "description": null,
+    "sortOrder": 3,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6squ003yjqbpvm4yxdli",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Ticketing Info",
+    "slug": "ticketing-info",
+    "description": null,
+    "sortOrder": 4,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6sr40040jqbpod0lnk5p",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Visa & Entry",
+    "slug": "visa-&-entry",
+    "description": null,
+    "sortOrder": 5,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6srg0042jqbptowc3n0k",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Destination Guide",
+    "slug": "destination-guide",
+    "description": null,
+    "sortOrder": 6,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6srr0044jqbpegs4omzn",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Packing Guide",
+    "slug": "packing-guide",
+    "description": null,
+    "sortOrder": 7,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6ss40046jqbp0ys7f3zf",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "SOPs & Processes",
+    "slug": "sops-&-processes",
+    "description": null,
+    "sortOrder": 8,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6ssj0048jqbpzc4qlmum",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Emergency Center",
+    "slug": "emergency-center",
+    "description": null,
+    "sortOrder": 9,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6ssv004ajqbp5bl27pwo",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Pricing & Policy",
+    "slug": "pricing-&-policy",
+    "description": null,
+    "sortOrder": 10,
+    "isRequired": true,
+    "isActive": true
+  },
+  {
+    "id": "cmryn6st6004cjqbpsbbz7cg6",
+    "workspaceId": "cmryn6sp5003ojqbpku3w1h56",
+    "name": "Past Learnings",
+    "slug": "past-learnings",
+    "description": null,
+    "sortOrder": 11,
+    "isRequired": true,
+    "isActive": true
+  }
+]
