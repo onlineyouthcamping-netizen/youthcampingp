@@ -3,19 +3,18 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = 'hemal.patel@youthcamping.online';
   const password = process.env.ADMIN_PASSWORD || 'Hemal@007';
   const hash = await bcrypt.hash(password, 10);
 
-  const admin = await prisma.admin.upsert({
-    where: { email },
+  const admin1 = await prisma.admin.upsert({
+    where: { email: 'hemal.patel@youthcamping.online' },
     update: {
       password: hash,
       role: 'superadmin',
       isActive: true
     },
     create: {
-      email,
+      email: 'hemal.patel@youthcamping.online',
       name: 'Hemal Patel',
       password: hash,
       role: 'superadmin',
@@ -24,10 +23,26 @@ async function main() {
     }
   });
 
-  console.log(`✅ Super Admin Account Ready!`);
-  console.log(`   Email: ${admin.email}`);
-  console.log(`   Role: ${admin.role}`);
-  console.log(`   Password: ${password}`);
+  const admin2 = await prisma.admin.upsert({
+    where: { email: 'admin@youthcamping.online' },
+    update: {
+      password: hash,
+      role: 'superadmin',
+      isActive: true
+    },
+    create: {
+      email: 'admin@youthcamping.online',
+      name: 'Admin User',
+      password: hash,
+      role: 'superadmin',
+      isActive: true,
+      tenantId: 'default'
+    }
+  });
+
+  console.log(`✅ Super Admin Accounts Ready!`);
+  console.log(`   1. ${admin1.email} (Password: ${password})`);
+  console.log(`   2. ${admin2.email} (Password: ${password})`);
 }
 
 main()
