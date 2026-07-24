@@ -160,7 +160,7 @@ exports.createTicket = async (req, res) => {
         coach: coach || null,
         seatNumber: seatNumber || null,
         berthType: berthType || null,
-        ticketStatus: 'PENDING',
+        ticketStatus: req.body.ticketStatus || 'PENDING',
         approvalStatus: 'DRAFT',
         isLocked: false,
         ticketAmount: new Prisma.Decimal(ticketAmount || 0),
