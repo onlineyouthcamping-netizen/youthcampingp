@@ -70,6 +70,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/trips', require('./routes/tripKnowledge'));
 app.use('/api/trips', require('./routes/tripDocuments'));
 app.use('/api/trips', require('./routes/tripVendors'));
+app.use('/api/trips', require('./routes/tripSOPs'));
 app.use('/api/trips', require('./routes/tripRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/booking-links', require('./routes/bookingLinkRoutes'));
