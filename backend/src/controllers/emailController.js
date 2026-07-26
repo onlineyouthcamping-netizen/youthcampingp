@@ -49,16 +49,47 @@ const sendBookingEmail = async (req, res) => {
       return raw.replace(/[\r\n\s]/g, '');
     };
 
+    const MAX_ATTACHMENT_BYTES = 16 * 1024 * 1024; // 16MB base64 cap for Brevo SMTP
+    let currentPayloadSize = 0;
+    let overflowDownloadLinks = [];
+
+    const processAttachment = (name, base64Content) => {
+      const cleanContent = cleanBase64(base64Content);
+      if (!cleanContent || !name) return;
+      const itemSize = cleanContent.length;
+
+      if (currentPayloadSize + itemSize <= MAX_ATTACHMENT_BYTES) {
+        attachments.push({ content: cleanContent, name });
+        currentPayloadSize += itemSize;
+        console.log(`📄 [Backend] Attached directly: ${name} (${Math.round(itemSize * 0.75 / 1024)} KB)`);
+      } else {
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const uploadDir = path.join(__dirname, '../../../public/uploads/tickets');
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+          const safeName = `${Date.now()}_${name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+          const filePath = path.join(uploadDir, safeName);
+          const buffer = Buffer.from(cleanContent, 'base64');
+          fs.writeFileSync(filePath, buffer);
+          const fileUrl = `https://api.youthcamping.online/uploads/tickets/${safeName}`;
+          overflowDownloadLinks.push({ name, url: fileUrl });
+          console.log(`📄 [Backend] Brevo 16MB cap reached. Saved overflow file to URL: ${fileUrl}`);
+        } catch (saveErr) {
+          console.error(`❌ [Backend] Failed to save overflow file ${name}:`, saveErr);
+        }
+      }
+    };
+
     // Generate PDF for confirmation and invoice types
     if (type === 'confirmation' || type === 'invoice') {
       try {
         const { generateInvoicePDF } = require('../utils/pdfGenerator');
         const pdfBuffer = await generateInvoicePDF(booking);
-        attachments = [{
-          content: pdfBuffer.toString('base64').replace(/[\r\n\s]/g, ''),
-          name: `Invoice_${booking.bookingId || 'booking'}.pdf`
-        }];
-        console.log('📄 [Backend] PDF Invoice generated and attached');
+        processAttachment(`Invoice_${booking.bookingId || 'booking'}.pdf`, pdfBuffer.toString('base64'));
+        console.log('📄 [Backend] PDF Invoice generated and processed');
       } catch (pdfErr) {
         console.error('❌ [Backend] PDF Generation failed:', pdfErr);
       }
@@ -68,19 +99,11 @@ const sendBookingEmail = async (req, res) => {
     if (Array.isArray(ticketFiles) && ticketFiles.length > 0) {
       ticketFiles.forEach(file => {
         if (file && file.content && file.name) {
-          attachments.push({
-            content: cleanBase64(file.content),
-            name: file.name
-          });
-          console.log(`📄 [Backend] Cleaned attachment added: ${file.name}`);
+          processAttachment(file.name, file.content);
         }
       });
     } else if (ticketFile && ticketFileName) {
-      attachments.push({
-        content: cleanBase64(ticketFile),
-        name: ticketFileName
-      });
-      console.log(`📄 [Backend] Cleaned manual ticket file attached: ${ticketFileName}`);
+      processAttachment(ticketFileName, ticketFile);
     }
 
     switch (type) {
@@ -103,7 +126,20 @@ const sendBookingEmail = async (req, res) => {
         return res.status(400).json({ message: 'Invalid email type' });
     }
 
-    console.log(`Sending email to: ${booking.email} with ${attachments.length} attachments:`);
+    if (overflowDownloadLinks.length > 0 && templateData && templateData.html) {
+      const downloadSection = `
+        <div style="margin-top: 25px; padding: 15px; background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
+          <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 13px; text-transform: uppercase;">📎 Additional Document Downloads</h4>
+          <p style="margin: 0 0 10px 0; color: #64748b; font-size: 12px;">The following additional documents were attached to your booking:</p>
+          <ul style="margin: 0; padding-left: 18px; color: #2563eb; font-size: 13px;">
+            ${overflowDownloadLinks.map(link => `<li style="margin-bottom: 4px;"><a href="${link.url}" target="_blank" style="color: #2563eb; text-decoration: underline; font-weight: bold;">Download ${link.name}</a></li>`).join('')}
+          </ul>
+        </div>
+      `;
+      templateData.html += downloadSection;
+    }
+
+    console.log(`Sending email to: ${booking.email} with ${attachments.length} attachments and ${overflowDownloadLinks.length} download links:`);
     attachments.forEach((att, idx) => {
       const approxKB = Math.round((att.content?.length || 0) * 0.75 / 1024);
       console.log(`   [Attachment ${idx + 1}] Name: "${att.name}", Approx Size: ${approxKB} KB`);
