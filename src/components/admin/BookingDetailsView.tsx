@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { 
   Calendar, Users, Pencil, Trash2, Plus, ArrowLeft, Check, X, 
   ChevronRight, CreditCard, Globe, Languages, Tag, MessageSquare, 
@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Booking, BookingTrip } from "@/types";
 import { toast } from "sonner";
@@ -17,21 +17,37 @@ import { paymentsService } from "@/services/payments.service";
 import { tripsService } from "@/services/trips.service";
 import { settingsService } from "@/services/settings.service";
 import { bookingVerificationService } from "@/services/bookingVerification.service";
-import { cn } from "@/lib/utils";
+import { cn, safeFormatDate, safeFormatDateTime, computeGst } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 import VerificationDetailsPanel from "./VerificationDetailsPanel";
 import TrainTicketsPanel from "./TrainTicketsPanel";
 import { trainTicketService } from "@/services/trainTicket.service";
+import EmailComposerDrawer from "./EmailComposerDrawer";
+import EmailLogsTimeline from "./EmailLogsTimeline";
+import { erpService } from "@/services/erp.service";
 
 interface BookingDetailsViewProps {
   booking: Booking;
   onBack: () => void;
   onRefresh: () => void;
   trips: BookingTrip[];
+  defaultTab?: string;
 }
 
-export default function BookingDetailsView({ booking, onBack, onRefresh, trips }: BookingDetailsViewProps) {
+export default function BookingDetailsView({ booking, onBack, onRefresh, trips, defaultTab }: BookingDetailsViewProps) {
   const { admin: currentAdmin } = useAuthStore();
+  const [customerTimeline, setCustomerTimeline] = useState<any[]>([]);
+  const [customerTimelineOpen, setCustomerTimelineOpen] = useState(false);
+
+  const handleViewCustomerTimeline = async () => {
+    try {
+      const data = await erpService.getCustomerTimeline(booking.email);
+      setCustomerTimeline(data);
+      setCustomerTimelineOpen(true);
+    } catch (err) {
+      toast.error("Failed to load customer profile timeline");
+    }
+  };
 
   // Local states
   const [showAddPassenger, setShowAddPassenger] = useState(false);
@@ -43,6 +59,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
   const [editedCustomerPhone, setEditedCustomerPhone] = useState(booking.mobile || booking.phone || "");
   const [editedCustomerEmail, setEditedCustomerEmail] = useState(booking.email || "");
   const [newPassenger, setNewPassenger] = useState({
+    salutation: "Mr.",
     firstName: "",
     lastName: "",
     gender: "Male",
@@ -78,7 +95,13 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
   const [confirmAdvance, setConfirmAdvance] = useState("");
   const [confirmMode, setConfirmMode] = useState("UPI");
   const [confirmEmail, setConfirmEmail] = useState("");
+  const [confirmTrainStatus, setConfirmTrainStatus] = useState("PENDING");
   const [confirmingLoading, setConfirmingLoading] = useState(false);
+  const [confirmSendTicket, setConfirmSendTicket] = useState(false);
+  const [confirmTicketFile, setConfirmTicketFile] = useState<string | null>(null);
+  const [confirmTicketFileName, setConfirmTicketFileName] = useState<string | null>(null);
+  const [confirmTicketFilesList, setConfirmTicketFilesList] = useState<Array<{ name: string; content: string }>>([]);
+  const [revertingLoading, setRevertingLoading] = useState(false);
 
   // Manual payment recording inline form
   const [showAddPaymentInline, setShowAddPaymentInline] = useState(false);
@@ -103,6 +126,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
   // Change dates state
   const [showChangeDates, setShowChangeDates] = useState(false);
   const [newDepartureDate, setNewDepartureDate] = useState("");
+  const [changeReason, setChangeReason] = useState("");
 
   // Edit Booking Items state
   const [isEditingItems, setIsEditingItems] = useState(false);
@@ -113,15 +137,30 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
 
   // Create payment modal state
   const [showCreatePayment, setShowCreatePayment] = useState(false);
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [paymentSource, setPaymentSource] = useState<'collected' | 'online' | 'venue'>('collected');
   const [payAmount, setPayAmount] = useState("");
   const [payMode, setPayMode] = useState("UPI");
   const [payComments, setPayComments] = useState("");
 
+  // Cancellation and Refund Modal States
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelCharges, setCancelCharges] = useState("0");
+  const [cancelRefund, setCancelRefund] = useState("0");
+  const [cancelRefundMode, setCancelRefundMode] = useState("UPI");
+  const [cancelProcessing, setCancelProcessing] = useState(false);
+
   // Workspace tab state
-  const [adminActiveTab, setAdminActiveTab] = useState("overview");
+  const [adminActiveTab, setAdminActiveTab] = useState(defaultTab || "overview");
   const [taskPriority, setTaskPriority] = useState("Medium");
   const [taskCategory, setTaskCategory] = useState("General");
+
+  useEffect(() => {
+    if (defaultTab) {
+      setAdminActiveTab(defaultTab);
+    }
+  }, [defaultTab]);
 
   const [savingPayment, setSavingPayment] = useState(false);
 
@@ -267,29 +306,46 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
   const packageAmt = booking.baseAmount || (booking.gstAmount ? (booking.totalAmount - booking.gstAmount) : (booking.totalAmount / (1 + gstRate)));
   const itemRate = packageAmt / qty;
 
-  const meta = (booking as any)?.sourceMeta || {};
+  const getSafeMeta = (b: any): any => {
+    if (!b || !b.sourceMeta) return {};
+    let raw = b.sourceMeta;
+    while (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch (e) {
+        console.error("Failed to parse sourceMeta:", e);
+        return {};
+      }
+    }
+    return raw || {};
+  };
+
+  const meta = getSafeMeta(booking);
   const storedItems = meta.bookingItems || [];
   
   let basePrice = 0;
+  let otherDiscount = 0;
   let gstDiscount = 0;
-  
-  if (storedItems.length > 0) {
-    const activeItems = storedItems.filter((item: any) => item.qty > 0 || item.rate < 0);
+  if (bookingItems.length > 0) {
+    const activeItems = bookingItems.filter((item: any) => item.qty > 0 || item.rate < 0);
+    const gstDiscounts = activeItems.filter((item: any) => item.name.toLowerCase().includes("gst") && item.rate < 0);
+    const otherDiscounts = activeItems.filter((item: any) => (item.name.toLowerCase().includes("discount") || item.rate < 0) && !gstDiscounts.includes(item));
     const baseItems = activeItems.filter((item: any) => !(item.name.toLowerCase().includes("discount") || item.rate < 0));
-    const discountItems = activeItems.filter((item: any) => item.name.toLowerCase().includes("discount") || item.rate < 0);
     
     basePrice = baseItems.reduce((acc: number, item: any) => acc + (item.rate * item.qty), 0);
-    gstDiscount = discountItems.reduce((acc: number, item: any) => acc + Math.abs(item.rate * item.qty), 0);
+    otherDiscount = otherDiscounts.reduce((acc: number, item: any) => acc + Math.abs(item.rate * item.qty), 0);
+    gstDiscount = gstDiscounts.reduce((acc: number, item: any) => acc + Math.abs(item.rate * item.qty), 0);
   } else {
-    basePrice = booking.baseAmount || packageAmt;
+    basePrice = booking.baseAmount ?? packageAmt ?? 0;
+    otherDiscount = 0;
     gstDiscount = 0;
   }
   
   const gstAmount = (booking.gstAmount !== undefined && booking.gstAmount !== null)
     ? booking.gstAmount 
-    : parseFloat(((basePrice - gstDiscount) * gstRate).toFixed(2));
+    : computeGst(basePrice, otherDiscount, gstRate);
   const totalWithGST = basePrice + gstAmount;
-  const calculatedTotal = totalWithGST - gstDiscount;
+  const calculatedTotal = totalWithGST - otherDiscount - gstDiscount;
   const daysToGo = booking.departureDate 
     ? Math.max(0, Math.ceil((new Date(booking.departureDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) 
     : 0;
@@ -306,20 +362,24 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
     }
     
     const active = items.filter(item => item.qty > 0 || item.rate < 0);
-    const base = active.filter(item => !(item.name.toLowerCase().includes("discount") || item.rate < 0));
-    const discount = active.filter(item => item.name.toLowerCase().includes("discount") || item.rate < 0);
+    
+    // Separate GST discounts from regular discounts
+    const gstDiscounts = active.filter(item => item.name.toLowerCase().includes("gst") && item.rate < 0);
+    const otherDiscounts = active.filter(item => item.rate < 0 && !gstDiscounts.includes(item));
+    const base = active.filter(item => item.rate >= 0);
     
     const baseP = base.reduce((acc, item) => acc + (item.rate * item.qty), 0);
-    const gstD = discount.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
+    const baseDiscount = otherDiscounts.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
+    const gstDiscount = gstDiscounts.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
     
-    const gstA = parseFloat(((baseP - gstD) * gstRate).toFixed(2));
+    const gstA = computeGst(baseP, baseDiscount, gstRate);
+    const finalT = (baseP - baseDiscount) - gstDiscount + gstA;
     const totalW = baseP + gstA;
-    const finalT = totalW - gstD;
 
     return {
       previewItems: items,
       previewBasePrice: baseP,
-      previewGstDiscount: gstD,
+      previewGstDiscount: gstDiscount,
       previewGstAmount: gstA,
       previewTotalWithGST: totalW,
       previewFinalTotal: finalT
@@ -335,7 +395,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
       settingsService.get(),
       bookingsService.getEmailLogs(booking.id),
       paymentsService.getByBooking(booking.id),
-      trainTicketService.getTicketsByBooking(booking.bookingId)
+      trainTicketService.getTicketsByBooking(booking.id)
     ]).then(([settingsRes, logsRes, paymentsRes, ticketsRes]) => {
       if (settingsRes.status === 'fulfilled' && settingsRes.value) {
         setSettings(settingsRes.value);
@@ -366,7 +426,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
     setTrainClassValue(booking.trainClass || "");
     
     // Set language and source value
-    const meta = (booking as any)?.sourceMeta || {};
+    const meta = getSafeMeta(booking);
     setLangValue(meta.language || "English");
     
     const linkPrefix = (booking as any)?.sourceBookingLink?.tokenPrefix;
@@ -390,20 +450,92 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
     setSourceValue(src);
 
     // Initialize passengers
-    if (booking.passengers && Array.isArray(booking.passengers) && booking.passengers.length > 0) {
-      setPassengers(booking.passengers);
-    } else {
-      setPassengers([{
-        id: 'main',
-        name: booking.fullName,
-        phone: booking.mobile,
-        email: booking.email || "Not specified",
-        gender: booking.gender,
-        age: booking.age,
-        type: `${booking.trainClass} Train`,
-        status: 'Form complete'
-      }]);
+    let passengersList: any[] = [];
+    
+    // Add main guest
+    passengersList.push({
+      id: 'main',
+      name: booking.fullName || booking.name || "Guest",
+      phone: booking.mobile || booking.phone || "Not specified",
+      email: booking.email || "Not specified",
+      gender: booking.gender || "Male",
+      age: booking.age || 20,
+      type: `${booking.trainClass || 'Sleeper'} Train`,
+      status: 'Form complete',
+      foodPreference: booking.foodPreference || "Normal Food",
+      roomSharing: booking.roomSharing || "Double"
+    });
+    
+    if (booking.passengers) {
+      let parsed: any = null;
+      if (typeof booking.passengers === 'string') {
+        try { parsed = JSON.parse(booking.passengers); } catch (e) {}
+      } else {
+        parsed = booking.passengers;
+      }
+      
+      const persons = (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) 
+        ? (parsed.persons || parsed.passengers || null) 
+        : null;
+      if (Array.isArray(persons)) {
+        persons.forEach((p: any, idx: number) => {
+          if (p.name && p.name.toLowerCase() !== (booking.fullName || "").toLowerCase()) {
+            passengersList.push({
+              id: `co-${idx}`,
+              name: p.name,
+              phone: p.phone || "Not specified",
+              email: p.email || "Not specified",
+              gender: p.gender || "Male",
+              age: p.age || 20,
+              type: p.type || `${booking.trainClass || 'Sleeper'} Train`,
+              status: p.status || 'Form complete',
+              foodPreference: p.foodPreference || "Normal Food",
+              roomSharing: p.roomSharing || "Double",
+              idProof: p.idProof
+            });
+          }
+        });
+      } else if (Array.isArray(parsed)) {
+        parsed.forEach((p: any, idx: number) => {
+          if (p.name && p.name.toLowerCase() !== (booking.fullName || "").toLowerCase()) {
+            passengersList.push({
+              id: p.id || `p-${idx}`,
+              name: p.name,
+              phone: p.phone || "Not specified",
+              email: p.email || "Not specified",
+              gender: p.gender || "Male",
+              age: p.age || 20,
+              type: p.type || `${booking.trainClass || 'Sleeper'} Train`,
+              status: p.status || 'Form complete',
+              foodPreference: p.foodPreference || "Normal Food",
+              roomSharing: p.roomSharing || "Double",
+              idProof: p.idProof
+            });
+          }
+        });
+      }
     }
+    
+    // Pad passengers to match expected passenger count in header (booking.numberOfTravelers)
+    const expectedCount = booking.numberOfTravelers || 1;
+    if (passengersList.length < expectedCount) {
+      for (let i = passengersList.length; i < expectedCount; i++) {
+        passengersList.push({
+          id: `gen-co-${i}`,
+          name: "",
+          phone: "",
+          email: "",
+          gender: "Female",
+          age: "",
+          type: `${booking.trainClass || 'Sleeper'} Train`,
+          status: 'Pending',
+          foodPreference: "Normal Food",
+          roomSharing: "Double"
+        });
+      }
+    }
+    
+    setPassengers(passengersList);
 
     // Set confirmation amount based on trip price
     const trip = trips.find(t => t.tripCode === booking.tripId);
@@ -437,14 +569,24 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
 
           const matchTrainClass = (optLabel: string, trainClass: string) => {
             if (!optLabel || !trainClass) return false;
-            const label = optLabel.toLowerCase();
-            const cls = trainClass.toLowerCase();
+            const label = optLabel.toLowerCase().trim();
+            const cls = trainClass.toLowerCase().trim();
             if (label.includes(cls) || cls.includes(label)) return true;
+            
+            const clsIsNonAc = cls.includes("non ac") || cls.includes("non-ac");
+            const labelIsNonAc = label.includes("non ac") || label.includes("non-ac");
+            
             if (cls.includes("sleeper") || cls === "sl") {
-              return label.includes("sleeper") || label.includes("sl");
+              if (!cls.includes("ac") || clsIsNonAc) {
+                return label.includes("sleeper") || label.includes("sl");
+              }
             }
-            if (cls.includes("3ac") || cls.includes("3-tier") || cls.includes("ac")) {
-              return label.includes("3ac") || label.includes("3-tier") || label.includes("ac");
+            if (cls.includes("3ac") || cls.includes("3-tier") || cls.includes("ac") || cls.includes("3c") || cls.includes("3-tier ac train")) {
+              if (clsIsNonAc) {
+                return labelIsNonAc;
+              } else {
+                return (label.includes("3ac") || label.includes("3-tier") || label.includes("ac") || label.includes("3c")) && !labelIsNonAc;
+              }
             }
             return false;
           };
@@ -537,11 +679,25 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
 
       const matchTrainClass = (optLabel: string, trainClass: string) => {
         if (!optLabel || !trainClass) return false;
-        const label = optLabel.toLowerCase();
-        const cls = trainClass.toLowerCase();
+        const label = optLabel.toLowerCase().trim();
+        const cls = trainClass.toLowerCase().trim();
         if (label.includes(cls) || cls.includes(label)) return true;
-        if (cls.includes("sleeper") || cls === "sl") return label.includes("sleeper") || label.includes("sl");
-        if (cls.includes("3ac") || cls.includes("3-tier") || cls.includes("ac")) return label.includes("3ac") || label.includes("3-tier") || label.includes("ac");
+        
+        const clsIsNonAc = cls.includes("non ac") || cls.includes("non-ac");
+        const labelIsNonAc = label.includes("non ac") || label.includes("non-ac");
+        
+        if (cls.includes("sleeper") || cls === "sl") {
+          if (!cls.includes("ac") || clsIsNonAc) {
+            return label.includes("sleeper") || label.includes("sl");
+          }
+        }
+        if (cls.includes("3ac") || cls.includes("3-tier") || cls.includes("ac") || cls.includes("3c") || cls.includes("3-tier ac train")) {
+          if (clsIsNonAc) {
+            return labelIsNonAc;
+          } else {
+            return (label.includes("3ac") || label.includes("3-tier") || label.includes("ac") || label.includes("3c")) && !labelIsNonAc;
+          }
+        }
         return false;
       };
 
@@ -623,18 +779,22 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
 
     // Recalculate totals
     const activeItems = currentItems.filter(item => item.qty > 0 || item.rate < 0);
-    const baseItems = activeItems.filter(item => !(item.name.toLowerCase().includes("discount") || item.rate < 0));
-    const discountItems = activeItems.filter(item => item.name.toLowerCase().includes("discount") || item.rate < 0);
+    const gstDiscounts = activeItems.filter(item => item.name.toLowerCase().includes("gst") && item.rate < 0);
+    const otherDiscounts = activeItems.filter(item => item.rate < 0 && !gstDiscounts.includes(item));
+    const baseItems = activeItems.filter(item => item.rate >= 0);
 
     const calculatedBase = baseItems.reduce((acc, item) => acc + (item.rate * item.qty), 0);
+    const calculatedDiscount = otherDiscounts.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
+    const calculatedGstDiscount = gstDiscounts.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
+
     const gstRate = (fullTrip?.gstPercentage ?? 5) / 100;
-    const calculatedGst = Math.round(calculatedBase * gstRate);
-    const calculatedDiscount = discountItems.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
+    const calculatedGst = computeGst(calculatedBase, calculatedDiscount, gstRate);
 
-    const totalAmount = calculatedBase + calculatedGst - calculatedDiscount;
-    const remainingAmount = totalAmount - booking.advancePaid;
+    const totalAmount = calculatedBase - calculatedDiscount - calculatedGstDiscount + calculatedGst;
+    const totalPaymentsPaid = paymentsList.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const remainingAmount = totalAmount - totalPaymentsPaid;
 
-    const meta = (booking as any)?.sourceMeta || {};
+    const meta = getSafeMeta(booking);
     const newMeta = {
       ...meta,
       bookingItems: currentItems
@@ -648,6 +808,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
       totalAmount,
       remainingAmount,
       sourceMeta: newMeta,
+      advancePaid: totalPaymentsPaid,
       ...extraFields
     });
   };
@@ -680,7 +841,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
     const paymentStatus = (booking.paymentStatus || "").toString().toLowerCase();
     const advance = Number(booking.advancePaid || 0);
     if (paymentStatus === "partial") return "Partially Paid";
-    if (paymentStatus === "paid") return "Pending Payment";
+    if (paymentStatus === "paid") return "Paid";
     if (paymentStatus === "pending") {
       if (advance <= 0) return "Inquiry";
       return "Pending Payment";
@@ -721,12 +882,56 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
         advancePaid: adv,
         paymentMode: confirmMode,
         paymentStatus: adv >= tot ? 'Paid' : adv > 0 ? 'Partial' : 'Pending',
-        email: confirmEmail
+        email: confirmEmail,
+        trainTicketStatus: confirmTrainStatus
       });
+
+      // Auto create or update train tickets for passengers in this booking with the selected status
+      const passengersList = booking.passengers && Array.isArray(booking.passengers) ? booking.passengers : [];
+      if (passengersList.length > 0) {
+        await Promise.all(
+          passengersList.map(async (p: any) => {
+            const existing = tickets.find(t => t.travelerName === p.name);
+            if (existing) {
+              return trainTicketService.updateTicket(existing.id, { ticketStatus: confirmTrainStatus });
+            }
+            return trainTicketService.createTicket(booking.bookingId, {
+              travelerName: p.name,
+              ticketStatus: confirmTrainStatus,
+              sourceStation: booking.pickupCity || "Ahmedabad",
+              destinationStation: "Jalandhar"
+            });
+          })
+        );
+      } else {
+        const existing = tickets.find(t => t.travelerName === booking.fullName);
+        if (existing) {
+          await trainTicketService.updateTicket(existing.id, { ticketStatus: confirmTrainStatus });
+        } else {
+          await trainTicketService.createTicket(booking.bookingId, {
+            travelerName: booking.fullName,
+            ticketStatus: confirmTrainStatus,
+            sourceStation: booking.pickupCity || "Ahmedabad",
+            destinationStation: "Jalandhar"
+          });
+        }
+      }
+
       toast.success("Booking confirmed successfully!");
       setIsConfirming(false);
       try {
-        await bookingsService.sendEmail(booking.id, 'confirmation');
+        const singleFile = confirmTicketFilesList[0]?.content || confirmTicketFile;
+        const singleFileName = confirmTicketFilesList[0]?.name || confirmTicketFileName;
+        await bookingsService.sendEmail(
+          booking.id, 
+          'confirmation', 
+          undefined, 
+          confirmSendTicket, 
+          singleFile, 
+          singleFileName, 
+          confirmTrainStatus,
+          confirmTicketFilesList
+        );
         toast.success("Confirmation email sent to guest!");
       } catch (err) {
         toast.error("Booking confirmed, but email notification failed");
@@ -736,6 +941,50 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
       toast.error("Failed to confirm booking");
     } finally {
       setConfirmingLoading(false);
+    }
+  };
+
+  const handleRevertConfirmation = async () => {
+    if (!canManageBooking) return toast.error("Not authorized to modify this booking");
+    if (!window.confirm("Are you sure you want to revert this confirmed booking back to Pending Payment status?")) {
+      return;
+    }
+    setRevertingLoading(true);
+    try {
+      await bookingsService.update(booking.id, {
+        status: 'pending_payment',
+        paymentStatus: 'Pending',
+        trainTicketStatus: 'PENDING'
+      });
+      toast.success("Booking confirmation reverted back to Pending Payment!");
+      onRefresh();
+    } catch (err: any) {
+      toast.error(`Failed to revert booking: ${err.message || 'Server error'}`);
+    } finally {
+      setRevertingLoading(false);
+    }
+  };
+
+  const handleCancelBooking = async () => {
+    if (!cancelReason.trim()) {
+      toast.error("Please provide a reason for cancellation");
+      return;
+    }
+    setCancelProcessing(true);
+    try {
+      await bookingsService.cancelWithRefund(booking.id, {
+        reason: cancelReason,
+        cancellationCharges: parseFloat(cancelCharges) || 0,
+        refundAmount: parseFloat(cancelRefund) || 0,
+        refundPaymentMode: cancelRefundMode
+      });
+      toast.success("Booking cancelled, associated train tickets updated, and refund logged!");
+      setShowCancelModal(false);
+      onRefresh();
+    } catch (err) {
+      toast.error("Failed to cancel booking");
+    } finally {
+      setCancelProcessing(false);
     }
   };
 
@@ -796,9 +1045,13 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
   const handleSaveDates = async () => {
     if (!newDepartureDate) return toast.error("Please select a valid date");
     try {
-      await bookingsService.update(booking.id, { departureDate: newDepartureDate });
+      await bookingsService.update(booking.id, { 
+        departureDate: newDepartureDate,
+        reason: changeReason
+      });
       toast.success("Departure date updated successfully!");
       setShowChangeDates(false);
+      setChangeReason("");
       onRefresh();
     } catch (e) {
       toast.error("Failed to update departure date");
@@ -848,31 +1101,34 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
       }
 
       const activeItems = currentItems.filter(item => item.qty > 0 || item.rate < 0);
-      const baseItems = activeItems.filter(item => !(item.name.toLowerCase().includes("discount") || item.rate < 0));
-      const discountItems = activeItems.filter(item => item.name.toLowerCase().includes("discount") || item.rate < 0);
+      const gstDiscounts = activeItems.filter(item => item.name.toLowerCase().includes("gst") && item.rate < 0);
+      const otherDiscounts = activeItems.filter(item => item.rate < 0 && !gstDiscounts.includes(item));
+      const baseItems = activeItems.filter(item => item.rate >= 0);
 
       const calculatedBase = baseItems.reduce((acc, item) => acc + (item.rate * item.qty), 0);
-      const gstRate = (fullTrip?.gstPercentage ?? 5) / 100;
-      const calculatedGst = Math.round(calculatedBase * gstRate);
-      const calculatedDiscount = discountItems.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
+      const calculatedDiscount = otherDiscounts.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
+      const calculatedGstDiscount = gstDiscounts.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
 
-      const totalAmount = calculatedBase + calculatedGst - calculatedDiscount;
-      const remainingAmount = totalAmount - booking.advancePaid;
+      const gstRate = (fullTrip?.gstPercentage ?? 5) / 100;
+      const calculatedGst = computeGst(calculatedBase, calculatedDiscount, gstRate);
+
+      const totalAmount = calculatedBase - calculatedDiscount - calculatedGstDiscount + calculatedGst;
+      const totalPaymentsPaid = paymentsList.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      const remainingAmount = totalAmount - totalPaymentsPaid;
       
       const totalQty = baseItems.reduce((acc, item) => acc + item.qty, 0);
 
-      const meta = (booking as any)?.sourceMeta || {};
       const newMeta = {
-        ...meta,
-        bookingItems: currentItems
+        ...getSafeMeta(booking),
+        bookingItems: activeItems
       };
 
       await bookingsService.update(booking.id, {
         totalAmount,
         remainingAmount,
-        numberOfTravelers: totalQty || booking.numberOfTravelers || 1,
         baseAmount: calculatedBase,
         gstAmount: calculatedGst,
+        advancePaid: totalPaymentsPaid,
         sourceMeta: newMeta
       });
 
@@ -915,9 +1171,14 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
         toast.error("Failed to send online request");
       }
     } else if (paymentSource === 'venue') {
+      const remaining = Number(booking.remainingAmount || 0);
       try {
         await bookingsService.update(booking.id, {
-          notes: booking.notes ? `${booking.notes}\n[Collect at Venue]` : `[Collect at Venue]`
+          notes: booking.notes ? `${booking.notes}\n[Collect at Venue: ₹${remaining.toLocaleString('en-IN')}]` : `[Collect at Venue: ₹${remaining.toLocaleString('en-IN')}]`,
+          // Preserve the actual remaining amount so outstanding reports remain correct.
+          // A dedicated venueCollectionAmount flag is stored for staff to know what to collect.
+          venueCollectionAmount: remaining,
+          venueCollectionStatus: 'pending',
         });
         toast.success("Payment configured to be collected at venue!");
         setShowCreatePayment(false);
@@ -928,10 +1189,90 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, passengerId: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // File validation: Size limit under 1 MB
+    if (file.size > 1024 * 1024) {
+      toast.error("File size must be under 1 MB.");
+      e.target.value = ""; // Reset
+      return;
+    }
+
+    // Mimetype check (PDF, JPG, PNG)
+    const allowed = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    if (!allowed.includes(file.type) && !file.name.toLowerCase().endsWith('.pdf') && !file.name.toLowerCase().endsWith('.png') && !file.name.toLowerCase().endsWith('.jpg') && !file.name.toLowerCase().endsWith('.jpeg')) {
+      toast.error("Invalid file type. Only JPG, PNG, and PDF are allowed.");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      toast.loading("Uploading document...", { id: `upload-${passengerId}` });
+      await bookingsService.uploadDocument(booking.id, passengerId, file);
+      toast.success("Document uploaded successfully!", { id: `upload-${passengerId}` });
+      onRefresh(); // Refresh details to load new documents metadata
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Document upload failed. Please retry later.", { id: `upload-${passengerId}` });
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  const handleViewDoc = async (passengerId: string, fileName: string) => {
+    try {
+      toast.loading("Loading document...", { id: `view-${passengerId}` });
+      const blob = await bookingsService.downloadDocument(booking.id, passengerId);
+      const url = window.URL.createObjectURL(blob);
+      
+      // Open in new tab
+      const newWindow = window.open(url, '_blank');
+      if (!newWindow) {
+        // Fallback to download link if popup is blocked
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+      }
+      toast.success("Document loaded", { id: `view-${passengerId}` });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load document", { id: `view-${passengerId}` });
+    }
+  };
+
+  const handleRemoveDoc = async (passengerId: string) => {
+    if (!confirm("Are you sure you want to remove this document?")) return;
+    try {
+      toast.loading("Removing document...", { id: `remove-doc-${passengerId}` });
+      await bookingsService.deleteDocument(booking.id, passengerId);
+      toast.success("Document removed successfully", { id: `remove-doc-${passengerId}` });
+      onRefresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to remove document", { id: `remove-doc-${passengerId}` });
+    }
+  };
+
   const handleEditPassenger = (p: any) => {
-    const names = p.name.split(' ');
+    let rawName = p.name || "";
+    let salutation = "Mr.";
+    if (rawName.toLowerCase().startsWith("mr. ")) {
+      salutation = "Mr.";
+      rawName = rawName.substring(4);
+    } else if (rawName.toLowerCase().startsWith("mrs. ")) {
+      salutation = "Mrs.";
+      rawName = rawName.substring(5);
+    } else if (rawName.toLowerCase().startsWith("ms. ")) {
+      salutation = "Ms.";
+      rawName = rawName.substring(4);
+    }
+    const names = rawName.split(' ');
     setEditingPassenger(p);
     setNewPassenger({
+      salutation,
       firstName: names[0] || "",
       lastName: names.slice(1).join(' ') || "",
       gender: p.gender || "Male",
@@ -951,7 +1292,8 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
 
     let updatedPassengers = [];
     let isMainGuestUpdate = false;
-    const name = `${newPassenger.firstName} ${newPassenger.lastName}`.trim();
+    const salutationPrefix = newPassenger.salutation ? `${newPassenger.salutation} ` : "";
+    const name = `${salutationPrefix}${newPassenger.firstName} ${newPassenger.lastName}`.trim();
 
     if (editingPassenger) {
       if (editingPassenger.id === 'main' || editingPassenger.name === booking.fullName || editingPassenger.name === booking.name) {
@@ -1002,7 +1344,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
       toast.error("Failed to sync passengers and booking items with backend");
     }
 
-    setNewPassenger({ firstName: "", lastName: "", gender: "Male", age: "", phone: "", email: "", foodPreference: "Normal Food" });
+    setNewPassenger({ salutation: "Mr.", firstName: "", lastName: "", gender: "Male", age: "", phone: "", email: "", foodPreference: "Normal Food" });
     setEditingPassenger(null);
     if (!keepOpen) setShowAddPassenger(false);
   };
@@ -1192,37 +1534,49 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
       `}} />
 
       {/* ─── Workspace Header ─── */}
-      <div className="border-b border-zinc-200 px-6 py-4 flex items-center justify-between gap-6 bg-white sticky top-0 z-30">
-        <div className="flex items-center gap-4 min-w-0">
-          <button onClick={onBack} className="text-slate-400 hover:text-slate-900 text-lg pr-2 border-r">← Back</button>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-slate-455 uppercase font-black tracking-wider">Booking ID</span>
-            <span className="font-bold text-slate-800 text-sm font-mono">{booking.bookingId}</span>
+      <div className="border-b border-zinc-200 px-4 py-3 md:px-6 md:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-6 bg-white sticky top-0 z-30 font-sans">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={onBack} className="text-slate-400 hover:text-slate-900 text-sm font-bold pr-2 border-r border-slate-200">← Back</button>
+            <div className="flex flex-col">
+              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Booking ID</span>
+              <span className="font-bold text-slate-800 text-xs sm:text-sm font-mono">{booking.bookingId}</span>
+            </div>
           </div>
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="font-bold text-slate-855 text-sm">{booking.tripName || trips.find(t => t.tripCode === booking.tripId)?.tripName || "Trip"}</div>
-          <div className="text-slate-400 text-xs mt-0.5">
-            {booking.departureDate 
-              ? `${new Date(booking.departureDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} to ${new Date(new Date(booking.departureDate).getTime() + 10*24*60*60*1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
-              : '—'}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <div className="font-bold text-slate-800 text-xs">{booking.fullName || booking.name}</div>
-            <div className="text-slate-400 font-mono text-[11px] mt-0.5">{booking.phone || "—"}</div>
-          </div>
-          <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase", 
-            booking.status === "confirmed" ? "bg-emerald-50 text-emerald-600 border border-emerald-250/40" : "bg-amber-50 text-amber-600 border border-amber-250/40"
+          <span className={cn("sm:hidden px-2 py-0.5 rounded-full text-[9px] font-bold uppercase", 
+            booking.status === "confirmed" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-amber-50 text-amber-600 border border-amber-200"
           )}>
             {booking.status === "confirmed" ? "Confirmed" : flowStatus}
           </span>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex-1 min-w-0 w-full sm:w-auto">
+          <div className="font-bold text-slate-900 text-sm sm:text-base truncate">{booking.tripName || fullTrip?.tripName || "Trip"}</div>
+          <div className="text-slate-500 text-xs mt-0.5 font-medium">
+            {booking.departureDate 
+              ? `${safeFormatDate(booking.departureDate, { day: '2-digit', month: 'short' })} to ${(() => {
+                  const durationStr = fullTrip?.duration || "";
+                  const daysMatch = durationStr.match(/(\d+)\s*[Dd]ay/);
+                  const durationDays = daysMatch ? parseInt(daysMatch[1], 10) : (durationStr ? 10 : 10);
+                  return safeFormatDate(new Date(booking.departureDate).getTime() + durationDays*24*60*60*1000, { day: '2-digit', month: 'short', year: 'numeric' });
+                })()}`
+              : '—'}
+          </div>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-3 shrink-0">
+          <div className="text-right">
+            <div className="font-bold text-slate-800 text-xs">{booking.fullName || booking.name}</div>
+            <div className="text-slate-400 font-mono text-[11px] mt-0.5">{booking.mobile || booking.phone || "—"}</div>
+          </div>
+          <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase", 
+            booking.status === "confirmed" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-amber-50 text-amber-600 border border-amber-200"
+          )}>
+            {booking.status === "confirmed" ? "Confirmed" : flowStatus}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
           <button 
             onClick={() => {
               setPayAmount(booking.remainingAmount.toString());
@@ -1231,27 +1585,83 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
               setPayComments("");
               setShowCreatePayment(true);
             }} 
-            className="bg-[#F5760E] hover:opacity-90 text-white font-bold text-xs px-4 py-2 rounded-lg transition-all"
+            className="bg-[#F5760E] hover:opacity-90 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition-all shadow-xs"
           >
             + Add Payment
           </button>
-          <button onClick={() => setShowCreateTask(true)} className="bg-white border border-slate-300 text-slate-700 font-semibold text-xs px-4 py-2 rounded-lg hover:bg-slate-50 transition-all">
+          <button onClick={() => setShowCreateTask(true)} className="bg-white border border-slate-200 text-slate-700 font-semibold text-xs px-3.5 py-1.5 rounded-lg hover:bg-slate-50 transition-all">
             Assign Task
+          </button>
+          {(booking.status === 'confirmed' || flowStatus === 'Confirmed') && (
+            <button 
+              onClick={handleRevertConfirmation}
+              disabled={revertingLoading}
+              className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition-all shadow-xs"
+            >
+              {revertingLoading ? "Reverting..." : "Revert Confirmation"}
+            </button>
+          )}
+          {booking.status !== 'cancelled' && (
+            <button 
+              onClick={() => {
+                setCancelReason("");
+                setCancelCharges("0");
+                setCancelRefund((booking.advancePaid || 0).toString());
+                setCancelRefundMode("UPI");
+                setShowCancelModal(true);
+              }}
+              className="bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 font-semibold text-xs px-3.5 py-1.5 rounded-lg transition-all"
+            >
+              Cancel Booking
+            </button>
+          )}
+          <button onClick={() => setIsComposerOpen(true)} className="bg-white border border-slate-200 text-slate-700 font-semibold text-xs px-3.5 py-1.5 rounded-lg hover:bg-slate-50 transition-all flex items-center gap-1.5">
+            <Mail className="h-3.5 w-3.5 text-slate-500" />
+            Send Email
           </button>
         </div>
       </div>
 
       {/* Inline alerts */}
-      {flowStatus !== 'Confirmed' && (
-        <div className="mx-6 mt-4 bg-[#fffbea] border border-[#fce588] rounded-xl px-4 py-3 text-xs text-slate-700 flex items-center gap-2">
-          <span className="bg-[#f0ad4e] text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase leading-none">{flowStatus}</span>
-          <span>
-            {flowStatus === 'Cancelled' ? 'This booking was cancelled.'
-              : flowStatus === 'Expired' ? 'This booking link has expired.'
-              : flowStatus === 'Partially Paid' ? 'Partially paid. Remaining balance is pending.'
-              : flowStatus === 'Pending Payment' ? 'Payment pending. Confirmation will be possible once paid.'
-              : "Pending Inquiry."}
-          </span>
+      {flowStatus === 'Confirmed' || booking.status === 'confirmed' ? (
+        <div className="mx-6 mt-4 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-xs text-emerald-800 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="bg-emerald-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded uppercase leading-none">CONFIRMED</span>
+            <span className="font-semibold">This booking is confirmed.</span>
+          </div>
+          <button 
+            onClick={handleRevertConfirmation}
+            disabled={revertingLoading}
+            className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] uppercase px-3 py-1.5 rounded transition-all shrink-0 cursor-pointer shadow-2xs"
+          >
+            {revertingLoading ? "Reverting..." : "Revert Confirmation"}
+          </button>
+        </div>
+      ) : (
+        <div className="mx-6 mt-4 bg-[#fffbea] border border-[#fce588] rounded-xl px-4 py-3 text-xs text-slate-700 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="bg-[#f0ad4e] text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase leading-none">{flowStatus}</span>
+            <span>
+              {flowStatus === 'Cancelled' ? 'This booking was cancelled.'
+                : flowStatus === 'Expired' ? 'This booking link has expired.'
+                : flowStatus === 'Partially Paid' ? 'Partially paid. Remaining balance is pending.'
+                : flowStatus === 'Pending Payment' ? 'Payment pending. Confirmation will be possible once paid.'
+                : "Pending Inquiry."}
+            </span>
+          </div>
+          {flowStatus !== 'Cancelled' && flowStatus !== 'Expired' && (
+            <button 
+              onClick={() => {
+                setConfirmTotal((booking.totalAmount || 0).toString());
+                setConfirmAdvance((booking.advancePaid || 0).toString());
+                setConfirmEmail(booking.email || "");
+                setIsConfirming(true);
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase px-3 py-1.5 rounded transition-all shrink-0"
+            >
+              Confirm Booking
+            </button>
+          )}
         </div>
       )}
 
@@ -1268,7 +1678,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
       {isConfirming && (
         <div className="mx-6 mt-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-3">
           <h3 className="font-bold text-emerald-800">Confirm Booking Inline</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div>
               <label className="text-[9px] font-bold uppercase text-slate-400">Total Amount</label>
               <Input type="number" value={confirmTotal} onChange={e => setConfirmTotal(e.target.value)} className="h-8 text-xs font-mono bg-white" />
@@ -1285,10 +1695,88 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
               </Select>
             </div>
             <div>
+              <label className="text-[9px] font-bold uppercase text-slate-400">Train Ticket Status</label>
+              <Select value={confirmTrainStatus} onValueChange={setConfirmTrainStatus}>
+                <SelectTrigger className="h-8 text-xs bg-white"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="BOOKED">Booked</SelectItem>
+                  <SelectItem value="WAITLISTED">Waitlisted</SelectItem>
+                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                  <SelectItem value="RAC">RAC</SelectItem>
+                  <SelectItem value="SELF_BOOKED">Self booked</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <label className="text-[9px] font-bold uppercase text-slate-400">Email</label>
               <Input type="email" value={confirmEmail} onChange={e => setConfirmEmail(e.target.value)} className="h-8 text-xs bg-white" />
             </div>
           </div>
+          {confirmTrainStatus !== 'SELF_BOOKED' && (
+            <div className="flex flex-col gap-2 p-2 bg-emerald-100/60 rounded border border-emerald-200/50 max-w-md">
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="sendTrainWithEmail" 
+                  checked={confirmSendTicket} 
+                  onChange={e => setConfirmSendTicket(e.target.checked)} 
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
+                />
+                <label htmlFor="sendTrainWithEmail" className="text-[10px] font-bold text-emerald-800 cursor-pointer select-none">
+                  Include train ticket confirmation details inside email
+                </label>
+              </div>
+              {confirmSendTicket && (
+                <div className="space-y-1.5 pl-5">
+                  <label className="block text-[9px] font-bold uppercase text-slate-600">Attach Train Tickets / Voucher Files (Multiple Supported)</label>
+                  <input 
+                    type="file" 
+                    multiple
+                    accept=".pdf,image/*"
+                    onChange={e => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) {
+                        files.forEach(file => {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            const base64Str = reader.result as string;
+                            const base64Data = base64Str.split(',')[1] || base64Str;
+                            setConfirmTicketFilesList(prev => {
+                              if (prev.some(f => f.name === file.name)) return prev;
+                              return [...prev, { name: file.name, content: base64Data }];
+                            });
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                      }
+                    }}
+                    className="block w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
+                  />
+                  {confirmTicketFilesList.length > 0 && (
+                    <div className="space-y-1 pt-1">
+                      <p className="text-[10px] text-emerald-800 font-extrabold">Attached Files ({confirmTicketFilesList.length}):</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {confirmTicketFilesList.map((f, fIdx) => (
+                          <div key={fIdx} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white border border-emerald-300 text-[10px] font-mono font-bold text-slate-700 shadow-2xs">
+                            <span className="truncate max-w-[200px]">{f.name}</span>
+                            <button 
+                              type="button" 
+                              onClick={() => setConfirmTicketFilesList(prev => prev.filter((_, i) => i !== fIdx))}
+                              className="text-slate-400 hover:text-rose-600 font-black cursor-pointer"
+                              title="Remove file"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex gap-2 justify-end pt-2 border-t">
             <button onClick={() => setIsConfirming(false)} className="bg-white border text-slate-655 px-4 py-1.5 rounded">Cancel</button>
             <button onClick={handleConfirmSubmit} disabled={confirmingLoading} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-1.5 rounded">{confirmingLoading ? "Confirming..." : "Confirm Booking"}</button>
@@ -1331,12 +1819,12 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
       </div>
 
       {/* ─── Main Content Split Layout ─── */}
-      <div className="flex flex-1 overflow-hidden min-h-0">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto min-h-0">
         {/* Left Column - scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4">
 
           {/* Tab Strip */}
-          <div className="border-b border-slate-200 bg-white flex gap-6 overflow-x-auto sticky top-0 z-10 -mx-6 px-6">
+          <div className="border-b border-slate-200 bg-white flex gap-4 md:gap-6 overflow-x-auto no-scrollbar sticky top-0 z-10 -mx-4 md:-mx-6 px-4 md:px-6">
             {[
               { id: "overview", label: "Overview" },
               { id: "passengers", label: "Passengers" },
@@ -1345,6 +1833,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
               { id: "ticketing", label: "Ticketing" },
               { id: "accounting", label: "Accounting" },
               { id: "files", label: "Files & Notes" },
+              { id: "emails", label: "Email Logs" },
               { id: "activity", label: "Activity" }
             ].map(tab => (
               <button
@@ -1399,16 +1888,28 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                     <div className="text-sm font-bold text-[#F5760E] mt-1">3AC Available</div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Departure</div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between gap-2">
+                      <span>Departure</span>
+                      {canManageBooking && !isExpired && (
+                        <button 
+                          onClick={() => {
+                            setNewDepartureDate(getInitialDateString(booking.departureDate));
+                            setChangeReason("");
+                            setShowChangeDates(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 text-[10px] font-semibold flex items-center gap-0.5"
+                        >
+                          <Pencil className="w-2.5 h-2.5" /> Edit
+                        </button>
+                      )}
+                    </div>
                     <div className="text-sm font-bold text-slate-800 mt-1">
-                      {booking.departureDate 
-                        ? new Date(booking.departureDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-                        : "27 Jul 2026"}
+                      {safeFormatDate(booking.departureDate, { day: '2-digit', month: 'short', year: 'numeric' }, "27 Jul 2026")}
                     </div>
                   </div>
                   <div>
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Duration</div>
-                    <div className="text-sm font-bold text-slate-800 mt-1">11 Days</div>
+                    <div className="text-sm font-bold text-slate-800 mt-1">{fullTrip?.duration || 10} Days</div>
                   </div>
                 </div>
               </div>
@@ -1422,22 +1923,24 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-slate-250 bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        <th className="px-4 py-2.5">Date</th>
-                        <th className="px-4 py-2.5">Changed From</th>
+                        <th className="px-4 py-2.5">Departure Date</th>
+                        <th className="px-4 py-2.5">Return Date</th>
                         <th className="px-4 py-2.5">Changed By</th>
-                        <th className="px-4 py-2.5">Date</th>
+                        <th className="px-4 py-2.5">Updated At</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       <tr className="hover:bg-slate-50/50 transition-colors text-slate-700">
                         <td className="px-4 py-3 font-medium">
-                          {booking.departureDate 
-                            ? new Date(booking.departureDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-                            : "27 Jul 2026"}
+                          {safeFormatDate(booking.departureDate, { day: '2-digit', month: 'short', year: 'numeric' }, "—")}
                         </td>
-                        <td className="px-4 py-3">30 Jul 2026</td>
+                        <td className="px-4 py-3">
+                          {booking.departureDate 
+                            ? safeFormatDate(new Date(booking.departureDate).getTime() + (fullTrip?.duration || 10)*24*60*60*1000, { day: '2-digit', month: 'short', year: 'numeric' })
+                            : "—"}
+                        </td>
                         <td className="px-4 py-3 font-semibold text-slate-800">Sales Admin</td>
-                        <td className="px-4 py-3">28 Jun 2026</td>
+                        <td className="px-4 py-3">{safeFormatDate(booking.updatedAt || booking.createdAt, { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1457,7 +1960,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                 <button 
                   onClick={() => {
                     setEditingPassenger(null);
-                    setNewPassenger({ firstName: "", lastName: "", gender: "Male", age: "", phone: "", email: "" });
+                    setNewPassenger({ firstName: "", lastName: "", gender: "Male", age: "", phone: "", email: "", foodPreference: "Normal Food" });
                     setShowAddPassenger(true);
                   }}
                   className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-[10px] uppercase px-3 py-1 rounded transition-all shadow-sm"
@@ -1488,7 +1991,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {passengers.map((p, index) => {
-                    const hasDocs = p.email && p.email !== 'Not specified' && p.phone;
+                    const hasDocs = true;
                     
                     // Room sharing option label helper
                     const getRoomSharingLabel = (roomType: string) => {
@@ -1590,11 +2093,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                         </td>
                         
                         <td className="px-4 py-3 font-bold text-slate-800">
-                          {p.name ? (
-                            (p.name.startsWith("Mr") || p.name.startsWith("Mrs") || p.name.startsWith("Ms") ? "" : "Mr. ") + p.name
-                          ) : (
-                            "N/A"
-                          )}
+                          {p.name || "N/A"}
                         </td>
                         <td className="px-4 py-3 font-mono">{p.age}</td>
                         <td className="px-4 py-3">{p.gender}</td>
@@ -1602,15 +2101,70 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                         
                         {/* Documents */}
                         <td className="px-4 py-3">
-                          {hasDocs ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase border bg-green-50 text-green-700 border-green-200">
-                              3/3
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase border bg-amber-50 text-amber-700 border-amber-200">
-                              2/3
-                            </span>
-                          )}
+                          {(() => {
+                            const isGuide = currentAdmin?.role === 'guide';
+                            const isSales = currentAdmin?.role === 'sales';
+                            const isOwnBooking = booking.salesAdminId === currentAdmin?.id;
+                            const canAccessDocs = !isGuide && (!isSales || isOwnBooking);
+
+                            if (!canAccessDocs) {
+                              return <span className="text-slate-400 font-medium">—</span>;
+                            }
+
+                            const passengerDoc = (booking as any).documents?.find((d: any) => d.passengerId === p.id);
+
+                            return (
+                              <div className="flex flex-col gap-1 items-start">
+                                <input
+                                  type="file"
+                                  id={`doc-file-${p.id}`}
+                                  className="hidden"
+                                  accept=".jpg,.jpeg,.png,.pdf"
+                                  onChange={(e) => handleFileChange(e, p.id)}
+                                />
+                                {passengerDoc ? (
+                                  <div className="flex flex-col gap-1 items-start">
+                                    <span className="text-[10px] text-slate-500 font-medium truncate max-w-[120px]" title={passengerDoc.originalFileName}>
+                                      📄 {passengerDoc.originalFileName}
+                                    </span>
+                                    <div className="flex gap-1.5 items-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleViewDoc(p.id, passengerDoc.originalFileName)}
+                                        className="text-[10px] text-blue-600 hover:text-blue-800 font-bold uppercase transition-colors"
+                                      >
+                                        View
+                                      </button>
+                                      <span className="text-slate-300 text-[10px]">|</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => document.getElementById(`doc-file-${p.id}`)?.click()}
+                                        className="text-[10px] text-slate-500 hover:text-slate-700 font-bold uppercase transition-colors"
+                                      >
+                                        Replace
+                                      </button>
+                                      <span className="text-slate-300 text-[10px]">|</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveDoc(p.id)}
+                                        className="text-[10px] text-rose-600 hover:text-rose-800 font-bold uppercase transition-colors"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => document.getElementById(`doc-file-${p.id}`)?.click()}
+                                    className="text-[10px] bg-slate-900 hover:bg-slate-800 text-white font-bold py-1 px-2.5 rounded transition-all shadow-sm uppercase tracking-wider"
+                                  >
+                                    Add Document
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </td>
 
                         {/* Room Sharing */}
@@ -1756,12 +2310,14 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                         {paymentsList.map((p: any) => {
                           const isExpanded = expandedPaymentId === p.id;
                           const processor = p.paymentMode === 'Cash' || p.paymentMode === 'UPI' || p.paymentMode === 'Bank Transfer' ? 'payments.offlinepayment' : 'online';
-                          const displayDate = new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + " " + new Date(p.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                          const displayDate = safeFormatDateTime(p.createdAt, {
+                            day: '2-digit', month: 'short', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit', hour12: false
+                          });
                           
                           return (
-                            <>
+                            <React.Fragment key={p.id}>
                               <tr 
-                                key={p.id} 
                                 className="text-slate-700 hover:bg-slate-50/50 cursor-pointer"
                                 onClick={() => setExpandedPaymentId(isExpanded ? null : p.id)}
                               >
@@ -1806,14 +2362,14 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                                         <button 
                                           onClick={async (e) => {
                                             e.stopPropagation();
-                                            if(confirm("Refund this payment?")) {
-                                              try {
-                                                await paymentsService.remove(p.id);
-                                                toast.success("Payment refunded!");
-                                                onRefresh();
-                                              } catch {
-                                                toast.error("Refund failed");
-                                              }
+                                            const reason = prompt("Refund reason / reference (required):");
+                                            if (!reason) return;
+                                            try {
+                                              await paymentsService.refund(p.id, { reason, amount: p.amount });
+                                              toast.success("Refund recorded and payment reversed!");
+                                              onRefresh();
+                                            } catch (err: any) {
+                                              toast.error(err?.response?.data?.message || "Refund failed");
                                             }
                                           }}
                                           className="bg-[#31b0d5] hover:bg-[#269abc] text-white font-bold uppercase text-[9px] px-3.5 py-1.5 rounded transition-all shadow-sm"
@@ -1823,14 +2379,14 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                                         <button 
                                           onClick={async (e) => {
                                             e.stopPropagation();
-                                            if(confirm("Reverse this payment?")) {
-                                              try {
-                                                await paymentsService.remove(p.id);
-                                                toast.success("Payment reversed!");
-                                                onRefresh();
-                                              } catch {
-                                                toast.error("Reversal failed");
-                                              }
+                                            const reason = prompt("Reversal reason / reference (required):");
+                                            if (!reason) return;
+                                            try {
+                                              await paymentsService.reverse(p.id, { reason });
+                                              toast.success("Payment reversed!");
+                                              onRefresh();
+                                            } catch (err: any) {
+                                              toast.error(err?.response?.data?.message || "Reversal failed");
                                             }
                                           }}
                                           className="bg-[#f0ad4e] hover:bg-[#ec971f] text-white font-bold uppercase text-[9px] px-3.5 py-1.5 rounded transition-all shadow-sm"
@@ -1842,57 +2398,29 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                                   </td>
                                 </tr>
                               )}
-                            </>
+                            </React.Fragment>
                           );
                         })}
                       </tbody>
                     </table>
                   </div>
                 ) : (
-                  booking.advancePaid > 0 ? (
-                    <div className="border border-slate-200/60 rounded overflow-hidden">
-                      <table className="w-full text-left text-xs">
-                        <thead>
-                          <tr className="bg-slate-50 border-b border-slate-150 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                            <th className="px-4 py-2">Payment comments</th>
-                            <th className="px-4 py-2">Ref num</th>
-                            <th className="px-4 py-2 text-right">Amt</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="text-slate-700">
-                            <td className="px-4 py-3 font-semibold flex items-center gap-1.5">
-                              <span className="text-[8px] font-bold px-1 rounded uppercase bg-slate-200 text-slate-700 font-mono">
-                                {booking.paymentMode || 'Unknown'}
-                              </span>
-                              Advance booking payment
-                            </td>
-                            <td className="px-4 py-3 text-slate-400 font-mono">
-                              payments.offlinepayment
-                            </td>
-                            <td className="px-4 py-3 text-right font-bold font-mono">₹ {booking.advancePaid.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center py-6 text-center text-slate-400">
-                      <CreditCard className="w-10 h-10 text-slate-300 mb-2" />
-                      <p className="text-[11px] italic mb-3">No successful payments yet</p>
-                      <button 
-                        onClick={() => {
-                          setPayAmount(booking.remainingAmount.toString());
-                          setPaymentSource('collected');
-                          setPayMode("UPI");
-                          setPayComments("");
-                          setShowCreatePayment(true);
-                        }}
-                        className="bg-primary hover:bg-primary/95 text-white font-bold text-[9px] uppercase px-4 py-1.5 rounded transition-all shadow-sm"
-                      >
-                        + Create Payment Request
-                      </button>
-                    </div>
-                  )
+                  <div className="flex flex-col items-center py-6 text-center text-slate-400">
+                    <CreditCard className="w-10 h-10 text-slate-300 mb-2" />
+                    <p className="text-[11px] italic mb-3">No successful payments yet</p>
+                    <button 
+                      onClick={() => {
+                        setPayAmount(booking.remainingAmount.toString());
+                        setPaymentSource('collected');
+                        setPayMode("UPI");
+                        setPayComments("");
+                        setShowCreatePayment(true);
+                      }}
+                      className="bg-primary hover:bg-primary/95 text-white font-bold text-[9px] uppercase px-4 py-1.5 rounded transition-all shadow-sm"
+                    >
+                      + Create Payment Request
+                    </button>
+                  </div>
                 )
               )}
 
@@ -1914,7 +2442,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                             <span className="ml-2 text-[8px] font-bold bg-amber-50 text-amber-600 border border-amber-250 px-1 py-0.2 rounded uppercase">PENDING</span>
                           </td>
                           <td className="px-4 py-3 text-slate-400 font-mono">
-                            {new Date(booking.updatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                            {safeFormatDate(booking.updatedAt, { day: '2-digit', month: 'short' })}
                           </td>
                           <td className="px-4 py-3 text-right font-bold font-mono text-red-650">₹ {booking.remainingAmount.toLocaleString('en-IN')}</td>
                         </tr>
@@ -1992,8 +2520,8 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                     <td className="px-4 py-2.5 text-slate-400 italic">Not specified</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-2.5 text-slate-500">Street Address</td>
-                    <td className="px-4 py-2.5 text-slate-850">{booking.notes ? booking.notes.substring(0, 50) : 'Not specified'}</td>
+                    <td className="px-4 py-2.5 text-slate-500">Special Requests / Notes</td>
+                    <td className="px-4 py-2.5 text-slate-850">{booking.notes || 'Not specified'}</td>
                   </tr>
                 </tbody>
               </table>
@@ -2014,72 +2542,12 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => setShowCreateTask(!showCreateTask)}
+                onClick={() => setShowCreateTask(true)}
                 className="h-7 text-[9px] font-bold uppercase rounded"
               >
-                {showCreateTask ? "Cancel" : "Assign Task"}
+                Assign Task
               </Button>
             </div>
-
-            {showCreateTask && (
-              <form onSubmit={handleCreateTask} className="bg-slate-50 border border-slate-200 rounded p-4 space-y-3">
-                <p className="text-[10px] font-bold text-slate-700 uppercase">Assign Task to Colleague</p>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-slate-500">Task Title *</label>
-                  <Input 
-                    required 
-                    value={taskTitle} 
-                    onChange={e => setTaskTitle(e.target.value)} 
-                    placeholder="e.g. Call client for remaining payment" 
-                    className="h-8 text-xs bg-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-slate-500">Task Description</label>
-                  <Input 
-                    value={taskDescription} 
-                    onChange={e => setTaskDescription(e.target.value)} 
-                    placeholder="e.g. Ask for GPay screenshot" 
-                    className="h-8 text-xs bg-white"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-slate-500">Assign To *</label>
-                    <select 
-                      required
-                      value={taskAssignedTo}
-                      onChange={e => setTaskAssignedTo(e.target.value)}
-                      className="w-full h-8 text-xs bg-white border border-slate-200 rounded px-2"
-                    >
-                      <option value="">Select colleague...</option>
-                      {colleagues.map(c => (
-                        <option key={c.id} value={c.id}>{c.name} ({c.role})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-slate-500">Due Date</label>
-                    <Input 
-                      type="date"
-                      value={taskDueDate} 
-                      onChange={e => setTaskDueDate(e.target.value)} 
-                      className="h-8 text-xs bg-white"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-1">
-                  <Button 
-                    type="submit" 
-                    disabled={creatingTask} 
-                    size="sm" 
-                    className="h-8 text-[10px] font-bold uppercase bg-primary text-white"
-                  >
-                    {creatingTask ? "Assigning..." : "Assign"}
-                  </Button>
-                </div>
-              </form>
-            )}
 
             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
               {loadingTasks ? (
@@ -2106,7 +2574,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
 
                     <div className="flex flex-wrap items-center justify-between text-[9px] text-slate-400 font-medium">
                       <span>By <b>{task.assignedBy?.name}</b> &rarr; <b>{task.assignedTo?.name}</b></span>
-                      {task.dueDate && <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>}
+                      {task.dueDate && <span>Due: {safeFormatDate(task.dueDate)}</span>}
                     </div>
 
                     {task.status !== 'COMPLETED' && (
@@ -2145,7 +2613,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
               <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5 uppercase tracking-wider pb-2 border-b">
                 Ticket Booking & PNR Details
               </h4>
-              <TrainTicketsPanel bookingId={booking.bookingId} booking={booking} passengers={passengers} onCountChange={() => {}} />
+              <TrainTicketsPanel bookingId={booking.id} booking={booking} passengers={passengers} onCountChange={() => {}} />
             </div>
           )}
 
@@ -2175,6 +2643,16 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                 </button>
                 <button 
                   onClick={() => {
+                    // Pre-populate dynamic names so they are directly editable in the input fields
+                    const populatedItems = bookingItems.map(item => {
+                      let displayName = item.name;
+                      if (!item.name.startsWith("Pickup:") && (item.name.toLowerCase().includes("train") || item.name.toLowerCase().includes("sleeper"))) {
+                        const is3ac = (item.name.toLowerCase().includes("3ac") || item.name.toLowerCase().includes("3-tier") || item.name.toLowerCase().includes("3c") || item.name.toLowerCase().includes("ac")) && !(item.name.toLowerCase().includes("non ac") || item.name.toLowerCase().includes("non-ac"));
+                        displayName = `Pickup: ${(booking.pickupCity || 'AHMEDABAD').toUpperCase()}, Drop: ${(fullTrip?.location || 'GANDHINAGAR').toUpperCase()} ${is3ac ? '3TIER AC' : 'Non AC'} Sleeper`;
+                      }
+                      return { ...item, name: displayName };
+                    });
+                    setBookingItems(populatedItems);
                     setEditRate((booking.baseAmount || itemRate).toFixed(0));
                     setEditQty(qty.toString());
                     setEditDiscount("");
@@ -2225,33 +2703,41 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {bookingItems.map((item, index) => {
-                        return (
-                          <tr key={item.id || index} className="hover:bg-slate-50/30 transition-colors duration-150">
-                            <td className="px-5 py-3.5">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-slate-800 text-[12px]">{item.name}</span>
-                                </div>
+                      {bookingItems
+                        .filter(item => item.qty > 0 || item.rate < 0)
+                        .map((item, index) => {
+                          return (
+                            <tr key={item.id || index} className="hover:bg-slate-50/30 transition-colors duration-150">
+                              <td className="px-5 py-3.5">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="text"
+                                      value={item.name}
+                                      onChange={e => {
+                                        const updated = bookingItems.map(x => x.id === item.id ? { ...x, name: e.target.value } : x);
+                                        setBookingItems(updated);
+                                      }}
+                                      className="h-8 text-xs font-bold text-slate-800 border-slate-200 focus-visible:ring-1 focus-visible:ring-slate-400 w-full"
+                                    />
+                                  </div>
                                 {item.name.toLowerCase().includes("nonac") && (
                                   <p className="text-[10px] text-slate-400">Get Non-AC Sleeper Train Tickets for Upward & Return journey</p>
                                 )}
                                 {item.name.toLowerCase().includes("3ac") && (
                                   <p className="text-[10px] text-slate-400">Get 3-Tier AC Train Tickets for Upward & Return journey</p>
                                 )}
-                                {(item.isCustom || item.name.toLowerCase().includes("sharing") || item.name.toLowerCase().includes("discount")) && (
-                                  <button 
-                                    type="button" 
-                                    onClick={() => {
-                                      const updated = bookingItems.filter(x => x.id !== item.id);
-                                      setBookingItems(updated);
-                                      toast.success("Item removed");
-                                    }} 
-                                    className="text-[10px] text-rose-500 font-bold hover:text-rose-700 hover:underline transition-colors mt-1 block"
-                                  >
-                                    Remove item
-                                  </button>
-                                )}
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    const updated = bookingItems.filter(x => x.id !== item.id);
+                                    setBookingItems(updated);
+                                    toast.success("Item removed");
+                                  }} 
+                                  className="text-[10px] text-rose-500 font-bold hover:text-rose-700 hover:underline transition-colors mt-1 block"
+                                >
+                                  Remove item
+                                </button>
                               </div>
                             </td>
                             <td className="px-5 py-3.5">
@@ -2261,8 +2747,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                                   type="number"
                                   value={item.rate}
                                   onChange={e => {
-                                    const updated = [...bookingItems];
-                                    updated[index].rate = parseFloat(e.target.value) || 0;
+                                    const updated = bookingItems.map(x => x.id === item.id ? { ...x, rate: parseFloat(e.target.value) || 0 } : x);
                                     setBookingItems(updated);
                                   }}
                                   className="h-8 text-xs w-24 font-mono font-semibold border-slate-200 focus-visible:ring-1 focus-visible:ring-slate-400"
@@ -2274,8 +2759,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                                 type="number"
                                 value={item.qty}
                                 onChange={e => {
-                                  const updated = [...bookingItems];
-                                  updated[index].qty = parseInt(e.target.value) || 0;
+                                  const updated = bookingItems.map(x => x.id === item.id ? { ...x, qty: parseInt(e.target.value) || 0 } : x);
                                   setBookingItems(updated);
                                 }}
                                 className="h-8 text-xs w-16 font-mono font-semibold border-slate-200 text-center focus-visible:ring-1 focus-visible:ring-slate-400"
@@ -2480,7 +2964,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                   <Button 
                     onClick={() => {
                       setIsEditingItems(false);
-                      const meta = (booking as any)?.sourceMeta || {};
+                      const meta = getSafeMeta(booking);
                       if (meta.bookingItems) setBookingItems(meta.bookingItems);
                     }}
                     variant="ghost" 
@@ -2520,14 +3004,28 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                           const isDiscount = item.name.toLowerCase().includes("discount") || item.rate < 0;
                           const badgeText = isDiscount ? "Manual" : "Per-Pax";
                           
-                          const rateFormatted = item.rate.toLocaleString('en-IN', {
-                            minimumFractionDigits: item.rate % 1 === 0 ? 0 : 2,
+                          const absRate = Math.abs(item.rate);
+                          const absAmt = Math.abs(item.rate * item.qty);
+                          
+                          const rateFormatted = (isDiscount ? "- " : "") + absRate.toLocaleString('en-IN', {
+                            minimumFractionDigits: absRate % 1 === 0 ? 0 : 2,
                             maximumFractionDigits: 2
                           });
-                          const amtFormatted = (item.rate * item.qty).toLocaleString('en-IN', {
-                            minimumFractionDigits: (item.rate * item.qty) % 1 === 0 ? 0 : 2,
+                          const amtFormatted = (isDiscount ? "- " : "") + absAmt.toLocaleString('en-IN', {
+                            minimumFractionDigits: absAmt % 1 === 0 ? 0 : 2,
                             maximumFractionDigits: 2
                           });
+
+                          let displayName = item.name;
+                          if (!item.name.startsWith("Pickup:") && (item.name.toLowerCase().includes("train") || item.name.toLowerCase().includes("sleeper"))) {
+                            const is3ac = (item.name.toLowerCase().includes("3ac") || 
+                                          item.name.toLowerCase().includes("3-tier") || 
+                                          item.name.toLowerCase().includes("3 tier") || 
+                                          item.name.toLowerCase().includes("ac")) && 
+                                          !(item.name.toLowerCase().includes("non ac") || 
+                                          item.name.toLowerCase().includes("non-ac"));
+                            displayName = `Pickup: ${(booking.pickupCity || 'AHMEDABAD').toUpperCase()}, Drop: ${(fullTrip?.location || 'GANDHINAGAR').toUpperCase()} ${is3ac ? '3TIER AC' : 'Non AC'} Sleeper`;
+                          }
 
                           return (
                             <tr key={item.id || index} className="hover:bg-slate-50/30 transition-colors duration-150">
@@ -2535,7 +3033,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                                 <span className="bg-[#808080] text-white font-semibold px-1.5 py-0.5 rounded-[3px] text-[10px] mr-2.5 inline-block leading-none">
                                   {badgeText}
                                 </span>
-                                {item.name}
+                                {displayName}
                               </td>
                               <td className="px-6 py-4 text-right font-mono text-slate-700">{rateFormatted}</td>
                               <td className="px-6 py-4 text-right font-mono text-slate-700">{item.qty}</td>
@@ -2549,7 +3047,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                           <span className="bg-[#808080] text-white font-semibold px-1.5 py-0.5 rounded-[3px] text-[10px] mr-2.5 inline-block leading-none">
                             Per-Pax
                           </span>
-                          Pickup: {booking.pickupCity || 'AHMEDABAD'}, Drop: {booking.pickupCity || 'AHMEDABAD'} {booking.trainClass} Sleeper
+                          Pickup: {(booking.pickupCity || 'AHMEDABAD').toUpperCase()}, Drop: {(fullTrip?.location || 'GANDHINAGAR').toUpperCase()} {(((booking.trainClass === '3AC' || booking.trainClass?.includes('3AC') || booking.trainClass?.toLowerCase().includes('3-tier') || booking.trainClass?.toLowerCase().includes('3c') || booking.trainClass?.toLowerCase().includes('ac')) && !(booking.trainClass?.toLowerCase().includes('non ac') || booking.trainClass?.toLowerCase().includes('non-ac'))) ? '3TIER AC' : 'Non AC')} Sleeper
                         </td>
                         <td className="px-6 py-4 text-right font-mono text-slate-700">
                           {itemRate.toLocaleString('en-IN', {
@@ -2605,11 +3103,69 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
           {/* === FILES TAB === */}
           {adminActiveTab === "files" && (
             <div className="bg-white border border-slate-200 rounded p-5 shadow-sm space-y-4">
-              <h4 className="font-black text-slate-800 text-xs uppercase tracking-wider pb-2 border-b">Files & Internal Notes</h4>
-              <div>
-                <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block mb-1">Office Admin Notes</label>
-                <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-150">{booking.adminNotes || "No office notes recorded."}</p>
+              <h4 className="font-black text-slate-800 text-xs uppercase tracking-wider pb-2 border-b">Files & Notes</h4>
+              
+              {/* Customer Booking Notes / Special Requests */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Customer Booking Notes / Special Requests</label>
+                  {!editingNotes && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingNotes(true)}
+                      className="text-[10px] font-bold text-[#F5760E] hover:underline"
+                    >
+                      Edit Notes
+                    </button>
+                  )}
+                </div>
+                {editingNotes ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={notesValue}
+                      onChange={(e) => setNotesValue(e.target.value)}
+                      className="w-full min-h-[100px] text-xs p-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#F5760E] focus:ring-1 focus:ring-[#F5760E]/20"
+                      placeholder="Add customer requests or booking notes..."
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setEditingNotes(false)}
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 text-xs font-semibold"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveNotes}
+                        disabled={savingNotes}
+                        className="px-3 py-1.5 bg-[#F5760E] hover:bg-[#D9650C] text-white rounded text-xs font-semibold disabled:opacity-50"
+                      >
+                        {savingNotes ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-150 whitespace-pre-wrap">
+                    {booking.notes || "No special requests or customer notes recorded."}
+                  </p>
+                )}
               </div>
+
+              <div className="h-px bg-slate-100" />
+
+              {/* Office Admin Notes */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Office Admin Notes</label>
+                <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-150 whitespace-pre-wrap">{booking.adminNotes || "No office notes recorded."}</p>
+              </div>
+            </div>
+          )}
+
+          {/* === EMAILS TAB === */}
+          {adminActiveTab === "emails" && (
+            <div className="bg-white border border-slate-200 rounded p-5 shadow-sm space-y-4">
+              <EmailLogsTimeline contextType="booking" contextId={booking.id} />
             </div>
           )}
 
@@ -2652,7 +3208,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                             {log.action}
                           </span>
                           <span className="text-slate-400 font-medium">
-                            {new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
+                            {safeFormatDateTime(log.createdAt, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
                           </span>
                         </div>
 
@@ -2678,7 +3234,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
         </div>
 
         {/* Right Column Sidebar - scrollable */}
-        <div className="w-[340px] border-l border-slate-150 p-6 overflow-y-auto flex-shrink-0 space-y-4">
+        <div className="w-full lg:w-[340px] border-t lg:border-t-0 lg:border-l border-slate-200 p-4 md:p-6 overflow-y-auto flex-shrink-0 space-y-4 font-sans">
           {/* Customer Main Info Card */}
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 text-xs">
             {isEditingCustomer ? (
@@ -2775,6 +3331,12 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                   <span>✉️</span>
                   <span>{booking.email || "sureshchaudhary310@gmail.com"}</span>
                 </div>
+                <button 
+                  onClick={handleViewCustomerTimeline}
+                  className="mt-2.5 flex items-center gap-1 text-[9px] font-extrabold uppercase text-[#FF6B00] hover:text-[#E56000] tracking-wider transition-colors hover:underline"
+                >
+                  View Lifetime Journey →
+                </button>
               </div>
             )}
 
@@ -2858,6 +3420,17 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
             </div>
             
             <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold uppercase text-slate-400">Salutation</label>
+                <Select value={newPassenger.salutation} onValueChange={v => setNewPassenger({...newPassenger, salutation: v})}>
+                  <SelectTrigger className="h-8 text-xs rounded"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Mr." className="text-xs">Mr.</SelectItem>
+                    <SelectItem value="Mrs." className="text-xs">Mrs.</SelectItem>
+                    <SelectItem value="Ms." className="text-xs">Ms.</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold uppercase text-slate-400">First Name *</label>
                 <Input value={newPassenger.firstName} onChange={e => setNewPassenger({...newPassenger, firstName: e.target.value})} placeholder="First Name" className="h-8 text-xs rounded" />
@@ -2946,6 +3519,16 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
                 type="date"
                 value={newDepartureDate}
                 onChange={e => setNewDepartureDate(e.target.value)}
+                className="h-8 text-xs rounded"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-slate-450">Reason for Change</label>
+              <Input 
+                type="text"
+                placeholder="e.g., Customer requested rescheduling"
+                value={changeReason}
+                onChange={e => setChangeReason(e.target.value)}
                 className="h-8 text-xs rounded"
               />
             </div>
@@ -3103,6 +3686,230 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
           fetchActivityLogs();
         }}
       />
+      <EmailComposerDrawer
+        isOpen={isComposerOpen}
+        onClose={() => setIsComposerOpen(false)}
+        contextType="booking"
+        contextId={booking.id}
+        recipientEmail={booking.email || ""}
+        recipientName={booking.fullName || booking.name || ""}
+        onSent={onRefresh}
+      />
+      {/* DIALOG: CUSTOMER LIFETIME JOURNEY */}
+      <Dialog open={customerTimelineOpen} onOpenChange={setCustomerTimelineOpen}>
+        <DialogContent className="sm:max-w-[450px] rounded-[4px] border border-[#E2E8F0] p-5 bg-white max-h-[80vh] overflow-y-auto shadow-xl">
+          <DialogHeader className="border-b border-[#E2E8F0] pb-3">
+            <DialogTitle className="font-bold uppercase tracking-tight text-xs flex items-center gap-2 text-slate-850">
+              👤 Customer Lifetime Journey
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="relative border-l border-slate-200 ml-2.5 pl-4 space-y-4 text-xs font-semibold text-slate-705">
+              {customerTimeline.length > 0 ? (
+                customerTimeline.map((item, idx) => {
+                  const colors: Record<string, string> = {
+                    Sales: "bg-[#FF6B00]",
+                    Finance: "bg-green-500",
+                    Operations: "bg-blue-500",
+                    Marketing: "bg-purple-500"
+                  };
+                  const color = colors[item.type] || "bg-slate-400";
+                  return (
+                    <div key={idx} className="relative space-y-1">
+                      <span className={cn("absolute -left-[21.5px] top-1 w-2 h-2 rounded-full ring-4 ring-white", color)} />
+                      <div className="flex items-center justify-between gap-2 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                        <span className={cn("px-1.5 py-0.2 rounded text-[7px] text-white", color)}>{item.type}</span>
+                        <span>{item.date}</span>
+                      </div>
+                      <p className="text-slate-800 text-xs font-bold leading-normal">{item.action}</p>
+                      {item.notes && <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic">{item.notes}</p>}
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-slate-400 italic">No timeline entries found.</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="pt-2 border-t">
+            <Button onClick={() => setCustomerTimelineOpen(false)} className="rounded-[4px] font-semibold text-xs h-8.5 w-full bg-slate-100 hover:bg-slate-200 text-slate-700 border-none shadow-none">
+              Close Profile Journey
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG: ASSIGN TASK TO COLLEAGUE */}
+      <Dialog open={showCreateTask} onOpenChange={setShowCreateTask}>
+        <DialogContent className="sm:max-w-[425px] bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <Users className="w-4 h-4 text-[#F5760E]" /> Assign Task to Colleague
+            </DialogTitle>
+            <DialogDescription className="text-[11px] text-slate-400">
+              Assign an operational or administrative task for this booking.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateTask} className="space-y-4 mt-2">
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-slate-500">Task Title *</label>
+              <Input 
+                required 
+                value={taskTitle} 
+                onChange={e => setTaskTitle(e.target.value)} 
+                placeholder="e.g. Call client for remaining payment" 
+                className="h-9 text-xs bg-white border border-slate-200 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-slate-500">Task Description</label>
+              <Textarea 
+                value={taskDescription} 
+                onChange={e => setTaskDescription(e.target.value)} 
+                placeholder="e.g. Ask for GPay screenshot" 
+                className="text-xs bg-white border border-slate-200 rounded-lg min-h-[80px]"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold uppercase text-slate-500">Assign To *</label>
+                <select 
+                  required
+                  value={taskAssignedTo}
+                  onChange={e => setTaskAssignedTo(e.target.value)}
+                  className="w-full h-9 text-xs bg-white border border-slate-200 rounded-lg px-2"
+                >
+                  <option value="">Select colleague...</option>
+                  {colleagues.map(c => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.role})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold uppercase text-slate-500">Due Date</label>
+                <Input 
+                  type="date"
+                  value={taskDueDate} 
+                  onChange={e => setTaskDueDate(e.target.value)} 
+                  className="h-9 text-xs bg-white border border-slate-200 rounded-lg"
+                />
+              </div>
+            </div>
+            <DialogFooter className="pt-2 flex justify-end gap-2">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={() => setShowCreateTask(false)}
+                className="h-9 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={creatingTask} 
+                className="h-9 text-xs font-semibold bg-[#F5760E] hover:opacity-90 text-white rounded-lg px-4"
+              >
+                {creatingTask ? "Assigning..." : "Assign"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG: CANCEL BOOKING & REFUND MODULE */}
+      <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+        <DialogContent className="sm:max-w-[450px] bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-bold text-rose-600 uppercase tracking-wider flex items-center gap-2">
+              ⚠️ Cancel Booking & Process Refund
+            </DialogTitle>
+            <DialogDescription className="text-[11px] text-slate-400">
+              This will cancel the booking workspace, auto-cancel any associated train tickets, and record the refund in the accounting ledger.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-3 text-xs">
+            <div className="bg-slate-55 p-3 rounded-lg border border-slate-100 flex justify-between items-center">
+              <div>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">Advance Paid</p>
+                <p className="text-sm font-bold font-mono text-slate-800">₹{(booking.advancePaid || 0).toLocaleString('en-IN')}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] font-bold text-slate-400 uppercase">Booking ID</p>
+                <p className="text-sm font-bold font-mono text-slate-800">#{booking.bookingId}</p>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-slate-500">Reason for Cancellation *</label>
+              <Input 
+                required 
+                value={cancelReason} 
+                onChange={e => setCancelReason(e.target.value)} 
+                placeholder="e.g. Traveler cancelled at last moment due to emergency" 
+                className="h-9 text-xs bg-white border border-slate-200 rounded-lg"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold uppercase text-slate-500">Cancellation Charges (₹)</label>
+                <Input 
+                  type="number"
+                  value={cancelCharges} 
+                  onChange={e => {
+                    setCancelCharges(e.target.value);
+                    const charges = parseFloat(e.target.value) || 0;
+                    const advance = booking.advancePaid || 0;
+                    setCancelRefund(Math.max(0, advance - charges).toString());
+                  }} 
+                  className="h-9 text-xs bg-white border border-slate-200 rounded-lg font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold uppercase text-slate-500">Refund Amount (₹)</label>
+                <Input 
+                  type="number"
+                  value={cancelRefund} 
+                  onChange={e => setCancelRefund(e.target.value)} 
+                  className="h-9 text-xs bg-white border border-slate-200 rounded-lg font-mono text-emerald-600 font-bold"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold uppercase text-slate-500">Refund Payment Method</label>
+              <Select value={cancelRefundMode} onValueChange={setCancelRefundMode}>
+                <SelectTrigger className="h-9 text-xs bg-white"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="UPI">UPI (GPay/PhonePe)</SelectItem>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter className="pt-3 border-t flex justify-end gap-2">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={() => setShowCancelModal(false)}
+                className="h-9 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+              >
+                Go Back
+              </Button>
+              <Button 
+                onClick={handleCancelBooking}
+                disabled={cancelProcessing} 
+                className="h-9 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg px-4"
+              >
+                {cancelProcessing ? "Cancelling..." : "Confirm Cancellation"}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
