@@ -162,6 +162,19 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips, 
     }
   }, [defaultTab]);
 
+  useEffect(() => {
+    if (booking) {
+      if (booking.totalAmount) setConfirmTotal(booking.totalAmount.toString());
+      if (booking.advancePaid !== undefined) setConfirmAdvance(booking.advancePaid.toString());
+      if (booking.paymentMode) setConfirmMode(booking.paymentMode);
+      if (booking.email) setConfirmEmail(booking.email);
+      if (booking.trainTicketStatus) {
+        const raw = booking.trainTicketStatus.toUpperCase();
+        setConfirmTrainStatus(raw === "SELF BOOKED" ? "SELF_BOOKED" : raw);
+      }
+    }
+  }, [booking]);
+
   const [savingPayment, setSavingPayment] = useState(false);
 
   // Trips service & full details
