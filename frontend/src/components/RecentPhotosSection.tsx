@@ -166,7 +166,7 @@ export default function RecentPhotosSection({
           </Link>
         </div>
 
-        {/* AUTOMATIC CINEMATIC PHOTO MARQUEE SLIDER (MATCHING REFERENCE DESIGN EXACTLY) */}
+        {/* AUTOMATIC CINEMATIC UNIFORM SMALL PHOTO MARQUEE SLIDER */}
         <div
           ref={scrollRef}
           onMouseEnter={() => setIsHovered(true)}
@@ -178,7 +178,7 @@ export default function RecentPhotosSection({
           onMouseUp={() => setIsDragging(false)}
           onTouchStart={() => setIsDragging(true)}
           onTouchEnd={() => setIsDragging(false)}
-          className="flex gap-4 sm:gap-5 overflow-x-auto no-scrollbar py-3 scroll-smooth touch-pan-x cursor-grab active:cursor-grabbing select-none"
+          className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 scroll-smooth touch-pan-x cursor-grab active:cursor-grabbing select-none"
         >
           {marqueePhotos.map((photo, idx) => {
             const actualIndex = idx % displayPhotos.length;
@@ -186,13 +186,13 @@ export default function RecentPhotosSection({
               <div
                 key={`${photo.id}-${idx}`}
                 onClick={() => setSelectedIndex(actualIndex)}
-                className="group relative shrink-0 flex-none w-[220px] sm:w-[260px] md:w-[300px] aspect-[16/10] rounded-[28px] overflow-hidden bg-zinc-100 shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.16)] hover:-translate-y-1 transition-all duration-500 cursor-pointer isolate"
+                className="group relative shrink-0 flex-none w-[155px] sm:w-[185px] md:w-[210px] aspect-[4/2.8] rounded-[24px] overflow-hidden bg-zinc-100 shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_28px_rgba(0,0,0,0.14)] hover:scale-[1.03] transition-all duration-500 cursor-pointer isolate"
               >
                 <Image
                   src={photo.url}
                   alt={photo.caption || "YouthCamping photo"}
                   fill
-                  sizes="(max-width: 640px) 220px, 300px"
+                  sizes="(max-width: 640px) 155px, 210px"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -204,10 +204,10 @@ export default function RecentPhotosSection({
           })}
         </div>
 
-        {/* BOTTOM HASHTAG FEATURE BAR (MATCHING REFERENCE SCREENSHOT EXACTLY) */}
-        <div className="flex items-center gap-2 mt-6 text-xs sm:text-sm text-zinc-600 font-montserrat">
-          <Camera className="w-4.5 h-4.5 text-[#D4541A] shrink-0" />
-          <span>
+        {/* BOTTOM HASHTAG FEATURE BAR - FITS ON ONE SINGLE LINE */}
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-4 text-[11px] sm:text-[13px] md:text-sm text-zinc-600 font-montserrat whitespace-nowrap overflow-hidden">
+          <Camera className="w-4 h-4 text-[#D4541A] shrink-0" />
+          <span className="truncate">
             Tag us <strong className="text-zinc-900 font-bold">@youthcamping.in</strong> and use{" "}
             <strong className="text-[#D4541A] font-bold">#YouthCamping</strong> to get featured!
           </span>
