@@ -166,37 +166,44 @@ export default function RecentPhotosSection({
           </Link>
         </div>
 
-        {/* AUTOMATIC CINEMATIC PHOTO GALLERY GRID (2-COL MOBILE, 6-COL DESKTOP) */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-          {displayPhotos.slice(0, 6).map((photo, idx) => {
-            const isActive = idx === activePhotoIdx;
+        {/* AUTOMATIC CINEMATIC PHOTO MARQUEE SLIDER */}
+        <div
+          ref={scrollRef}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => {
+            setIsHovered(false);
+            setIsDragging(false);
+          }}
+          onMouseDown={() => setIsDragging(true)}
+          onMouseUp={() => setIsDragging(false)}
+          onTouchStart={() => setIsDragging(true)}
+          onTouchEnd={() => setIsDragging(false)}
+          className="flex gap-4 sm:gap-5 overflow-x-auto no-scrollbar py-3 scroll-smooth touch-pan-x cursor-grab active:cursor-grabbing select-none"
+        >
+          {marqueePhotos.map((photo, idx) => {
+            const actualIndex = idx % displayPhotos.length;
             return (
-              <motion.div
-                key={photo.id || idx}
-                onClick={() => setSelectedIndex(idx)}
-                animate={{ scale: isActive ? 1.03 : 1 }}
-                transition={{ duration: 0.5 }}
-                className={`group relative w-full aspect-square rounded-2xl overflow-hidden bg-zinc-200 shadow-xs hover:shadow-xl transition-all duration-500 cursor-pointer ${
-                  isActive ? "ring-2 ring-[#D4541A] ring-offset-2" : ""
-                }`}
+              <div
+                key={`${photo.id}-${idx}`}
+                onClick={() => setSelectedIndex(actualIndex)}
+                className="group relative shrink-0 flex-none w-[200px] sm:w-[240px] md:w-[270px] aspect-[4/3] sm:aspect-[16/10] rounded-[24px] overflow-hidden bg-zinc-900 shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.22)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer isolate"
               >
                 <Image
                   src={photo.url}
                   alt={photo.caption}
                   fill
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                  sizes="(max-width: 640px) 200px, 270px"
                   className="object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
                   onError={(e) => {
-                    // Fallback to high quality unsplash photo on load error
                     const target = e.target as HTMLImageElement;
-                    target.src = DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].url;
+                    target.src = DEFAULT_PHOTOS[actualIndex % DEFAULT_PHOTOS.length].url;
                   }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
-                  <p className="text-white font-bold text-xs leading-tight line-clamp-1">{photo.caption}</p>
-                  <p className="text-zinc-300 text-[10px] truncate mt-0.5">{photo.location}</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-85 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
+                  <p className="text-white font-bold text-xs sm:text-sm leading-tight line-clamp-1">{photo.caption}</p>
+                  <p className="text-zinc-300 text-[11px] truncate mt-0.5">{photo.location}</p>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
