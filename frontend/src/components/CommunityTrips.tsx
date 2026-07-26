@@ -579,10 +579,10 @@ export default function CommunityTrips({
         ) : (
           <div 
             ref={tripCardsScrollRef}
-            className="flex gap-6 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory no-scrollbar cursor-grab"
+            className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x cursor-grab"
           >
             {display.map((t, idx) => (
-              <div key={t.id || idx} className="w-[280px] sm:w-[310px] md:w-[330px] shrink-0 snap-start">
+              <div key={t.id || idx} className="w-[68vw] min-w-[260px] max-w-[320px] sm:w-[310px] md:w-[330px] shrink-0 snap-start">
                 <TripCard trip={t} index={idx} />
               </div>
             ))}
