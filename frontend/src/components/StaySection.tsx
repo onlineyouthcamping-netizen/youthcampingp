@@ -128,31 +128,21 @@ export default function StaySection({ accommodations }: StaySectionProps) {
     <section className="space-y-6 scroll-mt-28" id="stay">
       {/* Header System */}
       <div>
-        <h2 className="text-3xl sm:text-4xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
-          STAY &
+        <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
+          STAY & <span className="text-[#D4541A]">ACCOMMODATIONS</span>
         </h2>
-        <h2 className="text-3xl sm:text-4xl font-black text-[#D4541A] tracking-tight uppercase font-montserrat leading-none mt-1">
-          ACCOMMODATIONS
-        </h2>
-        <div className="w-12 h-1 bg-[#D4541A] rounded-full my-3" />
-        <p className="text-zinc-800 font-semibold text-sm sm:text-base font-montserrat leading-tight">
-          Handpicked comfortable stays throughout your journey.
-        </p>
-        <p className="text-[#D4541A] font-semibold text-sm sm:text-base font-montserrat leading-tight mt-0.5">
-          Boutique hotels, heritage homestays & luxury scenic campsites.
-        </p>
       </div>
 
       {/* Stays Horizontal 1.5 Cards Peek Slider on Mobile & Grid on Desktop */}
-      <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x flex-nowrap sm:flex-wrap">
+      <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x flex-nowrap sm:flex-wrap">
         {staysList.map((stay, i) => (
-          <div key={i} className="flex-none snap-start w-[72vw] min-w-[250px] max-w-[320px] sm:w-auto flex flex-col">
+          <div key={i} className="flex-none snap-start w-[62vw] min-w-[210px] max-w-[250px] sm:w-auto flex flex-col">
             <div 
               onClick={() => {
                 setSelectedStay(stay);
                 setActiveCategory("All");
               }}
-              className="bg-white border border-zinc-200/90 rounded-[20px] overflow-hidden shadow-2xs hover:border-[#D4541A] transition-all cursor-pointer group flex flex-col justify-between h-full"
+              className="bg-white border border-zinc-200/90 rounded-[18px] overflow-hidden shadow-2xs hover:border-[#D4541A] transition-all cursor-pointer group flex flex-col justify-between h-full"
             >
               <div>
                 {/* Full-Bleed Stay Photo with Nights Badge */}
@@ -162,35 +152,35 @@ export default function StaySection({ accommodations }: StaySectionProps) {
                     alt={stay.name} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute top-2.5 right-2.5 bg-[#D4541A] text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm font-montserrat">
+                  <div className="absolute top-2 right-2 bg-[#D4541A] text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs font-montserrat">
                     {stay.nights}
                   </div>
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Maximize2 className="w-6 h-6 text-white" />
+                    <Maximize2 className="w-5 h-5 text-white" />
                   </div>
                 </div>
 
                 {/* Stay Details */}
-                <div className="p-4 pb-0">
-                  <h3 className="text-sm font-bold text-[#0B1528] font-montserrat line-clamp-1 group-hover:text-[#D4541A] transition-colors">
+                <div className="p-3 pb-0">
+                  <h3 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat line-clamp-1 group-hover:text-[#D4541A] transition-colors">
                     {stay.name}
                   </h3>
                   
-                  <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium font-montserrat mt-1">
-                    <MapPin className="w-3.5 h-3.5 text-[#D4541A] shrink-0" />
+                  <div className="flex items-center gap-1 text-[11px] text-zinc-500 font-medium font-montserrat mt-1">
+                    <MapPin className="w-3 h-3 text-[#D4541A] shrink-0" />
                     <span className="truncate">{stay.location}</span>
                   </div>
                 </div>
               </div>
 
               {/* Amenities Tag Row */}
-              <div className="p-4 pt-3 mt-2 border-t border-zinc-100 flex items-center justify-between text-[11px] font-semibold text-zinc-600 font-montserrat">
-                <div className="flex items-center gap-1">
-                  <Building className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>{stay.type}</span>
+              <div className="p-3 pt-2 mt-1.5 border-t border-zinc-100 flex items-center justify-between text-[10px] font-semibold text-zinc-600 font-montserrat">
+                <div className="flex items-center gap-1 truncate mr-1">
+                  <Building className="w-3 h-3 text-zinc-400 shrink-0" />
+                  <span className="truncate">{stay.type}</span>
                 </div>
                 {stay.starRating && (
-                  <span className="text-[#D4541A] font-bold bg-orange-50 px-2 py-0.5 rounded text-[10px]">
+                  <span className="text-[#D4541A] font-bold bg-orange-50 px-1.5 py-0.5 rounded text-[9px] shrink-0">
                     {stay.starRating}
                   </span>
                 )}

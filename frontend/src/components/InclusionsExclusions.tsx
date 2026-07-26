@@ -38,19 +38,9 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
     <div className="space-y-6 scroll-mt-28" id="inclusions">
       {/* Header Section (Matching Reference Screenshot) */}
       <div>
-        <h2 className="text-3xl sm:text-4xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
-          INCLUSIONS &
+        <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
+          INCLUSIONS & <span className="text-[#D4541A]">EXCLUSIONS</span>
         </h2>
-        <h2 className="text-3xl sm:text-4xl font-black text-[#D4541A] tracking-tight uppercase font-montserrat leading-none mt-1">
-          EXCLUSIONS
-        </h2>
-        <div className="w-12 h-1 bg-[#D4541A] rounded-full my-3" />
-        <p className="text-zinc-800 font-semibold text-sm sm:text-base font-montserrat leading-tight">
-          We believe in Being transparent.
-        </p>
-        <p className="text-[#D4541A] font-semibold text-sm sm:text-base font-montserrat leading-tight mt-0.5">
-          Here's what's Included and what's not.
-        </p>
       </div>
 
       {/* 2 Side-by-Side Cards (Matching Reference Screenshot) */}

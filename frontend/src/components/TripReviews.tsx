@@ -56,16 +56,9 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
       {/* Header System */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-zinc-100 pb-3">
         <div>
-          <h2 className="text-3xl sm:text-4xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
-            WHAT
+          <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
+            WHAT <span className="text-[#D4541A]">TRAVELERS SAY</span>
           </h2>
-          <h2 className="text-3xl sm:text-4xl font-black text-[#D4541A] tracking-tight uppercase font-montserrat leading-none mt-1">
-            TRAVELERS SAY
-          </h2>
-          <div className="w-12 h-1 bg-[#D4541A] rounded-full my-2.5" />
-          <p className="text-zinc-800 font-semibold text-xs sm:text-sm font-montserrat leading-tight">
-            Real stories from real travelers who explored with us.
-          </p>
         </div>
 
         <div className="flex items-center gap-1.5 text-amber-500 font-bold text-xs font-montserrat shrink-0 pb-1">
@@ -80,9 +73,9 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
       </div>
 
       {/* Visual Photo Review Cards (Horizontal 1.5 Cards Peek Slider on Mobile) */}
-      <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x flex-nowrap sm:flex-wrap">
+      <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x flex-nowrap sm:flex-wrap">
         {displayList.map((item) => (
-          <div key={item.id} className="flex-none snap-start w-[72vw] min-w-[270px] max-w-[340px] sm:w-auto h-full flex flex-col">
+          <div key={item.id} className="flex-none snap-start w-[62vw] min-w-[210px] max-w-[250px] sm:w-auto h-full flex flex-col">
             <VisualReviewCard item={item} />
           </div>
         ))}
