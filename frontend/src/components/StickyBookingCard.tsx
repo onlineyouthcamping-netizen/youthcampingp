@@ -12,31 +12,11 @@ interface StickyBookingCardProps {
 }
 
 export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
-  const { currentPrice, setCurrentPrice } = useTripSelection();
+  const { currentPrice } = useTripSelection();
   const { settings } = useTheme();
   const [isVisible, setIsVisible] = useState(false);
-  const [selectedTravel, setSelectedTravel] = useState(0);
-  const [selectedRoom, setSelectedRoom] = useState(0);
 
-  const travelOptions = trip.travelOptions && trip.travelOptions.length > 0 ? trip.travelOptions : [
-    { label: "Non AC Sleeper", priceDelta: 0 },
-    { label: "3 AC Train", priceDelta: 2000 }
-  ];
-
-  const roomOptions = trip.roomOptions && trip.roomOptions.length > 0 ? trip.roomOptions : [
-    { label: "Quad Sharing (4 People)", priceDelta: 0 },
-    { label: "Triple Sharing", priceDelta: 1500 },
-    { label: "Double Sharing", priceDelta: 3000 }
-  ];
-
-  const basePrice = trip.price || 12999;
-  const travelDelta = travelOptions[selectedTravel]?.priceDelta || 0;
-  const roomDelta = roomOptions[selectedRoom]?.priceDelta || 0;
-  const calculatedPrice = basePrice + travelDelta + roomDelta;
-
-  useEffect(() => {
-    setCurrentPrice(calculatedPrice);
-  }, [calculatedPrice, setCurrentPrice]);
+  const displayPrice = currentPrice > 0 ? currentPrice : (trip.price || 12999);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,15 +31,11 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
   const whatsappNumber = phone.replace(/\D/g, '');
 
   const handleWhatsAppBooking = () => {
-    const travelLabel = travelOptions[selectedTravel]?.label || "Non AC Sleeper";
-    const roomLabel = roomOptions[selectedRoom]?.label || "Quad Sharing";
     const message = encodeURIComponent(
       `Hi! I want to book the "${trip.title}" expedition.\n\n` +
-      `📌 Package Config:\n` +
+      `📌 Package Details:\n` +
       `- Duration: ${trip.duration || "9 Days / 8 Nights"}\n` +
-      `- Travel: ${travelLabel}\n` +
-      `- Sharing: ${roomLabel}\n` +
-      `- Total Price: ₹${calculatedPrice.toLocaleString()}/-\n\n` +
+      `- Total Price: ₹${displayPrice.toLocaleString()}/-\n\n` +
       `Please assist me with the booking.`
     );
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
@@ -75,7 +51,7 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
           </span>
           
           <div className="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-1 font-montserrat flex items-baseline gap-2">
-            ₹ {calculatedPrice.toLocaleString()}
+            ₹ {displayPrice.toLocaleString()}
           </div>
           
           <div className="text-zinc-400 text-xs font-normal mb-5 font-montserrat">
@@ -106,68 +82,7 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
           </div>
         </div>
 
-        {/* Travelling Options Card */}
-        <div className="bg-white border border-zinc-100 rounded-[20px] p-5 shadow-xs">
-          <h4 className="text-zinc-900 font-bold text-sm font-montserrat mb-3.5">Travelling Options</h4>
-          <div className="grid grid-cols-2 gap-3">
-            {travelOptions.map((opt, i) => (
-              <button 
-                key={i}
-                onClick={() => setSelectedTravel(i)}
-                className={cn(
-                  "py-2.5 px-3 rounded-xl text-xs font-bold text-center font-montserrat transition-all cursor-pointer relative",
-                  selectedTravel === i 
-                    ? "border-2 border-[#D4541A] text-[#D4541A] bg-orange-50/20 shadow-2xs" 
-                    : "border border-zinc-200 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Room Sharing Card */}
-        <div className="bg-white border border-zinc-100 rounded-[20px] p-5 shadow-xs">
-          <h4 className="text-zinc-900 font-bold text-sm font-montserrat mb-3.5">Room Sharing</h4>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                onClick={() => setSelectedRoom(0)}
-                className={cn(
-                  "py-2.5 px-2 rounded-xl text-xs text-center font-montserrat transition-all cursor-pointer leading-tight",
-                  selectedRoom === 0 
-                    ? "border-2 border-[#D4541A] text-[#D4541A] font-bold bg-orange-50/20 shadow-2xs" 
-                    : "border border-zinc-200 text-zinc-700 font-semibold hover:border-zinc-300 hover:bg-zinc-50"
-                )}
-              >
-                Quad Sharing <span className="block text-[10px] opacity-80 font-normal">(4 People)</span>
-              </button>
-              <button 
-                onClick={() => setSelectedRoom(1)}
-                className={cn(
-                  "py-2.5 px-2 rounded-xl text-xs text-center font-montserrat transition-all cursor-pointer flex items-center justify-center font-semibold",
-                  selectedRoom === 1 
-                    ? "border-2 border-[#D4541A] text-[#D4541A] font-bold bg-orange-50/20 shadow-2xs" 
-                    : "border border-zinc-200 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
-                )}
-              >
-                Triple Sharing
-              </button>
-            </div>
-            <button 
-              onClick={() => setSelectedRoom(2)}
-              className={cn(
-                "w-full py-2.5 px-3 rounded-xl text-xs text-center font-montserrat transition-all cursor-pointer font-semibold",
-                selectedRoom === 2 
-                  ? "border-2 border-[#D4541A] text-[#D4541A] font-bold bg-orange-50/20 shadow-2xs" 
-                  : "border border-zinc-200 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
-              )}
-            >
-              Double Sharing
-            </button>
-          </div>
-        </div>
 
         {/* Private Trips Available Card */}
         <div className="bg-white border border-zinc-100 rounded-[20px] p-5 shadow-xs">
@@ -226,10 +141,10 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-col shrink-0">
             <span className="text-xl font-extrabold text-[#0B1528] leading-none font-montserrat">
-              ₹ {calculatedPrice.toLocaleString()}
+              ₹ {displayPrice.toLocaleString()}
             </span>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-zinc-400 line-through text-[11px] font-normal">₹ {(calculatedPrice + 3000).toLocaleString()}</span>
+              <span className="text-zinc-400 line-through text-[11px] font-normal">₹ {(displayPrice + 3000).toLocaleString()}</span>
               <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">per person</span>
             </div>
           </div>
