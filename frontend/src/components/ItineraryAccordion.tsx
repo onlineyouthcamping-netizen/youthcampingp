@@ -220,36 +220,60 @@ export default function ItineraryAccordion({
                   )}
 
                   {(() => {
-                    const rawPhotos = [
+                    const rawItems = [
                       ...(Array.isArray(day.photos) ? day.photos : []),
                       ...(Array.isArray((day as any).images) ? (day as any).images : []),
-                      ...(typeof (day as any).photo === 'string' ? [(day as any).photo] : []),
-                      ...(typeof (day as any).image === 'string' ? [(day as any).image] : []),
+                      ...(typeof (day as any).photo === 'string' || typeof (day as any).photo === 'object' ? [(day as any).photo] : []),
+                      ...(typeof (day as any).image === 'string' || typeof (day as any).image === 'object' ? [(day as any).image] : []),
                     ].filter(Boolean);
 
-                    const photoUrls = Array.from(
-                      new Set(rawPhotos.map(p => normalizeImageUrl(p)).filter(Boolean) as string[])
-                    );
+                    const parsedPhotos = rawItems.map((item: any, idx: number) => {
+                      let url = "";
+                      let label = "";
 
-                    if (photoUrls.length === 0) return null;
+                      if (typeof item === "string") {
+                        url = normalizeImageUrl(item) || "";
+                        if (day.activities && day.activities[idx]) {
+                          label = day.activities[idx];
+                        }
+                      } else if (item && typeof item === "object") {
+                        url = normalizeImageUrl(item.url || item.src || item.image || item.photo) || "";
+                        label = item.title || item.caption || item.name || item.label || (day.activities && day.activities[idx]) || "";
+                      }
+
+                      return { url, label };
+                    }).filter(p => !!p.url);
+
+                    const uniquePhotos: { url: string; label: string }[] = [];
+                    const seenUrls = new Set<string>();
+
+                    for (const p of parsedPhotos) {
+                      if (!seenUrls.has(p.url)) {
+                        seenUrls.add(p.url);
+                        uniquePhotos.push(p);
+                      }
+                    }
+
+                    if (uniquePhotos.length === 0) return null;
 
                     return (
-                      <div className="pt-2 border-t border-zinc-200/60 space-y-2">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-[#0B1528] font-montserrat">
-                          <Camera className="w-3.5 h-3.5 text-[#D4541A]" />
-                          <span>Day Highlights ({photoUrls.length} Photos)</span>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                          {photoUrls.map((url, pi) => (
+                      <div className="pt-2 border-t border-zinc-200/60">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                          {uniquePhotos.map((photo, pi) => (
                             <div 
                               key={pi} 
-                              className="relative aspect-[4/3] rounded-xl overflow-hidden border border-zinc-200/80 shadow-2xs group bg-zinc-100"
+                              className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-zinc-200/80 shadow-2xs group bg-zinc-100 flex flex-col justify-end"
                             >
                               <OptimizedImage
-                                src={url}
-                                alt={`${day.title} photo ${pi + 1}`}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                src={photo.url}
+                                alt={photo.label || `${day.title} photo ${pi + 1}`}
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
+                              {photo.label && (
+                                <div className="relative z-10 p-2 bg-gradient-to-t from-black/85 via-black/40 to-transparent text-white text-[11px] font-semibold font-montserrat truncate leading-tight">
+                                  {photo.label}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
