@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 
-import { Check, MapPin, ArrowRight, Plane } from "lucide-react";
+import { Check, MapPin, ArrowRight, Plane, Train, BedDouble } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Trip } from "@/types";
 import { normalizeImageUrl } from "@/lib/api";
@@ -187,7 +187,111 @@ export default function BookingOptions({
           </div>
         </div>
 
+        {/* Travel Options Section */}
+        {!isDirectJoin && travelOptions.length > 0 && (
+          <div className="space-y-2.5 pt-3 border-t border-zinc-100">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
+                <Train className="w-4 h-4 text-[#D4541A]" />
+                <span>Travel Mode Option</span>
+              </h3>
+              <span className="text-[11px] text-zinc-500 font-semibold font-montserrat">
+                {travelOptions[selectedTravel]?.label}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {travelOptions.map((opt, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setSelectedTravel(idx);
+                    onTravelSelect?.(idx);
+                  }}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-xl border text-xs font-semibold font-montserrat transition-all cursor-pointer text-left",
+                    selectedTravel === idx
+                      ? "border-[#D4541A] bg-orange-50/40 text-[#0B1528] ring-1 ring-[#D4541A]"
+                      : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
+                      selectedTravel === idx ? "border-[#D4541A] bg-[#D4541A]" : "border-zinc-300"
+                    )}>
+                      {selectedTravel === idx && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                    </div>
+                    <span>{opt.label}</span>
+                  </div>
+                  {opt.priceDelta > 0 ? (
+                    <span className="text-[#D4541A] font-extrabold text-[11px]">
+                      +₹{opt.priceDelta.toLocaleString()}
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 font-extrabold text-[10px] uppercase bg-emerald-50 px-1.5 py-0.5 rounded">
+                      Included
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
+        {/* Room Sharing Options Section */}
+        {roomOptions.length > 0 && (
+          <div className="space-y-2.5 pt-3 border-t border-zinc-100">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
+                <BedDouble className="w-4 h-4 text-[#D4541A]" />
+                <span>Room Sharing Option</span>
+              </h3>
+              <span className="text-[11px] text-zinc-500 font-semibold font-montserrat">
+                {roomOptions[selectedRoom]?.label}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {roomOptions.map((opt, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setSelectedRoom(idx);
+                    onRoomSelect?.(idx);
+                  }}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-xl border text-xs font-semibold font-montserrat transition-all cursor-pointer text-left",
+                    selectedRoom === idx
+                      ? "border-[#D4541A] bg-orange-50/40 text-[#0B1528] ring-1 ring-[#D4541A]"
+                      : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
+                      selectedRoom === idx ? "border-[#D4541A] bg-[#D4541A]" : "border-zinc-300"
+                    )}>
+                      {selectedRoom === idx && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                    </div>
+                    <span>{opt.label}</span>
+                  </div>
+                  {opt.priceDelta > 0 ? (
+                    <span className="text-[#D4541A] font-extrabold text-[11px]">
+                      +₹{opt.priceDelta.toLocaleString()}
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 font-extrabold text-[10px] uppercase bg-emerald-50 px-1.5 py-0.5 rounded">
+                      Base
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Dates Section */}
         <div className="space-y-6">
