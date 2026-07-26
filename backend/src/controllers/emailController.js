@@ -98,7 +98,11 @@ const sendBookingEmail = async (req, res) => {
         return res.status(400).json({ message: 'Invalid email type' });
     }
 
-    console.log("Sending email to:", booking.email);
+    console.log(`Sending email to: ${booking.email} with ${attachments.length} attachments:`);
+    attachments.forEach((att, idx) => {
+      const approxKB = Math.round((att.content?.length || 0) * 0.75 / 1024);
+      console.log(`   [Attachment ${idx + 1}] Name: "${att.name}", Approx Size: ${approxKB} KB`);
+    });
 
     await sendEmail({
       to: booking.email,
