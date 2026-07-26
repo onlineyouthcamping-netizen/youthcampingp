@@ -216,18 +216,18 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
             <button
               key={sec.id}
               onClick={() => setActiveId(sec.id)}
-              className="group relative bg-[#F8F9FB] border border-zinc-200/80 rounded-[16px] p-4 flex flex-col items-start gap-3 hover:bg-[#0B1528] hover:border-[#0B1528] transition-all duration-300 cursor-pointer text-left overflow-hidden"
+              className="group relative bg-[#F8F9FB] border border-zinc-200/80 rounded-[14px] px-3 py-2.5 flex items-center gap-2.5 hover:bg-[#0B1528] hover:border-[#0B1528] transition-all duration-300 cursor-pointer text-left overflow-hidden shadow-2xs"
             >
               {/* Accent dot top-right */}
-              <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-[#D4541A] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#D4541A] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
               {/* Icon badge */}
-              <div className="w-9 h-9 rounded-[10px] bg-white group-hover:bg-[#D4541A] border border-zinc-200/80 group-hover:border-[#D4541A] flex items-center justify-center shadow-xs transition-all duration-300 shrink-0">
+              <div className="w-8 h-8 rounded-[8px] bg-white group-hover:bg-[#D4541A] border border-zinc-200/80 group-hover:border-[#D4541A] flex items-center justify-center shadow-xs transition-all duration-300 shrink-0">
                 <Icon className="w-4 h-4 text-[#0B1528] group-hover:text-white transition-colors duration-300" />
               </div>
 
               {/* Label */}
-              <span className="font-extrabold text-[11px] sm:text-xs text-[#0B1528] group-hover:text-white font-montserrat leading-tight transition-colors duration-300">
+              <span className="font-bold text-xs text-[#0B1528] group-hover:text-white font-montserrat leading-tight transition-colors duration-300 truncate">
                 {sec.label}
               </span>
             </button>

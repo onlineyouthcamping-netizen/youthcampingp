@@ -75,7 +75,7 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
       {/* Visual Photo Review Cards (Horizontal 1.5 Cards Peek Slider on Mobile) */}
       <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x flex-nowrap sm:flex-wrap">
         {displayList.map((item) => (
-          <div key={item.id} className="flex-none snap-start w-[62vw] min-w-[210px] max-w-[250px] sm:w-auto h-full flex flex-col">
+          <div key={item.id} className="flex-none snap-start w-[58vw] min-w-[195px] max-w-[230px] sm:w-auto h-full flex flex-col">
             <VisualReviewCard item={item} />
           </div>
         ))}
@@ -87,11 +87,12 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
 function VisualReviewCard({ item }: { item: any }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const comment = item.comment || "";
-  const isLong = comment.length > 130;
-  const displayedText = isExpanded || !isLong ? comment : comment.slice(0, 130) + "...";
+  const isLong = comment.length > 110;
+  const displayedText = isExpanded || !isLong ? comment : comment.slice(0, 110) + "...";
+  const ratingCount = Math.min(5, Math.max(1, Number(item.rating) || 5));
 
   return (
-    <div className="bg-white rounded-[24px] overflow-hidden border border-zinc-200/90 shadow-md shadow-zinc-200/40 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group h-full">
+    <div className="bg-white rounded-[20px] overflow-hidden border border-zinc-200/90 shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group h-full">
       <div>
         {/* Top Full-Bleed Photo */}
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-100">
@@ -103,10 +104,10 @@ function VisualReviewCard({ item }: { item: any }) {
         </div>
 
         {/* Rating Stars & Comment */}
-        <div className="p-5 space-y-2.5">
-          <div className="flex items-center gap-1 text-amber-400">
-            {[...Array(item.rating || 5)].map((_, i) => (
-              <Star key={i} className="w-4 h-4 fill-current stroke-amber-400" />
+        <div className="p-4 space-y-2">
+          <div className="flex items-center gap-0.5 text-amber-400">
+            {[...Array(ratingCount)].map((_, i) => (
+              <Star key={i} className="w-3.5 h-3.5 fill-current stroke-amber-400" />
             ))}
           </div>
 
@@ -117,7 +118,7 @@ function VisualReviewCard({ item }: { item: any }) {
           {isLong && (
             <button 
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-xs font-semibold text-zinc-400 hover:text-[#D4541A] transition-colors font-montserrat cursor-pointer block"
+              className="text-[11px] font-semibold text-zinc-400 hover:text-[#D4541A] transition-colors font-montserrat cursor-pointer block"
             >
               {isExpanded ? "Show less" : "Read more..."}
             </button>
