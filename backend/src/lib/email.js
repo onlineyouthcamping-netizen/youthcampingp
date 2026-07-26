@@ -78,7 +78,7 @@ const sendEmail = async ({ to, subject, html, type, bookingId, prisma, attachmen
     const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
     sendSmtpEmail.subject = subject;
     sendSmtpEmail.htmlContent = html;
-    sendSmtpEmail.sender = { "name": "Youth Camping", "email": process.env.EMAIL_FROM || "parthyouthcamping@gmail.com" };
+    sendSmtpEmail.sender = { "name": "Youth Camping", "email": process.env.EMAIL_FROM || "onlineyouthcamping@gmail.com" };
     sendSmtpEmail.to = [{ "email": to }];
     
     if (attachments && attachments.length > 0) {
