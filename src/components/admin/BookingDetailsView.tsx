@@ -871,7 +871,18 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips, 
     }
     const toastId = toast.loading(`Sending ${type} email...`);
     try {
-      await bookingsService.sendEmail(booking.id, type, booking.totalAmount);
+      const singleFile = confirmTicketFilesList[0]?.content || confirmTicketFile;
+      const singleFileName = confirmTicketFilesList[0]?.name || confirmTicketFileName;
+      await bookingsService.sendEmail(
+        booking.id, 
+        type, 
+        booking.totalAmount,
+        true,
+        singleFile,
+        singleFileName,
+        confirmTrainStatus,
+        confirmTicketFilesList
+      );
       toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} email sent successfully!`, { id: toastId });
       fetchEmailLogs();
     } catch (e: any) {
@@ -1642,13 +1653,26 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips, 
             <span className="bg-emerald-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded uppercase leading-none">CONFIRMED</span>
             <span className="font-semibold">This booking is confirmed.</span>
           </div>
-          <button 
-            onClick={handleRevertConfirmation}
-            disabled={revertingLoading}
-            className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] uppercase px-3 py-1.5 rounded transition-all shrink-0 cursor-pointer shadow-2xs"
-          >
-            {revertingLoading ? "Reverting..." : "Revert Confirmation"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                setConfirmTotal((booking.totalAmount || 0).toString());
+                setConfirmAdvance((booking.advancePaid || 0).toString());
+                setConfirmEmail(booking.email || "");
+                setIsConfirming(!isConfirming);
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase px-3 py-1.5 rounded transition-all shrink-0 cursor-pointer shadow-2xs"
+            >
+              {isConfirming ? "Hide Panel" : "Update Ticket & Send Email"}
+            </button>
+            <button 
+              onClick={handleRevertConfirmation}
+              disabled={revertingLoading}
+              className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] uppercase px-3 py-1.5 rounded transition-all shrink-0 cursor-pointer shadow-2xs"
+            >
+              {revertingLoading ? "Reverting..." : "Revert Confirmation"}
+            </button>
+          </div>
         </div>
       ) : (
         <div className="mx-6 mt-4 bg-[#fffbea] border border-[#fce588] rounded-xl px-4 py-3 text-xs text-slate-700 flex items-center justify-between gap-4">
