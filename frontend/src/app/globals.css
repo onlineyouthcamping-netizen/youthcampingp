@@ -29,18 +29,18 @@ body {
   box-sizing: border-box;
 }
 
-/* Allow scroll over destination cards, trip cards, & module grids */
+/* Allow scroll & horizontal swipe over destination cards, trip cards, & carousels */
 .destination-card, 
 .popular-destinations img,
 .module-grid > *,
 .trip-card,
 img, video, svg, canvas, .module, .carousel, .gallery-item, .center-module {
   max-width: 100%;
-  touch-action: pan-y pinch-zoom !important;
+  touch-action: pan-x pan-y pinch-zoom !important;
   pointer-events: auto;
 }
 
-/* Ensure parent containers & center modules allow free vertical page scroll propagation */
+/* Ensure parent containers & horizontal sliders allow smooth horizontal swipe & vertical scroll */
 .destinations-grid,
 .popular-section,
 .popular-destinations,
@@ -53,10 +53,9 @@ img, video, svg, canvas, .module, .carousel, .gallery-item, .center-module {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-  overflow-y: hidden !important;
   overscroll-behavior: auto !important;
   overscroll-behavior-y: auto !important;
-  touch-action: pan-y pinch-zoom !important;
+  touch-action: pan-x pan-y pinch-zoom !important;
 }
 
 /* Tables — prevent fixed table layouts from overflowing */
