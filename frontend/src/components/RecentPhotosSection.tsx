@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, X, ChevronLeft, ChevronRight, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { normalizeImageUrl } from "@/lib/api";
 
@@ -166,7 +166,7 @@ export default function RecentPhotosSection({
           </Link>
         </div>
 
-        {/* AUTOMATIC CINEMATIC PHOTO MARQUEE SLIDER */}
+        {/* AUTOMATIC CINEMATIC PHOTO MARQUEE SLIDER (MATCHING REFERENCE DESIGN EXACTLY) */}
         <div
           ref={scrollRef}
           onMouseEnter={() => setIsHovered(true)}
@@ -186,26 +186,31 @@ export default function RecentPhotosSection({
               <div
                 key={`${photo.id}-${idx}`}
                 onClick={() => setSelectedIndex(actualIndex)}
-                className="group relative shrink-0 flex-none w-[170px] sm:w-[195px] md:w-[215px] aspect-[4/3.2] rounded-[24px] overflow-hidden bg-zinc-900 shadow-[0_6px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.16)] hover:scale-[1.05] transition-all duration-500 ease-out cursor-pointer isolate"
+                className="group relative shrink-0 flex-none w-[220px] sm:w-[260px] md:w-[300px] aspect-[16/10] rounded-[28px] overflow-hidden bg-zinc-100 shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.16)] hover:-translate-y-1 transition-all duration-500 cursor-pointer isolate"
               >
                 <Image
                   src={photo.url}
-                  alt={photo.caption}
+                  alt={photo.caption || "YouthCamping photo"}
                   fill
-                  sizes="(max-width: 640px) 200px, 270px"
-                  className="object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
+                  sizes="(max-width: 640px) 220px, 300px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = DEFAULT_PHOTOS[actualIndex % DEFAULT_PHOTOS.length].url;
                   }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-85 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
-                  <p className="text-white font-bold text-xs sm:text-sm leading-tight line-clamp-1">{photo.caption}</p>
-                  <p className="text-zinc-300 text-[11px] truncate mt-0.5">{photo.location}</p>
-                </div>
               </div>
             );
           })}
+        </div>
+
+        {/* BOTTOM HASHTAG FEATURE BAR (MATCHING REFERENCE SCREENSHOT EXACTLY) */}
+        <div className="flex items-center gap-2 mt-6 text-xs sm:text-sm text-zinc-600 font-montserrat">
+          <Camera className="w-4.5 h-4.5 text-[#D4541A] shrink-0" />
+          <span>
+            Tag us <strong className="text-zinc-900 font-bold">@youthcamping.in</strong> and use{" "}
+            <strong className="text-[#D4541A] font-bold">#YouthCamping</strong> to get featured!
+          </span>
         </div>
 
       </div>
