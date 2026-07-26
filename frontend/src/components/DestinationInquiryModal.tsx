@@ -266,14 +266,14 @@ export default function DestinationInquiryModal({
                       required
                       type="text"
                       placeholder="Your Full Name"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528] placeholder:text-slate-400"
+                      className="w-full pl-10 pr-4 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     />
                   </div>
 
                   {/* Phone Input with +91 Prefix */}
-                  <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-[#D4541A] focus-within:bg-white transition-all px-3.5 py-1">
+                  <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-[#D4541A] focus-within:bg-white transition-all px-3.5 h-10 min-h-[40px]">
                     <Phone className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
                     <span className="text-slate-500 font-bold text-xs select-none border-r border-slate-200 pr-2.5 mr-2">
                       +91
@@ -282,7 +282,7 @@ export default function DestinationInquiryModal({
                       required
                       type="tel"
                       placeholder="Mobile No. (WhatsApp Enabled)"
-                      className="flex-1 bg-transparent border-0 outline-none font-semibold text-xs text-[#0B1528] placeholder:text-slate-400 py-2.5 w-full"
+                      className="flex-1 bg-transparent border-0 outline-none font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs py-2 w-full"
                       value={formData.mobile}
                       onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                     />
@@ -294,7 +294,7 @@ export default function DestinationInquiryModal({
                     <input
                       type="email"
                       placeholder="Email Address (optional)"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528] placeholder:text-slate-400"
+                      className="w-full pl-10 pr-4 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />
@@ -306,7 +306,7 @@ export default function DestinationInquiryModal({
                     <input
                       type="text"
                       placeholder="City of Residence (e.g. Ahmedabad, Mumbai)"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528] placeholder:text-slate-400"
+                      className="w-full pl-10 pr-4 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs"
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     />
@@ -318,7 +318,7 @@ export default function DestinationInquiryModal({
                       <Calendar className="absolute left-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                       <input
                         type="date"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528]"
+                        className="w-full pl-9 pr-3 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528]"
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       />
@@ -330,7 +330,7 @@ export default function DestinationInquiryModal({
                         type="number"
                         min="1"
                         placeholder="No. Travellers"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528] placeholder:text-slate-400"
+                        className="w-full pl-9 pr-3 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs"
                         value={formData.count}
                         onChange={(e) => setFormData({ ...formData, count: e.target.value })}
                       />
@@ -343,7 +343,7 @@ export default function DestinationInquiryModal({
                     <input
                       type="text"
                       placeholder="Special Requests / Custom Requirements (optional)"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528] placeholder:text-slate-400"
+                      className="w-full pl-10 pr-4 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs"
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     />

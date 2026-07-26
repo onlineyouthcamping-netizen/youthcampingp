@@ -221,22 +221,21 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
         </div>
       </div>
 
-      {/* Mobile Sticky CTA */}
-      <div className={cn(
-        "fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.06)] border-t border-zinc-100 transition-all duration-500 ease-in-out pb-[env(safe-area-inset-bottom)]",
-        isVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
-      )}>
-        <div className="px-6 py-5 flex items-center justify-between gap-4">
-          <div className="flex flex-col">
-            <span className="text-2xl font-semibold tracking-wide text-navy leading-none">₹ {calculatedPrice.toLocaleString()}</span>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-zinc-400 line-through text-xs font-normal">₹ {(calculatedPrice + 3000).toLocaleString()}</span>
-              <span className="text-zinc-400 text-[10px] font-normal uppercase tracking-wide">per person</span>
+      {/* Mobile Sticky CTA Bar (Always Fixed at Bottom on Mobile) */}
+      <div className="fixed bottom-0 left-0 right-0 z-[999] md:hidden bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.12)] border-t border-zinc-200 px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col shrink-0">
+            <span className="text-xl font-extrabold text-[#0B1528] leading-none font-montserrat">
+              ₹ {calculatedPrice.toLocaleString()}
+            </span>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-zinc-400 line-through text-[11px] font-normal">₹ {(calculatedPrice + 3000).toLocaleString()}</span>
+              <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">per person</span>
             </div>
           </div>
           <button 
             onClick={handleWhatsAppBooking}
-            className="bg-primary-orange text-white px-8 py-4 rounded-xl font-medium uppercase text-sm tracking-widest active:scale-95 transition-all shadow-lg shadow-orange-500/20"
+            className="flex-1 max-w-[200px] h-12 min-h-[48px] bg-[#D4541A] text-white px-6 rounded-xl font-extrabold text-sm uppercase tracking-wider active:scale-95 transition-all shadow-md flex items-center justify-center font-montserrat"
           >
             Book Now
           </button>

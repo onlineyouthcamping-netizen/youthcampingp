@@ -91,7 +91,7 @@ export default function ItineraryAccordion({
             <div key={day.displayDay} className="group rounded-2xl transition-all duration-300">
               <div className="flex items-center gap-3 md:gap-4">
                 {/* Left: Dark Navy Day Pill Badge */}
-                <div className="bg-[#0B1528] text-white rounded-full font-extrabold text-xs sm:text-sm px-4 py-2.5 text-center shadow-xs border border-slate-800 shrink-0 min-w-[92px] sm:min-w-[100px] flex items-center justify-center font-montserrat">
+                <div className="bg-[#0B1528] text-white rounded-full font-extrabold text-sm px-3.5 sm:px-4 text-center shadow-xs border border-slate-800 shrink-0 min-w-[88px] sm:min-w-[100px] flex items-center justify-center font-montserrat min-h-[40px] h-10">
                   {dayNumStr}
                 </div>
 

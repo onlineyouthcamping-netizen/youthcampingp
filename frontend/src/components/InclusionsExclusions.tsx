@@ -59,9 +59,9 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
         <div className="bg-white border border-zinc-200/90 rounded-[20px] p-5 sm:p-6 shadow-2xs">
           <div className="divide-y divide-zinc-100">
             {incList.map((item, i) => (
-              <div key={i} className="py-3 first:pt-0 last:pb-0 flex items-start gap-3.5">
-                <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5 stroke-[2.5]" />
-                <span className="text-xs sm:text-sm font-semibold text-zinc-700 font-montserrat leading-relaxed">
+              <div key={i} className="py-3 px-3 sm:px-4 first:pt-0 last:pb-0 flex items-start gap-3.5">
+                <Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5 stroke-[2.5]" />
+                <span className="text-sm sm:text-base font-semibold text-zinc-700 font-montserrat leading-relaxed">
                   {item}
                 </span>
               </div>
@@ -70,12 +70,12 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
         </div>
 
         {/* Right Card: Exclusions */}
-        <div className="bg-white border border-zinc-200/90 rounded-[20px] p-5 sm:p-6 shadow-2xs">
+        <div className="bg-white border border-zinc-200/90 rounded-[20px] p-4 sm:p-6 shadow-2xs">
           <div className="divide-y divide-zinc-100">
             {excList.map((item, i) => (
-              <div key={i} className="py-3 first:pt-0 last:pb-0 flex items-start gap-3.5">
-                <X className="w-4 h-4 text-red-500 shrink-0 mt-0.5 stroke-[2.5]" />
-                <span className="text-xs sm:text-sm font-semibold text-zinc-700 font-montserrat leading-relaxed">
+              <div key={i} className="py-3 px-3 sm:px-4 first:pt-0 last:pb-0 flex items-start gap-3.5">
+                <X className="w-5 h-5 text-red-500 shrink-0 mt-0.5 stroke-[2.5]" />
+                <span className="text-sm sm:text-base font-semibold text-zinc-700 font-montserrat leading-relaxed">
                   {item}
                 </span>
               </div>
