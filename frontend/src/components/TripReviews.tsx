@@ -79,10 +79,12 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
         </div>
       </div>
 
-      {/* Visual Photo Review Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 pt-2">
+      {/* Visual Photo Review Cards (Horizontal 1.5 Cards Peek Slider on Mobile) */}
+      <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x flex-nowrap sm:flex-wrap">
         {displayList.map((item) => (
-          <VisualReviewCard key={item.id} item={item} />
+          <div key={item.id} className="flex-none snap-start w-[72vw] min-w-[270px] max-w-[340px] sm:w-auto h-full flex flex-col">
+            <VisualReviewCard item={item} />
+          </div>
         ))}
       </div>
     </section>
@@ -96,7 +98,7 @@ function VisualReviewCard({ item }: { item: any }) {
   const displayedText = isExpanded || !isLong ? comment : comment.slice(0, 130) + "...";
 
   return (
-    <div className="bg-white rounded-[24px] overflow-hidden border border-zinc-200/90 shadow-md shadow-zinc-200/40 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+    <div className="bg-white rounded-[24px] overflow-hidden border border-zinc-200/90 shadow-md shadow-zinc-200/40 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group h-full">
       <div>
         {/* Top Full-Bleed Photo */}
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-100">
