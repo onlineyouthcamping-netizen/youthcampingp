@@ -20,7 +20,7 @@ const sendBookingEmail = async (req, res) => {
       where: { id: bookingId },
       include: { tripRef: true }
     });
-    
+
     console.log('🔍 [Backend] Found booking:', booking ? 'Yes' : 'No');
 
     if (!booking) {
@@ -54,23 +54,28 @@ const sendBookingEmail = async (req, res) => {
       }
     }
 
+    const cleanBase64 = (str) => {
+      if (!str) return '';
+      return str.includes(',') ? str.split(',')[1] : str;
+    };
+
     // Attach multiple ticket files if provided, otherwise fallback to single ticket file
     if (Array.isArray(ticketFiles) && ticketFiles.length > 0) {
       ticketFiles.forEach(file => {
         if (file && file.content && file.name) {
           attachments.push({
-            content: file.content,
+            content: cleanBase64(file.content),
             name: file.name
           });
-          console.log(`📄 [Backend] Attachment added: ${file.name}`);
+          console.log(`📄 [Backend] Cleaned attachment added: ${file.name}`);
         }
       });
     } else if (ticketFile && ticketFileName) {
       attachments.push({
-        content: ticketFile,
+        content: cleanBase64(ticketFile),
         name: ticketFileName
       });
-      console.log(`📄 [Backend] Manual ticket file attached: ${ticketFileName}`);
+      console.log(`📄 [Backend] Cleaned manual ticket file attached: ${ticketFileName}`);
     }
 
     switch (type) {
@@ -111,7 +116,7 @@ const sendBookingEmail = async (req, res) => {
     if (req.headers.origin) {
       res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
     }
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to send email: ' + (error.response?.body?.message || error.message || 'Server error')
     });
   }
