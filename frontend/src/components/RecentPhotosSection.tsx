@@ -83,32 +83,25 @@ export default function RecentPhotosSection({
   const animationFrameRef = useRef<number | null>(null);
 
   const basePhotos = (photos && photos.length >= 4) ? photos : DEFAULT_PHOTOS;
-  const marqueePhotos = [...basePhotos, ...basePhotos, ...basePhotos];
 
-  // Hardware-accelerated continuous scroll loop
+  // Hardware-accelerated smooth continuous scroll loop
   useEffect(() => {
-    let lastTime = performance.now();
-    
-    const step = (now: number) => {
-      const delta = now - lastTime;
-      lastTime = now;
+    let animationId: number;
 
+    const step = () => {
       if (scrollRef.current && !isHovered && !isDragging && selectedIndex === null) {
-        scrollRef.current.scrollLeft += delta * 0.045;
+        scrollRef.current.scrollLeft += 1.2;
 
         const maxScroll = scrollRef.current.scrollWidth / 3;
         if (scrollRef.current.scrollLeft >= maxScroll * 2) {
           scrollRef.current.scrollLeft -= maxScroll;
         }
       }
-
-      animationFrameRef.current = requestAnimationFrame(step);
+      animationId = requestAnimationFrame(step);
     };
 
-    animationFrameRef.current = requestAnimationFrame(step);
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
+    animationId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animationId);
   }, [isHovered, isDragging, selectedIndex]);
 
   const handlePrevModal = (e: React.MouseEvent) => {
@@ -132,15 +125,7 @@ export default function RecentPhotosSection({
       }))
     : DEFAULT_PHOTOS;
 
-  // Automatic Cinematic Slider photo index auto-scroll
-  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActivePhotoIdx((prev) => (prev + 1) % displayPhotos.length);
-    }, 3500);
-    return () => clearInterval(timer);
-  }, [displayPhotos.length]);
+  const marqueePhotos = [...displayPhotos, ...displayPhotos, ...displayPhotos];
 
   return (
     <section className="py-8 md:py-10 font-montserrat overflow-hidden bg-[#F5F5F5]">
@@ -166,7 +151,7 @@ export default function RecentPhotosSection({
           </Link>
         </div>
 
-        {/* AUTOMATIC CINEMATIC UNIFORM SMALL PHOTO MARQUEE SLIDER */}
+        {/* AUTOMATIC SMOOTH CINEMATIC PHOTO MARQUEE SLIDER */}
         <div
           ref={scrollRef}
           onMouseEnter={() => setIsHovered(true)}
@@ -178,7 +163,7 @@ export default function RecentPhotosSection({
           onMouseUp={() => setIsDragging(false)}
           onTouchStart={() => setIsDragging(true)}
           onTouchEnd={() => setIsDragging(false)}
-          className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 scroll-smooth touch-pan-x cursor-grab active:cursor-grabbing select-none"
+          className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 touch-pan-x cursor-grab active:cursor-grabbing select-none"
         >
           {marqueePhotos.map((photo, idx) => {
             const actualIndex = idx % displayPhotos.length;
@@ -186,13 +171,13 @@ export default function RecentPhotosSection({
               <div
                 key={`${photo.id}-${idx}`}
                 onClick={() => setSelectedIndex(actualIndex)}
-                className="group relative shrink-0 flex-none w-[155px] sm:w-[185px] md:w-[210px] aspect-[4/2.8] rounded-[24px] overflow-hidden bg-zinc-100 shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_28px_rgba(0,0,0,0.14)] hover:scale-[1.03] transition-all duration-500 cursor-pointer isolate"
+                className="group relative shrink-0 flex-none w-[160px] sm:w-[200px] md:w-[230px] aspect-[16/10.5] rounded-[24px] overflow-hidden bg-zinc-100 shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_28px_rgba(0,0,0,0.14)] hover:scale-[1.03] transition-all duration-500 cursor-pointer isolate"
               >
                 <Image
                   src={photo.url}
                   alt={photo.caption || "YouthCamping photo"}
                   fill
-                  sizes="(max-width: 640px) 155px, 210px"
+                  sizes="(max-width: 640px) 160px, 230px"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
