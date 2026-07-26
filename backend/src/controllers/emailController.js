@@ -29,6 +29,10 @@ const sendBookingEmail = async (req, res) => {
 
     if (trainTicketStatus) {
       booking.trainTicketStatus = trainTicketStatus;
+      await prisma.booking.update({
+        where: { id: bookingId },
+        data: { trainTicketStatus }
+      }).catch(err => console.warn('⚠️ Could not update trainTicketStatus in DB:', err));
     }
 
     if (!booking.email) {
@@ -39,25 +43,26 @@ const sendBookingEmail = async (req, res) => {
     let templateData;
     let attachments = [];
 
+    const cleanBase64 = (str) => {
+      if (!str) return '';
+      const raw = str.includes(',') ? str.split(',')[1] : str;
+      return raw.replace(/[\r\n\s]/g, '');
+    };
+
     // Generate PDF for confirmation and invoice types
     if (type === 'confirmation' || type === 'invoice') {
       try {
         const { generateInvoicePDF } = require('../utils/pdfGenerator');
         const pdfBuffer = await generateInvoicePDF(booking);
         attachments = [{
-          content: pdfBuffer.toString('base64'),
-          name: `Invoice_${booking.bookingId}.pdf`
+          content: pdfBuffer.toString('base64').replace(/[\r\n\s]/g, ''),
+          name: `Invoice_${booking.bookingId || 'booking'}.pdf`
         }];
         console.log('📄 [Backend] PDF Invoice generated and attached');
       } catch (pdfErr) {
         console.error('❌ [Backend] PDF Generation failed:', pdfErr);
       }
     }
-
-    const cleanBase64 = (str) => {
-      if (!str) return '';
-      return str.includes(',') ? str.split(',')[1] : str;
-    };
 
     // Attach multiple ticket files if provided, otherwise fallback to single ticket file
     if (Array.isArray(ticketFiles) && ticketFiles.length > 0) {
