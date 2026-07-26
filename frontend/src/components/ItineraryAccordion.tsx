@@ -24,29 +24,36 @@ function getStayAndMeals(day: ItineraryDay, index: number, totalDays: number) {
   let stay = day.stay?.trim();
   let meals = day.meals?.trim();
 
+  const fullText = `${day.title || ""} ${day.description || ""} ${day.location || ""}`.toLowerCase();
+  const locName = day.location?.trim() || "";
+
   // Smart inference if stay is empty
   if (!stay) {
-    const fullText = `${day.title || ""} ${day.description || ""} ${day.location || ""}`.toLowerCase();
     if (fullText.includes("houseboat")) {
-      stay = day.location ? `${day.location} (Houseboat)` : "Luxury Houseboat";
+      stay = locName ? `${locName} (Houseboat)` : "Luxury Houseboat";
     } else if (fullText.includes("homestay")) {
-      stay = day.location ? `${day.location} (Homestay)` : "Cozy Homestay";
+      stay = locName ? `${locName} (Homestay)` : "Cozy Homestay";
     } else if (fullText.includes("camp") || fullText.includes("tent")) {
-      stay = day.location ? `${day.location} (Campsite)` : "Alpine Camping";
+      stay = locName ? `${locName} (Campsite)` : "Alpine Camping";
     } else if (fullText.includes("resort")) {
-      stay = day.location ? `${day.location} (Resort)` : "3-Star Resort";
+      stay = locName ? `${locName} (Resort)` : "3-Star Resort";
     } else if (fullText.includes("hotel")) {
-      stay = day.location ? `${day.location} (Hotel)` : "3-Star Hotel";
-    } else if (fullText.includes("train") || fullText.includes("journey") || fullText.includes("overnight") || fullText.includes("departure")) {
-      stay = ""; // Overnight journey, no fixed stay
-    } else if (day.location) {
-      stay = `${day.location} (Hotel / Homestay)`;
+      stay = locName ? `${locName} (Hotel)` : "3-Star Hotel";
+    } else if (fullText.includes("train") || fullText.includes("railway") || fullText.includes("sleeper")) {
+      stay = "Overnight Train Journey";
+    } else if (fullText.includes("journey") || fullText.includes("overnight") || fullText.includes("departure") || fullText.includes("drive to")) {
+      stay = locName ? `${locName} (Enroute / Hotel)` : "Overnight Journey";
+    } else if (locName) {
+      stay = `${locName} (Hotel / Homestay)`;
+    } else {
+      if (index === 0) stay = "Overnight Journey";
+      else if (index === totalDays - 1) stay = "Hotel / Checkout";
+      else stay = "Hotel / Homestay";
     }
   }
 
   // Smart inference if meals is empty
   if (!meals) {
-    const fullText = `${day.title || ""} ${day.description || ""}`.toLowerCase();
     const hasB = fullText.includes("breakfast");
     const hasL = fullText.includes("lunch");
     const hasD = fullText.includes("dinner") || fullText.includes("supper");
@@ -64,7 +71,7 @@ function getStayAndMeals(day: ItineraryDay, index: number, totalDays: number) {
     } else if (hasB) {
       meals = "Breakfast";
     } else {
-      // Position-based default
+      // Guaranteed defaults based on day position
       if (index === 0) {
         meals = "Dinner"; // Arrival day
       } else if (index === totalDays - 1) {
