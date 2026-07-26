@@ -15,7 +15,7 @@ async function generateInvoicePDF(booking) {
         : (booking.passengers || {});
       const details = passengersObj.details || {};
       const trainClass = booking.trainClass || details.trainClass || 'N/A';
-      const ticketStatus = booking.ticketStatus || details.ticketStatus || 'N/A';
+      const ticketStatus = (booking.trainTicketStatus || booking.ticketStatus || details.ticketStatus || 'N/A').replace(/_/g, ' ');
       const roomType = booking.roomType || details.roomType || 'N/A';
 
       const doc = new PDFDocument({
