@@ -147,18 +147,18 @@ export default function ItineraryAccordion({
 
           return (
             <div key={day.displayDay} className="group rounded-2xl transition-all duration-300">
-              <div className="flex items-center gap-2 sm:gap-3.5 w-full">
+              <div className="flex items-center gap-2 sm:gap-3 w-full">
                 {/* Left: Dark Navy Day Pill Badge */}
-                <div className="bg-[#0B1528] text-white rounded-full font-extrabold text-xs sm:text-sm px-2.5 sm:px-4 text-center shadow-xs border border-slate-800 shrink-0 min-w-[76px] sm:min-w-[96px] flex items-center justify-center font-montserrat min-h-[40px] h-10">
+                <div className="bg-[#0B1528] text-white rounded-2xl sm:rounded-full font-extrabold text-xs sm:text-sm px-2.5 sm:px-3 text-center shadow-xs border border-slate-800 shrink-0 min-w-[68px] sm:min-w-[88px] flex items-center justify-center font-montserrat min-h-[42px] py-2">
                   {dayNumStr}
                 </div>
 
                 {/* Right: Pure White Pill Title Bar */}
                 <button
                   onClick={() => toggleDay(day.displayDay)}
-                  className="flex-1 min-w-0 bg-white border border-zinc-200/90 rounded-full px-3 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between shadow-2xs hover:border-[#D4541A]/50 transition-all text-left cursor-pointer"
+                  className="flex-1 min-w-0 bg-white border border-zinc-200/90 rounded-2xl sm:rounded-full px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between shadow-2xs hover:border-[#D4541A]/50 transition-all text-left cursor-pointer min-h-[42px]"
                 >
-                  <span className="text-xs sm:text-sm font-semibold text-[#0B1528] font-montserrat truncate flex-1 min-w-0 pr-1">
+                  <span className="text-xs sm:text-sm font-semibold text-[#0B1528] font-montserrat leading-snug flex-1 min-w-0 pr-1 line-clamp-2">
                     {day.title}
                   </span>
 
