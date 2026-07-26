@@ -8,9 +8,10 @@ apiKey.apiKey = process.env.BREVO_API_KEY;
 const emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
 
-const BRAND_COLOR = '#1e293b';
-const ACCENT_COLOR = '#3b82f6';
-const LOGO_URL = 'https://youthcamping.com/logo.png'; // Update with real logo URL
+const BRAND_COLOR = '#0f172a';
+const ACCENT_COLOR = '#ff5722';
+const ACCENT_HOVER = '#e64a19';
+const LOGO_URL = 'https://youthcamping.online/logo.png';
 
 const getPublicSiteBaseUrl = () => {
   const envUrl = process.env.PUBLIC_SITE_URL || process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL;
@@ -21,7 +22,7 @@ const getPublicSiteBaseUrl = () => {
     }
     return url.replace(/\/+$/, '');
   }
-  return 'https://youthcamping.in';
+  return 'https://youthcamping.online';
 };
 
 const getBaseTemplate = (content, previewText) => `
@@ -32,41 +33,42 @@ const getBaseTemplate = (content, previewText) => `
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YouthCamping</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; }
-    .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
-    .header { background-color: ${BRAND_COLOR}; padding: 40px 30px; text-align: center; color: #ffffff; }
-    .logo { font-size: 26px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; }
-    .content { padding: 40px; line-height: 1.6; color: #334155; }
-    .footer { background-color: #f8fafc; padding: 30px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
-    .button { display: inline-block; padding: 14px 30px; background-color: ${ACCENT_COLOR}; color: #ffffff !important; text-decoration: none; border-radius: 12px; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-top: 25px; }
-    .highlight-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 25px; margin: 25px 0; }
-    .label { font-size: 9px; font-weight: 900; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; letter-spacing: 1px; }
-    .value { font-size: 14px; font-weight: 700; color: #1e293b; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 620px; margin: 24px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0; }
+    .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 32px 28px; text-align: center; color: #ffffff; border-bottom: 3px solid #ff5722; }
+    .logo-text { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase; color: #ffffff; }
+    .logo-accent { color: #ff5722; }
+    .content { padding: 36px 32px; line-height: 1.6; color: #334155; }
+    .footer { background-color: #f8fafc; padding: 28px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+    .button { display: inline-block; padding: 14px 28px; background-color: #ff5722; color: #ffffff !important; text-decoration: none; border-radius: 12px; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 20px; box-shadow: 0 4px 12px rgba(255, 87, 34, 0.25); }
+    .highlight-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 20px 0; }
+    .label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.8px; }
+    .value { font-size: 15px; font-weight: 700; color: #0f172a; }
     h1 { font-size: 24px; font-weight: 900; color: #0f172a; margin-top: 0; letter-spacing: -0.5px; }
     .preview-text { display: none; font-size: 0; color: transparent; height: 0; width: 0; }
-    .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 900; text-transform: uppercase; background: #f1f5f9; color: #64748b; margin-bottom: 15px; }
-    .divider { height: 1px; background: #e2e8f0; margin: 20px 0; }
+    .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 900; text-transform: uppercase; background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; margin-bottom: 15px; }
+    .divider { height: 1px; background: #e2e8f0; margin: 24px 0; }
   </style>
 </head>
 <body>
   <div class="preview-text">${previewText}</div>
   <div class="container">
     <div class="header">
-      <img src="${LOGO_URL}" alt="YouthCamping" style="height: 50px; width: auto; display: block; margin: 0 auto;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-      <div class="logo" style="display: none;">YOUTHCAMPING.</div>
+      <img src="${LOGO_URL}" alt="YouthCamping" style="height: 42px; width: auto; display: block; margin: 0 auto;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+      <div class="logo-text" style="display: none;">YOUTH<span class="logo-accent">CAMPING</span></div>
     </div>
     <div class="content">
       ${content}
     </div>
     <div class="footer">
-      <p style="font-weight: 900; color: #64748b; margin-bottom: 10px;">YOUTHCAMPING EXPERIENCES</p>
-      <p>&copy; ${new Date().getFullYear()} YouthCamping. All rights reserved.</p>
-      <p style="margin-top: 10px; margin-bottom: 10px; font-size: 12px;">
-        <a href="${getPublicSiteBaseUrl()}/terms-and-conditions" style="color: #475569; text-decoration: underline; font-weight: 600;" target="_blank">Terms &amp; Conditions</a>
+      <p style="font-weight: 900; color: #0f172a; margin-bottom: 8px; font-size: 13px; letter-spacing: 0.5px;">YOUTHCAMPING EXPERIENCES</p>
+      <p style="margin: 4px 0;">&copy; ${new Date().getFullYear()} YouthCamping. All rights reserved.</p>
+      <p style="margin-top: 10px; margin-bottom: 10px;">
+        <a href="${getPublicSiteBaseUrl()}/terms-and-conditions" style="color: #ff5722; text-decoration: underline; font-weight: 600;" target="_blank">Terms &amp; Conditions</a>
         <span style="margin: 0 6px; color: #cbd5e1;">|</span>
-        <a href="${getPublicSiteBaseUrl()}/cancellation-policy" style="color: #475569; text-decoration: underline; font-weight: 600;" target="_blank">Cancellation Policy</a>
+        <a href="${getPublicSiteBaseUrl()}/cancellation-policy" style="color: #ff5722; text-decoration: underline; font-weight: 600;" target="_blank">Cancellation Policy</a>
       </p>
-      <p>Address: Delhi, India | Support: info@youthcamping.com</p>
+      <p style="color: #94a3b8; font-size: 11px;">Delhi, India | Support: youthcampingmedia@gmail.com | +91 9924246267</p>
     </div>
   </div>
 </body>
