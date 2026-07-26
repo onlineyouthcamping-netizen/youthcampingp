@@ -33,8 +33,8 @@ app.use(helmet({
   contentSecurityPolicy: false 
 }));
 app.use(compression());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 if (process.env.NODE_ENV === 'production') {
   app.use(morgan('common'));
 } else {
