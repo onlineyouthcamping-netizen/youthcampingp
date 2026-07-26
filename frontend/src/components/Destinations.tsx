@@ -110,31 +110,31 @@ export default function Destinations({
     <section className="popular-destinations popular-section destinations-grid py-8 md:py-10 font-montserrat overflow-hidden" style={{ backgroundColor: '#F5F5F5' }}>
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
-        {/* HEADER ROW */}
-        <div className="flex items-center justify-between mb-8 sm:mb-10 flex-wrap gap-4">
-          <div className="flex items-baseline gap-2.5 flex-wrap">
-            <h2 className="text-[#1B2A4A] font-montserrat font-semibold text-[28px] sm:text-[32px] md:text-[36px] leading-tight">
+        {/* HEADER ROW - FITS TITLE ON ONE LINE */}
+        <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
+          <div className="flex items-baseline gap-2 min-w-0 overflow-hidden whitespace-nowrap">
+            <h2 className="text-[#1B2A4A] font-montserrat font-bold text-[18px] sm:text-[26px] md:text-[32px] leading-tight truncate">
               {title.split(' ')[0] || "Popular"}
             </h2>
-            <span className="font-caveat font-bold text-[#D4541A] text-[32px] sm:text-[36px] md:text-[42px] leading-none">
+            <span className="font-caveat font-bold text-[#D4541A] text-[22px] sm:text-[30px] md:text-[38px] leading-none shrink-0">
               {title.split(' ').slice(1).join(' ') || "Destinations"}
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => nudge("l")}
               aria-label="Previous Destinations"
-              className="w-10 h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95 min-h-[36px] min-w-[36px]"
             >
-              <ChevronLeft className="w-5 h-5 text-zinc-700" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
             </button>
             <button
               onClick={() => nudge("r")}
               aria-label="Next Destinations"
-              className="w-10 h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95 min-h-[36px] min-w-[36px]"
             >
-              <ChevronRight className="w-5 h-5 text-zinc-700" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
             </button>
           </div>
         </div>

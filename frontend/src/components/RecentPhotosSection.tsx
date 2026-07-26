@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { normalizeImageUrl } from "@/lib/api";
 
 interface RecentPhoto {
   id: string;
@@ -122,57 +123,82 @@ export default function RecentPhotosSection({
     setSelectedIndex((selectedIndex + 1) % basePhotos.length);
   };
 
+  const displayPhotos = (photos && photos.length >= 4)
+    ? photos.map((p: any, idx: number) => ({
+        id: p.id || `photo-${idx}`,
+        url: normalizeImageUrl(p.url || p.image || DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].url) || DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].url,
+        caption: p.caption || p.title || DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].caption,
+        location: p.location || DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].location,
+      }))
+    : DEFAULT_PHOTOS;
+
+  // Automatic Cinematic Slider photo index auto-scroll
+  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActivePhotoIdx((prev) => (prev + 1) % displayPhotos.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [displayPhotos.length]);
+
   return (
-    <section className="py-8 md:py-10 font-montserrat overflow-hidden" style={{ backgroundColor: '#F5F5F5' }}>
+    <section className="py-8 md:py-10 font-montserrat overflow-hidden bg-[#F5F5F5]">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
-        {/* HEADER ROW */}
-        <div className="flex items-center justify-between mb-8 sm:mb-10 flex-wrap gap-4">
-          <div className="flex items-baseline gap-2.5 flex-wrap">
-            <h2 className="text-[#1B2A4A] font-montserrat font-semibold text-[28px] sm:text-[32px] md:text-[36px] leading-tight">
+        {/* HEADER ROW - FITS TITLE ON ONE LINE */}
+        <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
+          <div className="flex items-baseline gap-2 min-w-0 overflow-hidden whitespace-nowrap">
+            <h2 className="text-[#1B2A4A] font-montserrat font-bold text-[18px] sm:text-[26px] md:text-[32px] leading-tight truncate">
               {title}
             </h2>
-            <span className="font-caveat font-bold text-[#D4541A] text-[32px] sm:text-[36px] md:text-[42px] leading-none">
+            <span className="font-caveat font-bold text-[#D4541A] text-[22px] sm:text-[30px] md:text-[38px] leading-none shrink-0">
               {subtitle}
             </span>
           </div>
 
           <Link
             href="/trips"
-            onClick={(e) => {
-              if (basePhotos.length > 0) {
-                e.preventDefault();
-                setSelectedIndex(0);
-              }
-            }}
-            className="group inline-flex items-center gap-2 text-sm sm:text-[16px] font-bold text-[#111827] hover:text-[#D4541A] transition-colors"
+            className="group shrink-0 inline-flex items-center gap-1.5 text-xs sm:text-[15px] font-bold text-[#111827] hover:text-[#D4541A] transition-colors whitespace-nowrap"
           >
-            <span>View All Photos</span>
-            <ArrowRight className="w-4 h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
+            <span>View All</span>
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 
-        {/* 2-COLUMN MOBILE TO 6-COLUMN DESKTOP SQUARE IMAGE GRID */}
+        {/* AUTOMATIC CINEMATIC PHOTO GALLERY GRID (2-COL MOBILE, 6-COL DESKTOP) */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-          {basePhotos.slice(0, 6).map((photo, idx) => (
-            <div
-              key={photo.id || idx}
-              onClick={() => setSelectedIndex(idx)}
-              className="group relative w-full aspect-square rounded-2xl overflow-hidden bg-zinc-100 shadow-xs hover:shadow-lg transition-all duration-300 cursor-pointer"
-            >
-              <Image
-                src={photo.url}
-                alt={photo.caption}
-                fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-                className="object-cover group-hover:scale-108 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
-                <p className="text-white font-bold text-xs leading-tight line-clamp-1">{photo.caption}</p>
-                <p className="text-zinc-300 text-[10px] truncate mt-0.5">{photo.location}</p>
-              </div>
-            </div>
-          ))}
+          {displayPhotos.slice(0, 6).map((photo, idx) => {
+            const isActive = idx === activePhotoIdx;
+            return (
+              <motion.div
+                key={photo.id || idx}
+                onClick={() => setSelectedIndex(idx)}
+                animate={{ scale: isActive ? 1.03 : 1 }}
+                transition={{ duration: 0.5 }}
+                className={`group relative w-full aspect-square rounded-2xl overflow-hidden bg-zinc-200 shadow-xs hover:shadow-xl transition-all duration-500 cursor-pointer ${
+                  isActive ? "ring-2 ring-[#D4541A] ring-offset-2" : ""
+                }`}
+              >
+                <Image
+                  src={photo.url}
+                  alt={photo.caption}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                  className="object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
+                  onError={(e) => {
+                    // Fallback to high quality unsplash photo on load error
+                    const target = e.target as HTMLImageElement;
+                    target.src = DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].url;
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
+                  <p className="text-white font-bold text-xs leading-tight line-clamp-1">{photo.caption}</p>
+                  <p className="text-zinc-300 text-[10px] truncate mt-0.5">{photo.location}</p>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
       </div>
