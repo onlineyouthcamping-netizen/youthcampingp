@@ -1,21 +1,17 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import { motion, useReducedMotion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/api";
-import { OptimizedImage } from "@/components/ui/OptimizedImage";
-import { cn } from "@/lib/utils";
-import { WavyEdges } from "./ui/WavyEdges";
-import { useIsMobile } from "@/hooks/useIsMobile";
 
 const DestinationInquiryModal = dynamic(() => import("./DestinationInquiryModal"), { ssr: false });
 
 interface Destination {
   name: string;
   img: string;
-  duration?: string;
   subtext?: string;
 }
 
@@ -23,269 +19,161 @@ interface DestinationsProps {
   title?: string;
   subtitle?: string;
   destinations?: Destination[];
-  titleSize?: string | number;
-  titleWeight?: string | number;
-  topLabel?: string;
-  titleStyle?: 'standard' | 'boxed';
-  wavyEdges?: boolean;
-  topColor?: string;
-  bottomColor?: string;
 }
 
-const DESTINATION_FALLBACK = "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80";
+const DEFAULT_DESTINATIONS: Destination[] = [
+  {
+    name: "Matheran",
+    img: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80",
+    subtext: "Hill Station Trek",
+  },
+  {
+    name: "Valley of Flowers",
+    img: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80",
+    subtext: "UNESCO World Heritage",
+  },
+  {
+    name: "Discover The Dangs",
+    img: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
+    subtext: "Waterfalls & Forest Trail",
+  },
+  {
+    name: "Saputara",
+    img: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
+    subtext: "Mist & Valley Views",
+  },
+  {
+    name: "Mahabaleshwar",
+    img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+    subtext: "Plateau & Sunrise Points",
+  },
+  {
+    name: "Spiti Valley",
+    img: "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
+    subtext: "High Altitude Circuit",
+  },
+  {
+    name: "Ladakh",
+    img: "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?auto=format&fit=crop&w=800&q=80",
+    subtext: "Pangong & Nubra",
+  },
+];
 
-const DESTINATION_PHOTO_MAP: Record<string, string> = {
-  bali: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80",
-  maldives: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=800&q=80",
-  thailand: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=800&q=80",
-  singapore: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=80",
-  malaysia: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=80",
-  himachal: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
-  uttarakhand: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
-  kedarnath: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
-  manali: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
-  ladakh: "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
-  spiti: "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
-  goa: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80"
+const DEST_IMAGE_MAP: Record<string, string> = {
+  "himachal": "https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80",
+  "himachal pradesh": "https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80",
+  "uttarakhand": "https://images.unsplash.com/photo-1605640840605-14ac1855827b?auto=format&fit=crop&w=800&q=80",
+  "spiti": "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
+  "spiti valley": "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
+  "ladakh": "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?auto=format&fit=crop&w=800&q=80",
+  "kerala": "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800&q=80",
+  "sikkim": "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80",
+  "goa": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+  "matheran": "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80",
+  "valley of flowers": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80",
+  "discover the dangs": "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
+  "the dangs": "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
+  "dangs": "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
+  "saputara": "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
+  "mahabaleshwar": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
 };
 
-function getDestinationPhoto(dest: Destination): string {
-  if (dest.img && dest.img !== "/page-builder-defaults/destination-card.svg" && !dest.img.includes("destination-card.svg")) {
-    const normalized = normalizeImageUrl(dest.img);
-    if (normalized) return normalized;
-  }
-  const key = (dest.name || "").toLowerCase().trim();
-  for (const [nameKey, photoUrl] of Object.entries(DESTINATION_PHOTO_MAP)) {
-    if (key.includes(nameKey)) return photoUrl;
-  }
-  return DESTINATION_FALLBACK;
-}
-
-const defaultDestinations: Destination[] = [];
-
-/** Individual destination card with loading skeleton and error fallback */
-function DestinationCard({ dest, index, reduceMotion, onClick }: {
-  dest: Destination;
-  index: number;
-  reduceMotion: boolean;
-  onClick: () => void;
-}) {
-  const [imgError, setImgError] = useState(false);
-  const imgSrc = imgError ? DESTINATION_FALLBACK : getDestinationPhoto(dest);
-
-  // Dynamic styling mapping based on destination name to match SIKKIM, UTTARAKHAND, HIMACHAL, Ladakh, GOA, MALDIVES styles
-  const getDestinationStyle = (name: string) => {
-    const lower = name.toLowerCase();
-    
-    if (lower.includes('ladakh') || lower.includes('bali')) {
-      return {
-        fontFamily: "'Great Vibes', 'Dancing Script', 'Playball', cursive",
-        textTransform: 'none' as const,
-        fontSizeClass: 'text-[38px] md:text-[45px] font-medium leading-[1.1]',
-        letterSpacing: 'normal',
-        subtitle: lower.includes('ladakh') ? 'Road Trip' : ''
-      };
-    }
-    if (lower.includes('sikkim')) {
-      return {
-        fontFamily: "'Rubik Mono One', 'Impact', 'Montserrat', sans-serif",
-        textTransform: 'uppercase' as const,
-        fontSizeClass: 'text-[22px] md:text-[25px] font-bold',
-        letterSpacing: '0.08em',
-        subtitle: ''
-      };
-    }
-    if (lower.includes('uttarakhand') || lower.includes('uttrakhand')) {
-      return {
-        fontFamily: "'Cinzel Decorative', 'Cinzel', 'Playfair Display', serif",
-        textTransform: 'uppercase' as const,
-        fontSizeClass: 'text-[20px] md:text-[23px] font-bold',
-        letterSpacing: '0.12em',
-        subtitle: ''
-      };
-    }
-    if (lower.includes('himachal')) {
-      return {
-        fontFamily: "'Oswald', 'Montserrat', sans-serif",
-        textTransform: 'uppercase' as const,
-        fontSizeClass: 'text-[26px] md:text-[30px] font-bold tracking-tight',
-        letterSpacing: '0.06em',
-        subtitle: '⛰️'
-      };
-    }
-    if (lower.includes('goa')) {
-      return {
-        fontFamily: "'Pacifico', 'Satisfy', 'Caveat', cursive",
-        textTransform: 'none' as const,
-        fontSizeClass: 'text-[28px] md:text-[34px] font-normal',
-        letterSpacing: 'normal',
-        subtitle: '🌊'
-      };
-    }
-    if (lower.includes('maldives')) {
-      return {
-        fontFamily: "'Brush Script MT', 'Dancing Script', 'Great Vibes', cursive",
-        textTransform: 'none' as const,
-        fontSizeClass: 'text-[38px] md:text-[46px] font-medium',
-        letterSpacing: 'normal',
-        subtitle: ''
-      };
-    }
-    
-    // Default (e.g. Singapore, etc.)
-    return {
-      fontFamily: "'Montserrat', 'Inter', sans-serif",
-      textTransform: 'uppercase' as const,
-      fontSizeClass: 'text-[22px] md:text-[26px] font-extrabold',
-      letterSpacing: '0.15em',
-      subtitle: ''
-    };
-  };
-
-  const style = getDestinationStyle(dest.name);
-
-  return (
-    <motion.div
-      key={index}
-      initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={reduceMotion ? { duration: 0 } : { delay: index * 0.1, duration: 0.6 }}
-      viewport={{ once: true }}
-      onClick={() => onClick()}
-      className="relative min-w-[200px] w-[200px] md:min-w-[250px] md:w-[250px] aspect-[3/4.2] rounded-[24px] md:rounded-[32px] overflow-hidden group snap-start shadow-[0_10px_25px_rgba(0,0,0,0.08)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.12)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer bg-zinc-800 isolate transform-gpu"
-    >
-      <OptimizedImage
-        src={imgSrc}
-        alt={dest.name}
-        width={680}
-        height={952}
-        cloudinaryWidth={640}
-        bunnyVariant="x540gt"
-        priority={true}
-        sizes="(max-width: 768px) 280px, 340px"
-        onError={() => setImgError(true)}
-        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 transform-gpu"
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/35" />
-      <div className="absolute top-12 left-0 right-0 flex flex-col items-center justify-start p-4 z-20">
-        {/* Render graphic decorators like waves or mountain icons above specific names */}
-        {style.subtitle === '🌊' && (
-          <span className="text-white text-2xl mb-1.5 opacity-90 select-none animate-pulse">🌊</span>
-        )}
-        {style.subtitle === '⛰️' && (
-          <span className="text-white text-2xl mb-1.5 opacity-90 select-none">⛰️</span>
-        )}
-        
-        <h3
-          className={cn(
-            "text-white text-center drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)] select-none transition-transform duration-700 group-hover:scale-105",
-            style.fontSizeClass
-          )}
-          style={{
-            fontFamily: style.fontFamily,
-            textTransform: style.textTransform,
-            letterSpacing: style.letterSpacing
-          }}
-        >
-          {dest.name}
-        </h3>
-        
-        {/* Render text subheadings below, e.g., "Road Trip" for Ladakh */}
-        {style.subtitle && style.subtitle !== '🌊' && style.subtitle !== '⛰️' && (
-          <span className="text-white text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase mt-1 drop-shadow-md opacity-80 select-none">
-            {style.subtitle}
-          </span>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
-export default function Destinations({ 
-  title = "Top Destinations",
-  subtitle,
-  destinations = [],
-  titleSize,
-  titleWeight,
-  topLabel,
-  titleStyle = 'standard',
-  wavyEdges = false,
-  topColor = "#ffffff",
-  bottomColor = "#ffffff",
+export default function Destinations({
+  title = "Popular Destinations",
+  destinations,
 }: DestinationsProps) {
-  const rawItems = destinations;
-  if (!rawItems || rawItems.length === 0) return null;
-  const items = rawItems.map(d => ({
-    ...d,
-    img: getDestinationPhoto(d)
-  }));
-  const [selectedDest, setSelectedDest] = useState<Destination | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const prefersReducedMotion = useReducedMotion();
-  const isMobile = useIsMobile();
-  const reduceMotion = prefersReducedMotion || isMobile;
+  const [selectedDest, setSelectedDest] = useState<Destination | null>(null);
 
-  const scroll = (direction: 'left' | 'right') => {
+  const displayItems: Destination[] = (Array.isArray(destinations) && destinations.length > 0)
+    ? destinations.map((d: any, i: number) => {
+        const fallback = DEFAULT_DESTINATIONS[i % DEFAULT_DESTINATIONS.length];
+        const rawName = typeof d === 'string' ? d : (d?.name || fallback.name);
+        const customImg = (typeof d === 'object' && (d?.img || d?.imageUrl)) ? normalizeImageUrl(d.img || d.imageUrl) : undefined;
+        const cleanKey = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const mappedImg = customImg || Object.entries(DEST_IMAGE_MAP).find(([key]) => cleanKey.includes(key.replace(/[^a-z0-9]/g, '')))?.[1] || fallback.img;
+        return {
+          name: rawName,
+          subtext: (typeof d === 'object' && d?.subtext) ? d.subtext : (fallback.subtext || "Explore Group Trip"),
+          img: mappedImg,
+        };
+      })
+    : DEFAULT_DESTINATIONS;
+
+  const nudge = (dir: "l" | "r") => {
     if (scrollRef.current) {
-      const { scrollLeft, clientWidth } = scrollRef.current;
-      const scrollTo = direction === 'left' ? scrollLeft - clientWidth : scrollLeft + clientWidth;
-      scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+      scrollRef.current.scrollBy({ left: dir === "l" ? -250 : 250, behavior: "smooth" });
     }
   };
 
   return (
-    <section className="section-wrapper bg-transparent overflow-hidden relative !pt-0 pb-8 md:!pt-0 md:pb-10 max-md:!px-0">
-      {wavyEdges && <WavyEdges color={topColor === '#ffffff' ? '#D4D6D9' : topColor} position="top" />}
-      <div className="max-w-[1440px] mx-auto px-4 md:px-0">
-        <div className="flex flex-row items-end justify-between mb-8">
-          <div className="flex flex-col">
-            {topLabel && (
-              <span className="section-label">
-                {topLabel}
-              </span>
-            )}
-            <div className={cn(
-              titleStyle === 'boxed' && "p-6 md:px-10 md:py-8 rounded-[20px] md:rounded-[32px] border border-slate-200 bg-white shadow-sm max-w-fit"
-            )}>
-              <h2 
-                className="section-heading text-[#082B5B] !font-extrabold capitalize"
-                style={{ 
-                  fontSize: titleSize ? (isNaN(Number(titleSize)) ? titleSize : `${titleSize}px`) : undefined
-                }}
-              >
-                {title || "Popular Destinations"}
-              </h2>
-            </div>
+    <section className="popular-destinations popular-section destinations-grid py-8 md:py-10 font-montserrat overflow-hidden" style={{ backgroundColor: '#F5F5F5' }}>
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
+        
+        {/* HEADER ROW */}
+        <div className="flex items-center justify-between mb-8 sm:mb-10 flex-wrap gap-4">
+          <div className="flex items-baseline gap-2.5 flex-wrap">
+            <h2 className="text-[#1B2A4A] font-montserrat font-semibold text-[28px] sm:text-[32px] md:text-[36px] leading-tight">
+              {title.split(' ')[0] || "Popular"}
+            </h2>
+            <span className="font-caveat font-bold text-[#D4541A] text-[32px] sm:text-[36px] md:text-[42px] leading-none">
+              {title.split(' ').slice(1).join(' ') || "Destinations"}
+            </span>
           </div>
-          <div className="hidden md:flex gap-3 pb-2">
-            <button onClick={() => scroll('left')} className="w-12 h-12 rounded-full border border-zinc-200/50 flex items-center justify-center hover:bg-white hover:text-navy text-navy transition-all bg-white/95 shadow-sm" aria-label="Scroll Left">
-              <ChevronRight className="w-6 h-6 rotate-180" />
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => nudge("l")}
+              aria-label="Previous Destinations"
+              className="w-10 h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
+            >
+              <ChevronLeft className="w-5 h-5 text-zinc-700" />
             </button>
-            <button onClick={() => scroll('right')} className="w-12 h-12 rounded-full border border-zinc-200/50 flex items-center justify-center hover:bg-white hover:text-navy text-navy transition-all bg-white/95 shadow-sm" aria-label="Scroll Right">
-              <ChevronRight className="w-6 h-6" />
+            <button
+              onClick={() => nudge("r")}
+              aria-label="Next Destinations"
+              className="w-10 h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
+            >
+              <ChevronRight className="w-5 h-5 text-zinc-700" />
             </button>
           </div>
         </div>
 
-        <div ref={scrollRef} className="flex gap-3 md:gap-[28px] overflow-x-auto no-scrollbar pb-6 snap-x -mx-4 px-4 md:mx-0 md:px-0 scroll-pl-4 md:scroll-pl-0">
-          {items.map((dest, i) => (
-            <DestinationCard
-              key={i}
-              dest={dest}
-              index={i}
-              reduceMotion={reduceMotion}
-              onClick={() => setSelectedDest(dest)}
-            />
+        {/* DESTINATION PORTRAIT CARDS SLIDER WITH NAME OVERLAY & INQUIRY FORM CLICK */}
+        <div
+          ref={scrollRef}
+          className="flex gap-4 sm:gap-5 overflow-x-auto no-scrollbar py-3 px-1 scroll-smooth"
+        >
+          {displayItems.map((item, idx) => (
+            <motion.div
+              key={item.name + idx}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.07, duration: 0.5 }}
+              viewport={{ once: true }}
+              onClick={() => setSelectedDest(item)}
+              className="group relative flex-none snap-start w-[190px] sm:w-[215px] md:w-[230px] aspect-[9/16] rounded-[24px] overflow-hidden bg-zinc-900 shadow-[0_8px_25px_rgba(0,0,0,0.12)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.22)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer isolate"
+            >
+              {/* DESTINATION BACKGROUND IMAGE */}
+              <Image
+                src={item.img}
+                alt={item.name}
+                fill
+                sizes="(max-width: 640px) 190px, 230px"
+                className="object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
+              />
+            </motion.div>
           ))}
         </div>
+
       </div>
 
-      <DestinationInquiryModal 
+      {/* INQUIRY MODAL */}
+      <DestinationInquiryModal
         isOpen={!!selectedDest}
         onClose={() => setSelectedDest(null)}
         destination={selectedDest}
       />
-      {wavyEdges && <WavyEdges color={bottomColor} position="bottom" />}
     </section>
   );
 }

@@ -1,122 +1,124 @@
 "use client";
 
-import React, { useRef } from "react";
-import Link from "next/link";
+import { useState } from "react";
+import { Camera } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/api";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import PhotoGalleryModal from "./PhotoGalleryModal";
 
 interface HighlightItem {
-  name: string;
+  name?: string;
+  title?: string;
   description?: string;
-  image: string;
-  slug: string;
-  order?: number;
+  image?: string;
+  img?: string;
+  url?: string;
 }
 
 interface TripHighlightsListProps {
-  title: string;
-  items?: HighlightItem[];
-  defaultItems?: any[];
+  title?: string;
+  items?: (HighlightItem | string)[];
+  defaultItems?: (HighlightItem | string)[];
 }
 
-export default function TripHighlightsList({ title, items, defaultItems = [] }: TripHighlightsListProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const activeList = (items && items.length > 0) ? items : defaultItems;
+const defaultSliderPhotos = [
+  "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?q=80&w=1200", // Bonfire / Party
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200", // Mountain Sunset
+  "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=80&w=1200", // Snow Trek
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1200", // Solo Hiker View
+  "https://images.unsplash.com/photo-1533587851505-d119e13fa0d7?q=80&w=1200", // Friends Trekking
+  "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200", // Bike Expedition
+  "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200", // Chhitkul
+  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200", // Parvati Valley
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200"  // Golden Temple
+];
 
-  if (activeList.length === 0) return null;
+export default function TripHighlightsList({ title = "Trip Highlights", items, defaultItems }: TripHighlightsListProps) {
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const scroll = (direction: "left" | "right") => {
-    if (containerRef.current) {
-      const container = containerRef.current;
-      // Scroll by roughly one card width plus gap (e.g. 300px)
-      const scrollAmount = 320;
-      if (direction === "left") {
-        container.scrollBy({ left: -scrollAmount, behavior: "smooth" });
-      } else {
-        container.scrollBy({ left: scrollAmount, behavior: "smooth" });
-      }
-    }
+  const rawList = (items && items.length > 0) ? items : (defaultItems && defaultItems.length > 0 ? defaultItems : defaultSliderPhotos);
+
+  const baseUrls = rawList.map((item, idx) => {
+    if (typeof item === "string") return item;
+    return item.image || item.img || item.url || defaultSliderPhotos[idx % defaultSliderPhotos.length];
+  });
+
+  // Duplicate list to create a 100% continuous infinite loop
+  const photoUrls = [...baseUrls, ...baseUrls];
+
+  const handlePhotoClick = (index: number) => {
+    setSelectedIndex(index % baseUrls.length);
+    setIsGalleryOpen(true);
   };
 
   return (
-    <section className="relative">
-      <div className="bg-white border border-zinc-100 rounded-[40px] p-10 md:p-14 shadow-sm relative overflow-hidden">
-        <div className="flex justify-between items-center mb-10">
-          <h2 className="text-2xl font-bold text-navy">{title}</h2>
-          
-          {/* Slide Navigation Buttons */}
-          <div className="flex gap-2 shrink-0">
-            <button 
-              onClick={() => scroll("left")}
-              className="w-10 h-10 rounded-full border border-zinc-200 flex items-center justify-center text-zinc-600 hover:bg-zinc-50 hover:text-navy hover:border-zinc-400 transition-all cursor-pointer focus:outline-none"
-              aria-label="Previous slide"
+    <section className="space-y-4 scroll-mt-28 overflow-hidden" id="highlights">
+      {/* Inline Hardware Accelerated GPU Marquee Keyframe Styles */}
+      <style jsx>{`
+        @keyframes continuousMarquee {
+          0% {
+            transform: translate3d(0, 0, 0);
+          }
+          100% {
+            transform: translate3d(-50%, 0, 0);
+          }
+        }
+        .marquee-track {
+          display: flex;
+          width: max-content;
+          animation: continuousMarquee 32s linear infinite;
+          will-change: transform;
+        }
+        .marquee-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
+      {/* Header Row */}
+      <div className="border-b border-zinc-100 pb-2.5">
+        <h2 className="text-xl md:text-2xl font-extrabold text-[#0B1528] font-montserrat">
+          TRIP GLIMPSES
+        </h2>
+        <p className="text-xs text-[#D4541A] font-semibold font-montserrat mt-0.5">
+          Moments that stay with you, memories that last forever.
+        </p>
+      </div>
+
+      {/* Hardware Accelerated GPU Marquee (100% Smooth 120fps No Lag) */}
+      <div className="w-full overflow-hidden py-1">
+        <div className="marquee-track flex gap-3">
+          {photoUrls.map((url, i) => (
+            <div 
+              key={i}
+              onClick={() => handlePhotoClick(i)}
+              className="shrink-0 w-[140px] sm:w-[170px] md:w-[190px] aspect-[4/3] rounded-[18px] md:rounded-[22px] overflow-hidden bg-zinc-100 shadow-xs border border-zinc-100/90 hover:scale-[1.03] transition-transform duration-300 cursor-pointer group relative"
             >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={() => scroll("right")}
-              className="w-10 h-10 rounded-full border border-zinc-200 flex items-center justify-center text-zinc-600 hover:bg-zinc-50 hover:text-navy hover:border-zinc-400 transition-all cursor-pointer focus:outline-none"
-              aria-label="Next slide"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-        
-        <div 
-          ref={containerRef}
-          className="flex flex-nowrap overflow-x-auto pb-4 gap-6 md:gap-8 no-scrollbar scroll-smooth"
-        >
-          {activeList.map((item, i) => {
-            const isString = typeof item === "string";
-            const name = isString ? item : ((item as any).name || (item as any).title || "Highlight");
-            const imageUrl = isString ? "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6" : ((item as any).image || (item as any).img || (item as any).url || "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6");
-            const slug = isString ? i.toString() : ((item as any).slug || (item as any).id || i.toString());
-            const desc = isString ? "" : ((item as any).description || (item as any).desc || "");
-            
-            const isClickable = title.toLowerCase().includes('attractions') || title.toLowerCase().includes('activities');
-            
-            const cardContent = (
-              <>
-                <div className="relative aspect-[4/3] rounded-[24px] overflow-hidden mb-4 shadow-sm bg-zinc-50 border border-zinc-100">
-                  <OptimizedImage 
-                     src={normalizeImageUrl(imageUrl) || "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6"} 
-                     alt={name} 
-                     loading="lazy"
-                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                </div>
-                <h3 className="font-bold text-navy text-sm mb-1 line-clamp-1">{name}</h3>
-                {desc && <p className="text-[10px] text-zinc-400 font-medium line-clamp-2 leading-relaxed">{desc}</p>}
-              </>
-            );
-
-            const cardClass = "group shrink-0 w-[240px] md:w-[280px] select-none";
-
-            if (isClickable) {
-              return (
-                <Link 
-                  key={i} 
-                  href={`/attractions/${slug}`} 
-                  className={cardClass}
-                >
-                  {cardContent}
-                </Link>
-              );
-            }
-
-            return (
-              <div 
-                key={i} 
-                className={cardClass}
-              >
-                {cardContent}
-              </div>
-            );
-          })}
+              <OptimizedImage 
+                src={normalizeImageUrl(url) || defaultSliderPhotos[i % defaultSliderPhotos.length]} 
+                alt={`Trip Glimpse ${i + 1}`}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Bottom Subtext */}
+      <div className="pt-1 flex items-center gap-2 text-xs text-zinc-500 font-montserrat">
+        <Camera className="w-3.5 h-3.5 text-[#D4541A] shrink-0" />
+        <span>Tag us <strong className="text-zinc-800">@youthcamping.in</strong> and use <strong className="text-[#D4541A]">#YouthCamping</strong> to get featured!</span>
+      </div>
+
+      {/* Lightbox Modal */}
+      {isGalleryOpen && (
+        <PhotoGalleryModal 
+          images={baseUrls}
+          isOpen={isGalleryOpen}
+          onClose={() => setIsGalleryOpen(false)}
+        />
+      )}
     </section>
   );
 }

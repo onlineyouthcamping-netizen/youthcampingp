@@ -1,192 +1,242 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Trip } from "@/types";
-import { motion } from "framer-motion";
 import Link from "next/link";
-
-import { MapPin } from "lucide-react";
+import Image from "next/image";
+import { Clock, MapPin } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/api";
-import { OptimizedImage } from "@/components/ui/OptimizedImage";
-import { cn } from "@/lib/utils";
 
 interface TripCardProps {
   trip: Trip;
-  index: number;
+  index?: number;
   className?: string;
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
   activeMonth?: string;
 }
 
-export default function TripCard({ trip, index, className, onClick, activeMonth }: TripCardProps) {
-  // Original Price Formatter (Calculated from variants or defaults)
-  const getOriginalPrice = () => {
-    let variantsList: any[] = [];
-    if (trip.variants) {
-      try {
-        variantsList = typeof trip.variants === 'string'
-          ? JSON.parse(trip.variants)
-          : trip.variants;
-      } catch (e) {}
-    }
+export default function TripCard({ trip, index = 0, className, onClick }: TripCardProps) {
+  const [currentImgIdx, setCurrentImgIdx] = useState(0);
 
-    if (Array.isArray(variantsList) && variantsList.length > 0) {
-      const firstVariant = variantsList[0];
-      if (firstVariant && (firstVariant.originalPrice || firstVariant.discountedPrice)) {
-        return firstVariant.originalPrice || (firstVariant.discountedPrice + 3000);
+  const price = Number(trip.price || 12999);
+  const heroImg =
+    normalizeImageUrl(trip.heroImage) ||
+    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80";
+
+  // Build unique images list for auto photo carousel per card
+  const imagesList = (() => {
+    const list: string[] = [heroImg];
+    if (trip.images && Array.isArray(trip.images)) {
+      trip.images.forEach((img) => {
+        const norm = normalizeImageUrl(img);
+        if (norm && !list.includes(norm)) list.push(norm);
+      });
+    }
+    if (list.length === 1) {
+      const cardKey = index % 4;
+      if (cardKey === 0) {
+        list.push("https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&q=80");
+        list.push("https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80");
+      } else if (cardKey === 1) {
+        list.push("https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&q=80");
+        list.push("https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=80");
+      } else if (cardKey === 2) {
+        list.push("https://images.unsplash.com/photo-1605640840605-14ac1855827b?w=800&q=80");
+        list.push("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80");
+      } else {
+        list.push("https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80");
+        list.push("https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800&q=80");
+      }
+    }
+    return list;
+  })();
+
+  // Staggered synchronized auto-slide effect across trip cards
+  useEffect(() => {
+    if (imagesList.length <= 1) return;
+
+    const intervalMs = 3500;
+    const updateSync = () => {
+      const step = Math.floor(Date.now() / intervalMs);
+      setCurrentImgIdx((step + index) % imagesList.length);
+    };
+
+    updateSync();
+
+    const delayToNextBoundary = intervalMs - (Date.now() % intervalMs);
+    let intervalId: ReturnType<typeof setInterval>;
+
+    const timeoutId = setTimeout(() => {
+      updateSync();
+      intervalId = setInterval(updateSync, intervalMs);
+    }, delayToNextBoundary);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [imagesList.length]);
+
+  const activePhoto = imagesList[currentImgIdx] || heroImg;
+
+  // Location Badge (e.g., HIMACHAL, LADAKH, UTTARAKHAND, KERALA)
+  const locationBadge = (trip.location || "HIMACHAL").toUpperCase();
+
+  // Compact Duration formatting (e.g. "9 D / 8 N")
+  const durationText = (() => {
+    if (!trip.duration) return "9 D / 8 N";
+    let text = trip.duration;
+    if (!text.includes("Night") && !text.includes("night") && !text.includes("N") && !text.includes("n")) {
+      const daysMatch = text.match(/(\d+)\s*Days?/i);
+      if (daysMatch) {
+        const days = parseInt(daysMatch[1], 10);
+        const nights = Math.max(1, days - 1);
+        text = `${days} D / ${nights} N`;
+      }
+    } else {
+      text = text
+        .replace(/Days?/gi, "D")
+        .replace(/Nights?/gi, "N")
+        .replace(/(\d+)\s*D/gi, "$1 D")
+        .replace(/(\d+)\s*N/gi, "$1 N")
+        .replace(/\s*\/\s*/g, " / ");
+    }
+    return text;
+  })();
+
+  // Compact Ex-city location (Always formatted as "Ex. Chandigarh", "Ex. Cochin", "Ex. Ahmedabad", "Ex. Delhi")
+  const exCity = (() => {
+    let raw = "";
+    if (trip.departureCity) {
+      raw = trip.departureCity;
+    } else if (trip.variants && trip.variants.length > 0 && trip.variants[0].location) {
+      raw = trip.variants[0].location;
+    } else {
+      const titleLower = (trip.title || "").toLowerCase();
+      const locLower = (trip.location || "").toLowerCase();
+      if (locLower.includes("ladakh") || titleLower.includes("ladakh") || titleLower.includes("spiti")) {
+        raw = "Delhi";
+      } else if (locLower.includes("uttarakhand") || titleLower.includes("kedarkantha")) {
+        raw = "Dehradun";
+      } else if (locLower.includes("kerala")) {
+        raw = "Cochin";
+      } else {
+        raw = "Ahmedabad";
       }
     }
 
-    return (trip.price || 12000) + 3000;
-  };
+    // Strip " to X", " To X", parenthetical details, and secondary cities
+    let clean = raw
+      .replace(/\s+to\s+.*$/i, "")
+      .replace(/\s*\(.*?\)/g, "")
+      .split("/")[0]
+      .split("&")[0]
+      .split(",")[0]
+      .trim();
 
-  // Route Summary Formatter (Extracts key stops for subtitle)
-  const getRouteSummary = () => {
-    let routeList: any[] = [];
-    if (trip.route) {
-      try {
-        routeList = typeof trip.route === 'string'
-          ? JSON.parse(trip.route)
-          : trip.route;
-      } catch (e) {}
-    }
+    return `Ex. ${clean}`;
+  })();
 
-    const routeLabels = routeList.map(r => typeof r === 'string' ? r : r.label).filter(Boolean);
-    if (routeLabels.length > 1) {
-      return `with ${routeLabels.slice(0, 2).join(" & ")}`;
-    }
-    return trip.location ? `Expedition in ${trip.location}` : trip.description || "";
-  };
-
-  // Split title helper for orange & navyblue color theme uniformity
-  const renderFormattedTitle = (rawTitle: string) => {
-    return <span className="text-[#082B5B]">{rawTitle.trim()}</span>;
-  };
-
-  // Duration Formatter to match "X Days Y Nights" style
-  const getFormattedDuration = (dur: string) => {
-    if (!dur) return "";
-    const nightsMatch = dur.match(/(\d+)\s*(?:Nights|N)/i);
-    const daysMatch = dur.match(/(\d+)\s*(?:Days|D)/i);
-    if (nightsMatch && daysMatch) {
-      const nights = parseInt(nightsMatch[1]);
-      const days = parseInt(daysMatch[1]);
-      return `${days} Days ${nights} Nights`;
-    }
-    return dur;
-  };
-
-  const originalPrice = getOriginalPrice();
-  const discount = originalPrice - (trip.price || 0);
+  const title = trip.title || "Manali Kasol Amritsar Backpacking Trip";
+  const tagline = trip.description || "Get ready for an unforgettable...";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      viewport={{ once: true }}
-      className={cn(
-        "avian-card group relative bg-white rounded-[24px] overflow-hidden border border-zinc-100/50 shadow-md hover:shadow-xl hover:scale-[1.015] active:scale-[0.985] cursor-pointer transition-all duration-300 w-full h-[345px] md:h-[375px] lg:h-[405px] max-w-[var(--card-width)] mx-auto flex flex-col p-2.5 md:p-3",
-        className
-      )}
-    >
-      {/* Invisible Link Overlay - Ensures 100% clickability */}
-      <Link 
-        href={`/trips/${trip.slug}`} 
-        prefetch={false}
-        className="absolute inset-0 z-30 cursor-pointer"
-        aria-label={`View ${trip.title}`}
-        onClick={onClick}
-      />
+    <div className={`trip-card group relative flex flex-col w-full hover:-translate-y-1.5 transition-all duration-300 ${className || ""}`}>
 
-      {/* Photo Container (Occupies 63% of the card height, large rounded corners) */}
-      <div className="relative w-full h-[185px] md:h-[205px] lg:h-[225px] rounded-[20px] md:rounded-[24px] overflow-hidden shrink-0 avian-photo-container">
-        <OptimizedImage
-          src={normalizeImageUrl(trip.heroImage) || "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070"}
-          alt={trip.title}
-          width={400}
-          height={250}
-          cloudinaryWidth={800}
-          bunnyVariant="x540gt"
-          sizes="(max-width: 768px) 280px, 400px"
-          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-          style={{
-            filter: "contrast(1.08) saturate(1.1)"
-          }}
+      {/* TOP FLOATING PHOTO CONTAINER WITH RICH DROP SHADOW */}
+      <div
+        className="relative z-20 w-full rounded-[26px] overflow-hidden bg-zinc-100 shadow-[0_16px_36px_rgba(0,0,0,0.22)] group-hover:shadow-[0_20px_44px_rgba(0,0,0,0.28)] transition-shadow duration-300"
+        style={{ aspectRatio: "16/10.5" }}
+      >
+        <Link
+          href={`/trips/${trip.slug}`}
+          className="absolute inset-0 z-10"
+          onClick={onClick}
+          aria-label={`View ${title}`}
+        />
+        <Image
+          src={activePhoto}
+          alt={title}
+          fill
+          className="object-cover group-hover:scale-[1.04] transition-all duration-700 ease-in-out"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
         />
 
-        {/* Carousel Pagination Dots Overlay */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 select-none">
-          {[0, 1, 2, 3, 4].map((dot, dIdx) => (
-            <div 
-              key={dIdx} 
-              className={cn(
-                "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                dIdx === 0 ? "bg-white scale-110 shadow-sm" : "bg-white/50"
-              )}
+        {/* TOP LEFT BADGE */}
+        <div className="absolute top-3 left-3 z-20 pointer-events-none max-w-[85%]">
+          <span className="inline-block bg-[#0a0f1d]/90 text-white font-montserrat font-semibold text-[9px] sm:text-[10px] tracking-wider uppercase px-3 py-1 rounded-full backdrop-blur-sm shadow-sm truncate max-w-full">
+            {locationBadge}
+          </span>
+        </div>
+
+        {/* BOTTOM PAGINATION DOTS */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 pointer-events-none">
+          {imagesList.slice(0, 5).map((_, dotIdx) => (
+            <div
+              key={dotIdx}
+              className={`rounded-full transition-all duration-300 ${
+                dotIdx === currentImgIdx
+                  ? "w-2.5 h-2.5 bg-white shadow-md scale-110"
+                  : "w-1.5 h-1.5 bg-white/60 backdrop-blur-sm"
+              }`}
             />
           ))}
         </div>
-
-        {/* Floating Place/Category Badge on Top-Right */}
-        {(trip.location || trip.category) && (
-          <div 
-            className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded-full shadow-sm flex items-center border border-white/10 select-none"
-            style={{
-              background: "rgba(0, 0, 0, 0.45)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)"
-            }}
-          >
-            <MapPin className="w-3 h-3 text-[#FFA366] mr-1 shrink-0" />
-            <span className="text-white font-bold text-[9px] md:text-[10px] uppercase tracking-wide">
-              {trip.location || trip.category}
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* Content Area (Matched to the Kashmir Tour Package layout) */}
-      <div className="flex-1 flex flex-col pt-2 md:pt-2.5 px-0.5 avian-content-container">
-        {/* Duration */}
-        <span className="text-xs md:text-sm text-zinc-400 font-medium mb-0.5 block">
-          {getFormattedDuration(trip.duration)}
-        </span>
-
-        {/* Title */}
-        <h3 className="font-extrabold text-[14px] md:text-[16px] text-[#082B5B] leading-tight tracking-tight line-clamp-1 mb-0.5 select-none">
-          {renderFormattedTitle(trip.title)}
-        </h3>
-
-        {/* Route Summary */}
-        <p className="text-[13px] md:text-[14px] text-zinc-500 font-medium line-clamp-1 mb-1.5">
-          {getRouteSummary()}
-        </p>
-
-        {/* Divider */}
-        <div className="h-px bg-zinc-200/80 my-2 w-full shrink-0" />
-
-        {/* Save Badge (Positioned above price, matching pill outline design) */}
-        {discount > 0 && (
-          <div className="flex items-center gap-1 border border-[#22C55E] text-[#22C55E] bg-[#E8F8F0]/30 px-2.5 py-0.5 rounded-full text-[10px] md:text-[11px] font-extrabold w-fit mb-2">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-[#22C55E] shrink-0">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <span>Save {Number(discount).toLocaleString('en-IN')}</span>
+      {/* LOWER WHITE CARD CONTENT CONTAINER */}
+      <div className="relative z-10 -mt-4 pt-6 pb-4 px-4 sm:px-5 mx-3 sm:mx-4 bg-white rounded-b-[26px] rounded-t-[16px] border border-zinc-200/80 shadow-[0_6px_24px_rgba(0,0,0,0.05)] flex flex-col flex-1 font-montserrat justify-between">
+        <div>
+          {/* META ROW: DURATION & EX-CITY */}
+          <div className="flex items-center justify-between font-montserrat text-[12px] sm:text-[13px] font-normal text-[#666666] mb-2.5 gap-2 pt-0.5">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Clock className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              <span className="truncate">{durationText}</span>
+            </div>
+            <div className="flex items-center gap-1.5 min-w-0 ml-2">
+              <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              <span className="truncate">{exCity}</span>
+            </div>
           </div>
-        )}
 
-        {/* Pricing Row (Vibrant Orange Price + Original Strikethrough) */}
-        <div className="flex items-baseline gap-2 mt-auto pb-0.5 pl-0.5 select-none w-full shrink-0">
-          <span className="text-[#FF5B00] text-base md:text-lg lg:text-xl font-extrabold">
-            ₹{Number(trip.price).toLocaleString('en-IN')}
-          </span>
-          {discount > 0 && (
-            <span className="text-zinc-400 text-xs md:text-sm line-through font-normal">
-              ₹{originalPrice.toLocaleString('en-IN')}
+          {/* TITLE — MONTSERRAT EXTRA BOLD (800), 18-20PX, NAVY BLUE #0B1528 */}
+          <div className="min-h-[50px] flex items-center mb-1">
+            <h3 
+              className="trip-card-title font-montserrat text-[18px] sm:text-[20px] leading-[1.3] line-clamp-2 group-hover:text-[#D4541A] transition-colors"
+              style={{ fontWeight: 800, color: '#0B1528' }}
+            >
+              {title}
+            </h3>
+          </div>
+
+          {/* TAGLINE — MONTSERRAT REGULAR (400), 14PX, #666666 */}
+          <p className="font-montserrat text-[#666666] text-[13px] sm:text-[14px] font-normal line-clamp-1 mb-3.5">
+            {tagline}
+          </p>
+        </div>
+
+        <div className="mt-auto">
+          {/* PRICE ROW — MONTSERRAT BOLD 700, 16-18PX, #D4541A */}
+          <div className="flex items-baseline gap-1.5 mb-2.5">
+            <span className="font-montserrat text-[#D4541A] font-normal text-xs sm:text-sm">From</span>
+            <span className="font-montserrat text-[#D4541A] font-bold text-[16px] sm:text-[18px] leading-none">
+              ₹{price.toLocaleString("en-IN")}
             </span>
-          )}
+          </div>
+
+          {/* VIEW TRIP LINK */}
+          <Link
+            href={`/trips/${trip.slug}`}
+            onClick={onClick}
+            className="inline-flex items-center gap-1.5 font-montserrat font-bold text-xs sm:text-[14px] text-[#1B2A4A] group-hover:text-[#D4541A] transition-colors"
+          >
+            <span>View Trip</span>
+            <span className="text-[#D4541A] font-bold text-sm group-hover:translate-x-1 transition-transform">
+              →
+            </span>
+          </Link>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

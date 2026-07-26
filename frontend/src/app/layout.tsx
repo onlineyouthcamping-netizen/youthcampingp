@@ -1,9 +1,16 @@
 import { Suspense } from "react";
-import { Montserrat } from "next/font/google";
+import { Montserrat, Playfair_Display, Caveat } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import dynamic from "next/dynamic";
-import { Metadata } from "next";
+import { Metadata, Viewport } from "next";
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
 import ScrollToTop from "@/components/ScrollToTop";
 
 const Footer = dynamic(() => import("@/components/Footer"), {
@@ -33,6 +40,19 @@ const montserrat = Montserrat({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-montserrat",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  weight: ["400", "600", "700"],
+  variable: "--font-playfair",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-caveat",
 });
 
 export const revalidate = 600;
@@ -101,8 +121,8 @@ export default async function RootLayout({
   else console.error("Layout theme fetch error:", siteConfigResults[1].reason);
 
   return (
-    <html lang="en" className={`${montserrat.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-montserrat relative">
+    <html lang="en" className={`${montserrat.variable} ${playfair.variable} ${caveat.variable} h-full antialiased`}>
+      <body className="min-h-full w-full flex flex-col font-montserrat relative">
         <DynamicThemeProvider initialTheme={theme} initialSettings={settings}>
           <Suspense fallback={null}>
             <ScrollToTop />
@@ -111,7 +131,7 @@ export default async function RootLayout({
             logoUrl={settings?.navbar?.logoUrl} 
             navLinks={settings?.navbar?.links} 
           />
-          <main className="flex-grow pt-[var(--navbar-height)] md:pt-0">{children}</main>
+          <main className="flex-grow w-full min-w-0 pt-[var(--navbar-height)] md:pt-0">{children}</main>
           <Footer 
             logoUrl={settings?.navbar?.logoUrl || settings?.footer?.logoUrl} 
             address={settings?.footer?.address} 

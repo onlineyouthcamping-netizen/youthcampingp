@@ -2,86 +2,73 @@ import Link from "next/link";
 export const revalidate = 30;
 
 import { fetchPublicBlogs, normalizeImageUrl } from "@/lib/api";
-import { BookOpen, Sparkles, Filter, ChevronRight, ChevronLeft } from "lucide-react";
+import { BookOpen, ChevronRight, ArrowLeft, Clock, User } from "lucide-react";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 
-export default async function BlogsPage() {
-  let blogs = [];
+export default async function StoriesPage() {
+  let blogs: any[] = [];
   try {
     blogs = await fetchPublicBlogs();
-    blogs = blogs.filter(b => b.status === 'published');
+    blogs = blogs.filter((b: any) => b.status === 'published');
   } catch (error) {
     console.error("Error fetching blogs:", error);
   }
 
   return (
-    <div className="bg-white min-h-screen">
-      {/* Search/Header Hero */}
-      <section className="pt-40 pb-20 px-6 bg-zinc-50 border-b border-zinc-100">
+    <div className="bg-white min-h-screen font-montserrat pb-20">
+      {/* Top Dark Banner */}
+      <section className="bg-[#0B1528] text-white pt-28 pb-16 px-5 sm:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
-            <div className="max-w-3xl">
-              <Link href="/" className="inline-flex items-center gap-2 text-zinc-400 hover:text-primary-orange mb-8 font-bold text-xs capitalize tracking-widest transition-colors">
-                <ChevronLeft className="w-4 h-4" /> Back to Home
-              </Link>
-              <div className="flex items-center gap-3 text-primary-orange mb-6">
-                <BookOpen className="w-6 h-6" />
-                <span className="font-bold tracking-[0.3em] capitalize text-xs">The Travel Journal</span>
-              </div>
-              <h1 className="text-6xl md:text-8xl font-semibold tracking-tighter text-navy mb-8 leading-[0.9]">
-                WATCH & <br />
-                <span className="text-primary-orange">Read</span>
-              </h1>
-              <p className="text-zinc-500 text-xl font-medium max-w-xl leading-relaxed">
-                Dive into our collection of travel stories, destination guides, and visual journeys. Find inspiration for your next adventure.
-              </p>
-            </div>
-            
-            {/* Quick Filters Placeholder */}
-            <div className="flex flex-wrap gap-4">
-              <button className="px-8 py-4 bg-white border border-zinc-200 rounded-full font-bold text-sm flex items-center gap-3 hover:bg-navy hover:text-white hover:border-navy transition-all shadow-sm">
-                <Filter className="w-4 h-4" />
-                Filter by Topic
-              </button>
-              <button className="px-8 py-4 bg-navy text-white rounded-full font-bold text-sm flex items-center gap-3 shadow-xl hover:bg-primary-orange transition-all">
-                <Sparkles className="w-4 h-4" />
-                Latest Stories
-              </button>
-            </div>
-          </div>
+          <Link href="/" className="inline-flex items-center gap-2 text-zinc-400 hover:text-[#D4541A] font-bold text-xs uppercase tracking-wider transition-colors mb-8">
+            <ArrowLeft className="w-4 h-4" /> Back to Home
+          </Link>
+          <span className="bg-white/10 text-[#D4541A] font-extrabold tracking-widest uppercase text-xs px-3.5 py-1.5 rounded-full inline-flex items-center gap-1.5 mb-4">
+            <BookOpen className="w-3.5 h-3.5" /> TRAVEL STORIES & GUIDES
+          </span>
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-white tracking-tight uppercase leading-none mt-3">
+            STORIES &
+          </h1>
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-[#D4541A] tracking-tight uppercase leading-none mt-1">
+            ADVENTURES
+          </h1>
+          <div className="w-16 h-1.5 bg-[#D4541A] rounded-full my-4" />
+          <p className="text-zinc-300 font-semibold text-sm sm:text-base max-w-xl leading-relaxed">
+            Real travel diaries, packing guides, and route breakdowns from our community of explorers.
+          </p>
         </div>
       </section>
 
       {/* Blogs Grid */}
-      <section className="py-24 px-6">
+      <section className="py-12 px-5 sm:px-8">
         <div className="max-w-7xl mx-auto">
           {blogs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {blogs.map((art, i) => (
                 <Link href={`/blogs/${art.slug}`} key={art._id || i} className="group">
-                  <div className="bg-white rounded-[24px] overflow-hidden shadow-sm hover:shadow-xl transition-all border border-zinc-100 h-full flex flex-col">
-                    <div className="relative aspect-[4/3] overflow-hidden">
+                  <div className="bg-white rounded-[24px] overflow-hidden border border-zinc-200/90 shadow-2xs hover:border-[#D4541A] hover:shadow-md transition-all flex flex-col h-full">
+                    <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100">
                       <OptimizedImage 
-                        src={normalizeImageUrl(art.image) || "https://images.unsplash.com/photo-1597037750734-450f6f406560?q=80&w=2070"} 
-                        alt={art.title} className="object-cover transition-transform duration-700 group-hover:scale-110" 
+                        src={normalizeImageUrl(art.image) || "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200"} 
+                        alt={art.title} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                     </div>
-                    <div className="p-8 flex flex-col flex-grow">
-                      <h3 className="text-xl font-bold text-navy mb-6 line-clamp-2 leading-snug tracking-tighter group-hover:text-primary-orange transition-colors">
+                    <div className="p-5 flex flex-col flex-grow">
+                      <h3 className="text-sm sm:text-base font-extrabold text-[#0B1528] mb-3 line-clamp-2 leading-snug group-hover:text-[#D4541A] transition-colors font-montserrat">
                         {art.title}
                       </h3>
                       
-                      <div className="mt-auto pt-6 border-t border-zinc-50 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary-orange/10 flex items-center justify-center font-bold text-[10px] text-primary-orange border border-primary-orange/20">
-                            {art.author ? art.author[0] : 'Y'}
+                      <div className="mt-auto pt-3 border-t border-zinc-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center font-bold text-[10px] text-[#D4541A] border border-orange-100">
+                            {art.author ? art.author[0].toUpperCase() : 'YC'}
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-navy">{art.author || 'YouthCamping'}</p>
-                            <p className="text-[10px] text-zinc-400 font-bold tracking-widest">{art.readTime || '5 min read'}</p>
+                            <p className="text-[11px] font-bold text-[#0B1528] font-montserrat">{art.author || 'YouthCamping'}</p>
+                            <p className="text-[10px] text-zinc-400 font-bold font-montserrat">{art.readTime || '5 min read'}</p>
                           </div>
                         </div>
-                        <div className="w-8 h-8 rounded-full bg-zinc-50 flex items-center justify-center group-hover:bg-primary-orange group-hover:text-white transition-colors">
+                        <div className="w-8 h-8 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center group-hover:bg-[#D4541A] group-hover:border-[#D4541A] group-hover:text-white transition-all text-zinc-400">
                           <ChevronRight className="w-4 h-4" />
                         </div>
                       </div>
@@ -91,19 +78,18 @@ export default async function BlogsPage() {
               ))}
             </div>
           ) : (
-            <div className="py-40 text-center bg-zinc-50 rounded-[60px] border-2 border-dashed border-zinc-200">
-              <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-8">
-                <BookOpen className="w-10 h-10 text-zinc-300" />
+            <div className="py-32 text-center bg-[#F8F9FA] rounded-[32px] border border-zinc-200/80">
+              <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <BookOpen className="w-8 h-8 text-[#D4541A]" />
               </div>
-              <h2 className="text-3xl font-bold capitalize text-navy mb-4">No stories published yet</h2>
-              <p className="text-zinc-400 font-bold max-w-sm mx-auto capitalize tracking-widest text-xs">
-                Check back soon for new travel guides and stories!
+              <h2 className="text-2xl font-black text-[#0B1528] font-montserrat uppercase tracking-tight mb-2">No Stories Published Yet</h2>
+              <p className="text-zinc-400 font-semibold text-xs font-montserrat">
+                Check back soon for new travel guides, packing lists, and route breakdowns!
               </p>
             </div>
           )}
         </div>
       </section>
-      
     </div>
   );
 }

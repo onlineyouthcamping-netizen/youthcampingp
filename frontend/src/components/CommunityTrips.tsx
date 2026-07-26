@@ -1,330 +1,594 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Clock, MapPin, ChevronRight, ChevronLeft } from "lucide-react";
-import Link from "next/link";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Trip } from "@/types";
-import { normalizeImageUrl } from "@/lib/api";
-import { OptimizedImage } from "@/components/ui/OptimizedImage";
-import { cn } from "@/lib/utils";
-import { WavyEdges } from "./ui/WavyEdges";
-import { useTheme } from "@/components/DynamicThemeProvider";
-import { useIsMobile } from "@/hooks/useIsMobile";
-import TripCard from "./TripCard";
+import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { parseTripDate } from "@/lib/parseTripDate";
+import TripCard from "@/components/TripCard";
+import { motion, AnimatePresence } from "framer-motion";
+
+const ROTATING_WORDS = [
+  "Curious",
+  "Adventurous",
+  "Wanderlust-Struck",
+  "Colleagues",
+  "Strangers",
+  "Restless",
+];
+
+const MONTHS = [
+  { label: "All", month: -1, year: 0 },
+  { label: "May", month: 4,  year: 2026 },
+  { label: "Jun", month: 5,  year: 2026 },
+  { label: "Jul", month: 6,  year: 2026 },
+  { label: "Aug", month: 7,  year: 2026 },
+  { label: "Sep", month: 8,  year: 2026 },
+  { label: "Oct", month: 9,  year: 2026 },
+  { label: "Nov", month: 10, year: 2026 },
+  { label: "Dec", month: 11, year: 2026 },
+  { label: "Jan", month: 0,  year: 2027 },
+  { label: "Feb", month: 1,  year: 2027 },
+  { label: "Mar", month: 2,  year: 2027 },
+  { label: "Apr", month: 3,  year: 2027 },
+];
+
+const MOCK_TRIPS: Trip[] = [
+  {
+    id: 'mock-1',
+    title: 'Manali Kasol Amritsar',
+    slug: 'manali-kasol-amritsar',
+    description: 'Hills. Vibes. Culture.',
+    heroImage: 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&q=80',
+    price: 12999,
+    location: 'Himachal Pradesh & Punjab',
+    duration: '9 Days / 8 Nights',
+    departureCity: 'Ahmedabad',
+    category: 'Backpacking',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-08-01', capacity: 20, bookedCount: 8 }],
+    variants: [{ location: 'Ahmedabad', duration: '9 Days / 8 Nights', originalPrice: 15999, discountedPrice: 12999, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'mock-2',
+    title: 'Leh Ladakh Road Trip',
+    slug: 'leh-ladakh-road-trip',
+    description: 'High Roads. Higher Vibes.',
+    heroImage: 'https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80',
+    price: 24999,
+    location: 'Ladakh',
+    duration: '11 Days / 10 Nights',
+    departureCity: 'Delhi',
+    category: 'Road Trip',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-08-10', capacity: 15, bookedCount: 10 }],
+    variants: [{ location: 'Delhi', duration: '11 Days / 10 Nights', originalPrice: 28999, discountedPrice: 24999, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'mock-3',
+    title: 'Kedarkantha Trek',
+    slug: 'kedarkantha-trek',
+    description: 'Summit Dreams.',
+    heroImage: 'https://images.unsplash.com/photo-1605640840605-14ac1855827b?w=800&q=80',
+    price: 6499,
+    location: 'Uttarakhand',
+    duration: '6 Days / 5 Nights',
+    departureCity: 'Dehradun',
+    category: 'Adventure',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-08-05', capacity: 15, bookedCount: 6 }],
+    variants: [{ location: 'Dehradun', duration: '6 Days / 5 Nights', originalPrice: 8999, discountedPrice: 6499, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'mock-4',
+    title: 'Kerala Escape',
+    slug: 'kerala-escape',
+    description: 'Backwaters. Beaches. Bliss.',
+    heroImage: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&q=80',
+    price: 14499,
+    location: 'Kerala',
+    duration: '6 Days / 5 Nights',
+    departureCity: 'Kochi',
+    category: 'Backpacking',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-08-18', capacity: 25, bookedCount: 10 }],
+    variants: [{ location: 'Kochi', duration: '6 Days / 5 Nights', originalPrice: 17999, discountedPrice: 14499, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'mock-5',
+    title: 'Winter Spiti Road Trip',
+    slug: 'winter-spiti-road-trip',
+    description: 'Snow Valley. Frozen Lakes.',
+    heroImage: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80',
+    price: 19999,
+    location: 'Spiti Valley, Himachal',
+    duration: '10 Days / 9 Nights',
+    departureCity: 'Chandigarh',
+    category: 'Expedition',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-10-02', capacity: 18, bookedCount: 5 }],
+    variants: [{ location: 'Chandigarh', duration: '10 Days / 9 Nights', originalPrice: 22999, discountedPrice: 19999, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'mock-6',
+    title: 'Bali Tropical Adventure',
+    slug: 'bali-tropical-adventure',
+    description: 'Waterfalls. Rice Terraces. Island Vibe.',
+    heroImage: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80',
+    price: 44999,
+    location: 'Bali, Indonesia',
+    duration: '7 Days / 6 Nights',
+    departureCity: 'Mumbai',
+    category: 'International',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-09-12', capacity: 16, bookedCount: 9 }],
+    variants: [{ location: 'Mumbai', duration: '7 Days / 6 Nights', originalPrice: 49999, discountedPrice: 44999, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'mock-7',
+    title: 'Meghalaya Waterfalls Trek',
+    slug: 'meghalaya-waterfalls-trek',
+    description: 'Living Root Bridges & Crystal Rivers.',
+    heroImage: 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800&q=80',
+    price: 18999,
+    location: 'Meghalaya',
+    duration: '6 Days / 5 Nights',
+    departureCity: 'Guwahati',
+    category: 'North East',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-09-05', capacity: 20, bookedCount: 7 }],
+    variants: [{ location: 'Guwahati', duration: '6 Days / 5 Nights', originalPrice: 21999, discountedPrice: 18999, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'mock-8',
+    title: 'Gokarna Beach & Cliff Trek',
+    slug: 'gokarna-beach-trek',
+    description: 'Golden Sands & Sunset Swings.',
+    heroImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
+    price: 7999,
+    location: 'Karnataka',
+    duration: '4 Days / 3 Nights',
+    departureCity: 'Bengaluru',
+    category: 'Beach Trek',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-08-15', capacity: 30, bookedCount: 14 }],
+    variants: [{ location: 'Bengaluru', duration: '4 Days / 3 Nights', originalPrice: 9999, discountedPrice: 7999, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'mock-9',
+    title: 'Udaipur Royal Lakes',
+    slug: 'udaipur-royal-lakes',
+    description: 'Heritage Palaces & Lake Sunsets.',
+    heroImage: 'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=80',
+    price: 9999,
+    location: 'Rajasthan',
+    duration: '4 Days / 3 Nights',
+    departureCity: 'Ahmedabad',
+    category: 'Heritage',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-09-20', capacity: 20, bookedCount: 11 }],
+    variants: [{ location: 'Ahmedabad', duration: '4 Days / 3 Nights', originalPrice: 12999, discountedPrice: 9999, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'mock-10',
+    title: 'Kasol Kheerganga Camping',
+    slug: 'kasol-kheerganga-camping',
+    description: 'Hot Springs & Starry Nights.',
+    heroImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80',
+    price: 5999,
+    location: 'Parvati Valley, Himachal',
+    duration: '5 Days / 4 Nights',
+    departureCity: 'Delhi',
+    category: 'Camping',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-08-22', capacity: 24, bookedCount: 15 }],
+    variants: [{ location: 'Delhi', duration: '5 Days / 4 Nights', originalPrice: 7999, discountedPrice: 5999, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'mock-11',
+    title: 'Spiti Valley Circuit',
+    slug: 'spiti-valley-circuit',
+    description: 'Monasteries & High Mountain Passes.',
+    heroImage: 'https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=800&q=80',
+    price: 21999,
+    location: 'Spiti Valley',
+    duration: '9 Days / 8 Nights',
+    departureCity: 'Shimla',
+    category: 'Road Trip',
+    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    availableDates: [{ date: '2026-09-01', capacity: 16, bookedCount: 8 }],
+    variants: [{ location: 'Shimla', duration: '9 Days / 8 Nights', originalPrice: 25999, discountedPrice: 21999, image: '' }],
+    travelOptions: [], roomOptions: [], addons: [],
+    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  },
+];
+
+function monthMatch(trip: Trip, m: { month: number; year: number }): boolean {
+  if (m.month === -1) return true;
+  if (!trip.availableDates?.length) return true;
+  const dates = typeof trip.availableDates === 'string'
+    ? (() => { try { return JSON.parse(trip.availableDates as any); } catch (_) { return []; } })()
+    : trip.availableDates;
+  return (dates as any[]).some((d: any) => {
+    const p = parseTripDate(d.date || d);
+    return p ? p.getMonth() === m.month && p.getFullYear() === m.year : false;
+  });
+}
+
+function SkeletonCard() {
+  return (
+    <div className="rounded-[24px] overflow-hidden bg-white p-3 shadow-sm border border-zinc-100">
+      <div className="relative w-full rounded-[20px] overflow-hidden bg-gradient-to-r from-zinc-200 via-zinc-100 to-zinc-200 animate-pulse" style={{ aspectRatio: '16/10.5' }} />
+      <div className="p-4 space-y-3">
+        <div className="h-3 bg-zinc-200 rounded-full w-1/3 animate-pulse" />
+        <div className="h-4 bg-zinc-200 rounded-full w-5/6 animate-pulse" />
+        <div className="h-3 bg-zinc-200 rounded-full w-4/5 animate-pulse" />
+        <div className="h-6 bg-zinc-200 rounded-full w-1/3 mt-3 animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
 interface CommunityTripsProps {
-  trips: Trip[];
+  trips?: Trip[];
   title?: string;
-  titleSize?: string | number;
-  titleWeight?: string | number;
-  topLabel?: string;
-  titleStyle?: 'standard' | 'boxed';
-  subtitle?: string;
-  months?: string[];
-  tripIds?: string[];
-  wavyEdges?: boolean;
-  topColor?: string;
-  bottomColor?: string;
+  backgroundImage?: string;
+  tagline?: string;
+  headline?: string;
+  subheadline?: string;
+  [key: string]: any;
 }
 
 export default function CommunityTrips({ 
-  trips, 
-  title = "Upcoming Community Trips",
-  titleSize,
-  titleWeight,
-  topLabel,
-  titleStyle = 'standard',
-  subtitle,
-  months: propMonths,
-  tripIds = [],
-  wavyEdges = false,
-  topColor = "#ffffff",
-  bottomColor = "#ffffff",
+  trips: propTrips = [],
+  backgroundImage,
+  backgroundImages,
+  tagline = "• EXPLORE. CONNECT. BELONG.",
+  headline = "Trips for the",
+  headlinePrefix,
+  strikethroughWord = "Ordinary",
+  rotatingWords,
+  subheadline = "10,000+ travelers. Trusted since 2019. Government registered.",
+  fadeColor,
+  fadeOpacity,
+  fadeDirection,
+  overlayTheme,
+  overlayOpacity,
+  overlayDirection,
+  fontSize = "medium",
+  fontFamily = "montserrat",
+  accentColor = "#D4541A",
+  heroHeight = "medium",
+  paddingTop = "32",
+  paddingBottom = "32"
 }: CommunityTripsProps) {
-  const { theme } = useTheme();
-  const prefersReducedMotion = useReducedMotion();
-  const isMobile = useIsMobile();
+  const [activeMonth, setActiveMonth] = useState(0); // "All"
+  const [wordIdx, setWordIdx] = useState(0);
+  const [bgIdx, setBgIdx] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
+  const tripCardsScrollRef = useRef<HTMLDivElement>(null);
 
-  // Filter trips by IDs first if provided
-  const baseTrips = tripIds && tripIds.length > 0 
-    ? trips.filter(t => tripIds.includes(t.id))
-    : trips;
+  const scrollTripCards = (dir: 'l' | 'r') => {
+    tripCardsScrollRef.current?.scrollBy({ left: dir === 'l' ? -350 : 350, behavior: 'smooth' });
+  };
 
-  // Generate dynamic months if none provided
-  const dynamicMonths = Array.from(new Set(baseTrips.flatMap(t => {
-    if (!t.availableDates) return [];
-    try {
-      const dates = typeof t.availableDates === 'string' ? JSON.parse(t.availableDates) : t.availableDates;
-      return (dates || []).map((d: any) => {
-        const dateStr = d.date || d;
-        const date = parseTripDate(dateStr);
-        if (!date) {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`Invalid trip date format for trip: ${t.id}, date: ${dateStr}`);
-          }
-          return null;
-        }
-        const mName = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-        const mYear = date.toLocaleString('en-US', { year: '2-digit' });
-        return `${mName} '${mYear}`;
-      }).filter(Boolean) as string[];
-    } catch (e) { return []; }
-  }))).sort((a, b) => {
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-    const [ma, yaWithApostrophe] = a.split(" '");
-    const [mb, ybWithApostrophe] = b.split(" '");
-    if (yaWithApostrophe !== ybWithApostrophe) return yaWithApostrophe.localeCompare(ybWithApostrophe);
-    return months.indexOf(ma) - months.indexOf(mb);
-  });
+  // Parse multiple photos or single fallback
+  const bgPhotosList: string[] = Array.isArray(backgroundImages) && backgroundImages.length > 0
+    ? backgroundImages
+    : backgroundImage
+    ? [backgroundImage]
+    : ["https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=1800&q=85"];
 
-  const displayMonths = (propMonths && propMonths.length > 0 
-    ? propMonths 
-    : (dynamicMonths.length > 0 ? dynamicMonths : ["APR '26", "MAY '26", "JUN '26", "JUL '26", "AUG '26", "SEP '26", "OCT '26"]))
-    .map(m => {
-      // Enhanced normalization: "JUNE 26" -> "JUN '26", "MAY 2025" -> "MAY '25"
-      let normalized = m.trim().toUpperCase();
-      
-      // Match parts: [Month (3+ letters)] [Optional separator] [Year (2 or 4 digits)]
-      const match = normalized.match(/^([A-Z]{3,10})[\s']*(20\d{2}|\d{2})$/);
-      if (match) {
-        const month = match[1].substring(0, 3);
-        const year = match[2].length === 4 ? match[2].substring(2) : match[2];
-        normalized = `${month} '${year}`;
-      }
-      
-      return normalized;
-    });
+  const currentBgPhoto = bgPhotosList[bgIdx % bgPhotosList.length];
 
-  const [activeMonth, setActiveMonth] = useState(displayMonths[0]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [isMouseDown, setIsMouseDown] = useState(false);
-  const startXRef = useRef(0);
-  const scrollLeftRef = useRef(0);
-  const isDraggingRef = useRef(false);
+  const activeHeadlinePrefix = headlinePrefix || (headline && !headline.toLowerCase().includes("every great story") ? headline : "Trips for the");
+  const activeStrikethroughWord = strikethroughWord || "Ordinary";
+  const activeRotatingWords: string[] = Array.isArray(rotatingWords) && rotatingWords.length > 0
+    ? rotatingWords
+    : ROTATING_WORDS;
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!scrollRef.current) return;
-    setIsMouseDown(true);
-    isDraggingRef.current = false;
-    startXRef.current = e.pageX - scrollRef.current.offsetLeft;
-    scrollLeftRef.current = scrollRef.current.scrollLeft;
+  // Cycle rotating words
+  useEffect(() => {
+    const wordTimer = setInterval(() => {
+      setWordIdx((prev) => (prev + 1) % activeRotatingWords.length);
+    }, 2200);
+    return () => clearInterval(wordTimer);
+  }, [activeRotatingWords.length]);
+
+  // Cycle background photos if multiple provided
+  useEffect(() => {
+    if (bgPhotosList.length <= 1) return;
+    const bgTimer = setInterval(() => {
+      setBgIdx((prev) => (prev + 1) % bgPhotosList.length);
+    }, 6000);
+    return () => clearInterval(bgTimer);
+  }, [bgPhotosList.length]);
+
+  const sourceTrips = propTrips.length >= 11 
+    ? propTrips 
+    : [...propTrips, ...MOCK_TRIPS.slice(propTrips.length)];
+
+  const pickMonth = useCallback((i: number) => {
+    if (i === activeMonth) return;
+    setIsLoading(true);
+    setActiveMonth(i);
+    setTimeout(() => setIsLoading(false), 250);
+  }, [activeMonth]);
+
+  const nudge = (dir: 'l' | 'r') =>
+    barRef.current?.scrollBy({ left: dir === 'l' ? -220 : 220, behavior: 'smooth' });
+
+  const md = MONTHS[activeMonth];
+  const filtered = sourceTrips.filter(t => monthMatch(t, md));
+  const display = filtered.length > 0 ? filtered : sourceTrips;
+
+  // Active Fade Properties (Supports both fadeColor & overlayTheme)
+  const activeFadeColor = fadeColor || overlayTheme || "white";
+  const activeFadeOpacity = fadeOpacity !== undefined ? Number(fadeOpacity) : overlayOpacity !== undefined ? Number(overlayOpacity) : 60;
+  const activeFadeDirection = fadeDirection || overlayDirection || "left-right";
+
+  // Build dynamic overlay background style
+  const getDynamicOverlayStyle = () => {
+    if (activeFadeColor === "none") return { display: "none" };
+    const alpha = Math.max(0.25, activeFadeOpacity / 100);
     
-    // Disable snapping and scroll instantly during active drag
-    scrollRef.current.style.scrollSnapType = 'none';
-    scrollRef.current.style.scrollBehavior = 'auto';
-  };
+    let rgb = "255, 255, 255";
+    if (activeFadeColor === "black" || activeFadeColor === "dark") rgb = "0, 0, 0";
+    if (activeFadeColor === "navy") rgb = "26, 35, 50";
 
-  const handleMouseLeave = () => {
-    if (!isMouseDown) return;
-    setIsMouseDown(false);
-    if (scrollRef.current) {
-      scrollRef.current.style.scrollSnapType = 'x mandatory';
-      scrollRef.current.style.scrollBehavior = 'smooth';
+    if (activeFadeColor === "gradient") {
+      return {
+        background: `linear-gradient(to right, rgba(26, 35, 50, ${alpha}) 0%, rgba(217, 120, 84, ${alpha * 0.5}) 50%, rgba(255, 255, 255, ${alpha * 0.8}) 100%)`,
+      };
+    }
+
+    switch (activeFadeDirection) {
+      case "right-left":
+        return { background: `linear-gradient(to left, rgba(${rgb}, ${Math.min(0.98, alpha * 1.25)}) 0%, rgba(${rgb}, ${alpha * 0.85}) 55%, rgba(${rgb}, ${alpha * 0.35}) 100%)` };
+      case "top-bottom":
+      case "vertical":
+        return { background: `linear-gradient(to bottom, rgba(${rgb}, ${Math.min(0.98, alpha * 1.25)}) 0%, rgba(${rgb}, ${alpha * 0.85}) 55%, rgba(${rgb}, ${alpha * 0.35}) 100%)` };
+      case "bottom-top":
+        return { background: `linear-gradient(to top, rgba(${rgb}, ${Math.min(0.98, alpha * 1.25)}) 0%, rgba(${rgb}, ${alpha * 0.85}) 55%, rgba(${rgb}, ${alpha * 0.35}) 100%)` };
+      case "center-out":
+      case "radial":
+        return { background: `radial-gradient(circle, rgba(${rgb}, ${Math.min(0.98, alpha * 1.25)}) 0%, rgba(${rgb}, ${alpha * 0.45}) 100%)` };
+      default: // left-right / horizontal
+        return { background: `linear-gradient(to right, rgba(${rgb}, ${Math.min(0.98, alpha * 1.25)}) 0%, rgba(${rgb}, ${alpha * 0.85}) 55%, rgba(${rgb}, ${alpha * 0.35}) 100%)` };
     }
   };
 
-  const handleMouseUp = () => {
-    if (!isMouseDown) return;
-    setIsMouseDown(false);
-    if (scrollRef.current) {
-      scrollRef.current.style.scrollSnapType = 'x mandatory';
-      scrollRef.current.style.scrollBehavior = 'smooth';
+  const isWhiteOverlay = activeFadeColor === "white";
+
+  // Dynamic Font Size Class
+  const getFontSizeClass = () => {
+    switch (fontSize) {
+      case "small": return "text-[24px] sm:text-[32px] md:text-[38px]";
+      case "large": return "text-[32px] sm:text-[44px] md:text-[54px]";
+      case "xlarge": return "text-[36px] sm:text-[50px] md:text-[62px]";
+      default: return "text-[28px] sm:text-[38px] md:text-[48px]";
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isMouseDown || !scrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startXRef.current) * 1.5;
-    if (Math.abs(walk) > 5) {
-      isDraggingRef.current = true;
-    }
-    scrollRef.current.scrollLeft = scrollLeftRef.current - walk;
-  };
-
-  const handleLinkClick = (e: React.MouseEvent) => {
-    if (isDraggingRef.current) {
-      e.preventDefault();
+  // Dynamic Font Family Class
+  const getFontFamilyClass = () => {
+    switch (fontFamily) {
+      case "playfair": return "font-serif";
+      case "caveat": return "font-mono";
+      default: return "font-montserrat";
     }
   };
 
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const { scrollLeft, clientWidth } = scrollRef.current;
-      const scrollTo = direction === 'left' ? scrollLeft - clientWidth : scrollLeft + clientWidth;
-      scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+  // Dynamic Hero Height Class
+  const getHeroHeightClass = () => {
+    switch (heroHeight) {
+      case "compact": return "min-h-[320px] sm:min-h-[380px]";
+      case "tall": return "min-h-[480px] sm:min-h-[560px]";
+      default: return "min-h-[380px] sm:min-h-[460px]";
     }
-  };
-
-  const overlayOpacity = theme?.cardOverlayDarkness != null ? theme.cardOverlayDarkness / 100 : 0.5;
-
-  const reduceMotion = prefersReducedMotion || isMobile;
-
-  const displayTitle = (!title || title.trim() === "" || title === "-" || title === "—") 
-    ? "Upcoming Community Trips" 
-    : title;
-
-  const renderFormattedTitle = (rawTitle: string) => {
-    const trimmed = rawTitle.trim();
-    const words = trimmed.split(" ");
-    if (words.length > 1) {
-      const lastWord = words.pop();
-      const rest = words.join(" ");
-      return (
-        <span className="font-extrabold whitespace-nowrap">
-          <span className="text-[#082B5B]">{rest} </span>
-          <span className="text-[#FF5B00]">{lastWord}</span>
-        </span>
-      );
-    }
-    return <span className="text-[#082B5B] font-extrabold whitespace-nowrap">{trimmed}</span>;
   };
 
   return (
-    <div className="overflow-hidden section-wrapper bg-transparent relative max-md:!px-0">
-      {wavyEdges && <WavyEdges color={topColor} position="top" />}
-      
-      <div className="max-w-[1440px] mx-auto relative px-4 md:px-2">
-        {/* Header Section */}
-        <div className="flex flex-col mb-5">
-          {topLabel && (
-            <span className="section-label">
-              {topLabel}
-            </span>
-          )}
-          
-          <div className="flex flex-row items-center justify-between gap-4 mb-2">
-            <div className={cn(
-              "flex-1 min-w-0",
-              titleStyle === 'boxed' && "p-4 md:px-10 md:py-8 rounded-[20px] md:rounded-[32px] border border-slate-200 bg-white shadow-sm max-w-fit"
-            )}>
-              <h2 
-                className="section-heading force-single-line truncate whitespace-nowrap max-md:!text-[3.8vw] max-md:!leading-none"
-                style={{ 
-                  fontSize: isMobile 
-                    ? undefined 
-                    : (titleSize ? (isNaN(Number(titleSize)) ? titleSize : `${titleSize}px`) : undefined),
-                  fontWeight: titleWeight ? titleWeight : undefined
-                }}
-              >
-                {renderFormattedTitle(displayTitle)}
-              </h2>
-            </div>
+    <section className="bg-white py-0 w-full mt-[80px]">
+      {/* CINEMATIC HERO BANNER (STARTS DIRECTLY BELOW FIXED 80PX NAVBAR) */}
+      <div 
+        className={`relative w-full overflow-hidden flex items-center mb-6 border-b border-zinc-100 ${getFontFamilyClass()} ${getHeroHeightClass()}`} 
+        style={{ 
+          minWidth: 0,
+          paddingTop: `${paddingTop}px`,
+          paddingBottom: `${paddingBottom}px`
+        }}
+      >
+        {/* Background Image Carousel */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentBgPhoto}
+              initial={{ opacity: 0, scale: 1 }}
+              animate={{ opacity: 1, scale: 1.06 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                opacity: { duration: 1.2 },
+                scale: { duration: 25, ease: "linear", repeat: Infinity, repeatType: "reverse" }
+              }}
+              className="w-full h-full relative"
+              style={{ willChange: "transform" }}
+            >
+              {currentBgPhoto && (/\.(mp4|webm|mov|ogg)$/i.test(currentBgPhoto) || currentBgPhoto.includes('/video/')) ? (
+                <video
+                  src={currentBgPhoto}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover object-center"
+                />
+              ) : (
+                <Image
+                  src={currentBgPhoto}
+                  alt="Group of young travellers"
+                  fill
+                  className="object-cover object-center"
+                  priority
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
 
-            <div className="flex items-center gap-4 shrink-0">
-              <Link href="/trips" className="flex items-center gap-2 text-navy font-bold hover:text-primary-orange transition-all group">
-                <span className="text-xs md:text-sm capitalize tracking-wide font-bold">View All</span>
-                <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-navy flex items-center justify-center text-white group-hover:bg-primary-orange transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </div>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Month Pills */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar mb-6 pb-1">
-          {displayMonths.map((m) => {
-            const isActive = activeMonth === m;
-            return (
-              <button
-                key={m}
-                onClick={() => setActiveMonth(m)}
-                className={`px-6 py-2.5 rounded-full text-xs md:text-sm font-semibold whitespace-nowrap transition-all border flex items-center gap-2 ${
-                  isActive 
-                  ? "bg-navy text-white border-navy shadow-sm" 
-                  : "bg-white text-zinc-600 border-zinc-200 hover:border-navy/20 hover:bg-zinc-50"
-                }`}
-              >
-                {isActive && (
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth="2.5">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                )}
-                {m}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Trips Slider Wrapper */}
-        <div className="relative group/slider px-0 md:px-4">
-          {/* Left Arrow Button */}
-          <button 
-            onClick={() => scroll('left')}
-            className="hidden md:flex absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-40 w-11 h-11 rounded-full bg-white hover:bg-zinc-50 text-navy items-center justify-center shadow-lg border border-zinc-200/80 pointer-events-auto cursor-pointer transition-all hover:scale-105"
-            aria-label="Scroll Left"
-          >
-            <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
-          </button>
-
-          {/* Scroll List Container */}
+          {/* DYNAMIC CONTROLLABLE OVERLAY */}
           <div 
-            ref={scrollRef}
-            className={cn(
-              "flex gap-4 md:gap-[28px] overflow-x-auto no-scrollbar pb-6 select-none -mx-4 px-4 md:mx-0 md:px-10 scroll-pl-4 md:scroll-pl-0",
-              isMouseDown ? "cursor-grabbing scroll-auto" : "cursor-grab snap-x snap-mandatory scroll-smooth"
-            )}
-            onMouseDown={handleMouseDown}
-            onMouseLeave={handleMouseLeave}
-            onMouseUp={handleMouseUp}
-            onMouseMove={handleMouseMove}
-          >
-            <AnimatePresence mode="wait">
-              {baseTrips.filter(trip => {
-                if (!activeMonth) return true;
-                try {
-                  const dates = typeof trip.availableDates === 'string' ? JSON.parse(trip.availableDates) : trip.availableDates;
-                  return (dates || []).some((d: any) => {
-                    const dateStr = d.date || d;
-                    const date = parseTripDate(dateStr);
-                    if (!date) return false;
-                    const mName = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-                    const mYear = date.toLocaleString('en-US', { year: '2-digit' });
-                    const mStr = `${mName} '${mYear}`;
-                    return mStr === activeMonth;
-                  });
-                } catch (e) { return false; }
-              }).map((trip, i) => {
-                return (
-                  <motion.div
-                    key={trip.id}
-                    initial={reduceMotion ? false : { opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={reduceMotion ? { duration: 0 } : { delay: i * 0.05 }}
-                    className="flex-none snap-start"
-                    style={{ width: 'var(--card-width)' }}
-                  >
-                    <TripCard 
-                      trip={trip} 
-                      index={i} 
-                      onClick={handleLinkClick}
-                      activeMonth={activeMonth}
-                    />
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
+            className="absolute inset-0 z-10 pointer-events-none transition-all duration-300"
+            style={getDynamicOverlayStyle()}
+          />
+        </div>
 
-          {/* Right Arrow Button */}
-          <button 
-            onClick={() => scroll('right')}
-            className="hidden md:flex absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-40 w-11 h-11 rounded-full bg-navy hover:bg-[#1E3A8A] text-white items-center justify-center shadow-lg pointer-events-auto cursor-pointer transition-all hover:scale-105"
-            aria-label="Scroll Right"
-          >
-            <ChevronRight className="w-5 h-5 stroke-[2.5]" />
-          </button>
+        {/* HERO CONTENT */}
+        <div className="relative z-10 max-w-[1440px] w-full mx-auto px-6 sm:px-8 md:px-12">
+          <div className="max-w-[850px]">
+            <p 
+              className="font-extrabold text-xs sm:text-sm tracking-[2.5px] uppercase mb-2 drop-shadow-xs"
+              style={{ color: accentColor }}
+            >
+              {tagline}
+            </p>
+
+            <h2 className={`font-extrabold leading-[1.15] tracking-tight mb-2 ${getFontSizeClass()} ${isWhiteOverlay ? "text-[#0B1528]" : "text-white drop-shadow-md"}`}>
+              <div>{activeHeadlinePrefix}</div>
+              <div className="flex items-center gap-2.5 sm:gap-3.5 flex-nowrap mt-0.5 whitespace-nowrap">
+                <span className={`relative inline-block whitespace-nowrap ${isWhiteOverlay ? "text-[#0B1528]" : "text-white"}`}>
+                  {activeStrikethroughWord}
+                  <svg
+                    className="absolute -left-2 top-1/2 -translate-y-1/2 w-[114%] h-[22px] sm:h-[30px] md:h-[38px] pointer-events-none overflow-visible"
+                    style={{ color: accentColor }}
+                    viewBox="0 0 120 30"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M 3 17 C 35 4, 85 24, 117 11"
+                      stroke="currentColor"
+                      strokeWidth="4.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+
+                <span className="inline-flex relative overflow-hidden h-[34px] sm:h-[48px] md:h-[58px] items-center whitespace-nowrap">
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={activeRotatingWords[wordIdx % activeRotatingWords.length]}
+                      initial={{ y: 35, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -35, opacity: 0 }}
+                      transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1.0] }}
+                      className="font-black inline-block whitespace-nowrap"
+                      style={{ color: accentColor }}
+                    >
+                      {activeRotatingWords[wordIdx % activeRotatingWords.length]}
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
+              </div>
+            </h2>
+
+            <div className="h-[4px] w-14 bg-[#D4541A] rounded-full mb-3" />
+
+            <p className={`text-xs sm:text-sm md:text-base font-semibold leading-relaxed max-w-[580px] ${isWhiteOverlay ? "text-[#4b5563]" : "text-zinc-200"}`}>
+              {subheadline}
+            </p>
+          </div>
         </div>
       </div>
 
-      {wavyEdges && <WavyEdges color={bottomColor} position="bottom" />}
-    </div>
+      {/* Month Selector Pill Bar */}
+      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-4">
+        <div className="max-w-[1440px] mx-auto">
+          <div className="flex items-center gap-2 sm:gap-3 bg-white border border-zinc-200/80 rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-2.5 sm:p-3.5">
+            <button
+              onClick={() => nudge('l')}
+              aria-label="Previous months"
+              className="w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 rounded-full border border-zinc-200 bg-white hover:bg-zinc-100 transition-all flex items-center justify-center text-zinc-700 cursor-pointer shadow-sm active:scale-95"
+            >
+              <ChevronLeft className="w-5 h-5 text-zinc-700" />
+            </button>
+
+            <div ref={barRef} className="no-scrollbar flex gap-2.5 overflow-x-auto py-1 flex-1 scroll-smooth">
+              {MONTHS.map((m, i) => {
+                const on = activeMonth === i;
+                return (
+                  <button
+                    key={m.label}
+                    onClick={() => pickMonth(i)}
+                    className="relative flex-shrink-0 px-5 sm:px-6 py-2 rounded-full font-bold text-xs sm:text-sm transition-colors duration-200 cursor-pointer select-none"
+                  >
+                    {on && (
+                      <motion.div
+                        layoutId="activeCommunityMonthPillBg"
+                        className="absolute inset-0 bg-[#0a0f1d] rounded-full shadow-md z-0"
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      />
+                    )}
+                    <span className={`relative z-10 ${on ? "text-white" : "text-zinc-700 hover:text-zinc-900"}`}>
+                      {m.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => nudge('r')}
+              aria-label="Next months"
+              className="w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 rounded-full border border-zinc-200 bg-white hover:bg-zinc-100 transition-all flex items-center justify-center text-zinc-700 cursor-pointer shadow-sm active:scale-95"
+            >
+              <ChevronRight className="w-4 h-4 text-zinc-700" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Trip Cards Carousel Container */}
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12 relative group pb-8">
+        {/* Scrollable Trips Carousel */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[0, 1, 2, 3].map(i => <SkeletonCard key={i} />)}
+          </div>
+        ) : (
+          <div 
+            ref={tripCardsScrollRef}
+            className="flex gap-6 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory no-scrollbar cursor-grab"
+          >
+            {display.map((t, idx) => (
+              <div key={t.id || idx} className="w-[280px] sm:w-[310px] md:w-[330px] shrink-0 snap-start">
+                <TripCard trip={t} index={idx} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

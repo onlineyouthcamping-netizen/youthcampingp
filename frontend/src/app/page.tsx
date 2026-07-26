@@ -1,10 +1,9 @@
-import Hero from "@/components/Hero";
 import SocialProofBar from "@/components/SocialProofBar";
 import PageRenderer from "@/components/PageRenderer";
 import { fetchHomepageTrips, fetchHomepageReviews, fetchHomepageBlogs, fetchPageBySlug, fetchTheme } from "@/lib/api";
 import dynamicImport from "next/dynamic";
+import { Trip, Review, Blog } from "@/types";
 
-// Centralized Premium Shimmer Loader to prevent Cumulative Layout Shift (CLS)
 function SectionSkeleton({ height = "400px" }: { height?: string }) {
   return (
     <div 
@@ -34,6 +33,9 @@ const RealitySection = dynamicImport(() => import("@/components/RealitySection")
 const Destinations = dynamicImport(() => import("@/components/Destinations"), {
   loading: () => <SectionSkeleton height="600px" />
 });
+const RecentPhotosSection = dynamicImport(() => import("@/components/RecentPhotosSection"), {
+  loading: () => <SectionSkeleton height="380px" />
+});
 const BlogSection = dynamicImport(() => import("@/components/BlogSection"), {
   loading: () => <SectionSkeleton height="550px" />
 });
@@ -49,9 +51,10 @@ const CTASlider = dynamicImport(() => import("@/components/CTASlider"), {
 const CTABanner = dynamicImport(() => import("@/components/CTABanner"), {
   loading: () => <div className="h-[300px] w-full bg-zinc-50 animate-pulse rounded-[32px] border border-slate-100" />
 });
+const PhotoSlider = dynamicImport(() => import("@/components/PhotoSlider"), {
+  loading: () => <SectionSkeleton height="350px" />
+});
 const FloatingSocialBar = dynamicImport(() => import("@/components/FloatingSocialBar"));
-
-import { Trip, Review, Blog } from "@/types";
 
 export const revalidate = 60;
 
@@ -78,11 +81,11 @@ export default async function Home() {
   
   try {
     const results = await Promise.allSettled([
-      fetchHomepageTrips(12),
-      settleWithin(fetchHomepageReviews(8), 6000, []),
-      settleWithin(fetchHomepageBlogs(8), 6000, []),
-      fetchPageBySlug('home'),
-      fetchTheme()
+      settleWithin(fetchHomepageTrips(12), 2500, []),
+      settleWithin(fetchHomepageReviews(8), 2500, []),
+      settleWithin(fetchHomepageBlogs(8), 2500, []),
+      settleWithin(fetchPageBySlug('home'), 2500, null),
+      settleWithin(fetchTheme(), 2500, null)
     ]);
     
     const tripsData = results[0].status === 'fulfilled' ? results[0].value : [];
@@ -100,49 +103,57 @@ export default async function Home() {
     console.error("Error fetching home data:", error);
   }
 
-  // Construct dynamic section map for default template
+  const heroDbSection = page?.sections?.find((s: any) => s.type === 'hero');
+  const heroProps = heroDbSection?.draft || heroDbSection?.data || heroDbSection?.content || {};
+
+  // Construct dynamic section map
   const sectionMap: Record<string, React.ReactNode> = {
-    hero: <Hero key="hero" />,
+    community_trips: <CommunityTrips key="community_trips" trips={trips} {...heroProps} />,
     social_proof: <SocialProofBar key="social_proof" />,
-    community_trips: <CommunityTrips key="community_trips" trips={trips} />,
     cta_banner: <CTABanner key="cta_banner" />,
     destinations: <Destinations key="destinations" />,
+    recent_photos: <RecentPhotosSection key="recent_photos" />,
     bestie: <BestieSection key="bestie" />,
     cta_slider: <CTASlider key="cta_slider" />,
     blogs: <BlogSection key="blogs" blogs={blogs} />,
     reviews: <ReviewsSection key="reviews" reviews={reviews} />,
-    vibe: <VibeSection key="vibe" />
+    photo_slider: <PhotoSlider key="photo_slider" title="Glimpses of Adventure" />
   };
 
-  const order = theme?.sectionOrder || [
-    'hero', 'social_proof', 'community_trips', 'cta_banner', 
-    'destinations', 'bestie', 'cta_slider', 'blogs', 'reviews', 'vibe'
-  ];
+  const order = theme?.sectionOrder
+    ? theme.sectionOrder.filter((k: string) => k !== 'hero' && k !== 'vibe')
+    : [
+        'community_trips', 'cta_banner', 
+        'recent_photos', 'bestie', 'cta_slider', 'destinations', 'reviews', 'blogs', 'photo_slider'
+      ];
+
   const visibility = theme?.sectionVisibility || {};
   const visibleSectionKeys = order.filter((key: string) => {
     return visibility[key] !== false && sectionMap[key];
   });
 
+  // Use DB page sections from PageBuilder if present and non-empty
+  const rawDbSections = page?.sections && Array.isArray(page.sections)
+    ? page.sections
+    : [];
+
+  const dbSections = rawDbSections.length > 0 ? rawDbSections : null;
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {page && page.sections && page.sections.length > 0 ? (
-        <>
-          <PageRenderer sections={page.sections} trips={trips} reviews={reviews} blogs={blogs} />
-          {/* Force new sections if not in DB */}
-          {!page.sections.some((s: any) => s.type === 'cta_slider') && <CTASlider />}
-        </>
+      {dbSections ? (
+        <PageRenderer sections={dbSections} trips={trips} reviews={reviews} blogs={blogs} />
       ) : (
         <>
           {visibleSectionKeys.map((key: string, idx: number) => {
             const isAlternate = theme?.sectionBgAlternate ?? true;
             const alternateClass = isAlternate && idx % 2 === 1 ? "bg-zinc-50/50" : "bg-transparent";
             
-            // Skip spacing wrapper for hero/cta to keep layouts full-screen
-            if (key === 'hero' || key === 'cta_banner' || key === 'cta_slider') {
+            if (key === 'cta_banner' || key === 'cta_slider') {
               return sectionMap[key];
             }
             
-            const spacingPx = theme?.sectionSpacing != null ? `${theme.sectionSpacing}px` : '80px';
+            const spacingPx = theme?.sectionSpacing != null ? `${theme.sectionSpacing}px` : '16px';
             
             return (
               <div 
@@ -150,7 +161,7 @@ export default async function Home() {
                 className={alternateClass}
                 style={{ 
                   '--section-spacing-dynamic': spacingPx,
-                  paddingTop: 'var(--section-spacing-dynamic)',
+                  paddingTop: key === 'community_trips' ? '0px' : 'var(--section-spacing-dynamic)',
                   paddingBottom: 'var(--section-spacing-dynamic)'
                 } as any}
               >
@@ -158,6 +169,7 @@ export default async function Home() {
               </div>
             );
           })}
+          {!visibleSectionKeys.includes('recent_photos') && <RecentPhotosSection />}
         </>
       )}
       <FloatingSocialBar />

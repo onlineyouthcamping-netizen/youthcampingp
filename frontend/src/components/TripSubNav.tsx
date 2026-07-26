@@ -94,33 +94,31 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
 
       <div 
         ref={navRef}
-        className={cn(
-          "sticky z-40 bg-white transition-all duration-200 border-b border-zinc-100 mt-4 md:mt-8",
-          isSticky ? "shadow-md" : "shadow-none"
-        )}
+        className="sticky z-40 bg-white border-b border-zinc-100 mb-6 mt-1"
         style={{ top: 'var(--navbar-height)' }}
       >
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="w-full">
           <div 
             ref={scrollContainerRef}
-            className="flex items-center gap-5 md:gap-10 overflow-x-auto no-scrollbar py-3 md:py-4"
+            className="flex items-center gap-6 md:gap-9 overflow-x-auto no-scrollbar pb-3 pt-1"
           >
-            {sections.map((section) => (
+            {sections.map((section, idx) => (
               <button
                 key={section.id}
                 data-section={section.id}
                 onClick={() => scrollToSection(section.id)}
                 className={cn(
-                  "group relative text-[11px] font-bold capitalize tracking-widest whitespace-nowrap py-1 transition-all",
+                  "group relative text-xs sm:text-sm font-bold capitalize tracking-wide whitespace-nowrap py-1 transition-all font-montserrat cursor-pointer",
+                  idx === 0 ? "pl-0" : "",
                   activeSection === section.id 
-                    ? "text-primary-orange" 
-                    : "text-zinc-400 hover:text-navy"
+                    ? "text-[#D4541A]" 
+                    : "text-zinc-500 hover:text-[#0B1528]"
                 )}
               >
                 {section.label}
                 {/* Animated Underline */}
                 <span className={cn(
-                  "absolute -bottom-[13px] md:-bottom-[17px] left-0 w-full h-[3px] bg-primary-orange rounded-full transition-all duration-300 transform origin-center",
+                  "absolute -bottom-[12px] left-0 w-full h-[3px] bg-[#D4541A] rounded-full transition-all duration-300 transform origin-center",
                   activeSection === section.id ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0 group-hover:scale-x-50 group-hover:opacity-50"
                 )} />
               </button>

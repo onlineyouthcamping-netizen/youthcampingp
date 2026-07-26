@@ -71,23 +71,6 @@ async function startServer() {
     server.on('error', (err) => {
       console.error(`⚠️ Primary port ${PORT} error:`, err.message);
     });
-
-    // In single-instance/dev mode, listen on auxiliary ports if specified
-    if (!process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === '0') {
-      const auxPorts = [5000, 3000, 3001, 5001].filter(p => p !== Number(PORT));
-      auxPorts.forEach(p => {
-        try {
-          const auxServer = app.listen(p, () => {
-            console.log(`🚀 SERVER ALSO LISTENING ON AUXILIARY PORT ${p}`);
-          });
-          auxServer.on('error', (err) => {
-            // Port already in use by Nginx or another worker - safe to ignore
-          });
-        } catch (e) {
-          // ignore
-        }
-      });
-    }
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

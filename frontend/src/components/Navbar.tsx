@@ -12,15 +12,16 @@ interface NavLink {
   href: string;
 }
 
+const defaultNavLinks: NavLink[] = [
+  { name: "Home", href: "/" },
+  { name: "Trips", href: "/trips" },
+  { name: "Contact Us", href: "/contact" },
+];
+
 interface NavbarProps {
   logoUrl?: string;
   navLinks?: NavLink[];
 }
-
-const defaultNavLinks = [
-  { name: "Home", href: "/" },
-  { name: "Trips", href: "/trips" },
-];
 
 export default function Navbar({ 
   logoUrl = "/logo.png",
@@ -29,22 +30,17 @@ export default function Navbar({
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const { theme, settings } = useTheme();
-  const resolvedNavLinks = navLinks || settings?.navbar?.links || defaultNavLinks;
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile, { passive: true });
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const rawLinks = navLinks || (settings?.navbar?.links && settings.navbar.links.length > 0 ? settings.navbar.links : defaultNavLinks);
+  const resolvedNavLinks = rawLinks.filter(
+    (link: NavLink) =>
+      !["Destinations", "About Us", "Journal"].includes(link.name) &&
+      !["/destinations", "/about", "/blogs"].includes(link.href)
+  );
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 30);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -61,33 +57,15 @@ export default function Navbar({
     };
   }, [isMenuOpen]);
 
-  const isSticky = theme?.navbarSticky ?? true;
-  const isTransparent = theme?.navbarTransparent ?? false;
-  const blurClass = (theme?.navbarBlur ?? true) ? "backdrop-blur-md" : "backdrop-blur-none";
-
-  // Force solid background on mobile so that pushed-down page content does not cause text visibility issues
-  const showTransparent = isTransparent && !isMobile;
-
-  // Determine bg color class based on scroll and transparency settings
-  const bgClass = isScrolled 
-    ? (isMobile ? "bg-white shadow-lg" : "bg-white/95 shadow-lg") 
-    : showTransparent 
-      ? "bg-transparent" 
-      : "bg-white shadow-md";
-
-  const textColorClass = isScrolled || !showTransparent ? "text-navy" : "text-white";
-
   return (
     <>
       <nav
         className={cn(
-          "fixed top-0 left-0 right-0 z-[9999] transition-all duration-500 px-4 sm:px-6 flex items-center",
-          bgClass,
-          blurClass
+          "fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 px-5 sm:px-8 md:px-10 flex items-center bg-white/95 backdrop-blur-md border-b border-zinc-100/80 shadow-xs h-[80px]"
         )}
-        style={{ height: 'var(--navbar-height)' }}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between w-full">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-between w-full">
+          {/* LOGO */}
           <Link 
             href="/" 
             className="relative z-[60] flex items-center justify-start shrink-0"
@@ -95,97 +73,92 @@ export default function Navbar({
             <img 
               src="/logo.png"
               alt="Youthcamping Logo" 
-              fetchPriority="high"
-              loading="eager"
-              width={140}
-              height={40}
-              className="w-auto max-w-[140px] md:max-w-none object-contain transition-transform hover:scale-105 pointer-events-auto"
-              style={{
-                height: 'calc(var(--navbar-height) * 0.53)',
-                maxHeight: '42px'
-              }}
+              width={160}
+              height={44}
+              className="h-10 sm:h-11 max-h-10 sm:max-h-11 w-auto max-w-[160px] object-contain transition-transform hover:scale-105"
             />
           </Link>
 
-          {/* Desktop Nav */}
-          <div 
-            className="relative z-20 hidden md:flex items-center"
-            style={{ gap: 'var(--navbar-spacing)' }}
-          >
+          {/* DESKTOP NAV LINKS */}
+          <div className="hidden md:flex items-center gap-10 text-[16px] font-semibold text-[#1B2A4A]">
             {resolvedNavLinks.map((link: NavLink) => {
-              const isActive = pathname === link.href;
+              const isActive = pathname === link.href || (link.href === '/trips' && pathname.startsWith('/trips'));
               return (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  prefetch={link.href === '/contact' ? false : undefined}
-                  className={cn(
-                    "nav-link transition-colors",
-                    isActive ? "text-primary-orange" : textColorClass
+                <div key={link.name} className="relative flex flex-col items-center py-2">
+                  <Link
+                    href={link.href}
+                    className={cn(
+                      "transition-colors hover:text-[#D4541A]",
+                      isActive ? "text-[#1B2A4A] font-bold" : "text-[#555555]"
+                    )}
+                  >
+                    {link.name}
+                  </Link>
+                  {/* Active Orange Underline Bar */}
+                  {isActive && (
+                    <div className="absolute bottom-0 w-6 h-[3px] bg-[#D4541A] rounded-full" />
                   )}
-                  style={{
-                    color: isActive ? 'var(--navbar-active-color)' : undefined,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.color = 'var(--navbar-hover-color)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) e.currentTarget.style.color = '';
-                  }}
-                >
-                  {link.name}
-                </Link>
+                </div>
               );
             })}
-            <Link 
-              href="/contact" 
-              prefetch={false}
-              className={cn("nav-link transition-colors hover:text-primary-orange", textColorClass)}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--navbar-hover-color)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = ''}
-            >
-              Contact
-            </Link>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button 
-            className="md:hidden relative z-[60] p-2 w-11 h-11 flex items-center justify-center"
+          {/* RIGHT ACTION BUTTONS: Plan Your Trip + Hamburger Menu */}
+          <div className="hidden md:flex items-center gap-4">
+            <Link
+              href="/trips"
+              className="px-7 py-3 bg-[#D4541A] hover:bg-[#B8451A] text-white font-bold text-[16px] rounded-full transition-all shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95"
+            >
+              Plan Your Trip
+            </Link>
+
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 text-[#1B2A4A] hover:text-[#D4541A] transition-colors"
+              aria-label="Toggle menu"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* MOBILE HAMBURGER BUTTON */}
+          <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden relative z-[60] p-2"
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMenuOpen ? (
-              <X className="w-6 h-6 text-navy" />
+              <X className="w-6 h-6 text-[#1B2A4A]" />
             ) : (
-              <Menu className={cn("w-6 h-6", textColorClass)} />
+              <Menu className="w-6 h-6 text-[#1B2A4A]" />
             )}
           </button>
         </div>
       </nav>
 
-      {/* Mobile Drawer */}
-      <div className={cn(
-        "fixed inset-0 bg-white z-50 transition-transform duration-500 md:hidden flex flex-col pt-32 px-8 gap-8",
-        isMenuOpen ? "translate-x-0" : "translate-x-full"
-      )}>
+      {/* MOBILE OVERLAY MENU */}
+      <div
+        className={cn(
+          "fixed inset-0 bg-white z-50 transition-transform duration-300 md:hidden flex flex-col pt-24 px-8 gap-6",
+          isMenuOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
         {resolvedNavLinks.map((link: NavLink) => (
           <Link
             key={link.name}
             href={link.href}
-            prefetch={link.href === '/contact' ? false : undefined}
             onClick={() => setIsMenuOpen(false)}
-            className="text-2xl font-medium text-navy capitalize tracking-tighter"
+            className="text-xl font-bold text-[#1B2A4A] hover:text-[#D4541A]"
           >
             {link.name}
           </Link>
         ))}
-        <Link 
-          href="/contact" 
-          prefetch={false}
+        <Link
+          href="/trips"
           onClick={() => setIsMenuOpen(false)}
-          className="text-2xl font-medium text-navy capitalize tracking-tighter"
+          className="mt-4 w-full py-3.5 bg-[#D4541A] text-white text-center font-bold text-lg rounded-full shadow-md"
         >
-          Contact
+          Plan Your Trip
         </Link>
       </div>
     </>

@@ -10,10 +10,10 @@ import { OptimizedImage } from "@/components/ui/OptimizedImage";
 interface PhotoGalleryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  tripTitle: string;
-  heroImage: string;
-  images: string[];
-  itinerary: {
+  tripTitle?: string;
+  heroImage?: string;
+  images?: string[];
+  itinerary?: {
     day: number;
     title: string;
     photos: string[];
@@ -44,11 +44,11 @@ export default function PhotoGalleryModal({
 
   if (!isOpen) return null;
 
-  const tripPhotos = [heroImage, ...images].filter(Boolean);
+  const tripPhotos = [heroImage, ...(images || [])].filter((p): p is string => Boolean(p));
   
   const tabs = [
     { id: "Trip", label: "Trip", photos: tripPhotos.map(p => p.split('|')[0]) },
-    ...itinerary.map(day => ({
+    ...(itinerary || []).map(day => ({
       id: `Day ${day.day}`,
       label: `Day ${day.day}`,
       photos: (day.photos || []).map(p => p.split('|')[0])

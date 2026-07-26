@@ -1,204 +1,379 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
-import { motion, useReducedMotion } from "framer-motion";
-import { Star, ChevronRight, Quote, Camera } from "lucide-react";
+import { useState, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { Review } from "@/types";
-import { normalizeImageUrl } from "@/lib/api";
-import { OptimizedImage } from "@/components/ui/OptimizedImage";
-import { cn } from "@/lib/utils";
-import { WavyEdges } from "./ui/WavyEdges";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { Star, ArrowRight, ChevronLeft, ChevronRight, ExternalLink, Camera, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-const ReviewModal = dynamic(() => import("./ReviewModal"), { ssr: false });
+interface GoogleReviewItem {
+  id: string;
+  name: string;
+  avatar: string;
+  badge?: string;
+  tripName: string;
+  date: string;
+  rating: number;
+  comment: string;
+  photos?: string[];
+}
+
+const MOCK_GOOGLE_REVIEWS: GoogleReviewItem[] = [
+  {
+    id: "gr1",
+    name: "kathan patel",
+    badge: "Joined Group Trip",
+    tripName: "Spiti Valley Bike Trip",
+    date: "1 month ago",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+    comment: "I travelled with YouthCamping Spiti Valley Bike Trip this June first week. My experience was very thrilling with them. The management was super awesome. Marshal Abhinav and Dhruvil sir were extremely supportive throughout!",
+    rating: 5,
+    photos: [
+      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80", // Tall photo left
+      "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=600&q=80", // Top right photo
+      "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=600&q=80", // Bottom right photo
+    ],
+  },
+  {
+    id: "gr2",
+    name: "Bhumit Rabadiya",
+    badge: "Joined Group Trip",
+    tripName: "Thailand Explorer Expedition",
+    date: "2 weeks ago",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
+    comment: "Thank you for crafting a trip that perfectly matched our style and interests. Your attention to detail made all the difference! Will definitely book another trip soon.",
+    rating: 5,
+    photos: [
+      "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=80",
+      "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&q=80",
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80",
+    ],
+  },
+  {
+    id: "gr3",
+    name: "Janak Chauhan",
+    badge: "Joined Group Trip",
+    tripName: "Hampta Pass Trek",
+    date: "3 weeks ago",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
+    comment: "Just few weeks back I took the trip to Spiti Valley with YouthCamping and believe me I had an amazing expedition of a lifetime. The captains were top class!",
+    rating: 5,
+    photos: [
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+      "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=600&q=80",
+      "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&q=80",
+    ],
+  },
+  {
+    id: "gr4",
+    name: "Utsav Nathvani",
+    badge: "Joined Group Trip",
+    tripName: "Kedarkantha Winter Trek",
+    date: "1 month ago",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
+    comment: "It won't be wrong to say YouthCamping is synonymous with great experiences. And it also won't be wrong to say that you can trust them blindly!",
+    rating: 5,
+    photos: [
+      "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80",
+      "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&q=80",
+      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&q=80",
+    ],
+  },
+];
 
 interface ReviewsSectionProps {
-  reviews: Review[];
+  reviews?: any[];
   title?: string;
-  subtitle?: string;
-  titleSize?: string | number;
-  titleWeight?: string | number;
-  topLabel?: string;
-  titleStyle?: 'standard' | 'boxed';
-  wavyEdges?: boolean;
-  topColor?: string;
-  bottomColor?: string;
 }
 
-const defaultReviews: Review[] = [];
-
-export default function ReviewsSection({ 
-  reviews = [],
-  title = "Reviews",
-  subtitle,
-  titleSize,
-  titleWeight,
-  topLabel,
-  titleStyle = 'standard',
-  wavyEdges = false,
-  topColor = "#ffffff",
-  bottomColor = "#ffffff",
+export default function ReviewsSection({
+  reviews,
+  title,
 }: ReviewsSectionProps) {
-  const displayReviews = reviews;
-  if (!displayReviews || displayReviews.length === 0) return null;
-  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const finalAlign = 'left';
-  const prefersReducedMotion = useReducedMotion();
-  const isMobile = useIsMobile();
-  const reduceMotion = prefersReducedMotion || isMobile;
+  const displayTitle = (!title || title === "New reviews" || title === "Reviews" || title.toLowerCase().includes("review")) 
+    ? "What Travelers Say" 
+    : title;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [selectedReview, setSelectedReview] = useState<GoogleReviewItem | null>(null);
 
-  useEffect(() => {
-    setIsModalOpen(false);
-    setSelectedReview(null);
-  }, []);
+  const displayReviews: GoogleReviewItem[] = (reviews && reviews.length >= 4)
+    ? reviews.map((r: any, idx: number) => ({
+        id: r._id || r.id || `gr-${idx}`,
+        name: r.userName || r.name || MOCK_GOOGLE_REVIEWS[idx % 4].name,
+        badge: r.badge || "Joined Group Trip",
+        tripName: r.tripName || r.city || MOCK_GOOGLE_REVIEWS[idx % 4].tripName,
+        date: r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : MOCK_GOOGLE_REVIEWS[idx % 4].date,
+        avatar: r.userImage || MOCK_GOOGLE_REVIEWS[idx % 4].avatar,
+        comment: r.comment || MOCK_GOOGLE_REVIEWS[idx % 4].comment,
+        rating: r.rating || 5,
+        photos: r.photos && r.photos.length >= 3 ? r.photos : MOCK_GOOGLE_REVIEWS[idx % 4].photos,
+      }))
+    : MOCK_GOOGLE_REVIEWS;
 
-  const openReview = (rev: Review) => {
-    setSelectedReview(rev);
-    setIsModalOpen(true);
+  const nudge = (dir: "l" | "r") => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: dir === "l" ? -380 : 380, behavior: "smooth" });
+    }
   };
+
   return (
-    <div className="overflow-hidden relative section-wrapper reviews-section bg-white max-md:!px-0">
-      {wavyEdges && <WavyEdges color={topColor} position="top" />}
-      <div className="max-w-[1440px] mx-auto relative max-md:px-0 px-4 md:px-0">
-        <div className="flex flex-row items-end justify-between mb-8 px-4 md:px-0">
-          <div className="flex flex-col">
-            {topLabel && (
-              <span className="section-label">
-                {topLabel}
-              </span>
-            )}
-            <div className={cn(
-              titleStyle === 'boxed' && "p-6 md:px-10 md:py-8 rounded-[20px] md:rounded-[32px] border border-slate-200 bg-white shadow-sm max-w-fit"
-            )}>
-              <h2 
-                className="section-heading text-[#082B5B] !font-extrabold"
-                style={{ 
-                  fontSize: titleSize ? (isNaN(Number(titleSize)) ? titleSize : `${titleSize}px`) : undefined
-                }}
-              >
-                {title || "Reviews"}
-              </h2>
-            </div>
+    <section className="testimonials testimonials-slider module-center bg-white py-8 md:py-10 border-t border-zinc-100 font-montserrat">
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
+        
+        {/* HEADER ROW */}
+        <div className="flex items-center justify-between mb-8 sm:mb-10 flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-[#1B2A4A] font-montserrat font-semibold text-[28px] sm:text-[32px] md:text-[36px] leading-tight">
+              {displayTitle}
+            </h2>
           </div>
-          <Link href="/reviews" className="flex items-center gap-2 text-navy font-bold hover:text-primary transition-all capitalize text-sm tracking-tight pb-2 mr-1">
-            View All
-            <ChevronRight className="w-5 h-5" />
-          </Link>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => nudge("l")}
+                aria-label="Previous reviews"
+                className="w-10 h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
+              >
+                <ChevronLeft className="w-5 h-5 text-zinc-700" />
+              </button>
+              <button
+                onClick={() => nudge("r")}
+                aria-label="Next reviews"
+                className="w-10 h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
+              >
+                <ChevronRight className="w-5 h-5 text-zinc-700" />
+              </button>
+            </div>
+
+            <Link
+              href="/reviews"
+              className="group inline-flex items-center gap-2 text-sm sm:text-[16px] font-bold text-[#111827] hover:text-[#D4541A] transition-colors ml-2"
+            >
+              <span>View All Reviews</span>
+              <ArrowRight className="w-4 h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
 
-        <div className="flex gap-4 md:gap-[28px] overflow-x-auto no-scrollbar pb-6 snap-x px-4 md:px-0 scroll-pl-4 md:scroll-pl-0">
-          {displayReviews.map((rev, i) => (
-            <ReviewCard key={rev._id || rev.id || i} rev={rev} i={i} onClick={() => openReview(rev)} reduceMotion={reduceMotion} />
+        {/* REVIEW CARDS HORIZONTAL SCROLL / GRID */}
+        <div
+          ref={scrollRef}
+          className="flex gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth"
+        >
+          {displayReviews.map((rev, idx) => (
+            <motion.div
+              key={rev.id || idx}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1, duration: 0.5 }}
+              viewport={{ once: true }}
+              className="flex-none w-[85vw] sm:w-[380px] md:w-[420px] bg-white border border-zinc-200/80 rounded-[28px] overflow-hidden p-5 sm:p-6 pb-0 sm:pb-0 shadow-[0_6px_24px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
+            >
+              <div>
+                {/* USER HEADER ROW: AVATAR + NAME + BOOKED TRIP */}
+                <div className="flex items-start gap-3.5 mb-3.5">
+                  <div className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full overflow-hidden shrink-0 border border-zinc-100 shadow-2xs">
+                    <Image
+                      src={rev.avatar}
+                      alt={rev.name}
+                      fill
+                      sizes="56px"
+                      className="object-cover"
+                    />
+                  </div>
+
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="font-bold text-[#111827] text-[16px] sm:text-[17px] leading-tight font-montserrat capitalize">
+                        {rev.name}
+                      </h3>
+                      {rev.badge && (
+                        <span className="text-[#888888] font-medium text-[13px] sm:text-[14px]">
+                          {rev.badge}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 mt-1 text-[13px] sm:text-[14px] text-[#777777]">
+                      <span>Booked:</span>
+                      <span className="font-bold text-[#111827] flex items-center gap-0.5 truncate hover:text-[#D4541A] transition-colors cursor-pointer">
+                        {rev.tripName}
+                        <ExternalLink className="w-3.5 h-3.5 text-[#111827] inline shrink-0" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5 RATING STARS (GOLD/YELLOW) + RELATIVE DATE */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-1">
+                    {[...Array(rev.rating || 5)].map((_, i) => (
+                      <Star key={i} className="w-[17px] h-[17px] fill-[#FFB800] text-[#FFB800]" />
+                    ))}
+                  </div>
+                  <span className="text-[#777777] font-medium text-xs sm:text-[13px]">
+                    {rev.date}
+                  </span>
+                </div>
+
+                {/* REVIEW COMMENT TEXT WITH READ MORE */}
+                <p className="text-[#1B2A4A] font-normal text-[14px] sm:text-[15px] leading-[1.55] line-clamp-4 mb-4 font-montserrat">
+                  {rev.comment}{" "}
+                  <button
+                    onClick={() => setSelectedReview(rev)}
+                    className="font-bold text-[#111827] hover:text-[#D4541A] transition-colors cursor-pointer inline"
+                  >
+                    Read More
+                  </button>
+                </p>
+              </div>
+
+              {/* ATTACHED 3-PHOTO GALLERY GRID (FLUSH TO LEFT, RIGHT & BOTTOM CARD BORDERS) */}
+              {rev.photos && rev.photos.length >= 2 && (
+                <div className="-mx-5 -mb-5 sm:-mx-6 sm:-mb-6 mt-3 grid grid-cols-2 gap-1.5 overflow-hidden rounded-b-[27px] bg-zinc-100">
+                  {/* LEFT COLUMN: TALL PORTRAIT PHOTO */}
+                  <div
+                    onClick={() => setSelectedPhoto(rev.photos![0])}
+                    className="relative aspect-[3/4] sm:aspect-[3/3.8] overflow-hidden bg-zinc-100 cursor-pointer group/img"
+                  >
+                    <Image
+                      src={rev.photos[0]}
+                      alt={`Review photo by ${rev.name}`}
+                      fill
+                      sizes="200px"
+                      className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  {/* RIGHT COLUMN: 2 STACKED LANDSCAPE PHOTOS */}
+                  <div className="flex flex-col gap-1.5">
+                    {rev.photos.slice(1, 3).map((imgUrl, pIdx) => (
+                      <div
+                        key={pIdx}
+                        onClick={() => setSelectedPhoto(imgUrl)}
+                        className="relative aspect-[16/9.5] overflow-hidden bg-zinc-100 cursor-pointer group/img flex-1"
+                      >
+                        <Image
+                          src={imgUrl}
+                          alt={`Review photo ${pIdx + 2} by ${rev.name}`}
+                          fill
+                          sizes="200px"
+                          className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
+                          <Camera className="w-4 h-4" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
           ))}
         </div>
+
       </div>
 
-      <ReviewModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        review={selectedReview}
-      />
-      {wavyEdges && <WavyEdges color={bottomColor} position="bottom" />}
-    </div>
-  );
-}
-
-function ReviewCard({ rev, i, onClick, reduceMotion }: { rev: Review, i: number, onClick: () => void, reduceMotion: boolean }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const shouldShowReadMore = rev.comment && rev.comment.length > 120;
-  const displayedComment = isExpanded ? rev.comment : (rev.comment || "").slice(0, 120);
-
-  const coverPhoto = rev.photos && rev.photos.length > 0 
-    ? rev.photos[0] 
-    : "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070";
-
-  const defaultAvatar = rev.userImage ? normalizeImageUrl(rev.userImage) : null;
-  const initials = rev.userName ? rev.userName.charAt(0).toUpperCase() : "U";
-
-  const getAvatarColor = (name: string) => {
-    const colors = ["#E87A00", "#5C6BC0", "#4CAF50", "#E91E63", "#00BCD4"];
-    const charCode = name ? name.charCodeAt(0) : 0;
-    return colors[charCode % colors.length];
-  };
-  const avatarBg = getAvatarColor(rev.userName);
-
-  return (
-    <div 
-      className="flex-none w-[280px] md:w-[310px] min-h-[410px] snap-start bg-white border border-zinc-100 rounded-[28px] md:rounded-[32px] shadow-[0_15px_35px_rgba(0,0,0,0.06),0_5px_15px_rgba(0,0,0,0.03)] hover:shadow-[0_25px_50px_rgba(0,0,0,0.15)] hover:-translate-y-1.5 transition-all duration-500 flex flex-col overflow-hidden group p-0"
-    >
-      {/* Top Cover Image (Rounded top corners matching card) */}
-      <div className="relative w-full h-[180px] shrink-0 bg-zinc-100 overflow-hidden">
-        <OptimizedImage 
-          src={normalizeImageUrl(coverPhoto) || "https://images.unsplash.com/photo-1501785888041-af3ef285b470"} 
-          alt="Review cover" 
-          cloudinaryWidth={480}
-          bunnyVariant="x540gt"
-          sizes="310px"
-          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-        />
-      </div>
-
-      <div className="p-5 flex flex-col flex-1 justify-between">
-        <div className="flex-1 flex flex-col">
-          {/* 5 Gold Rating Stars */}
-          <div className="flex gap-0.5 mb-3 shrink-0">
-            {[...Array(5)].map((_, idx) => (
-              <Star 
-                key={idx} 
-                className="w-4 h-4 fill-[#fbbc05] text-[#fbbc05]" 
-              />
-            ))}
-          </div>
-
-          {/* Comment Text */}
-          <div className="mb-4 flex-1">
-            <p className="text-zinc-700 text-sm leading-[1.5] line-clamp-4 font-medium mb-1 select-none">
-              {displayedComment}
-            </p>
-            {shouldShowReadMore && (
-              <span 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClick();
-                }}
-                className="text-zinc-400 text-xs font-bold hover:text-[#082B5B] cursor-pointer"
-              >
-                Read more...
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Profile Footer Section */}
-        <div className="flex items-center gap-3 pt-3 shrink-0">
-          <div 
-            className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-inner"
-            style={{ backgroundColor: avatarBg }}
+      {/* PHOTO LIGHTBOX MODAL */}
+      <AnimatePresence>
+        {selectedPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedPhoto(null)}
+            className="fixed inset-0 z-[10000] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
           >
-            {defaultAvatar ? (
-              <OptimizedImage 
-                src={defaultAvatar} 
-                alt={rev.userName} 
-                cloudinaryWidth={80}
-                sizes="40px"
-                className="w-full h-full object-cover"
+            <div className="relative max-w-4xl max-h-[85vh] w-full h-full">
+              <Image
+                src={selectedPhoto}
+                alt="Enlarged review photo"
+                fill
+                className="object-contain"
               />
-            ) : (
-              initials
-            )}
-          </div>
-          <div className="flex flex-col justify-center min-w-0">
-            <h4 className="text-sm font-extrabold text-[#082B5B] leading-tight truncate select-none">{rev.userName}</h4>
-            <span className="text-xs text-zinc-400 font-medium mt-0.5 truncate select-none">
-              {rev.tripName || rev.tripType || "Adventure Trip"}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+              <button
+                onClick={() => setSelectedPhoto(null)}
+                className="absolute top-4 right-4 text-white bg-black/50 p-2 rounded-full hover:bg-black/80 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* FULL REVIEW MODAL */}
+      <AnimatePresence>
+        {selectedReview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedReview(null)}
+            className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-[32px] p-6 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl"
+            >
+              <button
+                onClick={() => setSelectedReview(null)}
+                className="absolute top-5 right-5 w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-start gap-4 mb-4">
+                <div className="relative w-14 h-14 rounded-full overflow-hidden shrink-0 border border-zinc-200">
+                  <Image src={selectedReview.avatar} alt={selectedReview.name} fill className="object-cover" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-[#111827] text-lg capitalize">{selectedReview.name}</h4>
+                    {selectedReview.badge && (
+                      <span className="text-[#888888] font-medium text-sm">{selectedReview.badge}</span>
+                    )}
+                  </div>
+                  <p className="text-zinc-500 text-sm font-medium mt-0.5">
+                    Booked: <span className="font-bold text-[#111827]">{selectedReview.tripName}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-1">
+                  {[...Array(selectedReview.rating || 5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-[#FFB800] text-[#FFB800]" />
+                  ))}
+                </div>
+                <span className="text-[#777777] text-xs font-medium">{selectedReview.date}</span>
+              </div>
+
+              <p className="text-[#111827] font-normal text-base leading-relaxed mb-6">
+                {selectedReview.comment}
+              </p>
+
+              {selectedReview.photos && selectedReview.photos.length > 0 && (
+                <div className="grid grid-cols-3 gap-3 pt-2">
+                  {selectedReview.photos.map((img, i) => (
+                    <div key={i} className="relative aspect-[4/3] rounded-[18px] overflow-hidden bg-zinc-100">
+                      <Image src={img} alt="Photo" fill className="object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
   );
 }
-

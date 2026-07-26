@@ -201,8 +201,8 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
   const activeSection = activeSections.find(s => s.id === activeId);
 
   return (
-    <section className="mb-24">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-12 px-6">
+    <section className="mb-4 scroll-mt-28" id="policies">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {activeSections.map((sec) => {
           const Icon = sec.id === "cancellation" ? ShieldCheck 
                     : sec.id === "terms" ? FileText
@@ -216,15 +216,20 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
             <button
               key={sec.id}
               onClick={() => setActiveId(sec.id)}
-              className="flex items-center justify-between py-8 border-b border-zinc-100 hover:bg-zinc-50/50 transition-all group"
+              className="group relative bg-[#F8F9FB] border border-zinc-200/80 rounded-[16px] p-4 flex flex-col items-start gap-3 hover:bg-[#0B1528] hover:border-[#0B1528] transition-all duration-300 cursor-pointer text-left overflow-hidden"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-zinc-50 group-hover:bg-primary-orange/10 flex items-center justify-center transition-all group-hover:scale-110">
-                   <Icon className="w-5 h-5 text-zinc-400 group-hover:text-primary-orange transition-colors" />
-                </div>
-                <span className="font-bold text-xs capitalize tracking-widest text-zinc-400 group-hover:text-navy transition-colors">{sec.label}</span>
+              {/* Accent dot top-right */}
+              <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-[#D4541A] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+              {/* Icon badge */}
+              <div className="w-9 h-9 rounded-[10px] bg-white group-hover:bg-[#D4541A] border border-zinc-200/80 group-hover:border-[#D4541A] flex items-center justify-center shadow-xs transition-all duration-300 shrink-0">
+                <Icon className="w-4 h-4 text-[#0B1528] group-hover:text-white transition-colors duration-300" />
               </div>
-              <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:text-primary-orange transition-all transform group-hover:translate-x-1" />
+
+              {/* Label */}
+              <span className="font-extrabold text-[11px] sm:text-xs text-[#0B1528] group-hover:text-white font-montserrat leading-tight transition-colors duration-300">
+                {sec.label}
+              </span>
             </button>
           );
         })}
@@ -233,121 +238,160 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
       {activeId && (
         <div 
           onClick={() => setActiveId(null)}
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6 bg-navy/60 backdrop-blur-md transition-all duration-500 animate-in fade-in"
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 md:p-6 pt-[96px] pb-6 bg-[#0B1528]/85 backdrop-blur-md transition-all duration-300 overflow-y-auto"
         >
-           <div 
-             onClick={(e) => e.stopPropagation()}
-             className="bg-white w-full max-w-2xl rounded-[24px] md:rounded-[32px] overflow-hidden shadow-[0_32px_80px_-20px_rgba(0,0,0,0.3)] relative animate-in zoom-in slide-in-from-bottom-8 duration-500 flex flex-col max-h-[90vh] md:max-h-[85vh]"
-           >
-              {/* Modal Header */}
-              <div className="p-5 md:p-8 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
-                 <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                   {activeSection?.id === "carry" ? "Packing List" : activeSection?.label}
-                 </h2>
-                 <button 
-                   onClick={() => setActiveId(null)}
-                   className="text-slate-500 hover:text-slate-900 transition-colors p-1"
-                 >
-                   <X className="w-6 h-6" />
-                 </button>
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white w-full max-w-xl rounded-[28px] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)] relative flex flex-col max-h-[88vh]"
+          >
+            {/* Dark Navy Header */}
+            <div className="bg-[#0B1528] px-6 py-5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-[10px] bg-[#D4541A]/20 flex items-center justify-center">
+                  {(() => {
+                    const Icon = activeId === "cancellation" ? ShieldCheck 
+                              : activeId === "terms" ? FileText
+                              : activeId === "carry" ? Backpack
+                              : activeId === "gears" ? ShoppingBag
+                              : activeId === "etiquette" ? Info
+                              : activeId === "inclusions" ? CheckCircle
+                              : MessageSquare;
+                    return <Icon className="w-4.5 h-4.5 text-[#D4541A]" />;
+                  })()}
+                </div>
+                <h2 className="text-base font-extrabold text-white font-montserrat tracking-tight">
+                  {activeSection?.label}
+                </h2>
               </div>
-              
-              {/* Modal Content */}
-              <div className="p-5 md:p-10 overflow-y-auto flex-1 custom-scrollbar">
-                {activeSection?.type === "categorical" && (
-                  <div className="space-y-8">
-                    {activeSection.content.map((cat: any, idx: number) => {
-                      if (!cat || !cat.items) return null;
-                      return (
-                        <div key={idx} className="space-y-3">
-                          <h3 className="text-sm font-bold text-slate-800">{cat.category}</h3>
-                          <ul className="list-disc pl-5 space-y-2 text-zinc-700 font-medium text-sm">
-                            {cat.items.map((item: any, i: number) => {
-                              const text = item.text || item.label || item;
-                              return (
-                                <li key={i} className="leading-relaxed">
-                                  <span className="inline-flex items-center gap-2">
-                                    {text}
-                                    {item.linkText && (
-                                      <span className="text-[9px] font-bold text-navy bg-slate-50 px-2 py-0.5 rounded border border-zinc-100 shadow-sm">
-                                        {item.linkText}
-                                      </span>
-                                    )}
-                                    {item.link && (
-                                      <a href={item.link} className="text-primary-orange hover:underline text-xs inline-flex items-center gap-1">
-                                        {item.linkText || "Download"} <ArrowRight className="w-3 h-3" />
-                                      </a>
-                                    )}
-                                  </span>
-                                </li>
-                              );
-                            })}
-                          </ul>
+              <button 
+                onClick={() => setActiveId(null)}
+                className="text-zinc-400 hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-5 md:p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5">
+
+              {/* CATEGORICAL type (Things to Carry / Gears) */}
+              {activeSection?.type === "categorical" && (
+                <div className="space-y-5">
+                  {activeSection.content.map((cat: any, idx: number) => {
+                    if (!cat || !cat.items) return null;
+                    return (
+                      <div key={idx} className="space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-3.5 bg-[#D4541A] rounded-full" />
+                          <h3 className="text-[10px] font-extrabold text-[#0B1528] uppercase tracking-widest font-montserrat">
+                            {cat.category}
+                          </h3>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        <div className="flex flex-wrap gap-2">
+                          {cat.items.map((item: any, i: number) => {
+                            const text = item.text || item.label || item;
+                            return (
+                              <span
+                                key={i}
+                                className="inline-flex items-center gap-1.5 bg-[#F8F9FB] border border-zinc-200/80 text-[#0B1528] font-semibold text-xs font-montserrat px-3 py-1.5 rounded-full"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#D4541A] shrink-0" />
+                                {text}
+                                {item.link ? (
+                                  <a 
+                                    href={item.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#D4541A] font-bold hover:underline text-[10px] ml-0.5"
+                                  >
+                                    {item.linkText || "Download"}
+                                  </a>
+                                ) : item.linkText ? (
+                                  <span className="text-[9px] font-bold text-green-600 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded-full ml-0.5">
+                                    {item.linkText}
+                                  </span>
+                                ) : null}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
-                {activeSection?.type === "table" && (
-                  <div className="space-y-8">
-                    <div className="bg-zinc-50/50 rounded-[24px] border border-zinc-100 overflow-hidden">
-                      <table className="w-full border-collapse">
-                        <thead>
-                           <tr className="bg-zinc-100/50">
-                             <th className="text-left px-6 py-4 text-[10px] font-bold capitalize tracking-widest text-zinc-400">Item Name</th>
-                             <th className="text-right px-6 py-4 text-[10px] font-bold capitalize tracking-widest text-zinc-400">Rent Price</th>
-                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-100">
-                          {activeSection.content.map((row: any, i: number) => (
-                            <tr key={i} className="hover:bg-white transition-colors">
-                              <td className="px-6 py-5 font-bold text-navy text-sm">{row.item}</td>
-                              <td className="px-6 py-5 text-right font-bold text-primary-orange">{row.price}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+              {/* TABLE type (Rented Gears with price) */}
+              {activeSection?.type === "table" && (
+                <div className="space-y-4">
+                  <div className="rounded-[16px] border border-zinc-200/80 overflow-hidden">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-[#0B1528]">
+                          <th className="text-left px-5 py-3 text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 font-montserrat">Item</th>
+                          <th className="text-right px-5 py-3 text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 font-montserrat">Price</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100">
+                        {activeSection.content.map((row: any, i: number) => (
+                          <tr key={i} className="hover:bg-orange-50/30 transition-colors">
+                            <td className="px-5 py-3.5 font-semibold text-[#0B1528] text-xs font-montserrat">{row.item}</td>
+                            <td className="px-5 py-3.5 text-right">
+                              <span className="font-extrabold text-xs text-[#D4541A] bg-orange-50 border border-orange-100 px-2.5 py-1 rounded-full font-montserrat">
+                                {row.price}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {activeSection.note && (
+                    <div className="flex items-start gap-3 p-4 bg-orange-50/50 rounded-[14px] border border-orange-100">
+                      <Info className="w-4 h-4 text-[#D4541A] shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-zinc-600 font-semibold font-montserrat leading-relaxed italic">{activeSection.note}</p>
                     </div>
-                    {activeSection.note && (
-                      <div className="flex items-start gap-3 p-4 bg-primary-orange/5 rounded-2xl border border-primary-orange/10">
-                        <ArrowRight className="w-4 h-4 text-primary-orange shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-zinc-500 font-bold capitalize tracking-wider italic">{activeSection.note}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
+              )}
 
-                {activeSection?.type === "list" && (
-                  <div className="space-y-4">
-                    {activeSection.content.map((item: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-[24px] border border-zinc-100 hover:bg-white hover:shadow-lg hover:shadow-zinc-100 transition-all">
-                        <span className="text-xs font-bold text-zinc-400 capitalize tracking-widest">{item.label}</span>
-                        <span className="text-sm font-bold text-navy bg-white px-4 py-2 rounded-xl shadow-sm border border-zinc-100">{item.val}</span>
-                      </div>
-                    ))}
-                    {activeSection.note && (
-                       <p className="p-6 text-sm text-zinc-500 font-medium leading-relaxed bg-zinc-50 rounded-[24px] border border-zinc-100 italic">
-                         {activeSection.note}
-                       </p>
-                    )}
-                  </div>
-                )}
+              {/* LIST type (Cancellation Policy) */}
+              {activeSection?.type === "list" && (
+                <div className="space-y-2.5">
+                  {activeSection.content.map((item: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between gap-4 bg-[#F8F9FB] border border-zinc-200/80 rounded-[14px] px-4 py-3.5 hover:border-[#D4541A]/30 transition-all">
+                      <span className="text-xs font-semibold text-zinc-500 font-montserrat leading-snug flex-1">{item.label}</span>
+                      <span className="font-extrabold text-xs text-[#D4541A] bg-orange-50 border border-orange-100 px-3 py-1 rounded-full font-montserrat shrink-0 whitespace-nowrap">
+                        {item.val}
+                      </span>
+                    </div>
+                  ))}
+                  {activeSection.note && (
+                    <div className="flex items-start gap-3 p-4 bg-amber-50/50 rounded-[14px] border border-amber-100 mt-3">
+                      <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-zinc-600 font-semibold font-montserrat leading-relaxed italic">{activeSection.note}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                {activeSection?.type === "simple" && (
-                  <div className="space-y-4">
-                    {activeSection.content.map((item: any, i: number) => (
-                      <div key={i} className="flex items-start gap-5 p-6 bg-zinc-50/30 rounded-[24px] border border-zinc-100">
-                        <div className="mt-1 w-2 h-2 rounded-full bg-primary-orange shadow-[0_0_10px_rgba(255,87,34,0.4)] shrink-0" />
-                        <p className="text-zinc-600 font-bold text-sm leading-relaxed">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-           </div>
+              {/* SIMPLE type (Terms & Conditions, Inclusions) */}
+              {activeSection?.type === "simple" && (
+                <div className="space-y-2.5">
+                  {activeSection.content.map((item: any, i: number) => (
+                    <div key={i} className="flex items-start gap-3 p-4 bg-[#F8F9FB] border border-zinc-200/80 rounded-[14px]">
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#D4541A] shrink-0" />
+                      <p className="text-xs text-zinc-700 font-semibold font-montserrat leading-relaxed">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            </div>
+          </div>
         </div>
       )}
     </section>
+
   );
 }

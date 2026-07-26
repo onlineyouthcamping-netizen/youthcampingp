@@ -64,7 +64,7 @@ export default function SocialProofBar({
   const reduceMotion = prefersReducedMotion || isMobile;
 
   return (
-    <div className="bg-transparent py-6 md:py-8">
+    <div className="bg-transparent py-3 md:py-4">
       <div className="max-w-[1440px] mx-auto px-6">
         <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
           {displayStats.map((stat: any, i: number) => {

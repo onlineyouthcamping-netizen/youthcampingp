@@ -50,7 +50,7 @@ export default function TripBookingPage() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
-      <Loader2 className="w-8 h-8 animate-spin text-[#FF5B00]" />
+      <Loader2 className="w-8 h-8 animate-spin text-[#D4541A]" />
     </div>
   );
 
@@ -83,7 +83,7 @@ export default function TripBookingPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
       <div className="max-w-lg mx-auto">
         <div className="text-center mb-8">
-          <div className="inline-block bg-primary-orange/20 text-[#FF5B00] px-4 py-1 rounded-full text-xs font-bold capitalize tracking-widest mb-3">{tripCode}</div>
+          <div className="inline-block bg-primary-orange/20 text-[#D4541A] px-4 py-1 rounded-full text-xs font-bold capitalize tracking-widest mb-3">{tripCode}</div>
           <h1 className="text-3xl font-bold text-white capitalize tracking-tight">{tripName}</h1>
           <p className="text-gray-400 text-sm mt-2">Fill in your details to book this trip</p>
         </div>
@@ -91,12 +91,12 @@ export default function TripBookingPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 space-y-4">
             <h3 className="text-xs font-bold text-white/40 capitalize tracking-widest flex items-center gap-2"><User className="w-3.5 h-3.5" /> Personal Info</h3>
-            <input required placeholder="Full Name *" value={form.fullName} onChange={e => setForm({...form, fullName: e.target.value})} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:ring-2 focus:ring-[#FF5B00] outline-none" />
+            <input required placeholder="Full Name *" value={form.fullName} onChange={e => setForm({...form, fullName: e.target.value})} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:ring-2 focus:ring-[#D4541A] outline-none" />
             <div className="grid grid-cols-3 gap-3">
-              <input required placeholder="Mobile *" maxLength={10} value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} className="col-span-2 bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:ring-2 focus:ring-[#FF5B00] outline-none" />
-              <input type="number" placeholder="Age" value={form.age} onChange={e => setForm({...form, age: e.target.value})} className="bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:ring-2 focus:ring-[#FF5B00] outline-none" />
+              <input required placeholder="Mobile *" maxLength={10} value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} className="col-span-2 bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:ring-2 focus:ring-[#D4541A] outline-none" />
+              <input type="number" placeholder="Age" value={form.age} onChange={e => setForm({...form, age: e.target.value})} className="bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:ring-2 focus:ring-[#D4541A] outline-none" />
             </div>
-            <select value={form.gender} onChange={e => setForm({...form, gender: e.target.value})} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:ring-2 focus:ring-[#FF5B00] outline-none">
+            <select value={form.gender} onChange={e => setForm({...form, gender: e.target.value})} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:ring-2 focus:ring-[#D4541A] outline-none">
               <option value="Male" className="bg-slate-800">Male</option>
               <option value="Female" className="bg-slate-800">Female</option>
               <option value="Other" className="bg-slate-800">Other</option>

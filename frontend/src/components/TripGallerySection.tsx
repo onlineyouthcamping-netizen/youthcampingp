@@ -68,54 +68,60 @@ export default function TripGallerySection({ trip }: TripGallerySectionProps) {
           </button>
         </div>
  
-        {/* Desktop: Multi-image grid */}
-        <div className="hidden md:grid md:grid-cols-4 md:grid-rows-2 gap-4 aspect-[3/1] w-full rounded-[40px] overflow-hidden group shadow-2xl bg-zinc-50">
-          {/* Main Large Image */}
+        {/* Desktop: Multi-image grid with 7:5 split (object-top prevents top image cropping) */}
+        <div className="hidden md:grid md:grid-cols-12 gap-3.5 h-[440px] lg:h-[480px] w-full bg-white p-0">
+          {/* Main Large Image (Left 7 Cols) */}
           <div 
-            className="relative md:col-span-2 md:row-span-2 cursor-pointer overflow-hidden group/item"
+            className="relative col-span-7 h-full cursor-pointer overflow-hidden group/item rounded-[16px] lg:rounded-[20px] shadow-sm bg-zinc-100"
             onClick={() => setIsGalleryOpen(true)}
           >
             <OptimizedImage 
               src={errorImages[0] ? fallbacks[0] : (normalizeImageUrl(finalImages[0]) || fallbacks[0])} 
               alt={trip.title} 
               priority={true}
-              cloudinaryWidth={1200}
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-104" 
+              cloudinaryWidth={1400}
+              className="w-full h-full object-cover object-top transition-transform duration-700 group-hover/item:scale-103" 
             />
-            <div className="absolute inset-0 bg-black/10 group-hover/item:bg-transparent transition-colors duration-500" />
+            
+            {/* Location Pill Badge (Top Left) */}
+            <div className="absolute top-4 left-4 z-10">
+              <span className="bg-[#0B1528]/85 text-white font-montserrat font-bold text-[11px] tracking-wider uppercase px-3.5 py-1.5 rounded-full shadow-md backdrop-blur-md">
+                {trip.location || "HIMACHAL PRADESH"}
+              </span>
+            </div>
+
+            {/* View All Photos Button (Bottom Right of main photo) */}
+            <div className="absolute bottom-4 right-4 z-10">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsGalleryOpen(true); }}
+                className="bg-white/95 text-[#0B1528] hover:bg-white font-montserrat font-bold text-xs tracking-wide px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg transition-all border border-zinc-200/80 active:scale-95 cursor-pointer"
+              >
+                <ImageIcon className="w-4 h-4 text-[#D4541A]" /> 
+                View All Photos
+              </button>
+            </div>
           </div>
 
-          {/* Right Smaller Images */}
-          {finalImages.slice(1, 5).map((img, i) => {
-            const idx = i + 1;
-            return (
-              <div 
-                key={i} 
-                className="relative cursor-pointer overflow-hidden group/item md:col-span-1 md:row-span-1"
-                onClick={() => setIsGalleryOpen(true)}
-              >
-                <OptimizedImage 
-                  src={errorImages[idx] ? fallbacks[idx] : (normalizeImageUrl(img) || fallbacks[idx])} 
-                  alt="" 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover/item:scale-104" 
-                />
-                <div className="absolute inset-0 bg-black/5 group-hover/item:bg-transparent transition-colors duration-500" />
-                
-                {/* "See all" button on the last desktop image */}
-                {i === 3 && (
-                  <div className="absolute bottom-4 right-4 z-10">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setIsGalleryOpen(true); }}
-                      className="bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-2xl flex items-center gap-2 text-[10px] font-bold capitalize tracking-widest shadow-xl hover:bg-white transition-all border border-white/20 active:scale-95"
-                    >
-                      <ImageIcon className="w-4 h-4 text-primary-orange" /> 
-                      Explore All
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {/* Right 2x2 Grid (Right 5 Cols) */}
+          <div className="col-span-5 grid grid-cols-2 grid-rows-2 gap-3.5 h-full">
+            {finalImages.slice(1, 5).map((img, i) => {
+              const idx = i + 1;
+              return (
+                <div 
+                  key={i} 
+                  className="relative cursor-pointer overflow-hidden group/item w-full h-full rounded-[14px] lg:rounded-[18px] shadow-sm bg-zinc-100"
+                  onClick={() => setIsGalleryOpen(true)}
+                >
+                  <OptimizedImage 
+                    src={errorImages[idx] ? fallbacks[idx] : (normalizeImageUrl(img) || fallbacks[idx])} 
+                    alt="" 
+                    className="w-full h-full object-cover object-top transition-transform duration-700 group-hover/item:scale-104" 
+                  />
+                  <div className="absolute inset-0 bg-black/5 group-hover/item:bg-transparent transition-colors duration-300" />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

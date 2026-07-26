@@ -2,112 +2,107 @@
 
 import { useState, useEffect, useRef } from "react";
 import { normalizeImageUrl } from "@/lib/api";
-import { OptimizedImage } from "@/components/ui/OptimizedImage";
-import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface CTASliderProps {
   title?: string;
   showTitle?: boolean;
   videoUrl?: string;
+  mediaList?: string[];
   videoPosterUrl?: string;
   borderRadius?: string;
   topColor?: string;
   bottomColor?: string;
+  [key: string]: any;
 }
 
 export default function CTASlider({
   title = "",
   showTitle = false,
-  videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-motorcyclist-riding-on-a-mountain-road-41916-large.mp4",
-  videoPosterUrl = "https://images.unsplash.com/photo-1581793745862-99f579601e1b?q=80&w=2070",
-  borderRadius = "rounded-[20px] md:rounded-[32px]",
+  videoUrl,
+  mediaList = [],
+  videoPosterUrl = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1600&q=85",
+  borderRadius = "rounded-[24px]",
   topColor = "#ffffff",
-  bottomColor = "#f3f4f6",
+  bottomColor = "#ffffff",
 }: CTASliderProps) {
-  const [isInView, setIsInView] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInView(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "200px" }
-    );
-
-    const currentRef = containerRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
+  // Parse media list items (videos or photos)
+  const items: string[] = (() => {
+    const list: string[] = [];
+    if (Array.isArray(mediaList) && mediaList.length > 0) {
+      mediaList.forEach((m) => {
+        const norm = normalizeImageUrl(m);
+        if (norm && !list.includes(norm)) list.push(norm);
+      });
     }
+    if (videoUrl) {
+      const norm = normalizeImageUrl(videoUrl);
+      if (norm && !list.includes(norm)) list.unshift(norm);
+    }
+    if (list.length === 0) {
+      list.push("https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1600&q=85");
+      list.push("https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=1600&q=85");
+    }
+    return list;
+  })();
 
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-      observer.disconnect();
-    };
-  }, []);
+  const currentMedia = items[activeIdx % items.length];
+  const isVideo = (url: string) => url && (/\.(mp4|webm|mov|ogg)$/i.test(url) || url.includes('/video/'));
 
-  const posterSrc = videoPosterUrl ? normalizeImageUrl(videoPosterUrl) : undefined;
-  const normalizedVideoUrl = videoUrl ? normalizeImageUrl(videoUrl) : undefined;
-
-  // Map admin custom values or handle direct tailwind class strings
-  const radiusClass = borderRadius || "rounded-[20px] md:rounded-[32px]";
-
-  // Normalize colors to force pure white and premium light grey (#f5f5f5) as requested
-  const bgTop = (topColor === "#ffffff" || topColor === "#f6f6f6") ? "#ffffff" : topColor;
-  const bgBottom = (bottomColor === "#f3f4f6" || bottomColor === "#f3f3f3" || bottomColor === "#f5f5f5") ? "#f5f5f5" : bottomColor;
+  // Cycle media if multiple slides exist
+  useEffect(() => {
+    if (items.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % items.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [items.length]);
 
   return (
-    <section className="relative overflow-hidden">
-      {/* Background split - clean hard split with vertical bleed to prevent bottom border gap */}
-      <div className="absolute -inset-y-1 inset-x-0 flex flex-col pointer-events-none">
-        <div className="h-[51%] -mb-[1%]" style={{ backgroundColor: bgTop }} />
-        <div className="h-[51%]" style={{ backgroundColor: bgBottom }} />
-      </div>
-
-      <div className="relative z-10 px-3 md:px-14 py-4 md:py-24">
+    <section className="relative overflow-hidden font-sans my-4 sm:my-6">
+      <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-8 md:px-12">
         {showTitle && title && (
-          <div className="max-w-[1440px] mx-auto px-2 mb-6 md:mb-10 text-center">
-            <h2 className="section-heading text-navy capitalize">
+          <div className="mb-4 text-center">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[#0B1528] tracking-tight">
               {title}
             </h2>
           </div>
         )}
-        <div 
+
+        <div
           ref={containerRef}
-          className={cn(
-            "relative w-full md:w-[80%] h-[175px] sm:h-[225px] md:h-[295px] lg:h-[440px] overflow-hidden bg-zinc-900 mx-auto",
-            "shadow-[0_20px_50px_rgba(0,0,0,0.15),0_4px_20px_rgba(0,0,0,0.08)]",
-            "border-0",
-            radiusClass
-          )}
+          className={`relative w-full max-w-[1240px] h-[220px] sm:h-[320px] md:h-[420px] lg:h-[480px] overflow-hidden bg-zinc-900 mx-auto shadow-xl border border-slate-100 ${borderRadius}`}
         >
-          {isInView ? (
-            <video
-              src={normalizedVideoUrl || "https://assets.mixkit.co/videos/preview/mixkit-motorcyclist-riding-on-a-mountain-road-41916-large.mp4"}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="none"
-              poster={posterSrc}
-              className="w-full h-full object-cover object-center scale-[1.02]"
-            />
-          ) : (
-            posterSrc && (
-              <OptimizedImage
-                src={posterSrc}
-                alt={title || "Cinematic Travel Video"}
-                cloudinaryWidth={1200}
-                sizes="100vw"
-                className="w-full h-full object-cover object-center scale-[1.02]"
-              />
-            )
-          )}
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              key={currentMedia}
+              initial={{ opacity: 0, scale: 1.03 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.0, ease: "easeInOut" }}
+              className="w-full h-full relative"
+            >
+              {isVideo(currentMedia) ? (
+                <video
+                  src={currentMedia}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover object-center"
+                />
+              ) : (
+                <img
+                  src={currentMedia}
+                  alt={title || "CTA Banner"}
+                  className="w-full h-full object-cover object-center"
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </section>

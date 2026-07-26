@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import Image from "next/image";
-import { Home, Coffee, Maximize2, MapPin, X } from "lucide-react";
+import { Maximize2, MapPin, X, BedDouble, Utensils, Star, Building, Bath, Coffee, Wifi, Flame, Sparkles, CheckCircle2 } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
@@ -10,6 +9,7 @@ import { OptimizedImage } from "@/components/ui/OptimizedImage";
 interface AccommodationGallery {
   url: string;
   category: string;
+  title?: string;
 }
 
 interface Accommodation {
@@ -17,165 +17,302 @@ interface Accommodation {
   location: string;
   nights: string;
   type: string;
-  starRating: string;
-  roomType: string;
-  meals: string;
+  starRating?: string;
+  roomType?: string;
+  meals?: string;
   image: string;
-  gallery: AccommodationGallery[];
+  amenities?: string[];
+  gallery?: AccommodationGallery[];
 }
 
 interface StaySectionProps {
-  accommodations: Accommodation[];
+  accommodations?: Accommodation[];
 }
+
+const defaultStaysList: Accommodation[] = [
+  {
+    name: "Boutique Alpine Resort & Spa",
+    location: "Manali, Himachal Pradesh",
+    nights: "3 Nights",
+    type: "Boutique Hotel",
+    starRating: "4-Star",
+    roomType: "Quad / Triple Sharing",
+    meals: "Breakfast & Dinner Included",
+    image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200",
+    amenities: ["24/7 Hot Water", "En-Suite Clean Washrooms", "Mountain View Balcony", "In-House Buffet Restaurant", "Free Wi-Fi", "Room Heater Available"],
+    gallery: [
+      { url: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=1200", category: "Interior / Rooms", title: "Deluxe Alpine Bedroom" },
+      { url: "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1200", category: "Interior / Rooms", title: "Cozy Mountain View Suite" },
+      { url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200", category: "Bathroom", title: "Clean Modern En-Suite Washroom" },
+      { url: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?q=80&w=1200", category: "Bathroom", title: "Hot Water Shower & Amenities" },
+      { url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200", category: "Dining Area", title: "Buffet Dining Restaurant" },
+      { url: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1200", category: "Dining Area", title: "Cozy Cafe & Breakfast Lounge" },
+      { url: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200", category: "Property & Views", title: "Outdoor Swimming Pool & Sun Deck" },
+      { url: "https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=1200", category: "Property & Views", title: "Mountain Lawn & Resort Exterior" }
+    ]
+  },
+  {
+    name: "Traditional Kinnauri Heritage Homestay",
+    location: "Chhitkul Village, Kinnaur",
+    nights: "2 Nights",
+    type: "Heritage Homestay",
+    starRating: "Authentic Stay",
+    roomType: "Triple Sharing",
+    meals: "Local Organic Meals",
+    image: "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200",
+    amenities: ["Hot Water Geyser", "Attached Washrooms", "Traditional Wood Architecture", "Home-cooked Himalayan Food", "Bonfire Area"],
+    gallery: [
+      { url: "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1200", category: "Interior / Rooms", title: "Wooden Panelled Alpine Bedroom" },
+      { url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200", category: "Bathroom", title: "Attached Western Bathroom with Geyser" },
+      { url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200", category: "Dining Area", title: "Traditional Dining Room" },
+      { url: "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200", category: "Property & Views", title: "Snow Valley Balcony View" }
+    ]
+  },
+  {
+    name: "High-Altitude Stargazing Dome Camps",
+    location: "Kasol & Parvati Valley",
+    nights: "2 Nights",
+    type: "Luxury Dome Camping",
+    starRating: "Adventure Camp",
+    roomType: "Dome Tents",
+    meals: "Bonfire & Barbecue Dinner",
+    image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200",
+    amenities: ["Private Attached Washrooms", "Insulated Bedding & Blankets", "Evening Music & Bonfire", "Riverfront Campsite"],
+    gallery: [
+      { url: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200", category: "Interior / Rooms", title: "Cozy Glamping Dome Tent Interior" },
+      { url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200", category: "Bathroom", title: "Private Attached Camp Washroom" },
+      { url: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?q=80&w=1200", category: "Dining Area", title: "Outdoor Open-Air Dining & Cafe" },
+      { url: "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200", category: "Property & Views", title: "Night Stargazing Camp Site" }
+    ]
+  },
+  {
+    name: "Grand Regency Hotel",
+    location: "Amritsar, Punjab",
+    nights: "1 Night",
+    type: "City Hotel",
+    starRating: "4-Star",
+    roomType: "Twin / Double Sharing",
+    meals: "Buffet Breakfast",
+    image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200",
+    amenities: ["Air Conditioning", "Free High-Speed Wi-Fi", "24/7 Room Service", "Buffet Breakfast Lounge"],
+    gallery: [
+      { url: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=1200", category: "Interior / Rooms", title: "Luxury King Bedroom" },
+      { url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200", category: "Bathroom", title: "Modern Marble Bathroom" },
+      { url: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1200", category: "Dining Area", title: "Grand Buffet Dining Restaurant" }
+    ]
+  }
+];
 
 export default function StaySection({ accommodations }: StaySectionProps) {
   const [selectedStay, setSelectedStay] = useState<Accommodation | null>(null);
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const categories = useMemo(() => {
+  const staysList = accommodations && accommodations.length > 0 ? accommodations : defaultStaysList;
+
+  const modalCategories = useMemo(() => {
     if (!selectedStay) return ["All"];
-    const cats = new Set(selectedStay.gallery?.map(img => img.category) || []);
-    return ["All", ...Array.from(cats).filter(c => c !== "All")];
+    const catSet = new Set(selectedStay.gallery?.map(img => img.category) || []);
+    return ["All", "Interior / Rooms", "Bathroom", "Dining Area", "Property & Views"].filter(
+      c => c === "All" || catSet.has(c)
+    );
   }, [selectedStay]);
 
   const filteredImages = useMemo(() => {
     if (!selectedStay) return [];
-    if (activeCategory === "All") return selectedStay.gallery || [];
-    return selectedStay.gallery.filter(img => img.category === activeCategory);
+    const gallery = selectedStay.gallery || [{ url: selectedStay.image, category: "Property & Views", title: selectedStay.name }];
+    if (activeCategory === "All") return gallery;
+    return gallery.filter(img => img.category === activeCategory);
   }, [selectedStay, activeCategory]);
 
-  if (!accommodations || accommodations.length === 0) return null;
-
   return (
-    <section className="relative">
-      <div className="bg-white border border-zinc-100 rounded-[40px] p-10 md:p-14 shadow-sm relative">
-        <div className="flex justify-between items-center mb-10">
-          <h2 className="text-2xl font-bold text-navy capitalize">Stay Options</h2>
-        </div>
-        
-        <div className="flex flex-nowrap md:grid md:grid-cols-2 lg:grid-cols-4 gap-8 overflow-x-auto pb-6 md:pb-0 scroll-mt-32 no-scrollbar">
-          {accommodations.map((stay, i) => (
-            <div 
-              key={i} 
-              className="group cursor-pointer shrink-0 w-[260px] md:w-auto"
-              onClick={() => {
-                setSelectedStay(stay);
-                setActiveCategory("All");
-              }}
-            >
-              <div className="relative aspect-[4/3] rounded-[24px] overflow-hidden mb-4 shadow-md">
-                <OptimizedImage 
-                  src={normalizeImageUrl(stay.image) || "https://images.unsplash.com/photo-1566073771259-6a8506099945"} 
-                  alt={stay.name} 
-                  cloudinaryWidth={600}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Maximize2 className="w-8 h-8 text-white" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-navy text-sm capitalize">{stay.name}</h3>
-                  <span className="text-[9px] font-bold text-primary-orange capitalize">{stay.nights}</span>
-                </div>
-                <p className="text-[10px] text-zinc-400 font-medium capitalize tracking-widest">{stay.type} • {stay.location}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+    <section className="space-y-6 scroll-mt-28" id="stay">
+      {/* Header System */}
+      <div>
+        <h2 className="text-3xl sm:text-4xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
+          STAY &
+        </h2>
+        <h2 className="text-3xl sm:text-4xl font-black text-[#D4541A] tracking-tight uppercase font-montserrat leading-none mt-1">
+          ACCOMMODATIONS
+        </h2>
+        <div className="w-12 h-1 bg-[#D4541A] rounded-full my-3" />
+        <p className="text-zinc-800 font-semibold text-sm sm:text-base font-montserrat leading-tight">
+          Handpicked comfortable stays throughout your journey.
+        </p>
+        <p className="text-[#D4541A] font-semibold text-sm sm:text-base font-montserrat leading-tight mt-0.5">
+          Boutique hotels, heritage homestays & luxury scenic campsites.
+        </p>
       </div>
 
-      {/* Gallery Modal */}
+      {/* Stays Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 pt-2">
+        {staysList.map((stay, i) => (
+          <div 
+            key={i} 
+            onClick={() => {
+              setSelectedStay(stay);
+              setActiveCategory("All");
+            }}
+            className="bg-white border border-zinc-200/90 rounded-[20px] overflow-hidden shadow-2xs hover:border-[#D4541A] transition-all cursor-pointer group flex flex-col justify-between"
+          >
+            <div>
+              {/* Full-Bleed Stay Photo with Nights Badge */}
+              <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 shadow-2xs">
+                <OptimizedImage 
+                  src={normalizeImageUrl(stay.image) || defaultStaysList[i % defaultStaysList.length].image} 
+                  alt={stay.name} 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute top-2.5 right-2.5 bg-[#D4541A] text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm font-montserrat">
+                  {stay.nights}
+                </div>
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Maximize2 className="w-6 h-6 text-white" />
+                </div>
+              </div>
+
+              {/* Stay Details */}
+              <div className="p-4 pb-0">
+                <h3 className="text-sm font-bold text-[#0B1528] font-montserrat line-clamp-1 group-hover:text-[#D4541A] transition-colors">
+                  {stay.name}
+                </h3>
+                
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium font-montserrat mt-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#D4541A] shrink-0" />
+                  <span className="truncate">{stay.location}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Amenities Tag Row */}
+            <div className="p-4 pt-3 mt-2 border-t border-zinc-100 flex items-center justify-between text-[11px] font-semibold text-zinc-600 font-montserrat">
+              <div className="flex items-center gap-1">
+                <Building className="w-3.5 h-3.5 text-zinc-400" />
+                <span>{stay.type}</span>
+              </div>
+              {stay.starRating && (
+                <span className="text-[#D4541A] font-bold bg-orange-50 px-2 py-0.5 rounded text-[10px]">
+                  {stay.starRating}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Redesigned Stay Modal Popup with Interior / Bathroom / Dining / Views Section Tabs */}
       <AnimatePresence>
         {selectedStay && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10"
+            className="fixed inset-0 z-[100000] flex items-center justify-center p-3 sm:p-6 md:p-8 pt-[96px] pb-6 overflow-y-auto"
           >
-            <div className="absolute inset-0 bg-navy/95 backdrop-blur-xl" onClick={() => setSelectedStay(null)} />
+            <div className="fixed inset-0 bg-[#0B1528]/85 backdrop-blur-md" onClick={() => setSelectedStay(null)} />
             
             <motion.div 
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-7xl h-full max-h-[90vh] bg-white rounded-[40px] overflow-hidden flex flex-col shadow-2xl shadow-black/50"
+              className="relative w-full max-w-4xl bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-2xl z-10 max-h-[calc(100vh-130px)] flex flex-col border border-zinc-100 mt-2"
             >
-              {/* Modal Header */}
-              <div className="p-8 md:p-10 border-b border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-2xl md:text-3xl font-bold text-navy capitalize italic">{selectedStay.name}</h3>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs font-bold capitalize tracking-widest text-zinc-400">
-                    <span>{selectedStay.type}</span>
+              {/* Modal Header (Full clearance from fixed navbar) */}
+              <div className="p-4 sm:p-5 md:p-6 border-b border-zinc-100 flex items-start justify-between bg-white shrink-0">
+                <div>
+                  <h3 className="text-base sm:text-lg md:text-xl font-extrabold text-[#0B1528] font-montserrat tracking-tight leading-snug">
+                    {selectedStay.name}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-zinc-500 font-montserrat">
+                    <span className="font-semibold text-zinc-700">{selectedStay.location}</span>
                     <span>•</span>
-                    <span>{selectedStay.roomType}</span>
-                    <span>•</span>
-                    <span>{selectedStay.meals}</span>
+                    <span className="text-[#D4541A] font-bold">{selectedStay.nights}</span>
+                    {selectedStay.starRating && (
+                      <>
+                        <span>•</span>
+                        <span className="bg-orange-50 text-[#D4541A] px-2 py-0.5 rounded font-bold text-[11px]">
+                          {selectedStay.starRating}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
+                <button 
+                  onClick={() => setSelectedStay(null)}
+                  className="p-1.5 sm:p-2 rounded-full text-zinc-400 hover:text-[#0B1528] hover:bg-zinc-100 transition-colors cursor-pointer shrink-0 ml-2"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-                  {categories.map(cat => (
+              {/* Category Filter Pills (Interior / Rooms, Bathroom, Dining Area, Views) */}
+              <div className="px-4 sm:px-6 pt-3 pb-2 border-b border-zinc-100 bg-[#F8F9FA] shrink-0">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                  {modalCategories.map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setActiveCategory(cat)}
-                      className={`px-6 py-2.5 rounded-full text-[10px] font-bold capitalize tracking-widest transition-all whitespace-nowrap ${
-                        activeCategory === cat 
-                          ? "bg-primary-orange text-white shadow-lg shadow-primary-orange/20" 
-                          : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold font-montserrat transition-all shrink-0 cursor-pointer ${
+                        activeCategory === cat
+                          ? "bg-[#D4541A] text-white shadow-xs"
+                          : "bg-white text-zinc-600 border border-zinc-200/80 hover:border-zinc-300"
                       }`}
                     >
+                      {cat === "Interior / Rooms" && <BedDouble className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />}
+                      {cat === "Bathroom" && <Bath className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />}
+                      {cat === "Dining Area" && <Utensils className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />}
+                      {cat === "Property & Views" && <Sparkles className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />}
                       {cat}
                     </button>
                   ))}
                 </div>
-
-                <button 
-                  onClick={() => setSelectedStay(null)}
-                  className="absolute top-8 right-8 md:relative md:top-0 md:right-0 w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center hover:bg-destructive hover:text-white transition-all group"
-                >
-                  <X className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                </button>
               </div>
 
-              {/* Modal Content - Scrollable Gallery */}
-              <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar bg-zinc-50/50">
-                {filteredImages.length > 0 ? (
-                  <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-                    {filteredImages.map((img, idx) => (
-                      <motion.div
-                        layout
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        key={`${img.url}-${idx}`}
-                        className="relative rounded-[24px] overflow-hidden group shadow-lg"
-                      >
-                        <OptimizedImage 
-                          src={normalizeImageUrl(img.url)} 
-                          alt={`${selectedStay.name} - ${img.category}`} 
-                          cloudinaryWidth={1200}
-                          className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
-                           <span className="text-[10px] font-bold text-white capitalize tracking-widest bg-primary-orange px-3 py-1.5 rounded-full">
-                              {img.category}
-                           </span>
+              {/* Modal Body with Extra Bottom Scroll Padding so bottom photos are 100% unclipped */}
+              <div className="p-4 sm:p-6 pb-12 sm:pb-16 overflow-y-auto flex-1 custom-scrollbar space-y-5">
+                {/* Amenities Highlights Bar */}
+                {selectedStay.amenities && selectedStay.amenities.length > 0 && (
+                  <div className="p-4 bg-orange-50/40 border border-orange-100 rounded-2xl">
+                    <p className="text-xs font-bold text-[#0B1528] uppercase tracking-wider font-montserrat mb-2">
+                      Key Stay Highlights:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedStay.amenities.map((amenity, idx) => (
+                        <div key={idx} className="flex items-center gap-1.5 bg-white border border-orange-200/80 rounded-lg px-2.5 py-1 text-xs font-semibold text-zinc-700 font-montserrat shadow-2xs">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#D4541A]" />
+                          <span>{amenity}</span>
                         </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-20">
-                    <div className="w-20 h-20 rounded-full bg-zinc-100 flex items-center justify-center">
-                      <Maximize2 className="w-8 h-8 text-zinc-300" />
+                      ))}
                     </div>
-                    <p className="text-zinc-400 font-bold capitalize text-xs tracking-widest">No photos in this category</p>
                   </div>
                 )}
+
+                {/* Photos Grid with Category Badge Overlay */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {filteredImages.map((img, idx) => (
+                    <div 
+                      key={idx} 
+                      className="group bg-white border border-zinc-100 rounded-[18px] overflow-hidden shadow-xs"
+                    >
+                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-100">
+                        <OptimizedImage 
+                          src={normalizeImageUrl(img.url) || selectedStay.image} 
+                          alt={img.title || selectedStay.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute top-2.5 left-2.5 bg-[#0B1528]/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full font-montserrat">
+                          {img.category}
+                        </div>
+                      </div>
+                      {img.title && (
+                        <div className="p-3">
+                          <p className="text-xs font-bold text-[#0B1528] font-montserrat line-clamp-1">
+                            {img.title}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -184,4 +321,3 @@ export default function StaySection({ accommodations }: StaySectionProps) {
     </section>
   );
 }
-

@@ -93,7 +93,7 @@ function ConfirmationContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 gap-4">
-        <Loader2 className="w-12 h-12 animate-spin text-[#FF5B00]" />
+        <Loader2 className="w-12 h-12 animate-spin text-[#D4541A]" />
         <p className="text-xs capitalize tracking-widest text-slate-400 font-bold">Loading Booking Details...</p>
       </div>
     );
@@ -143,7 +143,7 @@ function ConfirmationContent() {
           <div className="bg-slate-50 px-8 py-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
             <div>
               <span className="text-[10px] text-slate-500 font-bold capitalize tracking-wider">Booking ID</span>
-              <p className="text-xl font-bold font-mono text-[#FF5B00]">{displayBooking.bookingId}</p>
+              <p className="text-xl font-bold font-mono text-[#D4541A]">{displayBooking.bookingId}</p>
             </div>
             <div className="text-right">
               <span className="text-[10px] text-slate-500 font-bold capitalize tracking-wider">Status</span>
@@ -195,7 +195,7 @@ function ConfirmationContent() {
                         {displayBooking.gender || 'Male'} • Age {displayBooking.age || 'N/A'}
                       </p>
                     </div>
-                    <span className="text-[9px] font-bold bg-[#FF5B00]/10 text-[#FF5B00] px-2 py-0.5 rounded capitalize">
+                    <span className="text-[9px] font-bold bg-[#D4541A]/10 text-[#D4541A] px-2 py-0.5 rounded capitalize">
                       Lead
                     </span>
                   </div>
@@ -226,7 +226,7 @@ function ConfirmationContent() {
 
 export default function BookingConfirmationPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-[#FF5B00] w-10 h-10" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-[#D4541A] w-10 h-10" /></div>}>
       <ConfirmationContent />
     </Suspense>
   );

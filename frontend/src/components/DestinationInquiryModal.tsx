@@ -3,7 +3,23 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, Users, Send, AlertCircle } from "lucide-react";
+import {
+  X,
+  Calendar,
+  Users,
+  Send,
+  AlertCircle,
+  CheckCircle2,
+  ShieldCheck,
+  MapPin,
+  Phone,
+  Mail,
+  User,
+  MessageSquare,
+  Sparkles,
+  ArrowRight,
+  Clock,
+} from "lucide-react";
 import { normalizeImageUrl, submitInquiry } from "@/lib/api";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 
@@ -29,7 +45,7 @@ export default function DestinationInquiryModal({
   destination,
   title,
   description,
-  source = 'website_booking_button'
+  source = "website_inquiry_modal",
 }: DestinationInquiryModalProps) {
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,7 +55,7 @@ export default function DestinationInquiryModal({
     city: "",
     date: "",
     count: "",
-    message: ""
+    message: "",
   });
 
   useEffect(() => {
@@ -56,18 +72,16 @@ export default function DestinationInquiryModal({
     if (isOpen) {
       scrollLockCounter.current += 1;
       document.body.style.overflow = "hidden";
-      // Prefill date if available
       if (destination?.availableDates && destination.availableDates.length > 0) {
         const firstDate = destination.availableDates[0];
-        // Format date string from YYYY-MM-DD or similar to YYYY-MM-DD if possible
         try {
           const d = new Date(firstDate);
           if (!isNaN(d.getTime())) {
-            const formattedDate = d.toISOString().split('T')[0];
-            setFormData(prev => ({ ...prev, date: formattedDate }));
+            const formattedDate = d.toISOString().split("T")[0];
+            setFormData((prev) => ({ ...prev, date: formattedDate }));
           }
         } catch (e) {
-          // ignore formatting errors
+          // ignore date format error
         }
       }
     } else {
@@ -91,7 +105,7 @@ export default function DestinationInquiryModal({
   }, [isOpen, destination, onClose]);
 
   const modalTitle = title || "Plan Your Next Trip";
-  const modalDescription = description || "Connect with our destination experts";
+  const modalDescription = description || "CONNECT WITH OUR DESTINATION EXPERTS";
 
   if (!mounted || !destination) return null;
 
@@ -99,228 +113,270 @@ export default function DestinationInquiryModal({
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-    
-    try {
-      // Append city to message for database compatibility
-      const formattedMessage = formData.city
-        ? `City: ${formData.city}${formData.message ? `\nMessage: ${formData.message}` : ""}`
-        : formData.message;
 
-      const result = await submitInquiry({
+    try {
+      await submitInquiry({
         name: formData.name,
         phone: formData.mobile,
         email: formData.email,
-        date: formData.date || (destination.availableDates?.[0] || undefined),
-        count: formData.count ? parseInt(formData.count) : undefined,
-        message: formattedMessage,
-        tripId: destination?.id,
-        tripTitle: destination?.name,
-        source: source
+        city: formData.city,
+        preferredDate: formData.date,
+        numberOfTravelers: formData.count ? parseInt(formData.count) : undefined,
+        message: formData.message,
+        destinationId: destination.id,
+        destinationName: destination.name,
+        source: source,
       });
 
-      if (result.success) {
-        setIsSuccess(true);
-        setTimeout(() => onClose(), 2000); // Close after 2 seconds
-      } else {
-        setError(result.message || "Failed to submit inquiry. Please try again.");
-      }
-    } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+      setIsSuccess(true);
+      setFormData({
+        name: "",
+        mobile: "",
+        email: "",
+        city: "",
+        date: "",
+        count: "",
+        message: "",
+      });
+    } catch (err: any) {
+      setError(err?.message || "Failed to submit inquiry. Please try again or call us directly.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return createPortal(
+  const modalMarkup = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-6">
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-3 sm:p-5 md:p-8 pt-[80px] sm:pt-[96px] pb-6 overflow-y-auto font-sans">
+          {/* Backdrop with Blur */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 bg-[#0B1528]/80 backdrop-blur-md"
             onClick={onClose}
           />
-          
+
+          {/* Main Modal Container */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.96, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative bg-white w-full md:w-full md:max-w-5xl rounded-t-[32px] rounded-b-none md:rounded-[32px] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[92vh] md:max-h-[88vh]"
+            exit={{ opacity: 0, scale: 0.96, y: 15 }}
+            transition={{ type: "spring", stiffness: 350, damping: 28 }}
+            className="relative bg-white w-full max-w-4xl rounded-[28px] md:rounded-[32px] overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.22)] z-10 flex flex-col md:flex-row max-h-[85vh] border border-slate-200/80 my-auto"
           >
-            {/* Clean Close Button */}
-            <button 
+            {/* Close Button */}
+            <button
               type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 md:top-5 md:right-5 w-9 h-9 md:w-10 md:h-10 rounded-full bg-transparent hover:bg-zinc-100 text-zinc-800 md:bg-zinc-900/80 md:hover:bg-zinc-900 md:text-white flex items-center justify-center transition-all z-[110] focus:outline-none cursor-pointer md:border md:border-white/20"
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100/90 hover:bg-slate-200 text-[#0B1528] flex items-center justify-center transition-all z-[120] cursor-pointer shadow-xs active:scale-90"
               aria-label="Close modal"
             >
-              <X className="w-5 h-5 md:w-5 md:h-5 text-zinc-800 md:text-white" />
+              <X className="w-4.5 h-4.5 text-[#0B1528]" />
             </button>
 
-            {/* Left side: Image & Info - Hidden on mobile to prevent layout/keyboard overflow */}
-            <div className="relative w-full md:w-1/2 h-64 md:h-auto hidden md:block">
-              <OptimizedImage 
-                src={normalizeImageUrl(destination.img)} 
-                alt={destination.name} 
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-8 left-8 right-8 text-white">
-                <p className="text-sm font-bold capitalize tracking-widest mb-2 opacity-90">
-                  {destination.duration || "Custom Itinerary"}
-                </p>
-                <h2 className="text-3xl md:text-5xl font-bold mb-2 tracking-tighter capitalize italic leading-[0.9]">
-                  {destination.name} Highlights
-                </h2>
-                <p className="text-sm font-medium opacity-80">
-                  {destination.subtext || "Curated experiences and local exploration"}
-                </p>
+            {/* Left Column: Premium Destination Visual Card */}
+            <div className="relative w-full md:w-[45%] h-56 md:h-auto flex flex-col justify-between p-6 md:p-8 text-white shrink-0 overflow-hidden bg-[#0B1528]">
+              {destination.img && (
+                <OptimizedImage
+                  src={normalizeImageUrl(destination.img) || destination.img}
+                  alt={destination.name}
+                  className="absolute inset-0 w-full h-full object-cover scale-[1.02]"
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528] via-[#0B1528]/50 to-black/30" />
+
+              {/* Top Tag Badges */}
+              <div className="relative z-10 flex items-center justify-between gap-2">
+                <span className="bg-[#D4541A] text-white font-extrabold text-[10.5px] uppercase tracking-widest px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3" />
+                  <span>{destination.duration || "Popular Destination"}</span>
+                </span>
+              </div>
+
+              {/* Bottom Info Content */}
+              <div className="relative z-10 space-y-3 mt-auto">
+                <div className="space-y-1">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-md">
+                    {destination.name}
+                  </h2>
+                  <p className="text-xs sm:text-sm font-medium text-slate-200 line-clamp-2 leading-relaxed">
+                    {destination.subtext || "Join our curated group expeditions with certified trip captains."}
+                  </p>
+                </div>
+
+                {/* Trust Badges Bar */}
+                <div className="pt-3 border-t border-white/20 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-100">
+                  <div className="flex items-center gap-1.5 bg-black/30 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#D4541A]" />
+                    <span className="truncate">Verified Captains</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-black/30 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="truncate">100% Safe Stays</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Right side: Form */}
-            <div className="w-full md:w-1/2 p-5 sm:p-6 md:p-10 overflow-y-auto bg-white flex flex-col justify-start md:justify-center scrollbar-thin">
-              {/* Mobile-only Header */}
-              <div className="flex md:hidden items-center gap-3.5 mb-5 pr-8">
-                <div className="w-14 h-14 rounded-[18px] overflow-hidden shrink-0 bg-zinc-100">
-                  <OptimizedImage 
-                    src={normalizeImageUrl(destination.img)} 
-                    alt={destination.name} 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-[17px] font-extrabold text-zinc-900 leading-tight tracking-tight line-clamp-1 capitalize">
-                    {destination.name}
-                  </h4>
-                  <span className="text-xs text-zinc-500 font-medium block mt-0.5">
-                    Plan your next trip
-                  </span>
-                  {destination.duration && (
-                    <span className="text-[10px] font-bold text-zinc-400 block mt-0.5 uppercase tracking-wider">
-                      {destination.duration}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="hidden md:block mb-4 md:mb-6 pr-6">
-                <h3 className="text-2xl md:text-3xl font-bold text-navy tracking-tighter leading-none mb-2 italic capitalize">{modalTitle}</h3>
-                <p className="text-zinc-400 font-bold text-xs capitalize tracking-widest">{modalDescription}</p>
+            {/* Right Column: High-Converting Form */}
+            <div className="w-full md:w-[55%] p-6 sm:p-7 md:p-8 overflow-y-auto bg-white flex flex-col justify-start no-scrollbar">
+              <div className="mb-5 pr-6 space-y-0.5">
+                <h3 className="text-xl sm:text-2xl font-black text-[#0B1528] tracking-tight">
+                  {modalTitle}
+                </h3>
+                <p className="text-[11px] font-extrabold text-[#D4541A] uppercase tracking-wider">
+                  {modalDescription}
+                </p>
               </div>
 
               {isSuccess ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-4 shadow-sm border border-emerald-100">
-                    <Send className="w-7 h-7" />
+                <div className="flex flex-col items-center justify-center py-8 text-center my-auto space-y-3">
+                  <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center shadow-sm border border-emerald-100">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                   </div>
-                  <h4 className="text-xl font-bold text-navy mb-1.5 capitalize italic tracking-tighter">Request Received!</h4>
-                  <p className="text-zinc-500 font-bold text-sm font-montserrat">Our expert will reach out to you within 24 hours.</p>
+                  <div className="space-y-1">
+                    <h4 className="text-lg font-extrabold text-[#0B1528]">Inquiry Received! 🎉</h4>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
+                      Thank you <span className="font-bold text-[#0B1528]">{formData.name}</span>. Our trip expert will call you back within <span className="font-bold text-[#D4541A]">15 minutes</span> with complete itinerary details.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="mt-2 px-6 py-2.5 bg-[#0B1528] text-white text-xs font-bold rounded-full hover:bg-slate-800 transition-colors"
+                  >
+                    Done
+                  </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-3 md:space-y-3.5">
+                <form onSubmit={handleSubmit} className="space-y-3.5">
                   {error && (
-                    <div className="p-3.5 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2.5 text-red-600 text-xs font-bold">
+                    <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-xs font-bold">
                       <AlertCircle className="w-4 h-4 shrink-0" />
-                      {error}
+                      <span>{error}</span>
                     </div>
                   )}
-                  <div>
+
+                  {/* Full Name */}
+                  <div className="relative flex items-center">
+                    <User className="absolute left-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
                     <input
                       required
                       type="text"
-                      placeholder="Your Name"
-                      className="w-full px-5 py-3 rounded-xl sm:rounded-2xl bg-zinc-50 border border-zinc-100 focus:border-primary-orange focus:ring-0 outline-none transition-all font-bold text-sm placeholder:text-zinc-300 h-11 md:h-12"
+                      placeholder="Your Full Name"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528] placeholder:text-slate-400"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     />
                   </div>
-                  
-                  <div className="flex items-center gap-2.5 px-4 rounded-xl sm:rounded-2xl bg-zinc-50 border border-zinc-100 focus-within:border-primary-orange focus-within:ring-0 transition-all h-11 md:h-12">
-                    <span className="text-zinc-400 font-bold text-sm select-none shrink-0 border-r border-zinc-200/80 pr-2.5">
+
+                  {/* Phone Input with +91 Prefix */}
+                  <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-[#D4541A] focus-within:bg-white transition-all px-3.5 py-1">
+                    <Phone className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
+                    <span className="text-slate-500 font-bold text-xs select-none border-r border-slate-200 pr-2.5 mr-2">
                       +91
                     </span>
                     <input
                       required
                       type="tel"
-                      placeholder="Mobile No."
-                      className="flex-1 bg-transparent border-0 focus:ring-0 outline-none transition-all font-bold text-sm placeholder:text-zinc-300 p-0 h-full w-full"
+                      placeholder="Mobile No. (WhatsApp Enabled)"
+                      className="flex-1 bg-transparent border-0 outline-none font-semibold text-xs text-[#0B1528] placeholder:text-slate-400 py-2.5 w-full"
                       value={formData.mobile}
                       onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                     />
                   </div>
 
-                  <div>
+                  {/* Email Input */}
+                  <div className="relative flex items-center">
+                    <Mail className="absolute left-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
                     <input
                       type="email"
-                      placeholder="Email (optional)"
-                      className="w-full px-5 py-3 rounded-xl sm:rounded-2xl bg-zinc-50 border border-zinc-100 focus:border-primary-orange focus:ring-0 outline-none transition-all font-bold text-sm placeholder:text-zinc-300 h-11 md:h-12"
+                      placeholder="Email Address (optional)"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528] placeholder:text-slate-400"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />
                   </div>
 
-                  <div>
+                  {/* City of Residence */}
+                  <div className="relative flex items-center">
+                    <MapPin className="absolute left-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
                     <input
-                      required
                       type="text"
-                      placeholder="City of Residence"
-                      className="w-full px-5 py-3 rounded-xl sm:rounded-2xl bg-zinc-50 border border-zinc-100 focus:border-primary-orange focus:ring-0 outline-none transition-all font-bold text-sm placeholder:text-zinc-300 h-11 md:h-12"
+                      placeholder="City of Residence (e.g. Ahmedabad, Mumbai)"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528] placeholder:text-slate-400"
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                    <div className="relative">
-                      <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none z-10" />
+                  {/* Date & Travellers Split Grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="relative flex items-center">
+                      <Calendar className="absolute left-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                       <input
-                        required
                         type="date"
-                        className="w-full pl-9 pr-2 sm:pl-10 sm:pr-3 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-zinc-50 border border-zinc-100 focus:border-primary-orange focus:ring-0 outline-none transition-all font-bold text-xs sm:text-sm text-zinc-700 h-11 md:h-12 [color-scheme:light]"
+                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528]"
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       />
                     </div>
-                    <div className="relative">
-                      <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none z-10" />
+
+                    <div className="relative flex items-center">
+                      <Users className="absolute left-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                       <input
-                        required
                         type="number"
-                        placeholder="Travellers"
-                        className="w-full pl-9 pr-3 sm:pl-10 sm:pr-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-zinc-50 border border-zinc-100 focus:border-primary-orange focus:ring-0 outline-none transition-all font-bold text-xs sm:text-sm placeholder:text-zinc-300 h-11 md:h-12"
+                        min="1"
+                        placeholder="No. Travellers"
+                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528] placeholder:text-slate-400"
                         value={formData.count}
                         onChange={(e) => setFormData({ ...formData, count: e.target.value })}
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <textarea
-                      placeholder="Message (optional)"
-                      rows={2}
-                      className="w-full px-5 py-3 rounded-xl sm:rounded-2xl bg-zinc-50 border border-zinc-100 focus:border-primary-orange focus:ring-0 outline-none transition-all font-bold text-sm placeholder:text-zinc-300 resize-none"
+                  {/* Message Input */}
+                  <div className="relative flex items-center">
+                    <MessageSquare className="absolute left-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Special Requests / Custom Requirements (optional)"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-xs text-[#0B1528] placeholder:text-slate-400"
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     />
                   </div>
 
+                  {/* Action Button */}
                   <button
-                    disabled={isSubmitting}
                     type="submit"
-                    className="w-full py-3.5 md:py-4 bg-primary-orange text-white rounded-xl sm:rounded-2xl font-bold text-base md:text-lg capitalize tracking-tighter shadow-xl hover:bg-primary-orange/90 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:scale-100 mt-1"
+                    disabled={isSubmitting}
+                    className="w-full bg-[#D4541A] hover:bg-[#b84312] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-lg shadow-orange-500/25 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
                   >
-                    {isSubmitting ? "Connecting..." : "Connect with Expert"}
+                    {isSubmitting ? (
+                      <span>Submitting...</span>
+                    ) : (
+                      <>
+                        <span>Connect With Expert</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
+
+                  <p className="text-[10.5px] text-center text-slate-400 font-medium flex items-center justify-center gap-1">
+                    <Clock className="w-3 h-3 text-emerald-500" />
+                    <span>Average response time: 15 minutes</span>
+                  </p>
                 </form>
               )}
             </div>
           </motion.div>
         </div>
       )}
-    </AnimatePresence>,
-    document.body
+    </AnimatePresence>
   );
+
+  return createPortal(modalMarkup, document.body);
 }

@@ -1,222 +1,181 @@
 "use client";
 
-import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { normalizeImageUrl } from "@/lib/api";
-import { OptimizedImage } from "@/components/ui/OptimizedImage";
-import { cn } from "@/lib/utils";
-import { WavyEdges } from "./ui/WavyEdges";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { ArrowRight, BookOpen } from "lucide-react";
+import { motion } from "framer-motion";
+import { Blog } from "@/types";
 
-interface BlogItem {
+interface BlogCardItem {
+  id: string;
   title: string;
-  author: string;
-  authorImage?: string;
-  readTime: string;
+  slug: string;
   image: string;
-  status: string;
-  slug?: string;
-  content?: string;
-  excerpt?: string;
-  hasVideo?: boolean;
-  createdAt?: string;
+  authorName: string;
+  authorAvatar: string;
+  readTime: string;
 }
+
+const MOCK_STORIES: BlogCardItem[] = [
+  {
+    id: "b1",
+    title: "The Winter Beauty of Kashmir",
+    slug: "winter-beauty-of-kashmir",
+    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+    authorName: "Aditi Raval",
+    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
+    readTime: "7 min read",
+  },
+  {
+    id: "b2",
+    title: "8-Day Dubai Adventure: A Journey of Thrills & Luxury",
+    slug: "dubai-adventure",
+    image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80",
+    authorName: "Harsh Patel",
+    authorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+    readTime: "6 min read",
+  },
+  {
+    id: "b3",
+    title: "Winter Spiti Valley Experience",
+    slug: "winter-spiti-valley-experience",
+    image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80",
+    authorName: "Avdhesh Patel",
+    authorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
+    readTime: "5 min read",
+  },
+  {
+    id: "b4",
+    title: "Bhrigu Lake Trek – High Altitude Serenity",
+    slug: "bhrigu-lake-trek",
+    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80",
+    authorName: "Priya Shah",
+    authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
+    readTime: "8 min read",
+  },
+];
 
 interface BlogSectionProps {
-  blogs?: BlogItem[];
+  blogs?: Blog[];
   title?: string;
   subtitle?: string;
-  titleSize?: string | number;
-  titleWeight?: string | number;
-  topLabel?: string;
-  titleStyle?: 'standard' | 'boxed';
-  wavyEdges?: boolean;
-  topColor?: string;
-  bottomColor?: string;
 }
 
-const defaultBlogs: BlogItem[] = [];
-
-export default function BlogSection({ 
+export default function BlogSection({
   blogs = [],
-  title = "Watch & Read",
+  title,
   subtitle,
-  titleSize,
-  titleWeight,
-  topLabel,
-  titleStyle = 'standard',
-  wavyEdges = false,
-  topColor = "#ffffff",
-  bottomColor = "#ffffff",
 }: BlogSectionProps) {
-  const displayBlogs = blogs;
-  if (!displayBlogs || displayBlogs.length === 0) return null;
-  const prefersReducedMotion = useReducedMotion();
-  const isMobile = useIsMobile();
-  const reduceMotion = prefersReducedMotion || isMobile;
+  const displayTitle = (!title || title === "New journal" || title === "Journal" || title === "Blogs") ? "Stories" : title;
+  const displaySubtitle = subtitle || "From The Road";
 
-  const scrollRight = () => {
-    const el = document.getElementById('blog-slider-container');
-    if (el) el.scrollBy({ left: 300, behavior: 'smooth' });
-  };
+  const displayStories: BlogCardItem[] = (blogs && blogs.length >= 4)
+    ? blogs.map((b: any, idx: number) => {
+        const mock = MOCK_STORIES[idx % MOCK_STORIES.length];
+        const rawAuthor = b.author || mock.authorName;
+        const cleanAuthor = rawAuthor.replace(/^by\s+/i, "");
+        return {
+          id: b._id || b.id || `b-${idx}`,
+          title: b.title || mock.title,
+          slug: b.slug || "story",
+          image: b.image || mock.image,
+          authorName: cleanAuthor,
+          authorAvatar: b.authorImage || mock.authorAvatar,
+          readTime: b.readTime || mock.readTime,
+        };
+      })
+    : MOCK_STORIES;
 
   return (
-    <section className="section-wrapper bg-white overflow-hidden relative max-md:!px-0">
-      {wavyEdges && <WavyEdges color={topColor} position="top" />}
-      <div className="max-w-[1440px] mx-auto relative max-md:px-0 px-4 md:px-0">
-        <div className="flex flex-col mb-8 px-4 md:px-0">
-          {topLabel && (
-            <span className="section-label">
-              {topLabel}
-            </span>
-          )}
-          <div className={cn(
-            titleStyle === 'boxed' && "p-6 md:px-10 md:py-8 rounded-[20px] md:rounded-[32px] border border-slate-200 bg-white shadow-sm max-w-fit"
-          )}>
-            <h2 
-              className="section-heading text-[#082B5B] !font-extrabold capitalize"
-              style={{ 
-                fontSize: titleSize ? (isNaN(Number(titleSize)) ? titleSize : `${titleSize}px`) : undefined
-              }}
-            >
-              {title || "New Journal"}
+    <section className="bg-white py-8 md:py-10 border-t border-zinc-100 font-montserrat">
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
+        
+        {/* HEADER ROW */}
+        <div className="flex items-center justify-between mb-8 sm:mb-10 flex-wrap gap-4">
+          <div className="flex items-baseline gap-2.5 flex-wrap">
+            <h2 className="text-[#1B2A4A] font-montserrat font-semibold text-[28px] sm:text-[32px] md:text-[36px] leading-tight">
+              {displayTitle}
             </h2>
+            <span className="font-caveat font-bold text-[#D4541A] text-[32px] sm:text-[36px] md:text-[42px] leading-none">
+              {displaySubtitle}
+            </span>
           </div>
+
+          <Link
+            href="/blogs"
+            className="group inline-flex items-center gap-2 text-sm sm:text-[16px] font-bold text-[#111827] hover:text-[#D4541A] transition-colors"
+          >
+            <span>View All Stories</span>
+            <ArrowRight className="w-4 h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
+          </Link>
         </div>
 
-        <div className="relative group">
-          <div 
-            id="blog-slider-container"
-            className="flex gap-4 md:gap-[28px] overflow-x-auto no-scrollbar pb-6 snap-x scroll-smooth px-4 md:px-0 scroll-pl-4 md:scroll-pl-0"
-          >
-            {displayBlogs.map((art, i) => (
-              <BlogCard key={art.slug || i} art={art} i={i} reduceMotion={reduceMotion} />
-            ))}
-          </div>
-
-          {/* Floating Next Button */}
-          {displayBlogs.length > 0 && (
-            <button 
-              onClick={scrollRight}
-              className="absolute -right-4 top-[40%] -translate-y-1/2 w-12 h-12 rounded-full bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center text-navy hover:scale-110 transition-all z-10 opacity-0 group-hover:opacity-100"
-              aria-label="Scroll Right"
+        {/* BLOG / STORIES CARDS GRID (MATCHING REFERENCE DESIGN EXACTLY) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+          {displayStories.slice(0, 4).map((story, idx) => (
+            <motion.div
+              key={story.id || idx}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.08, duration: 0.5 }}
+              viewport={{ once: true }}
+              className="group flex flex-col bg-white border border-zinc-200/80 rounded-[24px] overflow-hidden shadow-[0_6px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.14)] hover:-translate-y-1.5 transition-all duration-300 isolate"
             >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          )}
+              {/* TOP PHOTO CONTAINER EXTENDING FULL FLUSH TO EDGES */}
+              <div className="relative w-full aspect-[16/10] bg-zinc-100 overflow-hidden">
+                <Link href={`/blogs/${story.slug}`} className="absolute inset-0 z-10" aria-label={story.title} />
+                <Image
+                  src={story.image}
+                  alt={story.title}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
+
+                {/* BOOK ICON BADGE AT TOP-RIGHT */}
+                <div className="absolute top-3.5 right-3.5 z-20 text-white/90 drop-shadow-md">
+                  <BookOpen className="w-4.5 h-4.5" />
+                </div>
+              </div>
+
+              {/* CARD BODY WITH AVATAR, TITLE & AUTHOR/READ TIME */}
+              <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between">
+                <div className="flex gap-3 items-start w-full">
+                  {/* AUTHOR AVATAR PHOTO */}
+                  <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden shrink-0 border border-zinc-200 shadow-2xs">
+                    <Image
+                      src={story.authorAvatar}
+                      alt={story.authorName}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+
+                  {/* TITLE & FOOTER META */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                    <h3 className="text-[#1B2A4A] font-montserrat font-semibold text-[15px] sm:text-[16px] leading-[1.35] line-clamp-2 mb-2.5 group-hover:text-[#D4541A] transition-colors">
+                      <Link href={`/blogs/${story.slug}`}>
+                        {story.title}
+                      </Link>
+                    </h3>
+
+                    {/* AUTHOR NAME & READING TIME ROW */}
+                    <div className="flex items-center justify-between font-montserrat text-xs text-[#999999] gap-2 pt-1 border-t border-zinc-100/80">
+                      <span className="truncate">
+                        by <span className="text-[#666666] font-medium">{story.authorName}</span>
+                      </span>
+                      <span className="shrink-0 text-zinc-400 font-normal">
+                        {story.readTime}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
+
       </div>
-      {wavyEdges && <WavyEdges color={bottomColor} position="bottom" />}
     </section>
-  );
-}
-
-const BLOG_PHOTO_MAP: Record<string, string> = {
-  kasol: "https://images.unsplash.com/photo-1597037750734-450f6f406560?auto=format&fit=crop&w=800&q=80",
-  parvati: "https://images.unsplash.com/photo-1597037750734-450f6f406560?auto=format&fit=crop&w=800&q=80",
-  spiti: "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
-  zanskar: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80",
-  chadar: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80",
-  kedarnath: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
-  manali: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
-  bali: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80"
-};
-
-function getBlogCover(art: BlogItem): string {
-  if (art.image) {
-    const normalized = normalizeImageUrl(art.image);
-    if (normalized) return normalized;
-  }
-  const titleKey = (art.title || "").toLowerCase();
-  for (const [key, photoUrl] of Object.entries(BLOG_PHOTO_MAP)) {
-    if (titleKey.includes(key)) return photoUrl;
-  }
-  return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80";
-}
-
-function BlogCard({ art, i, reduceMotion }: { art: BlogItem, i: number, reduceMotion: boolean }) {
-  const content = art.content || '';
-  const isVideo = Boolean(art.hasVideo || content.includes('youtube.com') || content.includes('youtu.be') || content.includes('iframe'));
-  const linkPath = isVideo ? `/watch/${art.slug}` : `/read/${art.slug}`;
-
-  const initials = art.author ? art.author.charAt(0).toUpperCase() : "Y";
-  const getAvatarColor = (name: string) => {
-    const colors = ["#E87A00", "#5C6BC0", "#4CAF50", "#E91E63", "#00BCD4"];
-    const charCode = name ? name.charCodeAt(0) : 0;
-    return colors[charCode % colors.length];
-  };
-  const avatarBg = getAvatarColor(art.author);
-  const blogImageSrc = getBlogCover(art);
-
-  return (
-    <motion.div
-      initial={reduceMotion ? false : { opacity: 0, x: 20 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      transition={reduceMotion ? { duration: 0 } : { delay: i * 0.1 }}
-      viewport={{ once: true }}
-      className="flex-none snap-start bg-white rounded-[32px] shadow-[0_15px_35px_rgba(0,0,0,0.06),0_5px_15px_rgba(0,0,0,0.03)] border border-zinc-100/80 hover:shadow-[0_25px_50px_rgba(0,0,0,0.15)] hover:-translate-y-1.5 transition-all duration-500 flex flex-col overflow-hidden group/card w-[280px] min-w-[280px] h-[275px] min-h-[275px] md:w-[340px] md:min-w-[340px] md:h-[310px] md:min-h-[310px]"
-    >
-      <Link href={linkPath} prefetch={false} className="flex flex-col h-full w-full text-left justify-start">
-        {/* Top Image Area */}
-        <div className="relative w-full aspect-[16/9.5] rounded-t-[32px] rounded-b-[24px] overflow-hidden shrink-0 bg-zinc-100">
-          <OptimizedImage 
-            src={blogImageSrc} 
-            alt={art.title} 
-            cloudinaryWidth={600}
-            bunnyVariant="x540gt"
-            sizes="340px"
-            width={600}
-            height={356}
-            priority={true}
-            className="w-full h-full object-cover transition-transform duration-1000 group-hover/card:scale-105" 
-          />
-          {/* Magazine/Video Icon Overlay */}
-          <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-sm p-1.5 rounded-lg">
-            {isVideo ? (
-              <svg className="w-3.5 h-3.5 text-white fill-current" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            ) : (
-              <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M4 6H2v14a2 2 0 002 2h14v-2H4V6zm16-4H8a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z" />
-              </svg>
-            )}
-          </div>
-        </div>
-
-        {/* Content Area */}
-        <div className="flex gap-3.5 items-center px-4 pb-4 pt-3.5 w-full">
-          <div 
-            className="w-11 h-11 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white font-bold text-[13px] shadow-sm"
-            style={{ backgroundColor: avatarBg }}
-          >
-            {art.authorImage ? (
-              <OptimizedImage 
-                src={normalizeImageUrl(art.authorImage)} 
-                alt={art.author} 
-                width={44}
-                height={44}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              initials
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0 flex flex-col justify-between h-[72px]">
-            <h3 className="text-[15px] font-extrabold text-[#082B5B] leading-[1.3] line-clamp-2 select-none group-hover/card:text-[#FF5B00] transition-colors">
-              {art.title}
-            </h3>
-            
-            <div className="flex items-center justify-between text-xs text-zinc-400 font-medium">
-              <span className="truncate">by {art.author || "Admin"}</span>
-              <span className="shrink-0">{art.readTime || "5 min read"}</span>
-            </div>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
   );
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import dynamic from "next/dynamic";
 import { Trip, Review, Blog } from "@/types";
 
@@ -36,6 +38,9 @@ const ReviewsSection = dynamic(() => import("./ReviewsSection"), {
 const CTABanner = dynamic(() => import("./CTABanner"), {
   loading: () => <SectionSkeleton height="500px" />,
 });
+const RecentPhotosSection = dynamic(() => import("./RecentPhotosSection"), {
+  loading: () => <SectionSkeleton height="400px" />,
+});
 const PhotoGrid = dynamic(() => import("./PhotoGrid"), {
   loading: () => <SectionSkeleton height="400px" />,
 });
@@ -70,10 +75,42 @@ interface PageRendererProps {
 export default function PageRenderer({ sections = [], trips = [], reviews = [], blogs = [], settings }: PageRendererProps) {
   if (!sections || !Array.isArray(sections)) return null;
 
-  const visibleSections = sections.filter(s => s.visible !== false);
+  let visibleSections = sections.filter(s => s.visible !== false);
+  const hasDestinations = visibleSections.some(s => s.type === 'destinations');
+
+  // Insert destinations right before reviews if not already present in section array
+  if (!hasDestinations) {
+    const reviewsIndex = visibleSections.findIndex(s => s.type === 'reviews');
+    const destSection = { type: 'destinations', data: {} };
+    if (reviewsIndex !== -1) {
+      visibleSections = [
+        ...visibleSections.slice(0, reviewsIndex),
+        destSection,
+        ...visibleSections.slice(reviewsIndex)
+      ];
+    } else {
+      visibleSections.push(destSection);
+    }
+  }
+
+  // Ensure recent_photos section is always included if missing
+  const hasRecentPhotos = visibleSections.some(s => s.type === 'recent_photos' || s.type === 'photo_grid');
+  if (!hasRecentPhotos) {
+    const reviewsIndex = visibleSections.findIndex(s => s.type === 'reviews' || s.type === 'blogs');
+    const photoSection = { type: 'recent_photos', data: {} };
+    if (reviewsIndex !== -1) {
+      visibleSections = [
+        ...visibleSections.slice(0, reviewsIndex),
+        photoSection,
+        ...visibleSections.slice(reviewsIndex)
+      ];
+    } else {
+      visibleSections.push(photoSection);
+    }
+  }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col w-full min-w-0">
       {visibleSections.map((section, index) => {
         const { type, data } = section;
 
@@ -82,8 +119,8 @@ export default function PageRenderer({ sections = [], trips = [], reviews = [], 
           if (!s) return '#ffffff';
           
           // Map exact backgrounds for components with custom/hardcoded styling
-          if (['destinations'].includes(s.type)) return '#D4D6D9';
-          if (['trips', 'upcoming_trips', 'featured_trips', 'trending_trips', 'blogs', 'journal'].includes(s.type)) return '#ffffff';
+          if (['destinations', 'recent_photos', 'photo_grid', 'image_gallery'].includes(s.type)) return '#F5F5F5';
+          if (['trips', 'upcoming_trips', 'featured_trips', 'trending_trips', 'blogs', 'journal', 'reviews'].includes(s.type)) return '#ffffff';
           if (s.type === 'bestie') return '#BDD5D5';
           
           if (['hero', 'cta_banner', 'cta_slider', 'cinematic_banner', 'video_section', 'reality'].includes(s.type)) return 'transparent';
@@ -95,22 +132,26 @@ export default function PageRenderer({ sections = [], trips = [], reviews = [], 
         const renderSection = () => {
           const prevBg = index > 0 ? getBgColor(index - 1) : '#ffffff';
           const nextBg = index < visibleSections.length - 1 ? getBgColor(index + 1) : '#ffffff';
+          const sectionData = section.draft || section.data || section.content || {};
           const commonProps = { 
             topColor: prevBg, 
             bottomColor: nextBg,
-            ...data 
+            ...sectionData 
           };
 
           switch (type) {
             case 'hero':
-              return <Hero key={index} {...commonProps} settings={settings} />;
+              return null;
             case 'social_proof':
               return <SocialProofBar key={index} {...commonProps} />;
             case 'trips':
             case 'upcoming_trips':
             case 'featured_trips':
-            case 'trending_trips':
-              return <CommunityTrips key={index} trips={trips} {...commonProps} />;
+            case 'trending_trips': {
+              const heroSection = sections.find((s) => s.type === 'hero');
+              const heroDraft = heroSection?.draft || heroSection?.data || heroSection?.content || {};
+              return <CommunityTrips key={index} trips={trips} {...heroDraft} {...commonProps} />;
+            }
             case 'bestie':
               return <BestieSection key={index} {...commonProps} />;
             case 'destinations':
@@ -123,17 +164,35 @@ export default function PageRenderer({ sections = [], trips = [], reviews = [], 
             case 'reviews':
               return <ReviewsSection key={index} reviews={reviews} {...commonProps} />;
             case 'vibe':
-              return <VibeSection key={index} {...commonProps} />;
-            case 'cta_banner':
-              return <CTABanner key={index} {...commonProps} />;
-            case 'photo_grid':
-              return <PhotoGrid key={index} {...commonProps} />;
-            case 'image_gallery':
-              return <ImageGallery key={index} {...commonProps} />;
             case 'cta_slider':
-              return <CTASlider key={index} {...commonProps} />;
-            case 'cinematic_banner':
-              return <CinematicBanner key={index} {...commonProps} />;
+            case 'cta_banner':
+            case 'cinematic_banner': {
+              const sliderDraft = section.draft || section.data || section.content || {};
+              return <CTASlider key={index} {...sliderDraft} {...commonProps} />;
+            }
+            case 'recent_photos':
+            case 'photo_grid': {
+              const photoData = section.draft || section.data || section.content || {};
+              const rawList = photoData.photos || photoData.items || photoData.images;
+              const formattedPhotos = (Array.isArray(rawList) && rawList.length > 0)
+                ? rawList.map((p: any, i: number) => ({
+                    id: p.id || `photo-${i}`,
+                    url: p.src || p.url || p.image || p.imageUrl,
+                    caption: p.caption || "Trip Memory",
+                    location: p.location || "Himalayan Expedition"
+                  })).filter((p: any) => Boolean(p.url))
+                : undefined;
+
+              return (
+                <RecentPhotosSection
+                  key={index}
+                  photos={formattedPhotos}
+                  title={photoData.titlePrimary || photoData.title}
+                  subtitle={photoData.titleAccent || photoData.subtitle}
+                  {...commonProps}
+                />
+              );
+            }
             case 'photo_slider':
               return <PhotoSlider key={index} {...commonProps} />;
             case 'video_section':
@@ -167,8 +226,8 @@ export default function PageRenderer({ sections = [], trips = [], reviews = [], 
         const getBackgroundClass = (idx: number) => {
           const s = visibleSections[idx];
           if (!s) return 'bg-transparent';
-          if (['destinations'].includes(s.type)) return 'bg-[#D4D6D9]';
-          if (['trips', 'upcoming_trips', 'featured_trips', 'trending_trips', 'blogs', 'journal'].includes(s.type)) return 'bg-white';
+          if (['destinations', 'recent_photos', 'photo_grid', 'image_gallery'].includes(s.type)) return 'bg-[#F5F5F5]';
+          if (['trips', 'upcoming_trips', 'featured_trips', 'trending_trips', 'blogs', 'journal', 'reviews'].includes(s.type)) return 'bg-white';
           if (['hero', 'cta_banner', 'cta_slider', 'cinematic_banner', 'video_section', 'reality'].includes(s.type)) return 'bg-transparent';
           
           const patterns = ['bg-[#ffffff]', 'bg-[#f6f6f6]'];
