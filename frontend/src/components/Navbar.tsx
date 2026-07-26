@@ -124,7 +124,7 @@ export default function Navbar({
           {/* MOBILE HAMBURGER BUTTON */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden relative z-[60] p-2"
+            className="md:hidden relative z-[60] p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMenuOpen ? (
@@ -136,27 +136,30 @@ export default function Navbar({
         </div>
       </nav>
 
-      {/* MOBILE OVERLAY MENU */}
+      {/* MOBILE FULL-SCREEN OVERLAY MENU */}
       <div
         className={cn(
-          "fixed inset-0 bg-white z-50 transition-transform duration-300 md:hidden flex flex-col pt-24 px-8 gap-6",
+          "fixed inset-0 bg-white z-[9998] transition-transform duration-300 md:hidden flex flex-col pt-28 px-6 sm:px-8 gap-4 overflow-y-auto",
           isMenuOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
-        {resolvedNavLinks.map((link: NavLink) => (
-          <Link
-            key={link.name}
-            href={link.href}
-            onClick={() => setIsMenuOpen(false)}
-            className="text-xl font-bold text-[#1B2A4A] hover:text-[#D4541A]"
-          >
-            {link.name}
-          </Link>
-        ))}
+        <div className="flex flex-col gap-2">
+          {resolvedNavLinks.map((link: NavLink) => (
+            <Link
+              key={link.name}
+              href={link.href}
+              onClick={() => setIsMenuOpen(false)}
+              className="text-lg font-extrabold text-[#1B2A4A] hover:text-[#D4541A] min-h-[52px] flex items-center border-b border-zinc-100/80 px-2 transition-colors"
+            >
+              {link.name}
+            </Link>
+          ))}
+        </div>
+
         <Link
           href="/trips"
           onClick={() => setIsMenuOpen(false)}
-          className="mt-4 w-full py-3.5 bg-[#D4541A] text-white text-center font-bold text-lg rounded-full shadow-md"
+          className="mt-6 w-full min-h-[56px] bg-[#D4541A] text-white text-center font-extrabold text-base rounded-full shadow-md flex items-center justify-center active:scale-95 transition-transform"
         >
           Plan Your Trip
         </Link>

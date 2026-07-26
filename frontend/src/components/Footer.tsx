@@ -34,17 +34,17 @@ export default function Footer({
   return (
     <footer className="bg-[#0B1528] text-white pt-16 pb-10 font-montserrat border-t border-slate-800 relative z-20">
       <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
-        {/* Main 4-Column Footer Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 md:gap-14 pb-14">
+        {/* Main 3-Column Footer Grid (1-Col Mobile Stack) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 pb-14">
           
-          {/* Column 1: Brand Logo, Bio & Socials (4 Cols) */}
-          <div className="lg:col-span-4 space-y-5">
+          {/* Column 1: Brand Logo, Bio & Socials */}
+          <div className="space-y-5">
             <Link href="/" className="inline-block">
               <img
                 src="/footer-logo.png"
                 alt="YouthCamping"
                 className="w-auto object-contain"
-                style={{ height: '132px' }}
+                style={{ height: '110px' }}
               />
             </Link>
 
@@ -54,12 +54,11 @@ export default function Footer({
 
             {/* Social Media Buttons */}
             <div className="flex items-center gap-3 pt-2">
-              {/* Instagram */}
               <a 
                 href="https://instagram.com/youthcamping" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#D4541A] flex items-center justify-center text-white transition-all cursor-pointer shadow-2xs"
+                className="w-11 h-11 rounded-full bg-white/10 hover:bg-[#D4541A] flex items-center justify-center text-white transition-all cursor-pointer shadow-2xs min-w-[44px] min-h-[44px]"
                 aria-label="Instagram"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -67,12 +66,11 @@ export default function Footer({
                 </svg>
               </a>
 
-              {/* Facebook */}
               <a 
                 href="https://facebook.com/youthcamping" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#D4541A] flex items-center justify-center text-white transition-all cursor-pointer shadow-2xs"
+                className="w-11 h-11 rounded-full bg-white/10 hover:bg-[#D4541A] flex items-center justify-center text-white transition-all cursor-pointer shadow-2xs min-w-[44px] min-h-[44px]"
                 aria-label="Facebook"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -80,12 +78,11 @@ export default function Footer({
                 </svg>
               </a>
 
-              {/* YouTube */}
               <a 
                 href="https://youtube.com/youthcamping" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#D4541A] flex items-center justify-center text-white transition-all cursor-pointer shadow-2xs"
+                className="w-11 h-11 rounded-full bg-white/10 hover:bg-[#D4541A] flex items-center justify-center text-white transition-all cursor-pointer shadow-2xs min-w-[44px] min-h-[44px]"
                 aria-label="YouTube"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -93,12 +90,11 @@ export default function Footer({
                 </svg>
               </a>
 
-              {/* WhatsApp */}
               <a 
                 href={`https://wa.me/${phone.replace(/\D/g, '')}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#D4541A] flex items-center justify-center text-white transition-all cursor-pointer shadow-2xs"
+                className="w-11 h-11 rounded-full bg-white/10 hover:bg-[#D4541A] flex items-center justify-center text-white transition-all cursor-pointer shadow-2xs min-w-[44px] min-h-[44px]"
                 aria-label="WhatsApp"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -108,90 +104,91 @@ export default function Footer({
             </div>
           </div>
 
-          {/* Column 2: Quick Links (2.5 Cols) */}
-          <div className="lg:col-span-2 space-y-5">
-            <h3 className="text-white font-extrabold text-sm uppercase tracking-wider font-montserrat">
-              Quick Links
-            </h3>
-            <ul className="space-y-3.5 text-xs text-zinc-400 font-medium">
-              <li>
-                <Link href="/trips" className="hover:text-white transition-colors">
-                  Trips
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-white transition-colors">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/stories" className="hover:text-white transition-colors">
-                  Stories
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="hover:text-white transition-colors">
-                  Contact Us
-                </Link>
-              </li>
-            </ul>
+          {/* Column 2: Quick Links & Useful Links */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="text-white font-extrabold text-xs uppercase tracking-wider font-montserrat">
+                Quick Links
+              </h3>
+              <ul className="space-y-2 text-xs text-zinc-400 font-medium">
+                <li>
+                  <Link href="/trips" className="hover:text-white transition-colors py-2 block min-h-[44px] flex items-center">
+                    Trips
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/about" className="hover:text-white transition-colors py-2 block min-h-[44px] flex items-center">
+                    About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/stories" className="hover:text-white transition-colors py-2 block min-h-[44px] flex items-center">
+                    Stories
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="hover:text-white transition-colors py-2 block min-h-[44px] flex items-center">
+                    Contact Us
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-white font-extrabold text-xs uppercase tracking-wider font-montserrat">
+                Useful Links
+              </h3>
+              <ul className="space-y-2 text-xs text-zinc-400 font-medium">
+                <li>
+                  <Link href="/how-it-works" className="hover:text-white transition-colors py-2 block min-h-[44px] flex items-center">
+                    How It Works
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/questions" className="hover:text-white transition-colors py-2 block min-h-[44px] flex items-center">
+                    FAQs
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms-and-conditions" className="hover:text-white transition-colors py-2 block min-h-[44px] flex items-center">
+                    Terms & Conditions
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacy-policy" className="hover:text-white transition-colors py-2 block min-h-[44px] flex items-center">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/cancellation-policy" className="hover:text-white transition-colors py-2 block min-h-[44px] flex items-center">
+                    Cancellation Policy
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          {/* Column 3: Useful Links (2.5 Cols) */}
-          <div className="lg:col-span-2 space-y-5">
-            <h3 className="text-white font-extrabold text-sm uppercase tracking-wider font-montserrat">
-              Useful Links
-            </h3>
-            <ul className="space-y-3.5 text-xs text-zinc-400 font-medium">
-              <li>
-                <Link href="/how-it-works" className="hover:text-white transition-colors">
-                  How It Works
-                </Link>
-              </li>
-              <li>
-                <Link href="/questions" className="hover:text-white transition-colors">
-                  FAQs
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms-and-conditions" className="hover:text-white transition-colors">
-                  Terms & Conditions
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy-policy" className="hover:text-white transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/cancellation-policy" className="hover:text-white transition-colors">
-                  Cancellation Policy
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 4: Stay Updated Newsletter (3.5 Cols) */}
-          <div className="lg:col-span-4 space-y-5">
-            <h3 className="text-white font-extrabold text-sm uppercase tracking-wider font-montserrat">
+          {/* Column 3: Stay Updated Newsletter */}
+          <div className="space-y-4">
+            <h3 className="text-white font-extrabold text-xs uppercase tracking-wider font-montserrat">
               Stay Updated
             </h3>
             <p className="text-zinc-300 text-xs font-medium leading-relaxed">
               Get travel stories, updates and exclusive offers straight to your inbox.
             </p>
 
-            <form onSubmit={handleSubscribe} className="space-y-3 pt-1">
+            <form onSubmit={handleSubscribe} className="space-y-3 pt-1 w-full max-w-full">
               <input
                 type="email"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="w-full bg-white text-zinc-900 placeholder:text-zinc-400 rounded-full px-4 py-2.5 text-xs outline-none font-medium shadow-xs"
+                className="w-full max-w-full bg-white text-zinc-900 placeholder:text-zinc-400 rounded-full px-5 min-h-[48px] text-xs outline-none font-medium shadow-xs"
               />
               <button
                 type="submit"
-                className="w-full bg-[#D4541A] hover:bg-[#c24813] text-white rounded-full py-2.5 text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-orange-500/20 active:scale-95"
+                className="w-full min-h-[48px] bg-[#D4541A] hover:bg-[#c24813] text-white rounded-full text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-orange-500/20 active:scale-95 flex items-center justify-center"
               >
                 {subscribed ? "Subscribed! 🎉" : "Subscribe"}
               </button>

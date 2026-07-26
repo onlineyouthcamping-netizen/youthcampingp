@@ -1,8 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BookOpen } from "lucide-react";
+import { ArrowRight, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Blog } from "@/types";
 
@@ -86,49 +87,88 @@ export default function BlogSection({
       })
     : MOCK_STORIES;
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const nudge = (dir: "l" | "r") => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: dir === "l" ? -320 : 320, behavior: "smooth" });
+    }
+  };
+
   return (
     <section className="bg-white py-8 md:py-10 border-t border-zinc-100 font-montserrat">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
-        {/* HEADER ROW */}
-        <div className="flex items-center justify-between mb-8 sm:mb-10 flex-wrap gap-4">
-          <div className="flex items-baseline gap-2.5 flex-wrap">
-            <h2 className="text-[#1B2A4A] font-montserrat font-semibold text-[28px] sm:text-[32px] md:text-[36px] leading-tight">
-              {displayTitle}
-            </h2>
-            <span className="font-caveat font-bold text-[#D4541A] text-[32px] sm:text-[36px] md:text-[42px] leading-none">
-              {displaySubtitle}
-            </span>
+        {/* HEADER ROW WITH SLIDER CONTROLS */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-10 gap-3">
+          <div className="flex items-center justify-between w-full sm:w-auto">
+            <div className="flex items-baseline gap-2.5 flex-wrap">
+              <h2 className="text-[#1B2A4A] font-montserrat font-semibold text-[24px] sm:text-[32px] md:text-[36px] leading-tight">
+                {displayTitle}
+              </h2>
+              <span className="font-caveat font-bold text-[#D4541A] text-[28px] sm:text-[36px] md:text-[42px] leading-none">
+                {displaySubtitle}
+              </span>
+            </div>
+            <Link
+              href="/blogs"
+              className="group sm:hidden inline-flex items-center gap-1.5 text-xs font-bold text-[#111827] hover:text-[#D4541A] transition-colors"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#D4541A] group-hover:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
 
-          <Link
-            href="/blogs"
-            className="group inline-flex items-center gap-2 text-sm sm:text-[16px] font-bold text-[#111827] hover:text-[#D4541A] transition-colors"
-          >
-            <span>View All Stories</span>
-            <ArrowRight className="w-4 h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
-          </Link>
+          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => nudge("l")}
+                aria-label="Previous stories"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95 min-h-[36px] min-w-[36px]"
+              >
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
+              </button>
+              <button
+                onClick={() => nudge("r")}
+                aria-label="Next stories"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95 min-h-[36px] min-w-[36px]"
+              >
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
+              </button>
+            </div>
+
+            <Link
+              href="/blogs"
+              className="group hidden sm:inline-flex items-center gap-2 text-sm sm:text-[16px] font-bold text-[#111827] hover:text-[#D4541A] transition-colors ml-2"
+            >
+              <span>View All Stories</span>
+              <ArrowRight className="w-4 h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
 
-        {/* BLOG / STORIES CARDS GRID (MATCHING REFERENCE DESIGN EXACTLY) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-          {displayStories.slice(0, 4).map((story, idx) => (
+        {/* HORIZONTAL CAROUSEL SLIDER (1.5 CARDS PER VIEW ON MOBILE) */}
+        <div
+          ref={scrollRef}
+          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x"
+        >
+          {displayStories.map((story, idx) => (
             <motion.div
               key={story.id || idx}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.08, duration: 0.5 }}
               viewport={{ once: true }}
-              className="group flex flex-col bg-white border border-zinc-200/80 rounded-[24px] overflow-hidden shadow-[0_6px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.14)] hover:-translate-y-1.5 transition-all duration-300 isolate"
+              className="flex-none snap-start w-[68vw] min-w-[260px] max-w-[340px] sm:w-[320px] md:w-[340px] flex flex-col bg-white border border-zinc-200/80 rounded-[24px] overflow-hidden shadow-[0_6px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.14)] hover:-translate-y-1.5 transition-all duration-300 isolate"
             >
-              {/* TOP PHOTO CONTAINER EXTENDING FULL FLUSH TO EDGES */}
+              {/* TOP PHOTO CONTAINER */}
               <div className="relative w-full aspect-[16/10] bg-zinc-100 overflow-hidden">
                 <Link href={`/blogs/${story.slug}`} className="absolute inset-0 z-10" aria-label={story.title} />
                 <Image
                   src={story.image}
                   alt={story.title}
                   fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  sizes="(max-width: 640px) 280px, 340px"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
 

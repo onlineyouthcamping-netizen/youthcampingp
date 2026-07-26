@@ -152,44 +152,27 @@ export default function RecentPhotosSection({
           </Link>
         </div>
 
-        {/* INFINITE MARQUEE CAROUSEL CONTAINER */}
-        <div
-          ref={scrollRef}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => {
-            setIsHovered(false);
-            setIsDragging(false);
-          }}
-          onMouseDown={() => setIsDragging(true)}
-          onMouseUp={() => setIsDragging(false)}
-          onTouchStart={() => setIsDragging(true)}
-          onTouchEnd={() => setIsDragging(false)}
-          className="flex gap-[24px] overflow-x-auto no-scrollbar py-3 cursor-grab active:cursor-grabbing select-none"
-          style={{
-            WebkitOverflowScrolling: "touch",
-            transform: "translate3d(0, 0, 0)",
-          }}
-        >
-          {marqueePhotos.map((photo, idx) => {
-            const actualIndex = idx % basePhotos.length;
-            return (
-              <div
-                key={`${photo.id}-${idx}`}
-                onClick={() => setSelectedIndex(actualIndex)}
-                className="group relative shrink-0 flex-none w-[170px] sm:w-[195px] md:w-[215px] aspect-[4/3.2] rounded-[24px] overflow-hidden bg-zinc-100 shadow-[0_6px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.16)] hover:scale-[1.05] transition-all duration-500 ease-out cursor-pointer isolate transform-gpu"
-              >
-                <Image
-                  src={photo.url}
-                  alt={photo.caption || photo.location}
-                  fill
-                  loading="lazy"
-                  sizes="(max-width: 640px) 170px, 215px"
-                  className="object-cover group-hover:scale-108 transition-transform duration-700 ease-out transform-gpu"
-                />
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        {/* 2-COLUMN MOBILE TO 6-COLUMN DESKTOP SQUARE IMAGE GRID */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+          {basePhotos.slice(0, 6).map((photo, idx) => (
+            <div
+              key={photo.id || idx}
+              onClick={() => setSelectedIndex(idx)}
+              className="group relative w-full aspect-square rounded-2xl overflow-hidden bg-zinc-100 shadow-xs hover:shadow-lg transition-all duration-300 cursor-pointer"
+            >
+              <Image
+                src={photo.url}
+                alt={photo.caption}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                className="object-cover group-hover:scale-108 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
+                <p className="text-white font-bold text-xs leading-tight line-clamp-1">{photo.caption}</p>
+                <p className="text-zinc-300 text-[10px] truncate mt-0.5">{photo.location}</p>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
       </div>
