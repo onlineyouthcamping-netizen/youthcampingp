@@ -98,6 +98,7 @@ const sendEmail = async ({ to, subject, html, type, bookingId, prisma, attachmen
     }
 
     const info = await emailApi.sendTransacEmail(sendSmtpEmail);
+    console.log("📧 Brevo sendTransacEmail response info:", info);
 
 
     if (prisma && bookingId) {
