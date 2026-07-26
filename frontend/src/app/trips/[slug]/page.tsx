@@ -32,7 +32,7 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
   ];
 
   return (
-    <div className="bg-white min-h-screen font-montserrat pb-32 md:pb-0">
+    <div className="bg-white min-h-screen font-montserrat pb-6 md:pb-0">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10 pt-[84px] pb-8">
         {/* Photo Gallery Grid on Top */}
         <TripGallerySection trip={trip} />

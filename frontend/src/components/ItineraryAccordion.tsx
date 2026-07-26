@@ -20,6 +20,64 @@ function renderFormattedText(text: string) {
   });
 }
 
+function getStayAndMeals(day: ItineraryDay, index: number, totalDays: number) {
+  let stay = day.stay?.trim();
+  let meals = day.meals?.trim();
+
+  // Smart inference if stay is empty
+  if (!stay) {
+    const fullText = `${day.title || ""} ${day.description || ""} ${day.location || ""}`.toLowerCase();
+    if (fullText.includes("houseboat")) {
+      stay = day.location ? `${day.location} (Houseboat)` : "Luxury Houseboat";
+    } else if (fullText.includes("homestay")) {
+      stay = day.location ? `${day.location} (Homestay)` : "Cozy Homestay";
+    } else if (fullText.includes("camp") || fullText.includes("tent")) {
+      stay = day.location ? `${day.location} (Campsite)` : "Alpine Camping";
+    } else if (fullText.includes("resort")) {
+      stay = day.location ? `${day.location} (Resort)` : "3-Star Resort";
+    } else if (fullText.includes("hotel")) {
+      stay = day.location ? `${day.location} (Hotel)` : "3-Star Hotel";
+    } else if (fullText.includes("train") || fullText.includes("journey") || fullText.includes("overnight") || fullText.includes("departure")) {
+      stay = ""; // Overnight journey, no fixed stay
+    } else if (day.location) {
+      stay = `${day.location} (Hotel / Homestay)`;
+    }
+  }
+
+  // Smart inference if meals is empty
+  if (!meals) {
+    const fullText = `${day.title || ""} ${day.description || ""}`.toLowerCase();
+    const hasB = fullText.includes("breakfast");
+    const hasL = fullText.includes("lunch");
+    const hasD = fullText.includes("dinner") || fullText.includes("supper");
+
+    if (hasB && hasL && hasD) {
+      meals = "Breakfast, Lunch & Dinner";
+    } else if (hasB && hasD) {
+      meals = "Breakfast & Dinner";
+    } else if (hasB && hasL) {
+      meals = "Breakfast & Lunch";
+    } else if (hasL && hasD) {
+      meals = "Lunch & Dinner";
+    } else if (hasD) {
+      meals = "Dinner";
+    } else if (hasB) {
+      meals = "Breakfast";
+    } else {
+      // Position-based default
+      if (index === 0) {
+        meals = "Dinner"; // Arrival day
+      } else if (index === totalDays - 1) {
+        meals = "Breakfast"; // Departure day
+      } else {
+        meals = "Breakfast & Dinner"; // Middle days
+      }
+    }
+  }
+
+  return { stay, meals };
+}
+
 interface ItineraryAccordionProps {
   itinerary: ItineraryDay[];
   startDate?: string | null;
@@ -116,11 +174,28 @@ export default function ItineraryAccordion({
               {/* Expanded Details Body */}
               {isExpanded && (
                 <div className="ml-[84px] sm:ml-[112px] mt-2.5 p-4 sm:p-5 bg-[#F8F9FA] border border-zinc-100 rounded-2xl space-y-3 animate-fade-in">
-                  {day.description && (
-                    <p className="text-xs sm:text-sm text-zinc-600 font-montserrat leading-relaxed">
-                      {renderFormattedText(day.description)}
-                    </p>
-                  )}
+                  {day.description && (() => {
+                    // Split on bullet character or newline
+                    const bullets = day.description
+                      .split(/\s*[•·]\s*/)
+                      .map(s => s.trim())
+                      .filter(Boolean);
+
+                    return bullets.length > 1 ? (
+                      <ul className="space-y-2">
+                        {bullets.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-600 font-montserrat leading-relaxed">
+                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#D4541A] shrink-0" />
+                            <span>{renderFormattedText(item)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-zinc-600 font-montserrat leading-relaxed">
+                        {renderFormattedText(day.description)}
+                      </p>
+                    );
+                  })()}
 
                   {day.activities && day.activities.length > 0 && (
                     <div className="space-y-1.5">
@@ -135,22 +210,31 @@ export default function ItineraryAccordion({
                     </div>
                   )}
 
-                  {(day.stay || day.meals) && (
-                    <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-zinc-200/60 text-xs text-zinc-500 font-montserrat">
-                      {day.stay && (
-                        <div className="flex items-center gap-1.5 font-medium">
-                          <BedDouble className="w-3.5 h-3.5 text-[#D4541A]" />
-                          <span>Stay: {day.stay}</span>
-                        </div>
-                      )}
-                      {day.meals && (
-                        <div className="flex items-center gap-1.5 font-medium">
-                          <Utensils className="w-3.5 h-3.5 text-[#D4541A]" />
-                          <span>Meals: {day.meals}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {(() => {
+                    const { stay: effectiveStay, meals: effectiveMeals } = getStayAndMeals(day, day.displayDay - 1, displayItinerary.length);
+                    if (!effectiveStay && !effectiveMeals) return null;
+
+                    return (
+                      <div className="border-t border-zinc-200/60 pt-3 flex flex-col gap-2">
+                        {effectiveStay && (
+                          <div className="flex items-center gap-3 pl-3 border-l-2 border-[#D4541A]">
+                            <BedDouble className="w-4 h-4 text-[#0B1528] shrink-0" />
+                            <span className="text-xs font-semibold text-[#0B1528] font-montserrat">
+                              {effectiveStay}
+                            </span>
+                          </div>
+                        )}
+                        {effectiveMeals && (
+                          <div className="flex items-center gap-3 pl-3 border-l-2 border-[#D4541A]">
+                            <Utensils className="w-4 h-4 text-[#D4541A] shrink-0" />
+                            <span className="text-xs font-bold text-[#D4541A] font-montserrat">
+                              {effectiveMeals}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

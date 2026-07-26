@@ -201,7 +201,7 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
   const activeSection = activeSections.find(s => s.id === activeId);
 
   return (
-    <section className="mb-4 scroll-mt-28" id="policies">
+    <section className="mb-0 scroll-mt-[140px]" id="policies">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {activeSections.map((sec) => {
           const Icon = sec.id === "cancellation" ? ShieldCheck 
