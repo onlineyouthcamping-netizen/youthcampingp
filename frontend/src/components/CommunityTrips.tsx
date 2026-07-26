@@ -410,13 +410,13 @@ export default function CommunityTrips({
   };
 
   return (
-    <section className="bg-white py-0 w-full mt-[80px]">
+    <section className="bg-white py-0 w-full mt-0 pt-[80px]">
       {/* CINEMATIC HERO BANNER (STARTS DIRECTLY BELOW FIXED 80PX NAVBAR) */}
       <div 
         className={`relative w-full overflow-hidden flex items-center mb-6 border-b border-zinc-100 ${getFontFamilyClass()} ${getHeroHeightClass()}`} 
         style={{ 
           minWidth: 0,
-          paddingTop: `${paddingTop}px`,
+          paddingTop: '16px',
           paddingBottom: `${paddingBottom}px`
         }}
       >

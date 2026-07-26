@@ -121,25 +121,25 @@ export default function ReviewsSection({
     <section className="testimonials testimonials-slider module-center bg-white py-8 md:py-10 border-t border-zinc-100 font-montserrat">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
-        {/* HEADER ROW - FITS TITLE, BUTTONS, & ACTION ON ONE SINGLE ROW */}
+        {/* HEADER ROW - FITS TITLE & VIEW ALL ACTION CLEANLY */}
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
-          <h2 className="text-[#1B2A4A] font-montserrat font-bold text-[18px] sm:text-[26px] md:text-[32px] leading-tight truncate shrink-0">
+          <h2 className="text-[#1B2A4A] font-montserrat font-bold text-[18px] sm:text-[26px] md:text-[32px] leading-tight truncate">
             {displayTitle}
           </h2>
 
           <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1.5">
+            <div className="hidden sm:flex items-center gap-1.5">
               <button
                 onClick={() => nudge("l")}
                 aria-label="Previous reviews"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95 min-h-[36px] min-w-[36px]"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
               >
                 <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
               </button>
               <button
                 onClick={() => nudge("r")}
                 aria-label="Next reviews"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95 min-h-[36px] min-w-[36px]"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
               >
                 <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
               </button>

@@ -119,19 +119,19 @@ export default function BlogSection({
             </Link>
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden sm:flex items-center gap-1.5">
               <button
                 onClick={() => nudge("l")}
                 aria-label="Previous stories"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95 min-h-[36px] min-w-[36px]"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
               >
                 <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
               </button>
               <button
                 onClick={() => nudge("r")}
                 aria-label="Next stories"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95 min-h-[36px] min-w-[36px]"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
               >
                 <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
               </button>

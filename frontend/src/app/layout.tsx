@@ -131,7 +131,7 @@ export default async function RootLayout({
             logoUrl={settings?.navbar?.logoUrl} 
             navLinks={settings?.navbar?.links} 
           />
-          <main className="flex-grow w-full min-w-0 pt-[var(--navbar-height)] md:pt-0">{children}</main>
+          <main className="flex-grow w-full min-w-0">{children}</main>
           <Footer 
             logoUrl={settings?.navbar?.logoUrl || settings?.footer?.logoUrl} 
             address={settings?.footer?.address} 

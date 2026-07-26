@@ -121,18 +121,18 @@ export default function Destinations({
             </span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
             <button
               onClick={() => nudge("l")}
               aria-label="Previous Destinations"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95 min-h-[36px] min-w-[36px]"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
             >
               <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
             </button>
             <button
               onClick={() => nudge("r")}
               aria-label="Next Destinations"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95 min-h-[36px] min-w-[36px]"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
             >
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
             </button>
