@@ -94,8 +94,7 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
 
       <div 
         ref={navRef}
-        className="sticky z-40 bg-white border-b border-zinc-100 mb-6 mt-1"
-        style={{ top: 'var(--navbar-height)' }}
+        className="sticky top-[80px] z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200/80 mb-6 py-2 shadow-xs transition-all"
       >
         <div className="w-full">
           <div 

@@ -48,18 +48,22 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
               </h1>
             </div>
 
-            {/* Quick Info Bar (Flush left/right flex alignment) */}
-            <div className="flex flex-wrap items-center justify-between gap-4 py-3.5 border-y border-zinc-100/90 w-full mb-3">
+            {/* Quick Info Bar (2-Column Grid on Mobile, Flex Row on Desktop) */}
+            <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-3 sm:gap-4 py-3.5 px-1 border-y border-zinc-100/90 w-full mb-3">
               {[
                 { label: "Duration", val: trip.duration || "9 Days / 8 Nights", icon: Clock3 },
-                { label: "Difficulty", val: trip.difficulty || "Easy to Moderate", icon: Mountain },
+                { 
+                  label: "Difficulty", 
+                  val: trip.difficulty ? (trip.difficulty.charAt(0).toUpperCase() + trip.difficulty.slice(1)) : "Easy to Moderate", 
+                  icon: Mountain 
+                },
                 { label: "Age Group", val: trip.ageLimit || "12-35 Years", icon: Backpack },
                 { label: "Max Altitude", val: trip.maxAltitude || "10,000 ft", icon: MountainSnow },
               ].map((info, i) => (
                 <div key={i} className="flex items-center gap-2.5 sm:gap-3">
                   <info.icon className="w-5 h-5 text-[#0B1528] stroke-[1.8] shrink-0" />
-                  <div>
-                    <p className="text-[#0B1528] font-bold text-xs sm:text-sm leading-tight font-montserrat">{info.val}</p>
+                  <div className="min-w-0">
+                    <p className="text-[#0B1528] font-bold text-xs sm:text-sm leading-tight font-montserrat truncate">{info.val}</p>
                     <p className="text-zinc-400 font-medium text-[11px] leading-tight font-montserrat mt-0.5">{info.label}</p>
                   </div>
                 </div>
