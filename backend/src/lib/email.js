@@ -423,7 +423,7 @@ const templates = {
 
               <div style="font-weight: 800; color: #64748b; margin-top: 12px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Ticket Status</div>
               <div style="font-weight: 700; color: #2b9b91; text-transform: uppercase;">
-                ${includeTicket ? (booking.trainTicketStatus || (booking.passengers?.details?.ticketStatus) || 'CONFIRMED') : 'SELF BOOKED'}
+                ${booking.trainTicketStatus || (booking.passengers?.details?.ticketStatus) || (includeTicket ? 'CONFIRMED' : 'SELF BOOKED')}
               </div>
             </div>
           </td>

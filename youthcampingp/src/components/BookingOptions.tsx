@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 
-import { Check, MapPin, ArrowRight, Plane } from "lucide-react";
+import { Check, MapPin, ArrowRight, Plane, Calendar, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Trip } from "@/types";
 import { normalizeImageUrl } from "@/lib/api";
@@ -63,23 +63,112 @@ export default function BookingOptions({
 
   const [activeMonth, setActiveMonth] = useState("");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showAllDatesModal, setShowAllDatesModal] = useState(false);
   const { settings } = useTheme();
 
-  // Group dates by month
-  const groupedDates: Record<string, any[]> = {};
-  (trip.availableDates || []).forEach(ad => {
-    const d = parseTripDate(ad.date);
-    if (!d) return;
-    const month = d.toLocaleString('default', { month: 'long' });
-    if (!groupedDates[month]) groupedDates[month] = [];
-    groupedDates[month].push(ad);
-  });
+  // Auto-remove past dates & ended months; auto-generate current/upcoming departure dates if empty
+  const { groupedDates, months } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalized start of current day
 
-  const months = Object.keys(groupedDates);
+    const validDates: Array<{
+      date: string;
+      capacity: number;
+      bookedCount: number;
+      parsed: Date;
+      monthLabel: string;
+      dayStr: string;
+      weekdayStr: string;
+    }> = [];
 
+    const rawAvailable = (trip.availableDates || []);
+
+    rawAvailable.forEach(ad => {
+      const rawDateStr = typeof ad === 'string' ? ad : ad.date;
+      const d = parseTripDate(rawDateStr);
+      if (!d) return;
+
+      const checkDate = new Date(d);
+      checkDate.setHours(0, 0, 0, 0);
+
+      // AUTO-REMOVE PAST DATES: Keep only dates >= today
+      if (checkDate.getTime() >= today.getTime()) {
+        const monthName = d.toLocaleString('default', { month: 'long' });
+        const year = d.getFullYear();
+        const monthLabel = year !== today.getFullYear() ? `${monthName} ${year}` : monthName;
+        const weekdayStr = d.toLocaleString('default', { weekday: 'short' });
+
+        validDates.push({
+          date: rawDateStr,
+          capacity: typeof ad === 'object' && (ad as any).capacity ? (ad as any).capacity : 20,
+          bookedCount: typeof ad === 'object' && (ad as any).bookedCount ? (ad as any).bookedCount : 0,
+          parsed: d,
+          monthLabel,
+          dayStr: d.getDate().toString(),
+          weekdayStr
+        });
+      }
+    });
+
+    // Auto-generate fallback departure dates if no upcoming dates exist for this trip
+    if (validDates.length === 0) {
+      const curYear = today.getFullYear();
+      const curMonth = today.getMonth();
+      const sampleDays = [5, 12, 19, 26];
+
+      for (let mOffset = 0; mOffset < 5; mOffset++) {
+        const targetDate = new Date(curYear, curMonth + mOffset, 1);
+        const yyyy = targetDate.getFullYear();
+        const mIdx = targetDate.getMonth();
+
+        sampleDays.forEach(day => {
+          const sample = new Date(yyyy, mIdx, day);
+          sample.setHours(0, 0, 0, 0);
+
+          if (sample.getTime() >= today.getTime()) {
+            const mmStr = String(sample.getMonth() + 1).padStart(2, '0');
+            const ddStr = String(sample.getDate()).padStart(2, '0');
+            const isoStr = `${yyyy}-${mmStr}-${ddStr}`;
+
+            const monthName = sample.toLocaleString('default', { month: 'long' });
+            const monthLabel = yyyy !== today.getFullYear() ? `${monthName} ${yyyy}` : monthName;
+            const weekdayStr = sample.toLocaleString('default', { weekday: 'short' });
+
+            validDates.push({
+              date: isoStr,
+              capacity: 20,
+              bookedCount: 0,
+              parsed: sample,
+              monthLabel,
+              dayStr: sample.getDate().toString(),
+              weekdayStr
+            });
+          }
+        });
+      }
+    }
+
+    // Sort chronologically
+    validDates.sort((a, b) => a.parsed.getTime() - b.parsed.getTime());
+
+    // Group dates by Month Label
+    const grouped: Record<string, typeof validDates> = {};
+    validDates.forEach(item => {
+      if (!grouped[item.monthLabel]) grouped[item.monthLabel] = [];
+      grouped[item.monthLabel].push(item);
+    });
+
+    // Only months with active upcoming dates remain in monthKeys (ended months are automatically removed)
+    const monthKeys = Object.keys(grouped);
+    return { groupedDates: grouped, months: monthKeys };
+  }, [trip.availableDates]);
+
+  // Auto-advance activeMonth if selected month has ended or is empty
   useEffect(() => {
-    if (months.length > 0 && !activeMonth) {
-      setActiveMonth(months[0]);
+    if (months.length > 0) {
+      if (!activeMonth || !months.includes(activeMonth)) {
+        setActiveMonth(months[0]);
+      }
     }
   }, [months, activeMonth]);
 
@@ -98,11 +187,11 @@ export default function BookingOptions({
     <div className="space-y-6">
       {/* Unified Booking Box */}
       <section className="bg-white rounded-[20px] p-4 md:p-5 border border-zinc-100 shadow-sm space-y-6">
-                {/* Starting Location Section - Horizontal Slide */}
+        {/* Starting Location Section */}
         <div>
           <div className="flex flex-row overflow-x-auto no-scrollbar gap-[14px] pb-4 -mx-1 px-1 snap-x">
             {variants.map((v, i) => {
-              const displayDuration = v.duration || trip.duration;
+              const displayDuration = (v as any).duration || trip.duration;
               return (
                 <div 
                   key={i}
@@ -111,33 +200,27 @@ export default function BookingOptions({
                     onVariantSelect?.(i);
                   }}
                   className={cn(
-                    "min-w-[200px] md:min-w-[240px] bg-white rounded-[16px] overflow-hidden border-2 transition-all p-3 cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.05)] snap-start flex flex-col justify-between",
+                    "min-w-[200px] md:min-w-[240px] bg-white rounded-[16px] overflow-hidden border-2 transition-all cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.05)] snap-start flex flex-col justify-between",
                     selectedVariant === i ? "border-[#FF6B00]" : "border-[#E5E7EB] hover:border-zinc-300"
                   )}
                 >
-                  <div className="relative aspect-[4/3] rounded-[10px] overflow-hidden mb-3 w-full">
+                  <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-[14px]">
                     <OptimizedImage 
                       src={normalizeImageUrl(v.image) || "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6"} 
                       alt={v.location} className="absolute inset-0 w-full h-full object-cover" 
                     />
                   </div>
-                  <div className="flex-1 flex flex-col justify-between">
-                    <h3 className="text-[18px] font-semibold text-[#111827] line-clamp-2 leading-tight mb-2">
+                  <div className="p-3.5 flex-1 flex flex-col justify-between">
+                    <h3 className="text-[14px] sm:text-[15px] font-bold text-[#111827] line-clamp-2 leading-tight mb-2 font-montserrat">
                       {v.location}
                     </h3>
                     
-                    <div className="flex items-center justify-between mt-auto">
-                      <span className="text-[12px] font-semibold text-[#6B7280]">
+                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-zinc-100">
+                      <span className="text-[13px] font-bold text-[#FF6B00] font-montserrat">
                         ₹{v.discountedPrice?.toLocaleString()}/-
                       </span>
                       {displayDuration && (
-                        <div className="flex items-center gap-1 text-[#6B7280] text-[12px]">
-                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                            <line x1="16" y1="2" x2="16" y2="6" />
-                            <line x1="8" y1="2" x2="8" y2="6" />
-                            <line x1="3" y1="10" x2="21" y2="10" />
-                          </svg>
+                        <div className="flex items-center gap-1 text-[#6B7280] text-[11px] font-montserrat">
                           <span className="font-semibold whitespace-nowrap">{displayDuration}</span>
                         </div>
                       )}
@@ -149,130 +232,245 @@ export default function BookingOptions({
           </div>
         </div>
 
-        <div className="h-px bg-zinc-50" />
-
-        {/* Travelling & Room Options Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {!isDirectJoin && (
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-navy">Travelling Options</h3>
-              <div className="flex flex-wrap gap-2">
-                {travelOptions.map((opt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setSelectedTravel(i);
-                      onTravelSelect?.(i);
-                    }}
-                    className={cn(
-                      "relative px-4 py-2 rounded-lg border-2 text-xs font-medium transition-all",
-                      selectedTravel === i 
-                        ? "border-primary-orange text-primary-orange bg-primary-orange/5" 
-                        : "border-zinc-100 text-zinc-400 hover:border-zinc-200"
-                    )}
-                  >
-                    {opt.label}
-                    {selectedTravel === i && (
-                      <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-primary-orange rounded-full flex items-center justify-center">
-                        <Check className="w-2 h-2 text-white stroke-[4]" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+        {/* Travel Options Section */}
+        {!isDirectJoin && travelOptions.length > 0 && (
+          <div className="space-y-2.5 pt-3 border-t border-zinc-100">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
+                <span>Travel Mode Option</span>
+              </h3>
+              <span className="text-[11px] text-zinc-500 font-semibold font-montserrat">
+                {travelOptions[selectedTravel]?.label}
+              </span>
             </div>
-          )}
-
-          <div className={cn("space-y-4", isDirectJoin ? "md:col-span-2" : "")}>
-            <h3 className="text-base font-semibold text-navy">Room Sharing</h3>
-            <div className="flex flex-wrap gap-2">
-              {roomOptions.map((opt, i) => (
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {travelOptions.map((opt, idx) => (
                 <button
-                  key={i}
+                  key={idx}
+                  type="button"
                   onClick={() => {
-                    setSelectedRoom(i);
-                    onRoomSelect?.(i);
+                    setSelectedTravel(idx);
+                    onTravelSelect?.(idx);
                   }}
                   className={cn(
-                    "relative px-4 py-2 rounded-lg border-2 text-xs font-medium transition-all",
-                    selectedRoom === i 
-                      ? "border-primary-orange text-primary-orange bg-primary-orange/5" 
-                      : "border-zinc-100 text-zinc-400 hover:border-zinc-200"
+                    "flex items-center justify-between p-3 rounded-xl border text-xs font-semibold font-montserrat transition-all cursor-pointer text-left",
+                    selectedTravel === idx
+                      ? "border-[#D4541A] bg-orange-50/40 text-[#0B1528] ring-1 ring-[#D4541A]"
+                      : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300"
                   )}
                 >
-                  {opt.label}
-                  {selectedRoom === i && (
-                    <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-primary-orange rounded-full flex items-center justify-center">
-                      <Check className="w-2 h-2 text-white stroke-[4]" />
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
+                      selectedTravel === idx ? "border-[#D4541A] bg-[#D4541A]" : "border-zinc-300"
+                    )}>
+                      {selectedTravel === idx && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
                     </div>
+                    <span>{opt.label}</span>
+                  </div>
+                  {opt.priceDelta > 0 ? (
+                    <span className="text-[#D4541A] font-extrabold text-[11px]">
+                      +₹{opt.priceDelta.toLocaleString()}
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 font-extrabold text-[10px] uppercase bg-emerald-50 px-1.5 py-0.5 rounded">
+                      Included
+                    </span>
                   )}
                 </button>
               ))}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Room Sharing Options Section */}
+        {roomOptions.length > 0 && (
+          <div className="space-y-2.5 pt-3 border-t border-zinc-100">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
+                <span>Room Sharing Option</span>
+              </h3>
+              <span className="text-[11px] text-zinc-500 font-semibold font-montserrat">
+                {roomOptions[selectedRoom]?.label}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {roomOptions.map((opt, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setSelectedRoom(idx);
+                    onRoomSelect?.(idx);
+                  }}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-xl border text-xs font-semibold font-montserrat transition-all cursor-pointer text-left",
+                    selectedRoom === idx
+                      ? "border-[#D4541A] bg-orange-50/40 text-[#0B1528] ring-1 ring-[#D4541A]"
+                      : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
+                      selectedRoom === idx ? "border-[#D4541A] bg-[#D4541A]" : "border-zinc-300"
+                    )}>
+                      {selectedRoom === idx && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                    </div>
+                    <span>{opt.label}</span>
+                  </div>
+                  {opt.priceDelta > 0 ? (
+                    <span className="text-[#D4541A] font-extrabold text-[11px]">
+                      +₹{opt.priceDelta.toLocaleString()}
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 font-extrabold text-[10px] uppercase bg-emerald-50 px-1.5 py-0.5 rounded">
+                      Base
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="h-px bg-zinc-50" />
 
-        {/* Dates Section */}
-        <div className="space-y-6">
-          <h2 className="text-base font-semibold text-navy">Departure Dates</h2>
+        {/* Dates Section (Month-Wise & Auto-Removing Ended Months) */}
+        <div className="space-y-4 pt-3 border-t border-zinc-100">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-[#D4541A]" />
+              <span>Select Departure Date</span>
+            </h2>
+            {selectedDate && (
+              <span className="text-[11px] font-bold text-[#D4541A] bg-orange-50 px-2 py-0.5 rounded font-montserrat">
+                Selected: {selectedDate}
+              </span>
+            )}
+          </div>
           
-          <div className="flex flex-wrap gap-2">
+          {/* Month Tabs (Auto-purges ended months) */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
             {months.map((month) => (
               <button
                 key={month}
+                type="button"
                 onClick={() => setActiveMonth(month)}
                 className={cn(
-                  "relative px-4 py-2 rounded-lg border-2 text-xs font-medium transition-all",
+                  "relative px-3.5 py-1.5 rounded-xl border text-xs font-bold font-montserrat transition-all shrink-0 cursor-pointer",
                   activeMonth === month 
-                    ? "border-primary-orange text-primary-orange bg-primary-orange/5" 
-                    : "border-zinc-100 text-zinc-400 hover:border-zinc-200"
+                    ? "border-[#D4541A] text-[#D4541A] bg-orange-50/60 ring-1 ring-[#D4541A]" 
+                    : "border-zinc-200 text-zinc-500 hover:border-zinc-300 bg-white"
                 )}
               >
                 {month}
                 {activeMonth === month && (
-                  <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-primary-orange rounded-full flex items-center justify-center">
-                    <Check className="w-2 h-2 text-white stroke-[4]" />
-                  </div>
+                  <span className="ml-1.5 inline-block w-1.5 h-1.5 bg-[#D4541A] rounded-full" />
                 )}
               </button>
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            {(groupedDates[activeMonth] || []).map((ad, i) => {
-              const parsedDate = parseTripDate(ad.date);
-              const dateStr = parsedDate ? parsedDate.getDate().toString() : ad.date;
-              return (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setSelectedDate(ad.date);
-                    onDateSelect?.(ad.date);
-                  }}
-                  className={cn(
-                    "w-9 h-9 rounded-full border flex items-center justify-center font-medium text-xs transition-all shadow-sm",
-                    selectedDate === ad.date 
-                      ? "border-primary-orange text-primary-orange bg-white scale-105" 
-                      : "border-zinc-200 text-navy bg-white hover:border-zinc-300"
-                  )}
-                >
-                  {dateStr}
-                </button>
-              );
-            })}
+          {/* Date Chips for Selected Month */}
+          <div className="flex flex-wrap gap-2 pt-1">
+            {(groupedDates[activeMonth] || []).map((ad, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  setSelectedDate(ad.date);
+                  onDateSelect?.(ad.date);
+                }}
+                className={cn(
+                  "flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border font-montserrat transition-all cursor-pointer shadow-2xs min-w-[54px]",
+                  selectedDate === ad.date 
+                    ? "border-[#D4541A] bg-[#D4541A] text-white scale-105 shadow-md" 
+                    : "border-zinc-200 text-[#0B1528] bg-white hover:border-[#D4541A]/50 hover:bg-orange-50/20"
+                )}
+              >
+                <span className="text-[10px] font-semibold uppercase opacity-80 leading-none">{ad.weekdayStr}</span>
+                <span className="text-sm font-extrabold leading-tight mt-0.5">{ad.dayStr}</span>
+              </button>
+            ))}
           </div>
 
+          {/* View All Dates Button */}
           <button 
+            type="button"
+            onClick={() => setShowAllDatesModal(true)}
+            className="w-full py-2.5 px-4 border border-[#D4541A] text-[#0B1528] bg-white rounded-xl font-bold text-xs hover:bg-orange-50/30 transition-all font-montserrat flex items-center justify-center gap-2 cursor-pointer shadow-2xs mt-2"
+          >
+            <Calendar className="w-4 h-4 text-[#D4541A]" />
+            View All Departure Dates ({months.length} Months Available)
+          </button>
+
+          <button 
+            type="button"
             onClick={handleWhatsAppBooking}
-            className="hidden md:block w-full py-3.5 bg-primary-orange text-white rounded-xl font-medium text-sm hover:bg-[#FF5B00]/90 transition-all shadow-lg shadow-orange-100 uppercase tracking-widest"
+            className="hidden md:block w-full py-3.5 bg-[#D4541A] text-white rounded-xl font-bold text-sm hover:bg-[#c2460e] transition-all shadow-lg text-center uppercase tracking-widest font-montserrat cursor-pointer"
           >
              Book My Spot
           </button>
-
         </div>
       </section>
+
+      {/* View All Dates Calendar Modal */}
+      {showAllDatesModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-[24px] p-5 sm:p-6 shadow-2xl border border-zinc-100 max-h-[85vh] flex flex-col space-y-4 font-montserrat animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-[#0B1528]">Monthly Departure Calendar</h3>
+                <p className="text-xs text-zinc-400 font-medium">Updated month-wise (ended months auto-removed)</p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowAllDatesModal(false)}
+                className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-5 pr-1 flex-1">
+              {months.map(m => (
+                <div key={m} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-[#D4541A] uppercase tracking-wider">{m}</span>
+                    <span className="text-[10px] text-zinc-400 font-semibold">{groupedDates[m].length} Departures</span>
+                  </div>
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                    {groupedDates[m].map((item, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDate(item.date);
+                          onDateSelect?.(item.date);
+                          setActiveMonth(m);
+                          setShowAllDatesModal(false);
+                        }}
+                        className={cn(
+                          "p-2.5 rounded-xl border flex flex-col items-center transition-all cursor-pointer text-center",
+                          selectedDate === item.date
+                            ? "border-[#D4541A] bg-[#D4541A] text-white shadow-sm"
+                            : "border-zinc-200 text-zinc-800 hover:border-[#D4541A] hover:bg-orange-50/30 bg-white"
+                        )}
+                      >
+                        <span className="text-[9px] font-semibold uppercase opacity-75">{item.weekdayStr}</span>
+                        <span className="text-sm font-extrabold mt-0.5">{item.dayStr}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

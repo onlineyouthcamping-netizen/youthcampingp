@@ -1157,7 +1157,7 @@ export default function BookingDetailsView({ booking, onBack, onRefresh, trips }
 
 
   return (
-    <div className="h-screen flex flex-col bg-white text-[#1a1a1a] font-sans antialiased overflow-hidden">
+    <div className="min-h-full flex flex-col bg-white text-[#1a1a1a] font-sans antialiased">
       <style dangerouslySetInnerHTML={{ __html: `
         .workspace-kpi-strip {
             background: #fff;

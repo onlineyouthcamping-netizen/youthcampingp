@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Trip } from "@/types";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { parseTripDate } from "@/lib/parseTripDate";
 import TripCard from "@/components/TripCard";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 const ROTATING_WORDS = [
   "Curious",
@@ -17,21 +18,27 @@ const ROTATING_WORDS = [
   "Restless",
 ];
 
-const MONTHS = [
-  { label: "All", month: -1, year: 0 },
-  { label: "May", month: 4,  year: 2026 },
-  { label: "Jun", month: 5,  year: 2026 },
-  { label: "Jul", month: 6,  year: 2026 },
-  { label: "Aug", month: 7,  year: 2026 },
-  { label: "Sep", month: 8,  year: 2026 },
-  { label: "Oct", month: 9,  year: 2026 },
-  { label: "Nov", month: 10, year: 2026 },
-  { label: "Dec", month: 11, year: 2026 },
-  { label: "Jan", month: 0,  year: 2027 },
-  { label: "Feb", month: 1,  year: 2027 },
-  { label: "Mar", month: 2,  year: 2027 },
-  { label: "Apr", month: 3,  year: 2027 },
-];
+function getAutoMonths() {
+  const today = new Date();
+  const currentMonthIdx = today.getMonth();
+  const currentYear = today.getFullYear();
+  const monthShortNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const autoList = [{ label: "All", month: -1, year: 0 }];
+
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(currentYear, currentMonthIdx + i, 1);
+    const m = d.getMonth();
+    const y = d.getFullYear();
+    autoList.push({
+      label: monthShortNames[m],
+      month: m,
+      year: y
+    });
+  }
+
+  return autoList;
+}
 
 const MOCK_TRIPS: Trip[] = [
   {
@@ -148,34 +155,17 @@ const MOCK_TRIPS: Trip[] = [
     departureCity: 'Guwahati',
     category: 'North East',
     images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
-    availableDates: [{ date: '2026-09-05', capacity: 20, bookedCount: 7 }],
+    availableDates: [{ date: '2026-10-15', capacity: 14, bookedCount: 7 }],
     variants: [{ location: 'Guwahati', duration: '6 Days / 5 Nights', originalPrice: 21999, discountedPrice: 18999, image: '' }],
     travelOptions: [], roomOptions: [], addons: [],
     status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
   },
   {
     id: 'mock-8',
-    title: 'Gokarna Beach & Cliff Trek',
-    slug: 'gokarna-beach-trek',
-    description: 'Golden Sands & Sunset Swings.',
-    heroImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
-    price: 7999,
-    location: 'Karnataka',
-    duration: '4 Days / 3 Nights',
-    departureCity: 'Bengaluru',
-    category: 'Beach Trek',
-    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
-    availableDates: [{ date: '2026-08-15', capacity: 30, bookedCount: 14 }],
-    variants: [{ location: 'Bengaluru', duration: '4 Days / 3 Nights', originalPrice: 9999, discountedPrice: 7999, image: '' }],
-    travelOptions: [], roomOptions: [], addons: [],
-    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'mock-9',
-    title: 'Udaipur Royal Lakes',
-    slug: 'udaipur-royal-lakes',
-    description: 'Heritage Palaces & Lake Sunsets.',
-    heroImage: 'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=80',
+    title: 'Udaipur Mount Abu Gateway',
+    slug: 'udaipur-mount-abu-gateway',
+    description: 'Royal Palaces & Sunset Lakes.',
+    heroImage: 'https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?w=800&q=80',
     price: 9999,
     location: 'Rajasthan',
     duration: '4 Days / 3 Nights',
@@ -186,41 +176,7 @@ const MOCK_TRIPS: Trip[] = [
     variants: [{ location: 'Ahmedabad', duration: '4 Days / 3 Nights', originalPrice: 12999, discountedPrice: 9999, image: '' }],
     travelOptions: [], roomOptions: [], addons: [],
     status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'mock-10',
-    title: 'Kasol Kheerganga Camping',
-    slug: 'kasol-kheerganga-camping',
-    description: 'Hot Springs & Starry Nights.',
-    heroImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80',
-    price: 5999,
-    location: 'Parvati Valley, Himachal',
-    duration: '5 Days / 4 Nights',
-    departureCity: 'Delhi',
-    category: 'Camping',
-    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
-    availableDates: [{ date: '2026-08-22', capacity: 24, bookedCount: 15 }],
-    variants: [{ location: 'Delhi', duration: '5 Days / 4 Nights', originalPrice: 7999, discountedPrice: 5999, image: '' }],
-    travelOptions: [], roomOptions: [], addons: [],
-    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'mock-11',
-    title: 'Spiti Valley Circuit',
-    slug: 'spiti-valley-circuit',
-    description: 'Monasteries & High Mountain Passes.',
-    heroImage: 'https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=800&q=80',
-    price: 21999,
-    location: 'Spiti Valley',
-    duration: '9 Days / 8 Nights',
-    departureCity: 'Shimla',
-    category: 'Road Trip',
-    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
-    availableDates: [{ date: '2026-09-01', capacity: 16, bookedCount: 8 }],
-    variants: [{ location: 'Shimla', duration: '9 Days / 8 Nights', originalPrice: 25999, discountedPrice: 21999, image: '' }],
-    travelOptions: [], roomOptions: [], addons: [],
-    status: 'published', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-  },
+  }
 ];
 
 function monthMatch(trip: Trip, m: { month: number; year: number }): boolean {
@@ -237,7 +193,7 @@ function monthMatch(trip: Trip, m: { month: number; year: number }): boolean {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-[24px] overflow-hidden bg-white p-3 shadow-sm border border-zinc-100">
+    <div className="rounded-[24px] overflow-hidden bg-white p-4 shadow-sm border border-zinc-100 max-w-[480px] mx-auto">
       <div className="relative w-full rounded-[20px] overflow-hidden bg-gradient-to-r from-zinc-200 via-zinc-100 to-zinc-200 animate-pulse" style={{ aspectRatio: '16/10.5' }} />
       <div className="p-4 space-y-3">
         <div className="h-3 bg-zinc-200 rounded-full w-1/3 animate-pulse" />
@@ -282,16 +238,19 @@ export default function CommunityTrips({
   paddingTop = "32",
   paddingBottom = "32"
 }: CommunityTripsProps) {
+  const MONTHS = getAutoMonths();
   const [activeMonth, setActiveMonth] = useState(0); // "All"
+  const [currentTripIdx, setCurrentTripIdx] = useState(0);
   const [wordIdx, setWordIdx] = useState(0);
   const [bgIdx, setBgIdx] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
   const tripCardsScrollRef = useRef<HTMLDivElement>(null);
 
-  const scrollTripCards = (dir: 'l' | 'r') => {
-    tripCardsScrollRef.current?.scrollBy({ left: dir === 'l' ? -350 : 350, behavior: 'smooth' });
-  };
+  // Reset trip index when active month selection changes
+  useEffect(() => {
+    setCurrentTripIdx(0);
+  }, [activeMonth]);
 
   // Parse multiple photos or single fallback
   const bgPhotosList: string[] = Array.isArray(backgroundImages) && backgroundImages.length > 0
@@ -325,7 +284,7 @@ export default function CommunityTrips({
     return () => clearInterval(bgTimer);
   }, [bgPhotosList.length]);
 
-  const sourceTrips = propTrips.length >= 11 
+  const sourceTrips = propTrips.length >= 8 
     ? propTrips 
     : [...propTrips, ...MOCK_TRIPS.slice(propTrips.length)];
 
@@ -342,6 +301,28 @@ export default function CommunityTrips({
   const md = MONTHS[activeMonth];
   const filtered = sourceTrips.filter(t => monthMatch(t, md));
   const display = filtered.length > 0 ? filtered : sourceTrips;
+
+  const safeTripIdx = Math.min(currentTripIdx, Math.max(0, display.length - 1));
+  const activeTrip = display[safeTripIdx] || display[0];
+
+  const goToNextTrip = () => {
+    setCurrentTripIdx((prev) => (prev + 1) % display.length);
+  };
+
+  const goToPrevTrip = () => {
+    setCurrentTripIdx((prev) => (prev - 1 + display.length) % display.length);
+  };
+
+  // Font size mapping helper
+  const getFontSizeClass = () => {
+    switch (fontSize) {
+      case "small": return "text-2xl sm:text-3xl md:text-4xl";
+      case "large": return "text-4xl sm:text-5xl md:text-6xl";
+      default: return "text-3xl sm:text-4xl md:text-5xl"; // medium
+    }
+  };
+
+  const isWhiteOverlay = (fadeColor || overlayTheme || "white") === "white";
 
   // Active Fade Properties (Supports both fadeColor & overlayTheme)
   const activeFadeColor = fadeColor || overlayTheme || "white";
@@ -379,44 +360,13 @@ export default function CommunityTrips({
     }
   };
 
-  const isWhiteOverlay = activeFadeColor === "white";
-
-  // Dynamic Font Size Class
-  const getFontSizeClass = () => {
-    switch (fontSize) {
-      case "small": return "text-[24px] sm:text-[32px] md:text-[38px]";
-      case "large": return "text-[32px] sm:text-[44px] md:text-[54px]";
-      case "xlarge": return "text-[36px] sm:text-[50px] md:text-[62px]";
-      default: return "text-[28px] sm:text-[38px] md:text-[48px]";
-    }
-  };
-
-  // Dynamic Font Family Class
-  const getFontFamilyClass = () => {
-    switch (fontFamily) {
-      case "playfair": return "font-serif";
-      case "caveat": return "font-mono";
-      default: return "font-montserrat";
-    }
-  };
-
-  // Dynamic Hero Height Class
-  const getHeroHeightClass = () => {
-    switch (heroHeight) {
-      case "compact": return "min-h-[320px] sm:min-h-[380px]";
-      case "tall": return "min-h-[480px] sm:min-h-[560px]";
-      default: return "min-h-[380px] sm:min-h-[460px]";
-    }
-  };
-
   return (
-    <section className="bg-white py-0 w-full mt-0 pt-[80px]">
-      {/* CINEMATIC HERO BANNER (STARTS DIRECTLY BELOW FIXED 80PX NAVBAR) */}
+    <section className="relative overflow-hidden bg-[#fafafa]">
+      {/* HERO SECTION WRAPPER */}
       <div 
-        className={`relative w-full overflow-hidden flex items-center mb-6 border-b border-zinc-100 ${getFontFamilyClass()} ${getHeroHeightClass()}`} 
-        style={{ 
-          minWidth: 0,
-          paddingTop: '16px',
+        className="relative flex flex-col justify-center min-h-[460px] md:min-h-[500px]"
+        style={{
+          paddingTop: `${paddingTop}px`,
           paddingBottom: `${paddingBottom}px`
         }}
       >
@@ -456,7 +406,7 @@ export default function CommunityTrips({
             </motion.div>
           </AnimatePresence>
 
-          {/* DYNAMIC CONTROLLABLE OVERLAY */}
+          {/* DYNAMIC OVERLAY */}
           <div 
             className="absolute inset-0 z-10 pointer-events-none transition-all duration-300"
             style={getDynamicOverlayStyle()}
@@ -523,10 +473,11 @@ export default function CommunityTrips({
       </div>
 
       {/* Month Selector Pill Bar */}
-      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-4">
+      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-6">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-center gap-2 sm:gap-3 bg-white border border-zinc-200/80 rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-2.5 sm:p-3.5">
             <button
+              type="button"
               onClick={() => nudge('l')}
               aria-label="Previous months"
               className="w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 rounded-full border border-zinc-200 bg-white hover:bg-zinc-100 transition-all flex items-center justify-center text-zinc-700 cursor-pointer shadow-sm active:scale-95"
@@ -535,11 +486,12 @@ export default function CommunityTrips({
             </button>
 
             <div ref={barRef} className="no-scrollbar flex gap-2.5 overflow-x-auto py-1 flex-1 scroll-smooth">
-              {MONTHS.map((m, i) => {
+              {MONTHS.map((m: any, i: number) => {
                 const on = activeMonth === i;
                 return (
                   <button
                     key={m.label}
+                    type="button"
                     onClick={() => pickMonth(i)}
                     className="relative flex-shrink-0 px-5 sm:px-6 py-2 rounded-full font-bold text-xs sm:text-sm transition-colors duration-200 cursor-pointer select-none"
                   >
@@ -559,6 +511,7 @@ export default function CommunityTrips({
             </div>
 
             <button
+              type="button"
               onClick={() => nudge('r')}
               aria-label="Next months"
               className="w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 rounded-full border border-zinc-200 bg-white hover:bg-zinc-100 transition-all flex items-center justify-center text-zinc-700 cursor-pointer shadow-sm active:scale-95"

@@ -7,8 +7,8 @@ console.log("⚙️  BREVO API CONFIG LOADED:", {
 });
 
 const sendBookingEmail = async (req, res) => {
-  const { bookingId, type, amount, includeTicket, ticketFile, ticketFileName } = req.body;
-  console.log('📡 [Backend] Incoming email request:', { bookingId, type, amount, includeTicket, ticketFileName });
+  const { bookingId, type, amount, includeTicket, ticketFile, ticketFileName, ticketFiles, trainTicketStatus } = req.body;
+  console.log('📡 [Backend] Incoming email request:', { bookingId, type, amount, includeTicket, ticketFileName, fileCount: ticketFiles?.length });
 
   try {
     if (!bookingId) {
@@ -25,6 +25,10 @@ const sendBookingEmail = async (req, res) => {
 
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found in database' });
+    }
+
+    if (trainTicketStatus) {
+      booking.trainTicketStatus = trainTicketStatus;
     }
 
     if (!booking.email) {
@@ -50,13 +54,26 @@ const sendBookingEmail = async (req, res) => {
       }
     }
 
-    // Attach manual ticket file if uploaded from client PC
+    // Attach single ticket file if provided
     if (ticketFile && ticketFileName) {
       attachments.push({
         content: ticketFile,
         name: ticketFileName
       });
       console.log(`📄 [Backend] Manual ticket file attached: ${ticketFileName}`);
+    }
+
+    // Attach multiple ticket files if provided
+    if (Array.isArray(ticketFiles) && ticketFiles.length > 0) {
+      ticketFiles.forEach(file => {
+        if (file && file.content && file.name) {
+          attachments.push({
+            content: file.content,
+            name: file.name
+          });
+          console.log(`📄 [Backend] Additional attachment added: ${file.name}`);
+        }
+      });
     }
 
     switch (type) {
