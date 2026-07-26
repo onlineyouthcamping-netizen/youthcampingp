@@ -60,7 +60,7 @@ export default function ItineraryAccordion({
   };
 
   return (
-    <div className="space-y-6 scroll-mt-28" id="itinerary">
+    <div className="space-y-6 scroll-mt-[140px]" id="itinerary">
       {/* Header Row: Itinerary Overview & Expand All Toggle */}
       <div className="flex items-center justify-between border-b border-zinc-100/90 pb-3">
         <h2 className="text-xl md:text-2xl font-extrabold text-[#0B1528] font-montserrat">
@@ -89,24 +89,24 @@ export default function ItineraryAccordion({
 
           return (
             <div key={day.displayDay} className="group rounded-2xl transition-all duration-300">
-              <div className="flex items-center gap-3 md:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3.5 w-full">
                 {/* Left: Dark Navy Day Pill Badge */}
-                <div className="bg-[#0B1528] text-white rounded-full font-extrabold text-sm px-3.5 sm:px-4 text-center shadow-xs border border-slate-800 shrink-0 min-w-[88px] sm:min-w-[100px] flex items-center justify-center font-montserrat min-h-[40px] h-10">
+                <div className="bg-[#0B1528] text-white rounded-full font-extrabold text-xs sm:text-sm px-2.5 sm:px-4 text-center shadow-xs border border-slate-800 shrink-0 min-w-[76px] sm:min-w-[96px] flex items-center justify-center font-montserrat min-h-[40px] h-10">
                   {dayNumStr}
                 </div>
 
                 {/* Right: Pure White Pill Title Bar */}
                 <button
                   onClick={() => toggleDay(day.displayDay)}
-                  className="flex-1 bg-white border border-zinc-200/90 rounded-full px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between shadow-2xs hover:border-[#D4541A]/50 transition-all text-left cursor-pointer"
+                  className="flex-1 min-w-0 bg-white border border-zinc-200/90 rounded-full px-3 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between shadow-2xs hover:border-[#D4541A]/50 transition-all text-left cursor-pointer"
                 >
-                  <span className="text-xs sm:text-sm font-semibold text-[#0B1528] font-montserrat truncate flex-1">
+                  <span className="text-xs sm:text-sm font-semibold text-[#0B1528] font-montserrat truncate flex-1 min-w-0 pr-1">
                     {day.title}
                   </span>
 
                   <ChevronDown
                     className={cn(
-                      "w-4.5 h-4.5 text-[#D4541A] shrink-0 ml-3 transition-transform duration-300",
+                      "w-4 h-4 text-[#D4541A] shrink-0 ml-1.5 transition-transform duration-300",
                       isExpanded ? "rotate-180" : ""
                     )}
                   />
@@ -115,7 +115,7 @@ export default function ItineraryAccordion({
 
               {/* Expanded Details Body */}
               {isExpanded && (
-                <div className="ml-[104px] sm:ml-[116px] mt-2.5 p-5 bg-[#F8F9FA] border border-zinc-100 rounded-2xl space-y-3 animate-fade-in">
+                <div className="ml-[84px] sm:ml-[112px] mt-2.5 p-4 sm:p-5 bg-[#F8F9FA] border border-zinc-100 rounded-2xl space-y-3 animate-fade-in">
                   {day.description && (
                     <p className="text-xs sm:text-sm text-zinc-600 font-montserrat leading-relaxed">
                       {renderFormattedText(day.description)}

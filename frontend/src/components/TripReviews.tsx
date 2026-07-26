@@ -52,7 +52,7 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
   })) : defaultPhotoReviews;
 
   return (
-    <section className="space-y-6 scroll-mt-28" id="reviews">
+    <section className="space-y-6 scroll-mt-[140px]" id="reviews">
       {/* Header System */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-zinc-100 pb-3">
         <div>

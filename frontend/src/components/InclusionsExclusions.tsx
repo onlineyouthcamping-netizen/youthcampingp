@@ -35,7 +35,7 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
   const excList = exclusions && exclusions.length > 0 ? exclusions : defaultExclusions;
 
   return (
-    <div className="space-y-6 scroll-mt-28" id="inclusions">
+    <div className="space-y-6 scroll-mt-[140px]" id="inclusions">
       {/* Header Section (Matching Reference Screenshot) */}
       <div>
         <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">

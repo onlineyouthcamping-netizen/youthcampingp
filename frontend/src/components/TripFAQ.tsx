@@ -48,7 +48,7 @@ export default function TripFAQ({ faqs }: TripFAQProps) {
   };
 
   return (
-    <section className="space-y-6 scroll-mt-28" id="faq">
+    <section className="space-y-6 scroll-mt-[140px]" id="faq">
       {/* Header System */}
       <div>
         <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
