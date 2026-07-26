@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, BedDouble, Utensils } from "lucide-react";
+import { ChevronDown, BedDouble, Utensils, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ItineraryDay } from "@/types";
+import { normalizeImageUrl } from "@/lib/api";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
 
 function renderFormattedText(text: string) {
   if (!text) return "";
@@ -216,6 +218,44 @@ export default function ItineraryAccordion({
                       </ul>
                     </div>
                   )}
+
+                  {(() => {
+                    const rawPhotos = [
+                      ...(Array.isArray(day.photos) ? day.photos : []),
+                      ...(Array.isArray((day as any).images) ? (day as any).images : []),
+                      ...(typeof (day as any).photo === 'string' ? [(day as any).photo] : []),
+                      ...(typeof (day as any).image === 'string' ? [(day as any).image] : []),
+                    ].filter(Boolean);
+
+                    const photoUrls = Array.from(
+                      new Set(rawPhotos.map(p => normalizeImageUrl(p)).filter(Boolean) as string[])
+                    );
+
+                    if (photoUrls.length === 0) return null;
+
+                    return (
+                      <div className="pt-2 border-t border-zinc-200/60 space-y-2">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-[#0B1528] font-montserrat">
+                          <Camera className="w-3.5 h-3.5 text-[#D4541A]" />
+                          <span>Day Highlights ({photoUrls.length} Photos)</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                          {photoUrls.map((url, pi) => (
+                            <div 
+                              key={pi} 
+                              className="relative aspect-[4/3] rounded-xl overflow-hidden border border-zinc-200/80 shadow-2xs group bg-zinc-100"
+                            >
+                              <OptimizedImage
+                                src={url}
+                                alt={`${day.title} photo ${pi + 1}`}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {(() => {
                     const { stay: effectiveStay, meals: effectiveMeals } = getStayAndMeals(day, day.displayDay - 1, displayItinerary.length);
