@@ -232,13 +232,26 @@ export default function ItineraryAccordion({
                       let label = "";
 
                       if (typeof item === "string") {
-                        url = normalizeImageUrl(item) || "";
-                        if (day.activities && day.activities[idx]) {
-                          label = day.activities[idx];
+                        if (item.includes("|")) {
+                          const parts = item.split("|");
+                          url = normalizeImageUrl(parts[0]) || "";
+                          label = parts.slice(1).join("|").trim();
+                        } else {
+                          url = normalizeImageUrl(item) || "";
+                          if (day.activities && day.activities[idx]) {
+                            label = day.activities[idx];
+                          }
                         }
                       } else if (item && typeof item === "object") {
-                        url = normalizeImageUrl(item.url || item.src || item.image || item.photo) || "";
-                        label = item.title || item.caption || item.name || item.label || (day.activities && day.activities[idx]) || "";
+                        const rawUrl = item.url || item.src || item.image || item.photo || "";
+                        if (typeof rawUrl === "string" && rawUrl.includes("|")) {
+                          const parts = rawUrl.split("|");
+                          url = normalizeImageUrl(parts[0]) || "";
+                          label = item.title || item.caption || item.name || item.label || parts.slice(1).join("|").trim();
+                        } else {
+                          url = normalizeImageUrl(rawUrl) || "";
+                          label = item.title || item.caption || item.name || item.label || (day.activities && day.activities[idx]) || "";
+                        }
                       }
 
                       return { url, label };
