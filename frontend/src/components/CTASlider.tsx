@@ -51,6 +51,13 @@ export default function CTASlider({
 
   const currentMedia = items[activeIdx % items.length];
   const isVideo = (url: string) => url && (/\.(mp4|webm|mov|ogg)$/i.test(url) || url.includes('/video/'));
+  const isYouTube = (url: string) => url && /youtube\.com|youtu\.be/.test(url);
+  const getYouTubeId = (url: string) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
 
   // Cycle media if multiple slides exist
   useEffect(() => {
@@ -85,7 +92,15 @@ export default function CTASlider({
               transition={{ duration: 1.0, ease: "easeInOut" }}
               className="w-full h-full relative"
             >
-              {isVideo(currentMedia) ? (
+              {isYouTube(currentMedia) ? (
+                <iframe
+                  className="w-full h-full object-cover pointer-events-none"
+                  src={`https://www.youtube.com/embed/${getYouTubeId(currentMedia)}?autoplay=1&mute=1&loop=1&playlist=${getYouTubeId(currentMedia)}&controls=0&showinfo=0&rel=0`}
+                  frameBorder="0"
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                />
+              ) : isVideo(currentMedia) ? (
                 <video
                   src={currentMedia}
                   autoPlay
