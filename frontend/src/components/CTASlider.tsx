@@ -54,7 +54,7 @@ export default function CTASlider({
   const isYouTube = (url: string) => url && /youtube\.com|youtu\.be/.test(url);
   const getYouTubeId = (url: string) => {
     if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
   };
@@ -93,13 +93,15 @@ export default function CTASlider({
               className="w-full h-full relative"
             >
               {isYouTube(currentMedia) ? (
-                <iframe
-                  className="w-full h-full object-cover pointer-events-none"
-                  src={`https://www.youtube.com/embed/${getYouTubeId(currentMedia)}?autoplay=1&mute=1&loop=1&playlist=${getYouTubeId(currentMedia)}&controls=0&showinfo=0&rel=0`}
-                  frameBorder="0"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                />
+                <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none rounded-inherit">
+                  <iframe
+                    className="absolute top-1/2 left-1/2 w-[250%] h-[250%] max-w-none -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                    src={`https://www.youtube.com/embed/${getYouTubeId(currentMedia)}?autoplay=1&mute=1&loop=1&playlist=${getYouTubeId(currentMedia)}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3&disablekb=1`}
+                    frameBorder="0"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                  />
+                </div>
               ) : isVideo(currentMedia) ? (
                 <video
                   src={currentMedia}
