@@ -56,9 +56,9 @@ async function generateInvoicePDF(booking) {
       doc.fillColor(secondaryColor)
          .fontSize(10)
          .font('Helvetica')
-         .text(`Invoice No: ${booking.bookingId}`, 400, 75, { align: 'right' })
+         .text(`Invoice No: ${booking.bookingId || 'N/A'}`, 400, 75, { align: 'right' })
          .text(`Date: ${new Date().toLocaleDateString('en-IN')}`, 400, 90, { align: 'right' })
-         .text(`Status: ${booking.paymentStatus.toUpperCase()}`, 400, 105, { align: 'right' });
+         .text(`Status: ${(booking.paymentStatus || 'pending').toUpperCase()}`, 400, 105, { align: 'right' });
 
       // Horizontal line
       doc.moveTo(50, 130)
@@ -160,19 +160,7 @@ async function generateInvoicePDF(booking) {
 
       if (baseItems.length > 0) {
         baseItems.forEach((item, idx) => {
-          let desc = item.name;
-          if (idx === 0) {
-            if (trainClass && trainClass !== 'N/A') {
-              desc = trainClass;
-            }
-            const detailParts = [];
-            if (roomType && roomType !== 'N/A') {
-              detailParts.push(roomType);
-            }
-            if (detailParts.length > 0) {
-              desc += ` (${detailParts.join(', ')})`;
-            }
-          }
+          const desc = item.name || 'Package Line Item';
 
           doc.fillColor(brandColor)
              .font('Helvetica')
@@ -182,7 +170,7 @@ async function generateInvoicePDF(booking) {
           const rowBottom = doc.y;
 
           doc.font('Helvetica')
-             .text(`${item.qty} ${idx === 0 ? 'Traveller(s)' : 'Unit(s)'}`, 350, currentY);
+             .text(`${item.qty} ${item.qty === 1 ? 'Unit' : 'Units'}`, 350, currentY);
           doc.font('Helvetica-Bold')
              .text(`INR ${(item.rate * item.qty).toLocaleString('en-IN')}`, 480, currentY, { align: 'right' });
 

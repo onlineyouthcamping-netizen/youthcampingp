@@ -2,11 +2,9 @@ const SibApiV3Sdk = require('sib-api-v3-sdk');
 
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
 const apiKey = defaultClient.authentications['api-key'];
-// Use the API key added to .env
 apiKey.apiKey = process.env.BREVO_API_KEY;
 
 const emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
-
 
 const BRAND_COLOR = '#0f172a';
 const ACCENT_COLOR = '#ff5722';
@@ -31,37 +29,35 @@ const getBaseTemplate = (content, previewText) => `
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouthCamping</title>
+  <title>YouthCamping OS</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
-    .container { max-width: 620px; margin: 24px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0; }
-    .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 32px 28px; text-align: center; color: #ffffff; border-bottom: 3px solid #ff5722; }
-    .logo-text { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase; color: #ffffff; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 620px; margin: 24px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04); border: 1px solid #e2e8f0; }
+    .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 24px 28px; text-align: center; color: #ffffff; border-bottom: 3px solid #ff5722; }
+    .logo-text { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase; color: #ffffff; }
     .logo-accent { color: #ff5722; }
-    .content { padding: 36px 32px; line-height: 1.6; color: #334155; }
-    .footer { background-color: #f8fafc; padding: 28px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
-    .button { display: inline-block; padding: 14px 28px; background-color: #ff5722; color: #ffffff !important; text-decoration: none; border-radius: 12px; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 20px; box-shadow: 0 4px 12px rgba(255, 87, 34, 0.25); }
-    .highlight-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 20px 0; }
+    .content { padding: 28px 24px; line-height: 1.6; color: #334155; }
+    .footer { background-color: #f8fafc; padding: 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+    .button { display: inline-block; padding: 14px 28px; background-color: #ff5722; color: #ffffff !important; text-decoration: none; border-radius: 12px; font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 16px; box-shadow: 0 4px 12px rgba(255, 87, 34, 0.25); }
+    .highlight-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin: 16px 0; }
     .label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.8px; }
     .value { font-size: 15px; font-weight: 700; color: #0f172a; }
-    h1 { font-size: 24px; font-weight: 900; color: #0f172a; margin-top: 0; letter-spacing: -0.5px; }
+    h1 { font-size: 22px; font-weight: 900; color: #0f172a; margin-top: 0; letter-spacing: -0.5px; }
     .preview-text { display: none; font-size: 0; color: transparent; height: 0; width: 0; }
-    .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 900; text-transform: uppercase; background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; margin-bottom: 15px; }
-    .divider { height: 1px; background: #e2e8f0; margin: 24px 0; }
   </style>
 </head>
 <body>
   <div class="preview-text">${previewText}</div>
   <div class="container">
     <div class="header">
-      <img src="${LOGO_URL}" alt="YouthCamping" style="height: 42px; width: auto; display: block; margin: 0 auto;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+      <img src="${LOGO_URL}" alt="YouthCamping" style="height: 38px; width: auto; display: block; margin: 0 auto;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
       <div class="logo-text" style="display: none;">YOUTH<span class="logo-accent">CAMPING</span></div>
     </div>
     <div class="content">
       ${content}
     </div>
     <div class="footer">
-      <p style="font-weight: 900; color: #0f172a; margin-bottom: 8px; font-size: 13px; letter-spacing: 0.5px;">YOUTHCAMPING EXPERIENCES</p>
+      <p style="font-weight: 900; color: #0f172a; margin-bottom: 6px; font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase;">YOUTHCAMPING EXPERIENCES</p>
       <p style="margin: 4px 0;">&copy; ${new Date().getFullYear()} YouthCamping. All rights reserved.</p>
       <p style="margin-top: 10px; margin-bottom: 10px;">
         <a href="${getPublicSiteBaseUrl()}/terms-and-conditions" style="color: #ff5722; text-decoration: underline; font-weight: 600;" target="_blank">Terms &amp; Conditions</a>
@@ -84,10 +80,9 @@ const sendEmail = async ({ to, subject, html, type, bookingId, prisma, attachmen
     sendSmtpEmail.to = [{ "email": to }];
     
     if (attachments && attachments.length > 0) {
-      sendSmtpEmail.attachment = attachments; // Array of { content: 'base64', name: 'file.pdf' }
+      sendSmtpEmail.attachment = attachments;
     }
 
-    // Internal BCC: send a hidden copy to company email(s) if configured
     const bccEnv = (process.env.INTERNAL_EMAIL_BCC || '').trim();
     if (bccEnv) {
       const bccAddresses = bccEnv
@@ -101,7 +96,6 @@ const sendEmail = async ({ to, subject, html, type, bookingId, prisma, attachmen
 
     const info = await emailApi.sendTransacEmail(sendSmtpEmail);
     console.log("📧 Brevo sendTransacEmail response info:", info);
-
 
     if (prisma && bookingId) {
       await prisma.bookingEmailLog.create({
@@ -147,7 +141,6 @@ const templates = {
       ? new Date(booking.departureDate)
       : null;
       
-    // Format calendar dates
     let dayOfWeek = 'TBD';
     let dayOfMonth = '--';
     let monthName = 'TBD';
@@ -160,7 +153,6 @@ const templates = {
       year = departureDate.getFullYear().toString();
     }
 
-    // Pricing Calculations
     const meta = booking.sourceMeta || {};
     const storedItems = meta.bookingItems || [];
 
@@ -184,44 +176,31 @@ const templates = {
 
     if (baseItems.length > 0) {
       baseItems.forEach((item, idx) => {
-        let desc = item.name;
-        if (idx === 0) {
-          if (trainClass && trainClass !== 'N/A') {
-            desc = trainClass;
-          }
-          const detailParts = [];
-          if (roomType && roomType !== 'N/A') {
-            detailParts.push(roomType);
-          }
-          if (detailParts.length > 0) {
-            desc += ` (${detailParts.join(', ')})`;
-          }
-        }
+        const desc = item.name || 'Package Line Item';
         priceRowsHtml += `
-          <tr style="border-bottom: 1px solid #e2e8f0; font-size: 13px;">
-            <td style="padding: 12px 10px; color: #334155; text-align: left; vertical-align: top;">
-              <div style="font-weight: 700;">${desc}</div>
+          <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+            <td style="padding: 12px; color: #0f172a; text-align: left; vertical-align: top;">
+              <div style="font-weight: 800; font-size: 13px; color: #0f172a;">${desc}</div>
             </td>
-            <td style="padding: 12px 10px; color: #64748b; text-align: center; vertical-align: top;">
-              ${item.qty} &times; ${Number(item.rate).toLocaleString('en-IN')}
+            <td style="padding: 12px; color: #64748b; text-align: center; vertical-align: top; font-weight: 600; font-size: 12px;">
+              ${item.qty} &times; ₹${Number(item.rate).toLocaleString('en-IN')}
             </td>
-            <td style="padding: 12px 10px; color: #334155; font-weight: 700; text-align: right; vertical-align: top; white-space: nowrap;">
+            <td style="padding: 12px; color: #0f172a; font-weight: 900; text-align: right; vertical-align: top; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px;">
               ₹ ${Number(item.rate * item.qty).toLocaleString('en-IN')}
             </td>
           </tr>
         `;
       });
     } else {
-      // Fallback
       priceRowsHtml += `
-        <tr style="border-bottom: 1px solid #e2e8f0; font-size: 13px;">
-          <td style="padding: 12px 10px; color: #334155; text-align: left; vertical-align: top; font-weight: 700;">
+        <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+          <td style="padding: 12px; color: #0f172a; text-align: left; vertical-align: top; font-weight: 800;">
             Package Cost
           </td>
-          <td style="padding: 12px 10px; color: #64748b; text-align: center; vertical-align: top;">
+          <td style="padding: 12px; color: #64748b; text-align: center; vertical-align: top; font-weight: 600;">
             1
           </td>
-          <td style="padding: 12px 10px; color: #334155; font-weight: 700; text-align: right; vertical-align: top; white-space: nowrap;">
+          <td style="padding: 12px; color: #0f172a; font-weight: 900; text-align: right; vertical-align: top; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
             ₹ ${Number(booking.baseAmount || booking.totalAmount).toLocaleString('en-IN')}
           </td>
         </tr>
@@ -231,19 +210,17 @@ const templates = {
 
     if (gstDiscount > 0) {
       priceRowsHtml += `
-        <tr style="border-bottom: 1px solid #e2e8f0; font-size: 13px;">
-          <td style="padding: 12px 10px; color: #dc2626; text-align: left; font-weight: 700;" colspan="2">
+        <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+          <td style="padding: 12px; color: #ef4444; text-align: left; font-weight: 800;" colspan="2">
             GST DISCOUNT
           </td>
-          <td style="padding: 12px 10px; color: #dc2626; font-weight: 700; text-align: right; white-space: nowrap;">
+          <td style="padding: 12px; color: #ef4444; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
             - ₹ ${Number(gstDiscount).toLocaleString('en-IN')}
           </td>
         </tr>
       `;
     }
 
-    // Use the full-package GST from the DB (now correctly stored as 5% of full package base).
-    // Fallback: compute GST on the full base price if gstAmount is not stored.
     const gstRate = (booking.baseAmount && booking.gstAmount) ? Math.round((booking.gstAmount / booking.baseAmount) * 100) / 100 : 0.05;
     const calculatedGst = (booking.gstAmount !== null && booking.gstAmount !== undefined && booking.gstAmount > 0)
       ? booking.gstAmount
@@ -272,24 +249,24 @@ const templates = {
 
     const gstPct = Math.round(gstRate * 100);
     priceRowsHtml += `
-      <tr style="border-bottom: 1px solid #e2e8f0; font-size: 13px;">
-        <td style="padding: 12px 10px; color: #334155; text-align: left; font-weight: 700;" colspan="2">
+      <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+        <td style="padding: 12px; color: #475569; text-align: left; font-weight: 700;" colspan="2">
           GST (Reg no. 24CRFPP3172G1ZT) @ ${gstPct}%
         </td>
-        <td style="padding: 12px 10px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap;">
+        <td style="padding: 12px; color: #334155; font-weight: 800; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
           ₹ ${calculatedGstFormatted}
         </td>
       </tr>
-      <tr style="background-color: #f1f5f9; font-size: 14px;">
-        <td style="padding: 12px 10px; color: #0f172a; text-align: left; font-weight: 900;" colspan="2">
-          Total
+      <tr style="background-color: #f8fafc; font-size: 14px;">
+        <td style="padding: 14px 12px; color: #0f172a; text-align: left; font-weight: 900;" colspan="2">
+          TOTAL AMOUNT
         </td>
-        <td style="padding: 12px 10px; color: #0f172a; font-weight: 900; text-align: right; white-space: nowrap;">
+        <td style="padding: 14px 12px; color: #0f172a; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 15px;">
           ₹ ${totalWithGstFormatted}
         </td>
       </tr>
     `;
-    // Passengers list HTML
+
     let passengerRowsHtml = '';
     let passengersList = [];
     try {
@@ -311,14 +288,14 @@ const templates = {
     if (passengersList.length > 0) {
       passengersList.forEach(p => {
         passengerRowsHtml += `
-          <tr style="border-bottom: 1px solid #e2e8f0; font-size: 13px;">
-            <td style="padding: 12px 10px; color: #334155; text-align: left; font-weight: 700;">
+          <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+            <td style="padding: 12px 14px; color: #0f172a; text-align: left; font-weight: 800;">
               ${p.name || '—'}
             </td>
-            <td style="padding: 12px 10px; color: #64748b; text-align: center;">
-              ${p.age || '—'}
+            <td style="padding: 12px 14px; color: #64748b; text-align: center; font-weight: 600;">
+              ${p.age || '—'} Yrs
             </td>
-            <td style="padding: 12px 10px; color: #334155; font-weight: 700; text-align: right;">
+            <td style="padding: 12px 14px; color: #0f172a; font-weight: 800; text-align: right;">
               ${p.gender || '—'}
             </td>
           </tr>
@@ -326,22 +303,24 @@ const templates = {
       });
     } else {
       passengerRowsHtml += `
-        <tr style="border-bottom: 1px solid #e2e8f0; font-size: 13px;">
-          <td style="padding: 12px 10px; color: #334155; text-align: left; font-weight: 700;">
+        <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+          <td style="padding: 12px 14px; color: #0f172a; text-align: left; font-weight: 800;">
             ${booking.fullName || booking.name || '—'}
           </td>
-          <td style="padding: 12px 10px; color: #64748b; text-align: center;">
-            ${booking.age || '—'}
+          <td style="padding: 12px 14px; color: #64748b; text-align: center; font-weight: 600;">
+            ${booking.age || '—'} Yrs
           </td>
-          <td style="padding: 12px 10px; color: #334155; font-weight: 700; text-align: right;">
+          <td style="padding: 12px 14px; color: #0f172a; font-weight: 800; text-align: right;">
             ${booking.gender || '—'}
           </td>
         </tr>
       `;
     }
 
-    const logoUrl = 'https://youthcamping.online/logo.png';
     const heroImage = trip.heroImage || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb';
+    const bookingTokenLink = booking.bookingToken ? `https://youthcamping.online/b/${booking.bookingToken}` : 'https://youthcamping.online/my-bookings';
+
+    const rawTicketStatus = String(booking.trainTicketStatus || (booking.passengers?.details?.ticketStatus) || (includeTicket ? 'CONFIRMED' : 'SELF BOOKED')).replace(/_/g, ' ');
 
     const emailContent = `
 <!DOCTYPE html>
@@ -349,182 +328,192 @@ const templates = {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Booking Confirmation</title>
+  <title>YouthCamping OS — Booking Confirmation</title>
 </head>
-<body style="font-family: Arial, sans-serif; background-color: #cccccc; margin: 0; padding: 20px 0;">
-  <div style="max-width: 650px; margin: 0 auto; background-color: #f5f5f5; border: 1px solid #d1d5db; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 16px 0; -webkit-font-smoothing: antialiased;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 18px; overflow: hidden; box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.1); border: 1px solid #e2e8f0;">
     
-    <!-- Top Header -->
-    <table style="width: 100%; background-color: #cccccc; padding: 15px 20px; border-bottom: 1px solid #b8b8b8; border-collapse: collapse;">
-      <tr>
-        <td style="vertical-align: middle;">
-          <img src="${logoUrl}" alt="YouthCamping" style="height: 35px; width: auto; display: block;" />
-        </td>
-        <td style="text-align: right; vertical-align: middle; font-size: 11px; color: #ffffff; font-weight: 700; width: 60%; line-height: 1.4;">
-          Your booking for ${trip.title || booking.tripName} | Booking Id: ${booking.bookingId} has been confirmed.
-        </td>
-      </tr>
-    </table>
-
-    <!-- Hero Image -->
-    <div style="width: 100%; height: auto; overflow: hidden;">
-      <img src="${heroImage}" alt="Trip Cover" style="width: 100%; height: auto; display: block;" />
-    </div>
-
-    <!-- Main Body Area -->
-    <div style="padding: 25px;">
-      
-      <!-- Two Column Section -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+    <!-- 1. Top Header (High Contrast Logo & Badge) -->
+    <div style="background-color: #0f172a; padding: 18px 20px; border-bottom: 3px solid #ff5722;">
+      <table style="width: 100%; border-collapse: collapse;">
         <tr>
-          <!-- Left Column -->
-          <td style="width: 65%; vertical-align: top; padding-right: 20px;">
-            <h1 style="font-size: 26px; font-weight: 900; color: #475569; margin: 0 0 10px 0;">Booking Confirmation</h1>
-            <div style="font-size: 16px; margin-bottom: 8px;">
-              <a href="https://youthcamping.online/trips/${trip.slug || ''}" style="color: #3b82f6; text-decoration: underline; font-weight: 700;">${trip.title || booking.tripName}</a>
+          <td style="vertical-align: middle;">
+            <div style="font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+              YOUTH<span style="color: #ff5722;">CAMPING</span>
             </div>
-            <div style="font-size: 13px; color: #64748b; margin-bottom: 25px;">
-              <img src="https://cdn-icons-png.flaticon.com/16/684/684908.png" style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;" />
-              ${booking.pickupCity || trip.location || 'Gujarat, India'}
-            </div>
-
-            <p style="font-size: 13px; margin: 0 0 15px 0; color: #1e293b;">Dear <strong>${booking.fullName || booking.name}</strong>,</p>
-            <p style="font-size: 13px; line-height: 1.6; color: #475569; margin: 0;">
-              Thank you for booking with <strong>YouthCamping</strong>. It is our pleasure to confirm your booking. Your Booking Id is <strong>${booking.bookingId}</strong>, please use this ID for further references or communication. The booking details are given below:
-            </p>
           </td>
-
-          <!-- Right Column (Sidebar Calendar & Info) -->
-          <td style="width: 35%; vertical-align: top; min-width: 130px;">
-            <!-- Calendar Block -->
-            <div style="width: 110px; margin: 0 0 20px auto; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); background-color: #ffffff;">
-              <div style="background-color: #dc2626; color: #ffffff; font-size: 11px; font-weight: 700; padding: 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">
-                ${dayOfWeek}
-              </div>
-              <div style="padding: 12px 0;">
-                <div style="font-size: 26px; font-weight: 800; color: #1e293b; line-height: 1;">
-                  ${dayOfMonth}
-                </div>
-                <div style="font-size: 11px; font-weight: 700; color: #64748b; margin-top: 2px; text-transform: uppercase;">
-                  ${monthName}
-                </div>
-              </div>
-              <div style="background-color: #dc2626; color: #ffffff; font-size: 11px; font-weight: 700; padding: 3px 0;">
-                ${year}
-              </div>
-            </div>
-
-            <!-- Sidebar Text Info -->
-            <div style="text-align: left; font-size: 11px; padding-left: 10px; line-height: 1.5;">
-              <div style="font-weight: 800; color: #64748b; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Trip</div>
-              <div style="font-weight: 700; color: #1e293b; margin-bottom: 12px;">${trip.title || booking.tripName}</div>
-              
-              <div style="font-weight: 800; color: #64748b; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Contact Information</div>
-              <div style="font-weight: 700; color: #1e293b;">${booking.fullName || booking.name}</div>
-              <div style="margin-top: 1px;"><a href="mailto:${booking.email}" style="color: #3b82f6; text-decoration: underline;">${booking.email}</a></div>
-              <div style="margin-top: 1px; color: #1e293b;">+91${booking.mobile || booking.phone}</div>
-
-              <div style="font-weight: 800; color: #64748b; margin-top: 12px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Ticket Status</div>
-              <div style="font-weight: 700; color: #2b9b91; text-transform: uppercase;">
-                ${String(booking.trainTicketStatus || (booking.passengers?.details?.ticketStatus) || (includeTicket ? 'CONFIRMED' : 'SELF BOOKED')).replace(/_/g, ' ')}
-              </div>
-            </div>
+          <td style="text-align: right; vertical-align: middle;">
+            <span style="display: inline-block; padding: 4px 10px; background-color: #064e3b; border: 1px solid #10b981; border-radius: 16px; color: #34d399; font-size: 10px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;">
+              ✓ CONFIRMED BOOKING
+            </span>
           </td>
         </tr>
       </table>
+    </div>
 
-      <!-- Passenger Details Table -->
-      <div style="margin-bottom: 35px;">
-        <div style="font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 10px;">
-          <img src="https://cdn-icons-png.flaticon.com/24/1077/1077114.png" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;" />
-          <span style="vertical-align: middle; text-transform: uppercase;">Passenger Details :</span>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; background-color: #ffffff;">
-          <thead>
-            <tr style="background-color: #2b9b91; color: #ffffff; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-              <th style="padding: 10px; text-align: left; font-weight: 800; width: 50%;">Name</th>
-              <th style="padding: 10px; text-align: center; font-weight: 800; width: 25%;">Age</th>
-              <th style="padding: 10px; text-align: right; font-weight: 800; width: 25%;">Gender</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${passengerRowsHtml}
-          </tbody>
+    <!-- 2. Hero Cover Banner Image -->
+    <div style="width: 100%; height: 180px; overflow: hidden; background-color: #0f172a;">
+      <img src="${heroImage}" alt="${trip.title || booking.tripName}" style="width: 100%; height: 180px; display: block; max-width: 100%; border: 0;" />
+    </div>
+
+    <!-- 3. Trip & Booking Card Header -->
+    <div style="background-color: #0f172a; padding: 20px; border-bottom: 1px solid #1e293b; color: #ffffff;">
+      <div style="margin-bottom: 10px;">
+        <span style="display: inline-block; padding: 4px 10px; background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 12px; color: #ea580c; font-size: 11px; font-weight: 900; letter-spacing: 0.5px;">
+          BOOKING ID: ${booking.bookingId}
+        </span>
+      </div>
+      <h1 style="font-size: 22px; font-weight: 900; color: #ffffff; margin: 0 0 6px 0; letter-spacing: -0.5px; line-height: 1.3;">
+        ${trip.title || booking.tripName}
+      </h1>
+      <div style="font-size: 12px; color: #94a3b8; font-weight: 700;">
+        📍 ${booking.pickupCity || trip.location || 'Gujarat, India'} &bull; ${passengersList.length || 1} Traveller(s)
+      </div>
+    </div>
+
+    <!-- 4. Main Body Content -->
+    <div style="padding: 20px;">
+      
+      <!-- Greeting Copy -->
+      <div style="margin-bottom: 20px;">
+        <p style="font-size: 14px; color: #334155; margin: 0; line-height: 1.6;">
+          Dear <strong>${booking.fullName || booking.name}</strong>, your reservation with <strong>YouthCamping</strong> is officially confirmed! Here is your complete trip breakdown:
+        </p>
+      </div>
+
+      <!-- Departure Info & Calendar Widget -->
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; margin-bottom: 20px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="vertical-align: top; padding-right: 12px;">
+              <div style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; margin-bottom: 4px;">RESERVATION STATUS</div>
+              <div style="margin-bottom: 12px;">
+                <span style="display: inline-block; padding: 4px 10px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; color: #059669; font-size: 11px; font-weight: 900; text-transform: uppercase;">
+                  TICKET: ${rawTicketStatus}
+                </span>
+              </div>
+
+              <div style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; margin-bottom: 4px;">CONTACT PERSON</div>
+              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">${booking.fullName || booking.name}</div>
+              <div style="font-size: 12px; color: #64748b; font-weight: 600;">+91 ${booking.mobile || booking.phone}</div>
+            </td>
+
+            <td style="vertical-align: top; width: 105px; text-align: right;">
+              <div style="width: 95px; display: inline-block; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center;">
+                <div style="background-color: #0f172a; color: #ff5722; font-size: 10px; font-weight: 900; padding: 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                  ${dayOfWeek}
+                </div>
+                <div style="padding: 8px 0;">
+                  <div style="font-size: 26px; font-weight: 900; color: #0f172a; line-height: 1;">
+                    ${dayOfMonth}
+                  </div>
+                  <div style="font-size: 10px; font-weight: 800; color: #64748b; margin-top: 2px; text-transform: uppercase;">
+                    ${monthName}
+                  </div>
+                </div>
+                <div style="background-color: #ff5722; color: #ffffff; font-size: 10px; font-weight: 900; padding: 3px 0;">
+                  ${year}
+                </div>
+              </div>
+            </td>
+          </tr>
         </table>
       </div>
 
-      <!-- Pricing Details Table -->
-      <div style="margin-bottom: 35px;">
-        <div style="font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 10px;">
-          <img src="https://cdn-icons-png.flaticon.com/24/495/495591.png" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;" />
-          <span style="vertical-align: middle; text-transform: uppercase;">Pricing Details :</span>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; background-color: #ffffff;">
-          <thead>
-            <tr style="background-color: #2b9b91; color: #ffffff; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-              <th style="padding: 10px; text-align: left; font-weight: 800; width: 50%;">Description</th>
-              <th style="padding: 10px; text-align: center; font-weight: 800; width: 25%;">Qty / Rate</th>
-              <th style="padding: 10px; text-align: right; font-weight: 800; width: 25%;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${priceRowsHtml}
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Payment Details Table -->
-      <div style="margin-bottom: 25px;">
-        <div style="font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 10px;">
-          <img src="https://cdn-icons-png.flaticon.com/24/2984/2984920.png" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;" />
-          <span style="vertical-align: middle; text-transform: uppercase;">Payment Details :</span>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; background-color: #ffffff; margin-bottom: 15px;">
-          <thead>
-            <tr style="background-color: #2b9b91; color: #ffffff; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-              <th style="padding: 10px; text-align: left; font-weight: 800; width: 75%;">Description</th>
-              <th style="padding: 10px; text-align: right; font-weight: 800; width: 25%;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 13px;">
-              <td style="padding: 12px 10px; color: #334155; text-align: left; font-weight: 700;">
-                ${(booking.paymentMode || '').toLowerCase().trim() === 'cash' || (booking.paymentMode || '').toLowerCase().trim() === 'chash'
-                  ? 'CASH PAYMENT MADE BY CASH'
-                  : `Payment made by ${booking.paymentMode || 'Unknown'}`}
-              </td>
-              <td style="padding: 12px 10px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap;">
-                ₹ ${Number(booking.advancePaid).toLocaleString('en-IN')}
-              </td>
-            </tr>
-            <tr style="background-color: #f1f5f9; font-size: 14px;">
-              <td style="padding: 12px 10px; color: #0f172a; text-align: left; font-weight: 900;">
-                Total
-              </td>
-              <td style="padding: 12px 10px; color: #0f172a; font-weight: 900; text-align: right; white-space: nowrap;">
-                ₹ ${Number(booking.advancePaid).toLocaleString('en-IN')}
-              </td>
-            </tr>
-            <tr style="background-color: #fffbeb; font-size: 14px; border-top: 1px solid #fcd34d;">
-              <td style="padding: 12px 10px; color: #b45309; text-align: left; font-weight: 700;">
-                Remaining Balance
-              </td>
-              <td style="padding: 12px 10px; color: #b45309; font-weight: 700; text-align: right; white-space: nowrap;">
+      <!-- High-Urgency Remaining Balance Alert Card -->
+      <div style="background-color: ${remainingBalance > 0 ? '#fff7ed' : '#f0fdf4'}; border: 2px solid ${remainingBalance > 0 ? '#fed7aa' : '#bbf7d0'}; border-radius: 16px; padding: 16px; margin-bottom: 20px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="vertical-align: middle;">
+              <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: ${remainingBalance > 0 ? '#c2410c' : '#15803d'}; letter-spacing: 0.8px; margin-bottom: 2px;">
+                ${remainingBalance > 0 ? '⚠️ REMAINING BALANCE DUE' : '✅ FULLY PAID'}
+              </div>
+              <div style="font-size: 12px; color: ${remainingBalance > 0 ? '#9a3412' : '#166534'}; font-weight: 600;">
+                ${remainingBalance > 0 ? 'Please clear the balance prior to boarding' : 'Your payment is completely settled'}
+              </div>
+            </td>
+            <td style="text-align: right; vertical-align: middle;">
+              <div style="font-size: 22px; font-weight: 900; color: ${remainingBalance > 0 ? '#ea580c' : '#16a34a'}; font-family: 'SF Mono', Consolas, Monaco, monospace;">
                 ₹ ${remainingBalanceFormatted}
-              </td>
-            </tr>
-          </tbody>
+              </div>
+            </td>
+          </tr>
         </table>
       </div>
 
-      <!-- Divider -->
-      <div style="height: 1px; background-color: #d1d5db; margin: 25px 0;"></div>
+      <!-- Passenger Manifest -->
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 1px; margin-bottom: 8px;">
+          👥 PASSENGER MANIFEST (${passengersList.length || 1})
+        </div>
+        <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background-color: #0f172a; color: #ffffff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;">
+                <th style="padding: 10px 14px; text-align: left; font-weight: 900; width: 50%;">Name</th>
+                <th style="padding: 10px 14px; text-align: center; font-weight: 900; width: 25%;">Age</th>
+                <th style="padding: 10px 14px; text-align: right; font-weight: 900; width: 25%;">Gender</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${passengerRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-      <!-- Footer contact info -->
-      <div style="text-align: center; font-size: 11px; color: #3b82f6; font-weight: bold;">
-        <a href="mailto:youthcampingmedia@gmail.com" style="color: #3b82f6; text-decoration: none;">youthcampingmedia@gmail.com</a>
-        <span style="color: #64748b; margin: 0 10px; font-weight: normal;">|</span>
-        Phone: +919924246267
+      <!-- Financial Breakdown -->
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 1px; margin-bottom: 8px;">
+          🏷️ ITEMIZED FINANCIAL BREAKDOWN
+        </div>
+        <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background-color: #0f172a; color: #ffffff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;">
+                <th style="padding: 10px 14px; text-align: left; font-weight: 900; width: 50%;">Description</th>
+                <th style="padding: 10px 14px; text-align: center; font-weight: 900; width: 25%;">Qty / Rate</th>
+                <th style="padding: 10px 14px; text-align: right; font-weight: 900; width: 25%;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${priceRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Payment Summary -->
+      <div style="margin-bottom: 24px;">
+        <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 1px; margin-bottom: 8px;">
+          💳 ADVANCE PAYMENT RECEIVED
+        </div>
+        <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tbody>
+              <tr style="font-size: 13px;">
+                <td style="padding: 12px 14px; color: #334155; font-weight: 700;">
+                  ${(booking.paymentMode || '').toLowerCase().trim() === 'cash' || (booking.paymentMode || '').toLowerCase().trim() === 'chash'
+                    ? 'CASH PAYMENT MADE BY CASH'
+                    : `Payment made by ${booking.paymentMode || 'Unknown'}`}
+                </td>
+                <td style="padding: 12px 14px; color: #059669; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
+                  ₹ ${Number(booking.advancePaid).toLocaleString('en-IN')}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- High-Impact Prominent Action CTA -->
+      <div style="text-align: center; margin: 24px 0 8px 0;">
+        <a href="${bookingTokenLink}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; padding: 16px 24px; background-color: #ff5722; color: #ffffff !important; text-decoration: none; border-radius: 14px; font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 10px 20px -5px rgba(255, 87, 34, 0.4); text-align: center;">
+          EXPLORE MY TRIP DASHBOARD &rarr;
+        </a>
+        <div style="font-size: 11px; color: #64748b; margin-top: 8px; font-weight: 600;">
+          Access your digital tickets, itinerary, and live departure updates
+        </div>
       </div>
 
     </div>
@@ -534,7 +523,7 @@ const templates = {
     `;
 
     return {
-      subject: `Booking Confirmation – ${trip.title || booking.tripName} | Booking ID: ${booking.bookingId}`,
+      subject: `Booking Confirmed – ${trip.title || booking.tripName} | Booking ID: ${booking.bookingId}`,
       html: emailContent
     };
   },
