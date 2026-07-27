@@ -95,8 +95,7 @@ export default function MyBookingsPage() {
           {/* ============ SIDEBAR ============ */}
           <div className="hidden xl:flex flex-col bg-[#0f172a] text-white p-4 border-r border-[#334155] h-screen sticky top-0">
             <div className="font-extrabold text-sm tracking-wider mb-6 flex items-center gap-2">
-              <div className="w-6 h-6 bg-[#ea6d1e] rounded flex items-center justify-center font-black text-xs">Y</div>
-              <span>YouthCamping</span>
+              <img src="/footer-logo.png" alt="YouthCamping" className="h-12 w-auto object-contain scale-125 origin-left" />
             </div>
             <div className="flex flex-col gap-1">
               <button onClick={() => setSelectedBooking(null)} className="w-full text-left py-2.5 px-3 rounded-lg text-slate-300 hover:bg-white/10 hover:text-white transition-colors text-xs font-semibold">
