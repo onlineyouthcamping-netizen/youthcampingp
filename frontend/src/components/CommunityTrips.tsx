@@ -261,11 +261,11 @@ export default function CommunityTrips({
 
   const currentBgPhoto = bgPhotosList[bgIdx % bgPhotosList.length];
 
-  const activeHeadlinePrefix = headlinePrefix || (headline && !headline.toLowerCase().includes("every great story") ? headline : "Trips for the");
-  const activeStrikethroughWord = strikethroughWord || "Ordinary";
+  const activeHeadlinePrefix = headlinePrefix !== undefined ? headlinePrefix : headline;
+  const activeStrikethroughWord = strikethroughWord !== undefined ? strikethroughWord : "Ordinary";
   const activeRotatingWords: string[] = Array.isArray(rotatingWords) && rotatingWords.length > 0
     ? rotatingWords
-    : ROTATING_WORDS;
+    : (!rotatingWords ? ROTATING_WORDS : []);
 
   // Cycle rotating words
   useEffect(() => {
@@ -425,9 +425,11 @@ export default function CommunityTrips({
 
             <h2 className={`font-extrabold leading-[1.15] tracking-tight mb-2 ${getFontSizeClass()} ${isWhiteOverlay ? "text-[#0B1528]" : "text-white drop-shadow-md"}`}>
               <div>{activeHeadlinePrefix}</div>
-              <div className="flex items-center gap-2.5 sm:gap-3.5 flex-nowrap mt-0.5 whitespace-nowrap">
-                <span className={`relative inline-block whitespace-nowrap ${isWhiteOverlay ? "text-[#0B1528]" : "text-white"}`}>
-                  {activeStrikethroughWord}
+              {(Boolean(activeStrikethroughWord) || activeRotatingWords.length > 0) && (
+                <div className="flex items-center gap-2.5 sm:gap-3.5 flex-nowrap mt-0.5 whitespace-nowrap">
+                  {Boolean(activeStrikethroughWord) && (
+                    <span className={`relative inline-block whitespace-nowrap ${isWhiteOverlay ? "text-[#0B1528]" : "text-white"}`}>
+                      {activeStrikethroughWord}
                   <svg
                     className="absolute -left-2 top-1/2 -translate-y-1/2 w-[114%] h-[22px] sm:h-[30px] md:h-[38px] pointer-events-none overflow-visible"
                     style={{ color: accentColor }}
@@ -443,24 +445,28 @@ export default function CommunityTrips({
                       strokeLinejoin="round"
                     />
                   </svg>
-                </span>
+                    </span>
+                  )}
 
-                <span className="inline-flex relative overflow-hidden h-[34px] sm:h-[48px] md:h-[58px] items-center whitespace-nowrap">
-                  <AnimatePresence mode="wait">
-                    <motion.span
-                      key={activeRotatingWords[wordIdx % activeRotatingWords.length]}
-                      initial={{ y: 35, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: -35, opacity: 0 }}
-                      transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1.0] }}
-                      className="font-black inline-block whitespace-nowrap"
-                      style={{ color: accentColor }}
-                    >
-                      {activeRotatingWords[wordIdx % activeRotatingWords.length]}
-                    </motion.span>
-                  </AnimatePresence>
-                </span>
-              </div>
+                  {activeRotatingWords.length > 0 && (
+                    <span className="inline-flex relative overflow-hidden h-[34px] sm:h-[48px] md:h-[58px] items-center whitespace-nowrap">
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={activeRotatingWords[wordIdx % activeRotatingWords.length]}
+                          initial={{ y: 35, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          exit={{ y: -35, opacity: 0 }}
+                          transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1.0] }}
+                          className="font-black inline-block whitespace-nowrap"
+                          style={{ color: accentColor }}
+                        >
+                          {activeRotatingWords[wordIdx % activeRotatingWords.length]}
+                        </motion.span>
+                      </AnimatePresence>
+                    </span>
+                  )}
+                </div>
+              )}
             </h2>
 
             <div className="h-[4px] w-14 bg-[#D4541A] rounded-full mb-3" />
