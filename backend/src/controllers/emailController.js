@@ -46,7 +46,7 @@ const sendBookingEmail = async (req, res) => {
     const cleanBase64 = (str) => {
       if (!str) return '';
       const raw = str.includes(',') ? str.split(',')[1] : str;
-      return raw.replace(/[\r\n\s]/g, '');
+      return raw.split(/\s+/).join('');
     };
 
     const MAX_ATTACHMENT_BYTES = 16 * 1024 * 1024; // 16MB base64 cap for Brevo SMTP
@@ -95,14 +95,31 @@ const sendBookingEmail = async (req, res) => {
       }
     }
 
-    // Attach multiple ticket files if provided, otherwise fallback to single ticket file
-    if (Array.isArray(ticketFiles) && ticketFiles.length > 0) {
-      ticketFiles.forEach(file => {
-        if (file && file.content && file.name) {
-          processAttachment(file.name, file.content);
+    let parsedTicketFiles = ticketFiles;
+    if (typeof parsedTicketFiles === 'string') {
+      try {
+        parsedTicketFiles = JSON.parse(parsedTicketFiles);
+      } catch (e) {
+        parsedTicketFiles = [];
+      }
+    }
+
+    const processedNames = new Set();
+
+    if (Array.isArray(parsedTicketFiles) && parsedTicketFiles.length > 0) {
+      parsedTicketFiles.forEach(file => {
+        if (file) {
+          const name = file.name || file.fileName || file.filename;
+          const content = file.content || file.data || file.base64 || file.file;
+          if (name && content && !processedNames.has(name)) {
+            processedNames.add(name);
+            processAttachment(name, content);
+          }
         }
       });
-    } else if (ticketFile && ticketFileName) {
+    }
+
+    if (ticketFile && ticketFileName && !processedNames.has(ticketFileName)) {
       processAttachment(ticketFileName, ticketFile);
     }
 

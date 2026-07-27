@@ -14,15 +14,7 @@ import { API_BASE_URL, normalizeImageUrl } from '@/lib/api';
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import { cn } from "@/lib/utils";
 
-// Hardcoded fallback list of Joining Points
-const FALLBACK_JOINING_POINTS = [
-  { cityName: 'Delhi', deductionAmount: 0, skipDays: 0, pickupPoint: 'Majnu ka Tilla' },
-  { cityName: 'Mumbai', deductionAmount: 1500, skipDays: 1, pickupPoint: 'Bandra Terminus' },
-  { cityName: 'Ahmedabad', deductionAmount: 1000, skipDays: 1, pickupPoint: 'Kalupur Station' },
-  { cityName: 'Bengaluru', deductionAmount: 2000, skipDays: 2, pickupPoint: 'Majestic Terminal' },
-  { cityName: 'Pune', deductionAmount: 1500, skipDays: 1, pickupPoint: 'Pune Railway Station' },
-  { cityName: 'Direct Join', deductionAmount: 2500, skipDays: 2, pickupPoint: 'Base Camp / Destination' }
-];
+// No fallback joining points. Strictly use API variants/pickupCities.
 
 
 
@@ -201,17 +193,9 @@ function BookingForm() {
       });
     }
 
-    // 3. Fallback joining points if inventory list is empty
-    if (pointsList.length === 0) {
-      FALLBACK_JOINING_POINTS.forEach(p => {
-        addPoint(p.cityName, Math.max(0, baselinePrice - p.deductionAmount), p.deductionAmount, p.skipDays, p.pickupPoint);
-      });
-    }
-
     return pointsList;
   }, [tripData, basePrice]);
-
-  const [selectedCity, setSelectedCity] = useState<any>(FALLBACK_JOINING_POINTS[0]);
+  const [selectedCity, setSelectedCity] = useState<any>(null);
   
   // Keep selectedCity synced once joiningPoints are resolved, matching the url price param or localStorage if applicable
   useEffect(() => {
@@ -418,11 +402,7 @@ function BookingForm() {
       
       // Train options adjustment
       if (!isDirectJoin) {
-        const trainOptions = tripData?.travelOptions?.length > 0 ? tripData.travelOptions : [
-          { label: 'Sleeper', priceDelta: 0 },
-          { label: '3AC', priceDelta: 2000 },
-          { label: 'No Train', priceDelta: -1500 }
-        ];
+        const trainOptions = tripData?.travelOptions?.length > 0 ? tripData.travelOptions : [];
         const selectedTrainOpt = trainOptions.find((opt: any) => opt.label === p.trainOption);
         if (selectedTrainOpt) {
           travelerPrice += Number(selectedTrainOpt.priceDelta) || 0;
@@ -430,11 +410,7 @@ function BookingForm() {
       }
 
       // Room sharing options adjustment
-      const roomOptions = tripData?.roomOptions?.length > 0 ? tripData.roomOptions : [
-        { label: 'Triple Sharing', priceDelta: 0 },
-        { label: 'Double Sharing', priceDelta: 1500 },
-        { label: 'Quad Sharing', priceDelta: -500 }
-      ];
+      const roomOptions = tripData?.roomOptions?.length > 0 ? tripData.roomOptions : [];
       const selectedRoomOpt = roomOptions.find((opt: any) => opt.label === p.roomSharing);
       if (selectedRoomOpt) {
         travelerPrice += Number(selectedRoomOpt.priceDelta) || 0;
@@ -672,15 +648,15 @@ function BookingForm() {
         {/* High Visual Priority Section */}
         <div className="grid grid-cols-2 gap-2">
           {/* Visual Priority 1: Departure Date */}
-          <div className="bg-amber-500/10 border-l-4 border-amber-500 p-2.5 rounded-r-lg space-y-0.5">
-            <span className="text-[8px] font-extrabold uppercase tracking-widest text-amber-800 block">DEPARTURE DATE</span>
-            <p className="text-xs font-bold text-slate-900 leading-tight truncate">{initialParams.date || 'Flexible'}</p>
+          <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl space-y-1">
+            <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">DEPARTURE DATE</span>
+            <p className="text-xs font-black text-slate-900 leading-tight truncate">{initialParams.date || 'Flexible'}</p>
           </div>
 
           {/* Visual Priority 2: Package Price */}
-          <div className="bg-[#D4541A]/5 border-l-4 border-[#D4541A] p-2.5 rounded-r-lg space-y-0.5">
-            <span className="text-[8px] font-extrabold uppercase tracking-widest text-[#D4541A] block">PACKAGE PRICE</span>
-            <p className="text-xs font-bold text-slate-900 leading-tight">₹{pricing.originalTotalBase.toLocaleString()}</p>
+          <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl space-y-1">
+            <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">PACKAGE PRICE</span>
+            <p className="text-xs font-black text-slate-900 font-mono leading-tight">₹{pricing.originalTotalBase.toLocaleString()}</p>
           </div>
         </div>
 
@@ -700,12 +676,9 @@ function BookingForm() {
           {formData.participantsList.some(t => t.roomSharing !== 'Triple Sharing' || (!isDirectJoin && t.trainOption !== 'Sleeper')) && (
             <div className="space-y-1 pl-2.5 border-l-2 border-slate-200">
               {formData.participantsList.map((t, i) => {
-                const trainOpts = tripData?.travelOptions?.length > 0 ? tripData.travelOptions : [
-                  { label: 'Sleeper', priceDelta: 0 }, { label: '3AC', priceDelta: 2000 }, { label: 'No Train', priceDelta: -1500 }
-                ];
-                const roomOpts = tripData?.roomOptions?.length > 0 ? tripData.roomOptions : [
-                  { label: 'Triple Sharing', priceDelta: 0 }, { label: 'Double Sharing', priceDelta: 1500 }, { label: 'Quad Sharing', priceDelta: -500 }
-                ];
+                const trainOpts = tripData?.travelOptions?.length > 0 ? tripData.travelOptions : [];
+                const roomOpts = tripData?.roomOptions?.length > 0 ? tripData.roomOptions : [];
+                
                 const trainDelta = isDirectJoin ? 0 : (trainOpts.find((o: any) => o.label === t.trainOption)?.priceDelta || 0);
                 const roomDelta = roomOpts.find((o: any) => o.label === t.roomSharing)?.priceDelta || 0;
                 if (trainDelta === 0 && roomDelta === 0) return null;
@@ -760,16 +733,8 @@ function BookingForm() {
   const parsedDate = useMemo(() => parseTripDate(initialParams.date), [initialParams.date]);
 
   return (
-    <div className="bg-[#FAFAFA] text-slate-900 pb-0 lg:pb-0 pt-[72px] md:pt-[80px]">
-      {/* Top logo & waitlist header */}
-      {/* Top logo & waitlist header */}
-      <header className="bg-white border-b border-slate-100 py-2.5 px-5 sticky top-0 z-40 flex items-center justify-between">
-        <div className="font-extrabold text-xs tracking-tight text-slate-900 font-serif">
-          {initialParams.headerTitle || 'Talk That Damn Point'}
-        </div>
-      </header>
-
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-4" id="booking-form-container">
+    <div className="bg-[#f8fafc] min-h-screen text-slate-900 pb-16 pt-[72px] md:pt-[80px]">
+      <div className="max-w-[1320px] mx-auto px-4 md:px-6 py-6" id="booking-form-container">
         {/* Back Button */}
         {currentStep > 1 && (
           <button 

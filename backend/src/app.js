@@ -25,7 +25,7 @@ app.use('/api', require('./middleware/metrics'));
 app.use('/api', apiNoStore);
 
 // Health Check (Before all other routes)
-app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: Date.now() }));
+app.use('/api', require('./routes/healthRoutes'));
 
 // 2. Security & Middleware
 app.use(helmet({ 

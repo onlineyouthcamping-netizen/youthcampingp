@@ -40,15 +40,6 @@ const getIpHash = (req) => {
   return ip ? sha256(ip) : null;
 };
 
-const FALLBACK_JOINING_POINTS = [
-  { cityName: 'Delhi', deductionAmount: 0, skipDays: 0, pickupPoint: 'Majnu ka Tilla' },
-  { cityName: 'Mumbai', deductionAmount: 1500, skipDays: 1, pickupPoint: 'Bandra Terminus' },
-  { cityName: 'Ahmedabad', deductionAmount: 1000, skipDays: 1, pickupPoint: 'Kalupur Station' },
-  { cityName: 'Bengaluru', deductionAmount: 2000, skipDays: 2, pickupPoint: 'Majestic Terminal' },
-  { cityName: 'Pune', deductionAmount: 1500, skipDays: 1, pickupPoint: 'Pune Railway Station' },
-  { cityName: 'Direct Join', deductionAmount: 2500, skipDays: 2, pickupPoint: 'Base Camp / Destination' }
-];
-
 const parseJsonArray = (val) => {
   if (!val) return [];
   if (Array.isArray(val)) return val;
@@ -186,23 +177,6 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     }
   }
 
-  // Search fallback joining points
-  if (!selectedCityObj) {
-    const fMatch = FALLBACK_JOINING_POINTS.find(p => {
-      const loc = String(p.cityName || '').trim().toLowerCase();
-      return loc === normalizedTarget || (loc.length > 0 && (loc.includes(normalizedTarget) || normalizedTarget.includes(loc)));
-    });
-
-    if (fMatch) {
-      selectedCityObj = {
-        cityName: fMatch.cityName,
-        price: Math.round(Math.max(0, (Number(trip.price) || 0) - fMatch.deductionAmount)),
-        skipDays: fMatch.skipDays,
-        excludeTravel: false
-      };
-    }
-  }
-
   // Graceful default if city is custom or not mapped
   if (!selectedCityObj) {
     selectedCityObj = {
@@ -218,37 +192,58 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
   const passengers = (body.passengers && Array.isArray(body.passengers) && body.passengers.length > 0)
     ? body.passengers
     : [{ name: body.name || body.fullName || 'Lead', trainOption: body.trainClass || 'Sleeper', roomSharing: body.roomType || 'Triple Sharing' }];
-
-  passengers.forEach((p) => {
+  const bookingItemsSnapshot = [];
+  passengers.forEach((p, index) => {
     let travelerPrice = selectedCityObj.price;
 
     // Train option adjustment
+    let trainDelta = 0;
+    let trainLabel = p.trainOption;
     if (selectedCityObj.excludeTravel !== true) {
       const trainOptions = (trip.travelOptions && Array.isArray(trip.travelOptions) && trip.travelOptions.length > 0)
-        ? trip.travelOptions
-        : [
-            { label: 'Sleeper', priceDelta: 0 },
-            { label: '3AC', priceDelta: 2000 },
-            { label: 'No Train', priceDelta: -1500 }
-          ];
+        ? trip.travelOptions : [];
       const tOpt = trainOptions.find(opt => opt.label === p.trainOption);
       if (tOpt) {
-        travelerPrice += Math.round(Number(tOpt.priceDelta) || 0);
+        trainDelta = Math.round(Number(tOpt.priceDelta) || 0);
+        trainLabel = tOpt.label;
       }
     }
+    travelerPrice += trainDelta;
 
     // Room sharing option adjustment
+    let roomDelta = 0;
+    let roomLabel = p.roomSharing;
     const roomOptions = (trip.roomOptions && Array.isArray(trip.roomOptions) && trip.roomOptions.length > 0)
-      ? trip.roomOptions
-      : [
-          { label: 'Triple Sharing', priceDelta: 0 },
-          { label: 'Double Sharing', priceDelta: 1500 },
-          { label: 'Quad Sharing', priceDelta: -500 }
-        ];
+      ? trip.roomOptions : [];
     const rOpt = roomOptions.find(opt => opt.label === p.roomSharing);
     if (rOpt) {
-      travelerPrice += Math.round(Number(rOpt.priceDelta) || 0);
+      roomDelta = Math.round(Number(rOpt.priceDelta) || 0);
+      roomLabel = rOpt.label;
     }
+    travelerPrice += roomDelta;
+
+    // Generate snapshot item rows for this passenger
+    const pName = p.name || (index === 0 && (body.name || body.fullName)) || 'Lead';
+    const routeStr = selectedCityObj.cityName ? ` (${selectedCityObj.cityName}→Himachal)` : '';
+    bookingItemsSnapshot.push({
+      id: `transport-${p.id || index}-${index}`,
+      personId: p.id || `p-${index}`,
+      category: 'transport',
+      variantName: trainLabel,
+      name: `Transport - ${trainLabel}${routeStr} [${pName}]`,
+      rate: selectedCityObj.price + trainDelta,
+      qty: 1
+    });
+
+    bookingItemsSnapshot.push({
+      id: `accom-${p.id || index}-${index}`,
+      personId: p.id || `p-${index}`,
+      category: 'accommodation',
+      variantName: roomLabel,
+      name: `Accommodation - Room ${index + 1}: ${roomLabel} [${pName}]`,
+      rate: roomDelta,
+      qty: 1
+    });
 
     originalTotalBase += Math.round(travelerPrice);
   });
@@ -322,7 +317,8 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     paymentStatus,
     pickupCity: selectedCityObj.cityName,
     skipDays: selectedCityObj.skipDays,
-    adjustedPrice: Math.round(selectedCityObj.price)
+    adjustedPrice: Math.round(selectedCityObj.price),
+    bookingItems: bookingItemsSnapshot
   };
 }
 

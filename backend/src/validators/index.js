@@ -16,7 +16,7 @@ const validate = (schema) => (req, res, next) => {
 
 // ── Booking schemas ─────────────────────────────────────────────────
 const createBookingSchema = z.object({
-  tripId: z.string().min(1, 'Trip ID is required'),
+  tripId: z.string().optional().nullable(),
   name: z.string().optional().nullable(),
   fullName: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),

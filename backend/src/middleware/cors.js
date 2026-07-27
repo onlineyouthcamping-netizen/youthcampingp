@@ -12,21 +12,26 @@ const allowedOrigins = [
 ];
 
 exports.setupCORS = (app) => {
+  // 1. Explicit preflight handler for OPTIONS requests
+  app.options('*', (req, res) => {
+    const origin = req.headers.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, Origin, x-tenant-id, X-Tenant-Id, *');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    return res.status(204).end();
+  });
+
+  // 2. Global middleware for all incoming API routes
   app.use((req, res, next) => {
-    const origin = req.headers.origin;
-
-    if (origin) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    } else {
-      res.setHeader('Access-Control-Allow-Origin', 'https://admin.youthcamping.online');
-    }
-
+    const origin = req.headers.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, Origin, x-tenant-id, X-Tenant-Id, *');
     res.setHeader('Access-Control-Expose-Headers', '*');
 
-    // Handle preflight OPTIONS requests with 204 status
     if (req.method === 'OPTIONS') {
       return res.status(204).end();
     }

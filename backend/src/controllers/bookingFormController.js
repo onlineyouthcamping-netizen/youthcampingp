@@ -132,6 +132,21 @@ exports.createPublicBooking = async (req, res, next) => {
       finalTripId = trip.id;
     }
 
+    // Look up associated booking link if present to retain internal notes
+    let linkedInternalNote = req.body.internalNote || req.body.adminNotes || null;
+    let sourceBookingLinkId = req.body.sourceBookingLinkId || req.body.bookingLinkId || null;
+    if (sourceBookingLinkId && !linkedInternalNote) {
+      try {
+        const bLink = await prisma.bookingLink.findUnique({ where: { id: sourceBookingLinkId } });
+        if (bLink && bLink.internalNote) {
+          linkedInternalNote = bLink.internalNote;
+        }
+      } catch (_e) {}
+    }
+
+    const finalNotes = specialRequests || linkedInternalNote || '';
+    const finalAdminNotes = linkedInternalNote || specialRequests || '';
+
     let booking;
     let attempts = 0;
     const maxAttempts = 3;
@@ -169,7 +184,9 @@ exports.createPublicBooking = async (req, res, next) => {
             joiningDate: req.body.joiningDate ? new Date(req.body.joiningDate) : null,
             status: 'pending',
             paymentStatus: req.body.paymentStatus || 'Pending',
-            notes: specialRequests || '',
+            notes: finalNotes,
+            adminNotes: finalAdminNotes,
+            sourceBookingLinkId: sourceBookingLinkId || null,
             passengers: {
               details: {
                 roomSharing,

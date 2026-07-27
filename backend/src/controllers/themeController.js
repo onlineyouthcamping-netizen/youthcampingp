@@ -143,20 +143,21 @@ const getTheme = async (req, res) => {
     });
 
     if (!theme) {
-      theme = await prisma.theme.create({
-        data: {
-          name: 'primary',
-          config: defaultTheme
-        }
-      });
+      try {
+        theme = await prisma.theme.create({
+          data: {
+            name: 'primary',
+            config: defaultTheme
+          }
+        });
+      } catch (_e) {}
     }
 
-    // Merge default values for any newly added fields
-    const config = { ...defaultTheme, ...theme.config };
-    res.json(config);
+    const config = { ...defaultTheme, ...(theme?.config || {}) };
+    return res.json(config);
   } catch (error) {
-    console.error('Error fetching theme:', error);
-    res.status(500).json({ message: 'Error fetching theme' });
+    console.error('Error fetching theme, returning default fallback:', error.message);
+    return res.json(defaultTheme);
   }
 };
 
@@ -170,10 +171,10 @@ const getPublicTheme = async (req, res) => {
 
     const config = { ...defaultTheme, ...(theme?.config || {}) };
     res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=600');
-    res.json(config);
+    return res.json(config);
   } catch (error) {
-    console.error('Error fetching public theme:', error);
-    res.status(500).json({ message: 'Error fetching theme' });
+    console.error('Error fetching public theme, returning default fallback:', error.message);
+    return res.json(defaultTheme);
   }
 };
 
