@@ -81,7 +81,7 @@ export default async function Home() {
   
   try {
     const results = await Promise.allSettled([
-      settleWithin(fetchHomepageTrips(12), 2500, []),
+      settleWithin(fetchHomepageTrips(50), 2500, []),
       settleWithin(fetchHomepageReviews(8), 2500, []),
       settleWithin(fetchHomepageBlogs(8), 2500, []),
       settleWithin(fetchPageBySlug('home'), 2500, null),

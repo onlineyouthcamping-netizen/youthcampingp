@@ -236,7 +236,8 @@ export default function CommunityTrips({
   accentColor = "#D4541A",
   heroHeight = "medium",
   paddingTop = "32",
-  paddingBottom = "32"
+  paddingBottom = "32",
+  selectedTripIds
 }: CommunityTripsProps) {
   const MONTHS = getAutoMonths();
   const [activeMonth, setActiveMonth] = useState(0); // "All"
@@ -284,9 +285,14 @@ export default function CommunityTrips({
     return () => clearInterval(bgTimer);
   }, [bgPhotosList.length]);
 
-  const sourceTrips = propTrips.length >= 8 
+  const allAvailableTrips = propTrips.length >= 8 
     ? propTrips 
     : [...propTrips, ...MOCK_TRIPS.slice(propTrips.length)];
+
+  // If the admin panel specified selectedTripIds, filter and order by them
+  const sourceTrips = Array.isArray(selectedTripIds) && selectedTripIds.length > 0
+    ? selectedTripIds.map(id => allAvailableTrips.find(t => t.id === id)).filter(Boolean) as Trip[]
+    : allAvailableTrips;
 
   const pickMonth = useCallback((i: number) => {
     if (i === activeMonth) return;
