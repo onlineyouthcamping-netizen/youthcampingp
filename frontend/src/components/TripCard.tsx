@@ -23,7 +23,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
     normalizeImageUrl(trip.heroImage) ||
     "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80";
 
-  // Build unique images list STRICTLY from Admin uploaded trip.heroImage and trip.images
+  // Build unique images list for auto photo carousel (Admin photos + location-matched fallbacks if < 3)
   const imagesList = (() => {
     const list: string[] = [];
 
@@ -37,10 +37,43 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
       });
     }
 
-    // Fallback ONLY if zero images exist in DB/Admin
-    if (list.length === 0) {
-      list.push(heroImg);
+    // If fewer than 3 photos, add location-matched cover photos so EVERY card has multiple photos & dots
+    if (list.length < 3) {
+      const titleLower = (trip.title || "").toLowerCase();
+      const locLower = (trip.location || "").toLowerCase();
+
+      let fallbacks: string[] = [];
+      if (locLower.includes("spiti") || titleLower.includes("spiti")) {
+        fallbacks = [
+          "https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&q=80",
+          "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+          "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80"
+        ];
+      } else if (locLower.includes("kerala") || titleLower.includes("kerala")) {
+        fallbacks = [
+          "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&q=80",
+          "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=80",
+          "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80"
+        ];
+      } else if (locLower.includes("ladakh") || titleLower.includes("ladakh") || titleLower.includes("leh")) {
+        fallbacks = [
+          "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80",
+          "https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800&q=80",
+          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80"
+        ];
+      } else {
+        fallbacks = [
+          "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80",
+          "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
+          "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80"
+        ];
+      }
+
+      fallbacks.forEach((url) => {
+        if (!list.includes(url)) list.push(url);
+      });
     }
+
     return list;
   })();
 
