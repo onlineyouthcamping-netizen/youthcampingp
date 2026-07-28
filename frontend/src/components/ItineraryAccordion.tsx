@@ -302,39 +302,42 @@ export default function ItineraryAccordion({
                           <span>Day Highlights & Photos</span>
                         </p>
 
-                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x touch-pan-x -mr-3.5 sm:mr-0 pr-3.5 sm:pr-0">
+                        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x touch-pan-x -mr-3.5 sm:mr-0 pr-3.5 sm:pr-0">
                           {parsedPhotos.map((photo, pIdx) => (
                             <div
                               key={pIdx}
-                              className="group relative flex-none snap-start w-[115px] sm:w-[135px] aspect-[16/10.5] rounded-xl overflow-hidden bg-zinc-200/60 shadow-2xs border border-zinc-200/80 shrink-0"
+                              className="group relative flex-none snap-start w-[135px] sm:w-[150px] flex flex-col rounded-xl overflow-hidden bg-white border border-zinc-200/90 shadow-2xs hover:shadow-md hover:border-zinc-300 transition-all shrink-0"
                             >
-                              <OptimizedImage
-                                src={photo.url}
-                                alt={photo.caption || "Activity photo"}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                width={220}
-                                height={140}
-                              />
+                              {/* Photo Area */}
+                              <div className="relative w-full h-[90px] overflow-hidden bg-zinc-100 shrink-0">
+                                <OptimizedImage
+                                  src={photo.url}
+                                  alt={photo.caption || "Activity photo"}
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                  width={240}
+                                  height={150}
+                                />
 
-                              {/* Inclusion Badge: Included vs Self Paid */}
-                              {photo.tag && (
-                                <div className="absolute top-1.5 left-1.5 z-10">
-                                  {photo.tag === 'included' ? (
-                                    <span className="bg-emerald-600/90 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shadow-2xs backdrop-blur-xs tracking-tight">
-                                      Included
-                                    </span>
-                                  ) : (
-                                    <span className="bg-amber-600/90 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shadow-2xs backdrop-blur-xs tracking-tight">
-                                      Self Paid
-                                    </span>
-                                  )}
-                                </div>
-                              )}
+                                {/* Inclusion Badge: Included vs Self Paid */}
+                                {photo.tag && (
+                                  <div className="absolute top-1.5 left-1.5 z-10">
+                                    {photo.tag === 'included' ? (
+                                      <span className="bg-emerald-600/90 text-white text-[8.5px] font-black px-2 py-0.5 rounded-full shadow-2xs backdrop-blur-xs tracking-tight uppercase flex items-center gap-1">
+                                        <span className="w-1 h-1 rounded-full bg-white" /> Included
+                                      </span>
+                                    ) : (
+                                      <span className="bg-amber-600/90 text-white text-[8.5px] font-black px-2 py-0.5 rounded-full shadow-2xs backdrop-blur-xs tracking-tight uppercase flex items-center gap-1">
+                                        <span className="w-1 h-1 rounded-full bg-white" /> Self Paid
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
 
-                              {/* Bottom Overlay: Place / Activity Name */}
+                              {/* Clean Bottom Title Bar */}
                               {photo.caption && !photo.caption.startsWith('Photo ') && (
-                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1.5 pt-3.5 z-10">
-                                  <p className="text-[10px] font-bold text-white truncate font-montserrat leading-none">
+                                <div className="p-2 bg-white border-t border-zinc-100/80">
+                                  <p className="text-[11px] font-bold text-slate-800 truncate font-montserrat leading-tight" title={photo.caption}>
                                     {photo.caption}
                                   </p>
                                 </div>
