@@ -334,10 +334,10 @@ export default function ItineraryAccordion({
                                 </div>
                               )}
 
-                              {/* Apple Frosted Glass Bottom Caption Overlay */}
+                              {/* Transparent Gradient Caption Overlay */}
                               {photo.caption && !photo.caption.startsWith('Photo ') && (
-                                <div className="relative z-10 w-full backdrop-blur-md bg-slate-950/60 border-t border-white/10 p-2.5 transition-colors group-hover:bg-slate-950/75">
-                                  <p className="text-[11px] font-semibold text-white truncate font-montserrat tracking-tight leading-none" title={photo.caption}>
+                                <div className="relative z-10 w-full bg-gradient-to-t from-black/85 via-black/30 to-transparent p-2.5 pt-6">
+                                  <p className="text-[11px] font-bold text-white truncate font-montserrat tracking-tight leading-none drop-shadow-sm" title={photo.caption}>
                                     {photo.caption}
                                   </p>
                                 </div>
