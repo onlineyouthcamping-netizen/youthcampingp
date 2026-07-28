@@ -187,6 +187,24 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     };
   }
 
+  // Apply Departure Date Pricing Overrides
+  const override = await tx.tripDeparturePriceOverride.findUnique({
+    where: {
+      tripId_departureDate: {
+        tripId: trip.id,
+        departureDate: targetDateStr
+      }
+    }
+  });
+
+  if (override && override.isActive) {
+    if (override.overrideType === 'FIXED_PRICE') {
+      selectedCityObj.price = override.amount;
+    } else if (override.overrideType === 'EXTRA_CHARGE') {
+      selectedCityObj.price += override.amount;
+    }
+  }
+
   // 4. Calculate prices
   let originalTotalBase = 0;
   const passengers = (body.passengers && Array.isArray(body.passengers) && body.passengers.length > 0)

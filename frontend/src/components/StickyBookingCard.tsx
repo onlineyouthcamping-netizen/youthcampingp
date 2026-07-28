@@ -12,7 +12,7 @@ interface StickyBookingCardProps {
 }
 
 export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
-  const { currentPrice } = useTripSelection();
+  const { currentPrice, selectedDate } = useTripSelection();
   const { settings } = useTheme();
   const [isVisible, setIsVisible] = useState(false);
 
@@ -31,10 +31,12 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
   const whatsappNumber = phone.replace(/\D/g, '');
 
   const handleWhatsAppBooking = () => {
+    const formattedDate = selectedDate ? new Date(selectedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "Not Selected";
     const message = encodeURIComponent(
       `Hi! I want to book the "${trip.title}" expedition.\n\n` +
       `📌 Package Details:\n` +
       `- Duration: ${trip.duration || "9 Days / 8 Nights"}\n` +
+      `- Departure Date: ${formattedDate}\n` +
       `- Total Price: ₹${displayPrice.toLocaleString()}/-\n\n` +
       `Please assist me with the booking.`
     );

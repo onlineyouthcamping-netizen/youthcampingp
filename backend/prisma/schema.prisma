@@ -354,11 +354,31 @@ model Trip {
   knowledge           TripKnowledge[]
   sops                TripSOP[]
   activityLog         TripActivityLog[]
+  departurePriceOverrides TripDeparturePriceOverride[]
 
   @@index([tenantId])
   @@index([category])
   @@index([status])
   @@index([order])
+}
+
+model TripDeparturePriceOverride {
+  id            String   @id @default(cuid())
+  tripId        String
+  departureDate String   // Format: YYYY-MM-DD
+  overrideType  String   // 'FIXED_PRICE' or 'EXTRA_CHARGE'
+  amount        Float
+  finalPrice    Float?
+  reason        String?
+  isActive      Boolean  @default(true)
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trip          Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, departureDate])
+  @@index([tripId])
 }
 
 model Booking {

@@ -248,6 +248,9 @@ exports.getPublicTripDetail = async (req, res, next) => {
         stickyCardLabel: true,
         gstPercentage: true,
         reels: true,
+        departurePriceOverrides: {
+          where: { isActive: true }
+        },
         tripReviews: true,
       },
     });
@@ -320,7 +323,10 @@ exports.getTrip = async (req, res, next) => {
         }
       },
       tripGalleries: true,
-      tripNotes: true
+      tripNotes: true,
+      departurePriceOverrides: {
+        where: { isActive: true }
+      }
     };
 
     let trip = await prisma.trip.findFirst({
@@ -512,6 +518,23 @@ exports.createTrip = async (req, res, next) => {
       }
     });
 
+    if (req.body.departurePriceOverrides && Array.isArray(req.body.departurePriceOverrides)) {
+      const activeOverrides = req.body.departurePriceOverrides.filter(o => o.departureDate && o.overrideType && o.amount !== undefined);
+      if (activeOverrides.length > 0) {
+        await prisma.tripDeparturePriceOverride.createMany({
+          data: activeOverrides.map(o => ({
+            tripId: trip.id,
+            departureDate: o.departureDate,
+            overrideType: o.overrideType,
+            amount: Number(o.amount) || 0,
+            reason: o.reason || '',
+            isActive: o.isActive !== undefined ? o.isActive : true,
+            createdBy: req.user?.id
+          }))
+        });
+      }
+    }
+
     res.status(201).json({ success: true, data: trip });
   } catch (error) {
     console.error("Error creating trip:", error);
@@ -541,6 +564,7 @@ exports.updateTrip = async (req, res, next) => {
     delete updateData.tenantId;
     delete updateData.tripCode;
     delete updateData.shortName;
+    delete updateData.departurePriceOverrides; // Handled manually below
 
     if (updateData.price !== undefined) updateData.price = Number(updateData.price) || 0;
     if (updateData.stickyCardPrice !== undefined) updateData.stickyCardPrice = Number(updateData.stickyCardPrice) || null;
@@ -605,6 +629,25 @@ exports.updateTrip = async (req, res, next) => {
       where: { id: newId },
       data: updateData
     });
+
+    // 5. Sync Departure Price Overrides
+    if (req.body.departurePriceOverrides && Array.isArray(req.body.departurePriceOverrides)) {
+      await prisma.tripDeparturePriceOverride.deleteMany({ where: { tripId: newId } });
+      const activeOverrides = req.body.departurePriceOverrides.filter(o => o.departureDate && o.overrideType && o.amount !== undefined);
+      if (activeOverrides.length > 0) {
+        await prisma.tripDeparturePriceOverride.createMany({
+          data: activeOverrides.map(o => ({
+            tripId: newId,
+            departureDate: o.departureDate,
+            overrideType: o.overrideType,
+            amount: Number(o.amount) || 0,
+            reason: o.reason || '',
+            isActive: o.isActive !== undefined ? o.isActive : true,
+            createdBy: req.user?.id
+          }))
+        });
+      }
+    }
 
     if (tripName) {
       await prisma.booking.updateMany({
@@ -759,6 +802,9 @@ exports.getPublicTripLookup = async (req, res, next) => {
         route: true,
         ageGroup: true,
         gstPercentage: true,
+        departurePriceOverrides: {
+          where: { isActive: true }
+        }
       }
     });
 
@@ -805,6 +851,9 @@ exports.getPublicTripLookup = async (req, res, next) => {
           route: true,
           ageGroup: true,
           gstPercentage: true,
+          departurePriceOverrides: {
+            where: { isActive: true }
+          }
         }
       });
     }

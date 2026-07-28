@@ -82,14 +82,29 @@ export default function BookingOptions({
   ], [trip.roomOptions]);
 
 
-  const { currentPrice, setCurrentPrice } = useTripSelection();
+  const { currentPrice, setCurrentPrice, selectedDate, setSelectedDate } = useTripSelection();
 
+  const [activeMonth, setActiveMonth] = useState("");
+  const [showAllDatesModal, setShowAllDatesModal] = useState(false);
+  
   useEffect(() => {
     const variant = variants[selectedVariant];
-    const basePrice = variant?.discountedPrice ?? trip.price;
+    let basePrice = variant?.discountedPrice ?? trip.price;
     const isDirectJoin = (variant as any)?.excludeTravel === true;
     const travelDelta = isDirectJoin ? 0 : (travelOptions[selectedTravel]?.priceDelta || 0);
     const roomDelta = roomOptions[selectedRoom]?.priceDelta || 0;
+    
+    // Apply Departure Date Override
+    if (selectedDate && Array.isArray(trip.departurePriceOverrides)) {
+      const activeOverride = trip.departurePriceOverrides.find((o: any) => o.departureDate === selectedDate && o.isActive);
+      if (activeOverride) {
+        if (activeOverride.overrideType === 'FIXED_PRICE') {
+          basePrice = activeOverride.amount;
+        } else if (activeOverride.overrideType === 'EXTRA_CHARGE') {
+          basePrice += activeOverride.amount;
+        }
+      }
+    }
     
     const total = basePrice + travelDelta + roomDelta;
     
@@ -97,11 +112,7 @@ export default function BookingOptions({
       onPriceChange?.(total);
       setCurrentPrice(total);
     }
-  }, [selectedVariant, selectedTravel, selectedRoom, trip.price, onPriceChange, setCurrentPrice, currentPrice, variants, travelOptions, roomOptions]);
-
-  const [activeMonth, setActiveMonth] = useState("");
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [showAllDatesModal, setShowAllDatesModal] = useState(false);
+  }, [selectedVariant, selectedTravel, selectedRoom, selectedDate, trip.price, trip.departurePriceOverrides, onPriceChange, setCurrentPrice, currentPrice, variants, travelOptions, roomOptions]);
   const { settings } = useTheme();
 
   // Auto-remove past dates & ended months; auto-generate current/upcoming departure dates if empty
@@ -444,7 +455,9 @@ export default function BookingOptions({
 
           {/* Date Chips for Selected Month */}
           <div className="flex flex-wrap gap-2 pt-1">
-            {(groupedDates[activeMonth] || []).map((ad, i) => (
+            {(groupedDates[activeMonth] || []).map((ad, i) => {
+              const hasOverride = trip.departurePriceOverrides?.some((o: any) => o.departureDate === ad.date && o.isActive);
+              return (
               <button
                 key={i}
                 type="button"
@@ -453,16 +466,18 @@ export default function BookingOptions({
                   onDateSelect?.(ad.date);
                 }}
                 className={cn(
-                  "flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border font-montserrat transition-all cursor-pointer shadow-2xs min-w-[54px]",
+                  "flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border font-montserrat transition-all cursor-pointer shadow-2xs min-w-[54px] relative",
                   selectedDate === ad.date 
                     ? "border-[#F97316] bg-[#F97316] text-white scale-105 shadow-md" 
+                    : hasOverride
+                    ? "border-red-200 text-[#0B1528] bg-red-50 hover:border-red-300"
                     : "border-zinc-200 text-[#0B1528] bg-white hover:border-[#F97316]/50 hover:bg-orange-50/20"
                 )}
               >
                 <span className="text-[10px] font-semibold uppercase opacity-80 leading-none">{ad.weekdayStr}</span>
                 <span className="text-sm font-extrabold leading-tight mt-0.5">{ad.dayStr}</span>
               </button>
-            ))}
+            )})}
           </div>
 
           {/* View All Dates Button */}
@@ -536,7 +551,9 @@ export default function BookingOptions({
 
                             {/* Right: Days List */}
                             <div className="flex items-center gap-1 flex-wrap justify-end">
-                              {daysList.map((item, dIdx) => (
+                              {daysList.map((item, dIdx) => {
+                                const hasOverride = trip.departurePriceOverrides?.some((o: any) => o.departureDate === item.date && o.isActive);
+                                return (
                                 <button
                                   key={dIdx}
                                   type="button"
@@ -546,9 +563,11 @@ export default function BookingOptions({
                                     setShowAllDatesModal(false);
                                   }}
                                   className={cn(
-                                    "text-xs font-bold px-1.5 py-0.5 rounded transition-all cursor-pointer",
+                                    "text-xs font-bold px-1.5 py-0.5 rounded transition-all cursor-pointer relative",
                                     selectedDate === item.date
                                       ? "bg-[#D4541A] text-white shadow-2xs scale-105"
+                                      : hasOverride
+                                      ? "text-red-500 font-black hover:bg-red-50"
                                       : item.isSpecial
                                       ? "text-[#D4541A] font-black hover:bg-orange-50"
                                       : "text-zinc-700 hover:text-[#D4541A] hover:bg-zinc-100"
@@ -556,7 +575,7 @@ export default function BookingOptions({
                                 >
                                   {item.dayNumStr}{dIdx < daysList.length - 1 ? "," : ""}
                                 </button>
-                              ))}
+                              )})}
                             </div>
                           </div>
                         );
@@ -567,10 +586,11 @@ export default function BookingOptions({
               </div>
 
               {/* Peak Surcharge Alert Banner */}
-              <div className="bg-orange-50/80 border border-orange-200/70 rounded-2xl p-3.5 flex items-center justify-center gap-2.5 text-center text-xs font-bold text-[#D4541A] font-montserrat">
-                <span className="w-4 h-4 rounded-full bg-[#D4541A] text-white flex items-center justify-center text-[10px] font-black shrink-0">!</span>
-                <span>₹1500/- per person will be extra for 18 & 25 DEC</span>
-              </div>
+              {(trip.departurePriceOverrides?.some((o: any) => o.isActive)) && (
+                <div className="bg-orange-50/80 border border-orange-200/70 rounded-2xl p-3.5 flex items-center justify-center gap-2.5 text-center text-xs font-bold text-[#D4541A] font-montserrat">
+                  <span>Peak pricing is active for specific dates highlighted in red.</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

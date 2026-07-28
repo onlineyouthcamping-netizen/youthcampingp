@@ -89,6 +89,13 @@ export interface Trip {
   travelOptions: TravelOption[];
   roomOptions: RoomOption[];
   addons: TripAddon[];
+  departurePriceOverrides?: {
+    departureDate: string;
+    overrideType: string;
+    amount: number;
+    isActive: boolean;
+    reason?: string;
+  }[];
   status: "draft" | "published";
   maxGroupSize?: number;
   difficulty?: "easy" | "moderate" | "hard";

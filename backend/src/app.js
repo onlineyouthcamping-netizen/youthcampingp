@@ -77,6 +77,7 @@ app.use('/api/trips', require('./routes/tripDocuments'));
 app.use('/api/trips', require('./routes/tripVendors'));
 app.use('/api/trips', require('./routes/tripSOPs'));
 app.use('/api/trips', require('./routes/tripRoutes'));
+app.use('/api', require('./routes/departurePricingRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/booking-links', require('./routes/bookingLinkRoutes'));
 app.use('/api/inquiries', require('./routes/inquiryRoutes'));
