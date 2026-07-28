@@ -138,7 +138,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
   })();
 
   const title = trip.title || "Manali Kasol Amritsar Backpacking Trip";
-  const tagline = trip.description || "Get ready for an unforgettable...";
+  const tagline = (trip.description || "Get ready for an unforgettable...").replace(/<[^>]*>/g, '').trim();
 
   return (
     <div className={`trip-card group relative flex flex-col w-full hover:-translate-y-1.5 transition-all duration-300 ${className || ""}`}>
@@ -184,8 +184,8 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
         </div>
       </div>
 
-      {/* LOWER WHITE CARD CONTENT CONTAINER */}
-      <div className="relative z-10 -mt-4 pt-6 pb-4 px-4 sm:px-5 mx-3 sm:mx-4 bg-white rounded-b-[26px] rounded-t-[16px] border border-zinc-200/80 shadow-[0_6px_24px_rgba(0,0,0,0.05)] flex flex-col flex-1 font-montserrat justify-between">
+      {/* LOWER WHITE CARD CONTENT CONTAINER WITH GENEROUS SIDE WHITESPACE PADDING */}
+      <div className="relative z-10 -mt-4 pt-6 pb-5 px-6 sm:px-7 mx-1 sm:mx-1.5 bg-white rounded-b-[26px] rounded-t-[16px] border border-zinc-200/80 shadow-[0_6px_24px_rgba(0,0,0,0.05)] flex flex-col flex-1 font-montserrat justify-between">
         <div>
           {/* META ROW: DURATION & EX-CITY */}
           <div className="flex items-center justify-between font-montserrat text-[12px] sm:text-[13px] font-normal text-[#666666] mb-2.5 gap-2 pt-0.5">
@@ -199,17 +199,17 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
             </div>
           </div>
 
-          {/* TITLE — MONTSERRAT EXTRA BOLD (800), 18-20PX, NAVY BLUE #0B1528 */}
-          <div className="min-h-[50px] flex items-center mb-1">
+          {/* TITLE — MONTSERRAT EXTRA BOLD (800), 16-18PX, NAVY BLUE #0B1528 */}
+          <div className="min-h-[46px] flex items-center mb-1">
             <h3 
-              className="trip-card-title font-montserrat text-[18px] sm:text-[20px] leading-[1.3] line-clamp-2 group-hover:text-[#D4541A] transition-colors"
+              className="trip-card-title font-montserrat text-[16px] sm:text-[18px] leading-[1.35] line-clamp-2 group-hover:text-[#D4541A] transition-colors"
               style={{ fontWeight: 800, color: '#0B1528' }}
             >
               {title}
             </h3>
           </div>
 
-          {/* TAGLINE — MONTSERRAT REGULAR (400), 14PX, #666666 */}
+          {/* TAGLINE — MONTSERRAT REGULAR (400), 13-14PX, #666666 */}
           <p className="font-montserrat text-[#666666] text-[13px] sm:text-[14px] font-normal line-clamp-1 mb-3.5">
             {tagline}
           </p>
