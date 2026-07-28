@@ -43,6 +43,18 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
     return list;
   })();
 
+  // Staggered automatic photo slider across Admin-uploaded photos
+  useEffect(() => {
+    if (imagesList.length <= 1) return;
+
+    const intervalMs = 3500;
+    const intervalId = setInterval(() => {
+      setCurrentImgIdx((prev) => (prev + 1) % imagesList.length);
+    }, intervalMs);
+
+    return () => clearInterval(intervalId);
+  }, [imagesList.length]);
+
   const activePhoto = imagesList[currentImgIdx % imagesList.length] || heroImg;
 
   // Location Badge (e.g., HIMACHAL, LADAKH, UTTARAKHAND, KERALA)
