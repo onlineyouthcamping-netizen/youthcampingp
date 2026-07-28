@@ -27,8 +27,8 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
     { id: "inclusions", label: "Inclusions" },
     { id: "highlights", label: "Highlights" },
     { id: "stay", label: "Stay" },
-    { id: "faqs", label: "FAQs" },
     { id: "reviews", label: "Reviews" },
+    { id: "faqs", label: "FAQs" },
   ];
 
   return (

@@ -44,8 +44,8 @@ export default function TripHighlightsList({ title = "Trip Highlights", items, d
   const baseUrls = rawList.map((item) => {
     if (typeof item === "string") return normalizeImageUrl(item);
     const rawUrl = item.url || item.image || item.img || item.src || item.path || "";
-    return rawUrl ? normalizeImageUrl(rawUrl) : "";
-  }).filter(Boolean);
+    return rawUrl ? normalizeImageUrl(rawUrl) : undefined;
+  }).filter((u): u is string => Boolean(u));
 
   const finalUrls = baseUrls.length > 0 ? baseUrls : defaultSliderPhotos;
 

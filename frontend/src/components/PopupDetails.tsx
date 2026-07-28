@@ -165,10 +165,14 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
         type: "categorical",
         content: details.gears.map((cat: any) => ({
           category: cat.category,
-          items: (cat.items || []).map((i: any) => ({
-            text: i.item,
-            linkText: i.price ? `(₹${i.price})` : ""
-          }))
+          items: (cat.items || []).map((i: any) => {
+            const rawPrice = (i.price || "").toString().trim().toLowerCase();
+            const isFree = !rawPrice || rawPrice === "free" || rawPrice === "0" || rawPrice === "₹0" || rawPrice === "₹free" || rawPrice === "free / complimentary";
+            return {
+              text: i.item,
+              price: isFree ? null : (i.price.startsWith("₹") ? i.price : `₹${i.price}`)
+            };
+          })
         }))
       });
     }
@@ -276,42 +280,48 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
 
               {/* CATEGORICAL type (Things to Carry / Gears) */}
               {activeSection?.type === "categorical" && (
-                <div className="space-y-5">
+                <div className="space-y-6">
                   {activeSection.content.map((cat: any, idx: number) => {
                     if (!cat || !cat.items) return null;
                     return (
-                      <div key={idx} className="space-y-2.5">
+                      <div key={idx} className="space-y-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-3.5 bg-[#D4541A] rounded-full shrink-0" />
-                          <h3 className="text-xs font-extrabold text-[#0B1528] uppercase tracking-widest font-montserrat">
+                          <div className="w-1.5 h-4 bg-[#FF5400] rounded-full shrink-0" />
+                          <h3 className="text-[11px] font-black text-[#0B1528] uppercase tracking-wider font-montserrat">
                             {cat.category || "GENERAL ITEMS"}
                           </h3>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2.5">
                           {cat.items.map((item: any, i: number) => {
                             const text = item.text || item.label || item;
+                            const rawPrice = item.price || (item.linkText && !item.linkText.toLowerCase().includes("free") ? item.linkText : null);
+                            const isFree = !rawPrice || rawPrice.toLowerCase().includes("free") || rawPrice === "(0)" || rawPrice === "0";
+                            const displayPrice = isFree ? null : rawPrice;
+
                             return (
-                              <span
+                              <div
                                 key={i}
-                                className="inline-flex items-center gap-1.5 bg-[#F8F9FB] border border-zinc-200/80 text-[#0B1528] font-semibold text-xs font-montserrat px-3 py-1.5 rounded-full"
+                                className="inline-flex items-center justify-between gap-2.5 bg-[#F8F9FB] border border-zinc-200/90 hover:border-[#FF5400]/40 text-[#0B1528] font-bold text-xs font-montserrat px-3.5 py-2 rounded-xl transition-all shadow-2xs hover:shadow-xs"
                               >
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#D4541A] shrink-0" />
-                                {text}
+                                <div className="flex items-center gap-2">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#FF5400] shrink-0" />
+                                  <span>{text}</span>
+                                </div>
                                 {item.link ? (
                                   <a 
                                     href={item.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[#D4541A] font-bold hover:underline text-[10px] ml-0.5"
+                                    className="text-[#FF5400] font-black text-[10px] bg-orange-50 hover:bg-orange-100 border border-orange-200/80 px-2.5 py-0.5 rounded-md transition-colors"
                                   >
                                     {item.linkText || "Download"}
                                   </a>
-                                ) : item.linkText ? (
-                                  <span className="text-[9px] font-bold text-green-600 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded-full ml-0.5">
-                                    {item.linkText}
+                                ) : displayPrice ? (
+                                  <span className="text-[10px] font-black text-white bg-[#FF5400] px-2.5 py-0.5 rounded-full shadow-2xs font-montserrat tracking-wide">
+                                    {displayPrice}
                                   </span>
                                 ) : null}
-                              </span>
+                              </div>
                             );
                           })}
                         </div>

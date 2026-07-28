@@ -97,17 +97,17 @@ export default function ReviewsSection({
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [selectedReview, setSelectedReview] = useState<GoogleReviewItem | null>(null);
 
-  const displayReviews: GoogleReviewItem[] = (reviews && reviews.length >= 4)
+  const displayReviews: GoogleReviewItem[] = (reviews && reviews.length > 0)
     ? reviews.map((r: any, idx: number) => ({
         id: r._id || r.id || `gr-${idx}`,
         name: r.userName || r.name || MOCK_GOOGLE_REVIEWS[idx % 4].name,
-        badge: r.badge || "Joined Group Trip",
+        badge: r.tripType || r.badge || "Joined Group Trip",
         tripName: r.tripName || r.city || MOCK_GOOGLE_REVIEWS[idx % 4].tripName,
         date: r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : MOCK_GOOGLE_REVIEWS[idx % 4].date,
         avatar: r.userImage || MOCK_GOOGLE_REVIEWS[idx % 4].avatar,
         comment: r.comment || MOCK_GOOGLE_REVIEWS[idx % 4].comment,
         rating: r.rating || 5,
-        photos: r.photos && r.photos.length >= 3 ? r.photos : MOCK_GOOGLE_REVIEWS[idx % 4].photos,
+        photos: (r.photos && r.photos.length > 0) ? r.photos : (r.photo ? [r.photo] : MOCK_GOOGLE_REVIEWS[idx % 4].photos),
       }))
     : MOCK_GOOGLE_REVIEWS;
 
@@ -154,124 +154,174 @@ export default function ReviewsSection({
           </div>
         </div>
 
-        {/* REVIEW CARDS HORIZONTAL SCROLL / GRID (1.5 CARDS PER VIEW ON MOBILE) */}
+        {/* REVIEW CARDS HORIZONTAL SCROLL / GRID */}
         <div
           ref={scrollRef}
           className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x"
         >
-          {displayReviews.map((rev, idx) => (
-            <motion.div
-              key={rev.id || idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1, duration: 0.5 }}
-              viewport={{ once: true }}
-              className="flex-none snap-start w-[68vw] min-w-[260px] max-w-[340px] sm:w-[380px] md:w-[420px] bg-white border border-zinc-200/80 rounded-[28px] overflow-hidden p-5 sm:p-6 pb-0 sm:pb-0 shadow-[0_6px_24px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] transition-all duration-300 flex flex-col justify-between"
-            >
-              <div>
-                {/* USER HEADER ROW: AVATAR + NAME + BOOKED TRIP */}
-                <div className="flex items-start gap-3.5 mb-3.5">
-                  <div className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full overflow-hidden shrink-0 border border-zinc-100 shadow-2xs">
-                    <Image
-                      src={rev.avatar}
-                      alt={rev.name}
-                      fill
-                      sizes="56px"
-                      className="object-cover"
-                    />
-                  </div>
+          {displayReviews.map((rev, idx) => {
+            const photoList = rev.photos || [];
+            const extraCount = photoList.length > 3 ? photoList.length - 3 : 0;
 
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <h3 className="font-bold text-[#111827] text-[16px] sm:text-[17px] leading-tight font-montserrat capitalize">
-                        {rev.name}
-                      </h3>
-                      {rev.badge && (
-                        <span className="text-[#888888] font-medium text-[13px] sm:text-[14px]">
-                          {rev.badge}
+            return (
+              <motion.div
+                key={rev.id || idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1, duration: 0.5 }}
+                viewport={{ once: true }}
+                className="flex-none snap-start w-[68vw] min-w-[260px] max-w-[340px] sm:w-[380px] md:w-[420px] bg-white border border-zinc-200/80 rounded-[28px] overflow-hidden p-5 sm:p-6 pb-0 sm:pb-0 shadow-[0_6px_24px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] transition-all duration-300 flex flex-col justify-between"
+              >
+                <div>
+                  {/* USER HEADER ROW */}
+                  <div className="flex items-start gap-3.5 mb-3.5">
+                    <div className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full overflow-hidden shrink-0 border border-zinc-100 shadow-2xs">
+                      <Image
+                        src={rev.avatar}
+                        alt={rev.name}
+                        fill
+                        sizes="56px"
+                        className="object-cover"
+                      />
+                    </div>
+
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="font-bold text-[#111827] text-[16px] sm:text-[17px] leading-tight font-montserrat capitalize">
+                          {rev.name}
+                        </h3>
+                        {rev.badge && (
+                          <span className="text-[#888888] font-medium text-[13px] sm:text-[14px]">
+                            {rev.badge}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1 mt-1 text-[13px] sm:text-[14px] text-[#777777]">
+                        <span>Booked:</span>
+                        <span className="font-bold text-[#111827] flex items-center gap-0.5 truncate hover:text-[#D4541A] transition-colors cursor-pointer">
+                          {rev.tripName}
+                          <ExternalLink className="w-3.5 h-3.5 text-[#111827] inline shrink-0" />
                         </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1 mt-1 text-[13px] sm:text-[14px] text-[#777777]">
-                      <span>Booked:</span>
-                      <span className="font-bold text-[#111827] flex items-center gap-0.5 truncate hover:text-[#D4541A] transition-colors cursor-pointer">
-                        {rev.tripName}
-                        <ExternalLink className="w-3.5 h-3.5 text-[#111827] inline shrink-0" />
-                      </span>
+                      </div>
                     </div>
                   </div>
+
+                  {/* RATING STARS */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-1">
+                      {[...Array(rev.rating || 5)].map((_, i) => (
+                        <Star key={i} className="w-[17px] h-[17px] fill-[#FFB800] text-[#FFB800]" />
+                      ))}
+                    </div>
+                    <span className="text-[#777777] font-medium text-xs sm:text-[13px]">
+                      {rev.date}
+                    </span>
+                  </div>
+
+                  {/* COMMENT */}
+                  <p className="text-[#1B2A4A] font-normal text-[14px] sm:text-[15px] leading-[1.55] line-clamp-4 mb-4 font-montserrat">
+                    {rev.comment}{" "}
+                    <button
+                      onClick={() => setSelectedReview(rev)}
+                      className="font-bold text-[#111827] hover:text-[#D4541A] transition-colors cursor-pointer inline"
+                    >
+                      Read More
+                    </button>
+                  </p>
                 </div>
 
-                {/* 5 RATING STARS (GOLD/YELLOW) + RELATIVE DATE */}
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex items-center gap-1">
-                    {[...Array(rev.rating || 5)].map((_, i) => (
-                      <Star key={i} className="w-[17px] h-[17px] fill-[#FFB800] text-[#FFB800]" />
-                    ))}
-                  </div>
-                  <span className="text-[#777777] font-medium text-xs sm:text-[13px]">
-                    {rev.date}
-                  </span>
-                </div>
-
-                {/* REVIEW COMMENT TEXT WITH READ MORE */}
-                <p className="text-[#1B2A4A] font-normal text-[14px] sm:text-[15px] leading-[1.55] line-clamp-4 mb-4 font-montserrat">
-                  {rev.comment}{" "}
-                  <button
-                    onClick={() => setSelectedReview(rev)}
-                    className="font-bold text-[#111827] hover:text-[#D4541A] transition-colors cursor-pointer inline"
-                  >
-                    Read More
-                  </button>
-                </p>
-              </div>
-
-              {/* ATTACHED 3-PHOTO GALLERY GRID (FLUSH TO LEFT, RIGHT & BOTTOM CARD BORDERS) */}
-              {rev.photos && rev.photos.length >= 2 && (
-                <div className="-mx-5 -mb-5 sm:-mx-6 sm:-mb-6 mt-3 grid grid-cols-2 gap-1.5 overflow-hidden rounded-b-[27px] bg-zinc-100">
-                  {/* LEFT COLUMN: TALL PORTRAIT PHOTO */}
-                  <div
-                    onClick={() => setSelectedPhoto(rev.photos![0])}
-                    className="relative aspect-[3/4] sm:aspect-[3/3.8] overflow-hidden bg-zinc-100 cursor-pointer group/img"
-                  >
-                    <Image
-                      src={rev.photos[0]}
-                      alt={`Review photo by ${rev.name}`}
-                      fill
-                      sizes="200px"
-                      className="object-cover group-hover/img:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
-                      <Camera className="w-5 h-5" />
-                    </div>
-                  </div>
-
-                  {/* RIGHT COLUMN: 2 STACKED LANDSCAPE PHOTOS */}
-                  <div className="flex flex-col gap-1.5">
-                    {rev.photos.slice(1, 3).map((imgUrl, pIdx) => (
+                {/* DYNAMIC PHOTO GALLERY GRID */}
+                {photoList.length > 0 && (
+                  <div className="-mx-5 -mb-5 sm:-mx-6 sm:-mb-6 mt-3 overflow-hidden rounded-b-[27px] bg-zinc-100">
+                    {photoList.length === 1 ? (
+                      /* SINGLE PHOTO */
                       <div
-                        key={pIdx}
-                        onClick={() => setSelectedPhoto(imgUrl)}
-                        className="relative aspect-[16/9.5] overflow-hidden bg-zinc-100 cursor-pointer group/img flex-1"
+                        onClick={() => setSelectedPhoto(photoList[0])}
+                        className="relative aspect-[16/10] overflow-hidden bg-zinc-100 cursor-pointer group/img"
                       >
                         <Image
-                          src={imgUrl}
-                          alt={`Review photo ${pIdx + 2} by ${rev.name}`}
+                          src={photoList[0]}
+                          alt={`Review photo by ${rev.name}`}
                           fill
-                          sizes="200px"
+                          sizes="400px"
                           className="object-cover group-hover/img:scale-105 transition-transform duration-500"
                         />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
-                          <Camera className="w-4 h-4" />
+                      </div>
+                    ) : photoList.length === 2 ? (
+                      /* 2 PHOTOS SIDE BY SIDE */
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {photoList.map((imgUrl, pIdx) => (
+                          <div
+                            key={pIdx}
+                            onClick={() => setSelectedPhoto(imgUrl)}
+                            className="relative aspect-[4/3] overflow-hidden bg-zinc-100 cursor-pointer group/img"
+                          >
+                            <Image
+                              src={imgUrl}
+                              alt={`Review photo by ${rev.name}`}
+                              fill
+                              sizes="200px"
+                              className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      /* 3+ PHOTOS MOSAIC GRID WITH +N OVERLAY */
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div
+                          onClick={() => setSelectedPhoto(photoList[0])}
+                          className="relative aspect-[3/4] sm:aspect-[3/3.8] overflow-hidden bg-zinc-100 cursor-pointer group/img"
+                        >
+                          <Image
+                            src={photoList[0]}
+                            alt={`Review photo by ${rev.name}`}
+                            fill
+                            sizes="200px"
+                            className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <div
+                            onClick={() => setSelectedPhoto(photoList[1])}
+                            className="relative aspect-[16/9.5] overflow-hidden bg-zinc-100 cursor-pointer group/img flex-1"
+                          >
+                            <Image
+                              src={photoList[1]}
+                              alt={`Review photo 2 by ${rev.name}`}
+                              fill
+                              sizes="200px"
+                              className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                            />
+                          </div>
+
+                          <div
+                            onClick={() => setSelectedPhoto(photoList[2])}
+                            className="relative aspect-[16/9.5] overflow-hidden bg-zinc-100 cursor-pointer group/img flex-1"
+                          >
+                            <Image
+                              src={photoList[2]}
+                              alt={`Review photo 3 by ${rev.name}`}
+                              fill
+                              sizes="200px"
+                              className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                            />
+                            {extraCount > 0 && (
+                              <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center text-white font-extrabold text-xs sm:text-sm font-montserrat">
+                                +{extraCount} More
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    ))}
+                    )}
                   </div>
-                </div>
-              )}
-            </motion.div>
-          ))}
+                )}
+              </motion.div>
+            );
+          })}
         </div>
 
       </div>

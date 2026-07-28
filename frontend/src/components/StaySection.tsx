@@ -111,17 +111,34 @@ export default function StaySection({ accommodations }: StaySectionProps) {
 
   const modalCategories = useMemo(() => {
     if (!selectedStay) return ["All"];
-    const catSet = new Set(selectedStay.gallery?.map(img => img.category) || []);
-    return ["All", "Interior / Rooms", "Bathroom", "Dining Area", "Property & Views"].filter(
-      c => c === "All" || catSet.has(c)
-    );
+    const gallery = selectedStay.gallery || [];
+    const catSet = new Set(gallery.map(img => img.category).filter(Boolean));
+    const knownCats = ["Interior / Rooms", "Bathroom", "Dining Area", "Property & Views"];
+    const hasAliases = (cat: string) => {
+      if (catSet.has(cat)) return true;
+      if (cat === "Property & Views" && (catSet.has("Exterior") || catSet.has("Swimming Pool"))) return true;
+      if (cat === "Interior / Rooms" && (catSet.has("Interior") || catSet.has("Premium Room"))) return true;
+      if (cat === "Dining Area" && catSet.has("Dining")) return true;
+      return false;
+    };
+    const activeKnown = knownCats.filter(hasAliases);
+    const extraCats = Array.from(catSet).filter(c => !knownCats.includes(c) && !["Exterior", "Swimming Pool", "Interior", "Premium Room", "Dining"].includes(c));
+    return ["All", ...activeKnown, ...extraCats];
   }, [selectedStay]);
 
   const filteredImages = useMemo(() => {
     if (!selectedStay) return [];
-    const gallery = selectedStay.gallery || [{ url: selectedStay.image, category: "Property & Views", title: selectedStay.name }];
+    const gallery = selectedStay.gallery && selectedStay.gallery.length > 0
+      ? selectedStay.gallery
+      : [{ url: selectedStay.image, category: "Property & Views", title: selectedStay.name }];
     if (activeCategory === "All") return gallery;
-    return gallery.filter(img => img.category === activeCategory);
+    return gallery.filter(img => {
+      if (img.category === activeCategory) return true;
+      if (activeCategory === "Property & Views" && (img.category === "Exterior" || img.category === "Swimming Pool")) return true;
+      if (activeCategory === "Interior / Rooms" && (img.category === "Interior" || img.category === "Premium Room")) return true;
+      if (activeCategory === "Dining Area" && img.category === "Dining") return true;
+      return false;
+    });
   }, [selectedStay, activeCategory]);
 
   return (
