@@ -66,6 +66,10 @@ app.use('/api', globalLimiter);
 app.use('/api/admin/login', authLimiter);
 app.use('/api/users/login', authLimiter);
 
+// Request Timeout (30s hard limit) + Circuit Breaker (5 fails → 503 for 60s)
+app.use('/api', require('./middleware/requestTimeout'));
+app.use('/api', require('./middleware/circuitBreaker'));
+
 // 3. Import & Mount Routes
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/trips', require('./routes/tripKnowledge'));
@@ -90,6 +94,8 @@ app.use('/api/seo', require('./routes/seoRoutes'));
 app.use('/api/booking-forms', require('./routes/bookingFormRoutes'));
 app.use('/api/dynamic-forms', require('./routes/dynamicFormRoutes'));
 app.use('/api/page-builder', require('./routes/pageBuilderRoutes'));
+app.use('/api/website', require('./routes/websiteRoutes'));
+app.use('/api/pages', require('./routes/websiteRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));

@@ -43,7 +43,7 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
 
   return (
     <>
-      <div className="sticky top-[90px] space-y-4 hidden md:block pb-16">
+      <div className="sticky top-[90px] space-y-4 hidden lg:block pb-16">
         {/* Main Booking Card (Dark Navy Matching Reference Screenshot) */}
         <div className="bg-[#0B1528] rounded-[24px] overflow-hidden shadow-xl p-6 md:p-7 text-white border border-slate-800">
           <span className="text-zinc-400 font-bold text-xs uppercase tracking-wider block mb-2 font-montserrat">
@@ -137,7 +137,7 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
       </div>
 
       {/* Mobile Sticky CTA Bar (Always Fixed at Bottom on Mobile) */}
-      <div className="fixed bottom-0 left-0 right-0 z-[999] md:hidden bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.12)] border-t border-zinc-200 px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+      <div className="fixed bottom-0 left-0 right-0 z-[9999] lg:hidden bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.08)] border-t border-zinc-200/80 px-4 py-2.5 pb-[calc(10px+env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-col shrink-0">
             <span className="text-xl font-extrabold text-[#0B1528] leading-none font-montserrat">

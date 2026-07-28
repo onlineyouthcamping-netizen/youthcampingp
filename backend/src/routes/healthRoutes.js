@@ -4,10 +4,17 @@ const prismaImport = require('../lib/prisma');
 const prisma = prismaImport.prisma || prismaImport.default || prismaImport;
 
 router.get('/health', async (req, res) => {
+  const mem = process.memoryUsage();
   const health = {
     status: 'OK',
-    uptime: process.uptime(),
     timestamp: new Date().toISOString(),
+    uptime: Math.round(process.uptime()),
+    node: process.version,
+    memory: {
+      rss: `${Math.round(mem.rss / 1024 / 1024)}MB`,
+      heapUsed: `${Math.round(mem.heapUsed / 1024 / 1024)}MB`,
+      heapTotal: `${Math.round(mem.heapTotal / 1024 / 1024)}MB`,
+    },
     checks: { database: 'PENDING' }
   };
 
@@ -24,3 +31,4 @@ router.get('/health', async (req, res) => {
 });
 
 module.exports = router;
+

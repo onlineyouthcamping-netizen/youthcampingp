@@ -201,6 +201,30 @@ export default function BookingOptions({
     return { groupedDates: grouped, months: monthKeys };
   }, [trip.availableDates]);
 
+  // Group dates by Year -> Month Abbr -> Day list for PDF brochure departure calendar layout
+  const yearGroupedCalendar = useMemo(() => {
+    const years: Record<string, Record<string, Array<{ dayNumStr: string; date: string; isSpecial?: boolean }>>> = {};
+
+    Object.values(groupedDates).flat().forEach(vd => {
+      const yStr = vd.parsed.getFullYear().toString();
+      const monthAbbr = vd.parsed.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+      const dayNum = String(vd.parsed.getDate()).padStart(2, '0');
+
+      if (!years[yStr]) years[yStr] = {};
+      if (!years[yStr][monthAbbr]) years[yStr][monthAbbr] = [];
+
+      const isSpecial = dayNum === '18' || dayNum === '25';
+
+      years[yStr][monthAbbr].push({
+        dayNumStr: dayNum,
+        date: vd.date,
+        isSpecial
+      });
+    });
+
+    return years;
+  }, [groupedDates]);
+
   // Auto-advance activeMonth if selected month has ended or is empty
   useEffect(() => {
     if (months.length > 0) {
@@ -239,7 +263,7 @@ export default function BookingOptions({
                   }}
                   className={cn(
                     "min-w-[200px] md:min-w-[240px] bg-white rounded-[16px] overflow-hidden border-2 transition-all cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.05)] snap-start flex flex-col justify-between",
-                    selectedVariant === i ? "border-[#FF6B00]" : "border-[#E5E7EB] hover:border-zinc-300"
+                    selectedVariant === i ? "border-[#F97316] ring-1 ring-[#F97316]/30 shadow-xs" : "border-[#E5E7EB] hover:border-zinc-300"
                   )}
                 >
                   <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-[14px]">
@@ -249,12 +273,12 @@ export default function BookingOptions({
                     />
                   </div>
                   <div className="p-3.5 flex-1 flex flex-col justify-between">
-                    <h3 className="text-[14px] sm:text-[15px] font-bold text-[#111827] line-clamp-2 leading-tight mb-2 font-montserrat">
+                    <h3 style={{ fontWeight: 500 }} className="text-[13px] sm:text-[14px] font-medium text-zinc-600 line-clamp-2 leading-snug mb-2 font-montserrat">
                       {v.location}
                     </h3>
                     
                     <div className="flex items-center justify-between mt-auto pt-2 border-t border-zinc-100">
-                      <span className="text-[13px] font-bold text-[#FF6B00] font-montserrat">
+                      <span className="text-[13px] font-bold text-[#F97316] font-montserrat">
                         ₹{v.discountedPrice?.toLocaleString()}/-
                       </span>
                       {displayDuration && (
@@ -281,7 +305,7 @@ export default function BookingOptions({
           <div className="space-y-2.5 pt-3 border-t border-zinc-100">
             <div className="flex items-center justify-between">
               <h3 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
-                <Train className="w-4 h-4 text-[#D4541A]" />
+                <Train className="w-4 h-4 text-[#F97316]" />
                 <span>Travel Mode Option</span>
               </h3>
               <span className="text-[11px] text-zinc-500 font-semibold font-montserrat">
@@ -301,21 +325,21 @@ export default function BookingOptions({
                   className={cn(
                     "flex items-center justify-between p-3 rounded-xl border text-xs font-semibold font-montserrat transition-all cursor-pointer text-left",
                     selectedTravel === idx
-                      ? "border-[#D4541A] bg-orange-50/40 text-[#0B1528] ring-1 ring-[#D4541A]"
+                      ? "border-[#F97316] bg-orange-50/30 text-[#0B1528] ring-1 ring-[#F97316]"
                       : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300"
                   )}
                 >
                   <div className="flex items-center gap-2">
                     <div className={cn(
                       "w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
-                      selectedTravel === idx ? "border-[#D4541A] bg-[#D4541A]" : "border-zinc-300"
+                      selectedTravel === idx ? "border-[#F97316] bg-[#F97316]" : "border-zinc-300"
                     )}>
                       {selectedTravel === idx && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
                     </div>
                     <span>{opt.label}</span>
                   </div>
                   {opt.priceDelta > 0 ? (
-                    <span className="text-[#D4541A] font-extrabold text-[11px]">
+                    <span className="text-[#F97316] font-bold text-[11px]">
                       +₹{opt.priceDelta.toLocaleString()}
                     </span>
                   ) : (
@@ -334,7 +358,7 @@ export default function BookingOptions({
           <div className="space-y-2.5 pt-3 border-t border-zinc-100">
             <div className="flex items-center justify-between">
               <h3 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
-                <BedDouble className="w-4 h-4 text-[#D4541A]" />
+                <BedDouble className="w-4 h-4 text-[#F97316]" />
                 <span>Room Sharing Option</span>
               </h3>
               <span className="text-[11px] text-zinc-500 font-semibold font-montserrat">
@@ -354,21 +378,21 @@ export default function BookingOptions({
                   className={cn(
                     "flex items-center justify-between p-3 rounded-xl border text-xs font-semibold font-montserrat transition-all cursor-pointer text-left",
                     selectedRoom === idx
-                      ? "border-[#D4541A] bg-orange-50/40 text-[#0B1528] ring-1 ring-[#D4541A]"
+                      ? "border-[#F97316] bg-orange-50/30 text-[#0B1528] ring-1 ring-[#F97316]"
                       : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300"
                   )}
                 >
                   <div className="flex items-center gap-2">
                     <div className={cn(
                       "w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
-                      selectedRoom === idx ? "border-[#D4541A] bg-[#D4541A]" : "border-zinc-300"
+                      selectedRoom === idx ? "border-[#F97316] bg-[#F97316]" : "border-zinc-300"
                     )}>
                       {selectedRoom === idx && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
                     </div>
                     <span>{opt.label}</span>
                   </div>
                   {opt.priceDelta > 0 ? (
-                    <span className="text-[#D4541A] font-extrabold text-[11px]">
+                    <span className="text-[#F97316] font-bold text-[11px]">
                       +₹{opt.priceDelta.toLocaleString()}
                     </span>
                   ) : (
@@ -386,11 +410,11 @@ export default function BookingOptions({
         <div className="space-y-4 pt-3 border-t border-zinc-100">
           <div className="flex items-center justify-between">
             <h2 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-[#D4541A]" />
+              <Calendar className="w-4 h-4 text-[#F97316]" />
               <span>Select Departure Date</span>
             </h2>
             {selectedDate && (
-              <span className="text-[11px] font-bold text-[#D4541A] bg-orange-50 px-2 py-0.5 rounded font-montserrat">
+              <span className="text-[11px] font-bold text-[#F97316] bg-orange-50 px-2 py-0.5 rounded font-montserrat">
                 Selected: {selectedDate}
               </span>
             )}
@@ -406,13 +430,13 @@ export default function BookingOptions({
                 className={cn(
                   "relative px-3.5 py-1.5 rounded-xl border text-xs font-bold font-montserrat transition-all shrink-0 cursor-pointer",
                   activeMonth === month 
-                    ? "border-[#D4541A] text-[#D4541A] bg-orange-50/60 ring-1 ring-[#D4541A]" 
+                    ? "border-[#F97316] text-[#F97316] bg-orange-50/50 ring-1 ring-[#F97316]" 
                     : "border-zinc-200 text-zinc-500 hover:border-zinc-300 bg-white"
                 )}
               >
                 {month}
                 {activeMonth === month && (
-                  <span className="ml-1.5 inline-block w-1.5 h-1.5 bg-[#D4541A] rounded-full" />
+                  <span className="ml-1.5 inline-block w-1.5 h-1.5 bg-[#F97316] rounded-full" />
                 )}
               </button>
             ))}
@@ -431,8 +455,8 @@ export default function BookingOptions({
                 className={cn(
                   "flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border font-montserrat transition-all cursor-pointer shadow-2xs min-w-[54px]",
                   selectedDate === ad.date 
-                    ? "border-[#D4541A] bg-[#D4541A] text-white scale-105 shadow-md" 
-                    : "border-zinc-200 text-[#0B1528] bg-white hover:border-[#D4541A]/50 hover:bg-orange-50/20"
+                    ? "border-[#F97316] bg-[#F97316] text-white scale-105 shadow-md" 
+                    : "border-zinc-200 text-[#0B1528] bg-white hover:border-[#F97316]/50 hover:bg-orange-50/20"
                 )}
               >
                 <span className="text-[10px] font-semibold uppercase opacity-80 leading-none">{ad.weekdayStr}</span>
@@ -445,22 +469,23 @@ export default function BookingOptions({
           <button 
             type="button"
             onClick={() => setShowAllDatesModal(true)}
-            className="w-full py-2.5 px-4 border border-[#D4541A] text-[#0B1528] bg-white rounded-xl font-bold text-xs hover:bg-orange-50/30 transition-all font-montserrat flex items-center justify-center gap-2 cursor-pointer shadow-2xs mt-2"
+            className="w-full py-2.5 px-4 border border-[#F97316]/60 text-[#0B1528] bg-white rounded-xl font-bold text-xs hover:bg-orange-50/30 transition-all font-montserrat flex items-center justify-center gap-2 cursor-pointer shadow-2xs mt-2"
           >
-            <Calendar className="w-4 h-4 text-[#D4541A]" />
+            <Calendar className="w-4 h-4 text-[#F97316]" />
             View All Departure Dates ({months.length} Months Available)
           </button>
         </div>
       </section>
 
-      {/* View All Dates Calendar Modal */}
+      {/* View All Dates Calendar Modal (PDF Brochure Style) */}
       {showAllDatesModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-[24px] p-5 sm:p-6 shadow-2xl border border-zinc-100 max-h-[85vh] flex flex-col space-y-4 font-montserrat animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <div>
-                <h3 className="text-base font-extrabold text-[#0B1528]">Monthly Departure Calendar</h3>
-                <p className="text-xs text-zinc-400 font-medium">Updated month-wise (ended months auto-removed)</p>
+        <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3.5 sm:p-6 pt-[84px] sm:pt-6 pb-4 sm:pb-6 overflow-hidden">
+          <div className="bg-white w-full max-w-2xl rounded-[28px] p-5 sm:p-7 shadow-2xl border border-zinc-100 max-h-[calc(100vh-104px)] sm:max-h-[90vh] flex flex-col space-y-5 font-montserrat animate-in fade-in zoom-in-95 duration-150">
+            {/* Header with Close Button */}
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#D4541A]" />
+                <h3 className="text-base sm:text-lg font-extrabold text-[#0B1528]">Group Departure Dates</h3>
               </div>
               <button 
                 type="button"
@@ -471,38 +496,81 @@ export default function BookingOptions({
               </button>
             </div>
 
-            <div className="overflow-y-auto space-y-5 pr-1 flex-1">
-              {months.map(m => (
-                <div key={m} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-[#D4541A] uppercase tracking-wider">{m}</span>
-                    <span className="text-[10px] text-zinc-400 font-semibold">{groupedDates[m].length} Departures</span>
+            {/* Brochure Calendar Content */}
+            <div className="overflow-y-auto space-y-6 pr-1 flex-1">
+              {/* Section Header with Side Decorative Lines */}
+              <div className="flex items-center justify-center gap-3 pt-1">
+                <div className="h-[2px] w-8 sm:w-12 bg-gradient-to-r from-transparent to-[#D4541A]" />
+                <h4 className="text-xs sm:text-sm font-extrabold text-[#0B1528] tracking-widest uppercase text-center font-montserrat">
+                  GROUP DEPARTURE DATES
+                </h4>
+                <div className="h-[2px] w-8 sm:w-12 bg-gradient-to-l from-transparent to-[#D4541A]" />
+              </div>
+
+              {/* 2-Column Grid by Year */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.keys(yearGroupedCalendar).map((year) => (
+                  <div key={year} className="space-y-3">
+                    {/* Year Label */}
+                    <div className="flex items-center gap-1.5 text-xs font-black text-[#0B1528]">
+                      <span className="w-2 h-2 rounded-full bg-[#D4541A]" />
+                      <span>{year}</span>
+                    </div>
+
+                    {/* Month Cards Stack */}
+                    <div className="space-y-2.5">
+                      {Object.keys(yearGroupedCalendar[year]).map((monthAbbr) => {
+                        const daysList = yearGroupedCalendar[year][monthAbbr];
+                        return (
+                          <div
+                            key={monthAbbr}
+                            className="bg-white border border-zinc-200/90 rounded-2xl sm:rounded-full px-4 py-2.5 flex items-center justify-between shadow-2xs hover:border-[#D4541A]/50 transition-all min-h-[44px]"
+                          >
+                            {/* Left: Calendar Icon + Orange Month Name */}
+                            <div className="flex items-center gap-2 shrink-0 pr-2">
+                              <Calendar className="w-4 h-4 text-[#0B1528]" />
+                              <span className="text-xs font-extrabold text-[#D4541A] tracking-wider uppercase font-montserrat">
+                                {monthAbbr}
+                              </span>
+                            </div>
+
+                            {/* Right: Days List */}
+                            <div className="flex items-center gap-1 flex-wrap justify-end">
+                              {daysList.map((item, dIdx) => (
+                                <button
+                                  key={dIdx}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedDate(item.date);
+                                    onDateSelect?.(item.date);
+                                    setShowAllDatesModal(false);
+                                  }}
+                                  className={cn(
+                                    "text-xs font-bold px-1.5 py-0.5 rounded transition-all cursor-pointer",
+                                    selectedDate === item.date
+                                      ? "bg-[#D4541A] text-white shadow-2xs scale-105"
+                                      : item.isSpecial
+                                      ? "text-[#D4541A] font-black hover:bg-orange-50"
+                                      : "text-zinc-700 hover:text-[#D4541A] hover:bg-zinc-100"
+                                  )}
+                                >
+                                  {item.dayNumStr}{dIdx < daysList.length - 1 ? "," : ""}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                    {groupedDates[m].map((item, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setSelectedDate(item.date);
-                          onDateSelect?.(item.date);
-                          setActiveMonth(m);
-                          setShowAllDatesModal(false);
-                        }}
-                        className={cn(
-                          "p-2.5 rounded-xl border flex flex-col items-center transition-all cursor-pointer text-center",
-                          selectedDate === item.date
-                            ? "border-[#D4541A] bg-[#D4541A] text-white shadow-sm"
-                            : "border-zinc-200 text-zinc-800 hover:border-[#D4541A] hover:bg-orange-50/30 bg-white"
-                        )}
-                      >
-                        <span className="text-[9px] font-semibold uppercase opacity-75">{item.weekdayStr}</span>
-                        <span className="text-sm font-extrabold mt-0.5">{item.dayStr}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              {/* Peak Surcharge Alert Banner */}
+              <div className="bg-orange-50/80 border border-orange-200/70 rounded-2xl p-3.5 flex items-center justify-center gap-2.5 text-center text-xs font-bold text-[#D4541A] font-montserrat">
+                <span className="w-4 h-4 rounded-full bg-[#D4541A] text-white flex items-center justify-center text-[10px] font-black shrink-0">!</span>
+                <span>₹1500/- per person will be extra for 18 & 25 DEC</span>
+              </div>
             </div>
           </div>
         </div>

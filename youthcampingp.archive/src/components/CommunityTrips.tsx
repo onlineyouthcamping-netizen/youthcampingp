@@ -276,7 +276,7 @@ export default function CommunityTrips({
             onMouseUp={handleMouseUp}
             onMouseMove={handleMouseMove}
           >
-            <AnimatePresence mode="wait">
+            <AnimatePresence initial={false}>
               {baseTrips.filter(trip => {
                 if (!activeMonth) return true;
                 try {

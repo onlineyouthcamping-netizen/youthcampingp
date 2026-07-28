@@ -1,4 +1,5 @@
 import { Trip, ItineraryDay } from "@/types";
+import { fetchWithRetry } from "./fetchWithRetry";
 
 const DEFAULT_API = "https://api.youthcamping.online";
 let apiURL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_API;
@@ -223,7 +224,44 @@ export async function submitInquiry(data: any): Promise<{ success: boolean; mess
   };
 }
 export async function fetchTheme(init?: PublicRequestInit): Promise<any> {
-  const res = await fetch(`${API_BASE_URL}/theme/public`, init ?? publicRevalidate(600));
-  if (!res.ok) return null;
+  const res = await fetchWithRetry(`${API_BASE_URL}/theme/public`, init ?? publicRevalidate(600));
+  if (!res || !res.ok) return null;
   return res.json();
 }
+
+export async function fetchWebsitePages(init?: PublicRequestInit): Promise<any[]> {
+  try {
+    const res = await fetchWithRetry(`${API_BASE_URL}/website/pages`, init ?? publicRevalidate(60));
+    if (!res || !res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch (err) {
+    console.warn("fetchWebsitePages error:", err);
+    return [];
+  }
+}
+
+export async function fetchWebsitePageBySlug(slug: string, init?: PublicRequestInit): Promise<any | null> {
+  try {
+    const res = await fetchWithRetry(`${API_BASE_URL}/website/pages/${encodeURIComponent(slug)}`, init ?? publicRevalidate(60));
+    if (!res || !res.ok) return null;
+    const json = await res.json();
+    return json.data || null;
+  } catch (err) {
+    console.warn(`fetchWebsitePageBySlug error slug=${slug}:`, err);
+    return null;
+  }
+}
+
+export async function fetchWebsiteSettings(init?: PublicRequestInit): Promise<Record<string, any>> {
+  try {
+    const res = await fetchWithRetry(`${API_BASE_URL}/website/settings`, init ?? publicRevalidate(600));
+    if (!res || !res.ok) return {};
+    const json = await res.json();
+    return json.data || {};
+  } catch (err) {
+    console.warn("fetchWebsiteSettings error:", err);
+    return {};
+  }
+}
+

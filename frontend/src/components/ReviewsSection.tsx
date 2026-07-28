@@ -121,9 +121,8 @@ export default function ReviewsSection({
     <section className="testimonials testimonials-slider module-center bg-white py-8 md:py-10 border-t border-zinc-100 font-montserrat">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
-        {/* HEADER ROW - FITS TITLE & VIEW ALL ACTION CLEANLY */}
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
-          <h2 className="text-[#1B2A4A] font-montserrat font-bold text-[18px] sm:text-[26px] md:text-[32px] leading-tight truncate">
+          <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight truncate">
             {displayTitle}
           </h2>
 

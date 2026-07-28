@@ -113,11 +113,11 @@ export default function Destinations({
         {/* HEADER ROW - FITS TITLE ON ONE LINE */}
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
           <div className="flex items-baseline gap-2 min-w-0 overflow-hidden whitespace-nowrap">
-            <h2 className="text-[#1B2A4A] font-montserrat font-bold text-[18px] sm:text-[26px] md:text-[32px] leading-tight truncate">
-              {title.split(' ')[0] || "Popular"}
+            <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight">
+              {(title.split(' ')[0] || "Popular").toLowerCase()}
             </h2>
-            <span className="font-caveat font-bold text-[#D4541A] text-[22px] sm:text-[30px] md:text-[38px] leading-none shrink-0">
-              {title.split(' ').slice(1).join(' ') || "Destinations"}
+            <span className="font-caveat font-bold text-[#D4541A] text-[26px] sm:text-[34px] md:text-[40px] lg:text-[46px] leading-none shrink-0 capitalize pr-2 sm:pr-3">
+              {(title.split(' ').slice(1).join(' ') || "Destinations").toLowerCase()}
             </span>
           </div>
 

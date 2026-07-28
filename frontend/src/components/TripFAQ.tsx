@@ -93,7 +93,7 @@ export default function TripFAQ({ faqs }: TripFAQProps) {
 
               {/* Answer Content */}
               {isOpen && (
-                <div className="mt-3.5 pt-3.5 border-t border-zinc-100 text-xs sm:text-sm text-zinc-600 font-montserrat leading-relaxed animate-fade-in pl-10">
+                <div className="mt-3.5 pt-3.5 border-t border-zinc-100 text-xs sm:text-sm text-zinc-600 font-montserrat leading-relaxed animate-fade-in">
                   {faq.answer}
                 </div>
               )}

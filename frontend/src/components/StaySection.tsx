@@ -197,7 +197,7 @@ export default function StaySection({ accommodations }: StaySectionProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100000] flex items-center justify-center p-3 sm:p-6 md:p-8 pt-[96px] pb-6 overflow-y-auto"
+            className="fixed inset-0 z-[100000] flex items-center justify-center p-3.5 sm:p-6 md:p-8 pt-[84px] sm:pt-6 pb-4 sm:pb-6 overflow-hidden"
           >
             <div className="fixed inset-0 bg-[#0B1528]/85 backdrop-blur-md" onClick={() => setSelectedStay(null)} />
             
@@ -205,7 +205,7 @@ export default function StaySection({ accommodations }: StaySectionProps) {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-4xl bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-2xl z-10 max-h-[calc(100vh-130px)] flex flex-col border border-zinc-100 mt-2"
+              className="relative w-full max-w-4xl bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-2xl z-10 max-h-[calc(100vh-104px)] sm:max-h-[88vh] flex flex-col border border-zinc-100"
             >
               {/* Modal Header (Full clearance from fixed navbar) */}
               <div className="p-4 sm:p-5 md:p-6 border-b border-zinc-100 flex items-start justify-between bg-white shrink-0">

@@ -45,7 +45,7 @@ export default function TripGallerySection({ trip }: TripGallerySectionProps) {
 
   return (
     <>
-      <div className="w-full mb-8 md:mb-12">
+      <div className="w-full mb-4 md:mb-8">
         {/* Mobile: Single hero image with floating badge */}
         <div 
           className="relative md:hidden w-full aspect-[16/10] rounded-[20px] overflow-hidden cursor-pointer shadow-lg bg-zinc-100"

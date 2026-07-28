@@ -13,7 +13,7 @@ const FloatingWhatsApp = dynamic(() => import("@/components/FloatingWhatsApp"), 
   loading: () => null,
 });
 import { DynamicThemeProvider } from "@/components/DynamicThemeProvider";
-import { fetchPublicSettings, fetchTheme } from "@/lib/api";
+import { fetchPublicSettings, fetchWebsiteSettings, fetchTheme } from "@/lib/api";
 
 const settleWithin = async <T,>(promise: Promise<T>, milliseconds: number): Promise<T | null> => {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -89,35 +89,49 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let settings = null;
-  let theme = null;
+  let settings: any = null;
+  let websiteSettings: any = null;
+  let theme: any = null;
   const siteConfigResults = await Promise.allSettled([
     settleWithin(fetchPublicSettings(), 1500),
+    settleWithin(fetchWebsiteSettings(), 1500),
     settleWithin(fetchTheme(), 1500),
   ]);
-  if (siteConfigResults[0].status === 'fulfilled') settings = siteConfigResults[0].value;
+  if (siteConfigResults[0].status === 'fulfilled') settings = siteConfigResults[0].value || {};
   else console.error("Layout settings fetch error:", siteConfigResults[0].reason);
-  if (siteConfigResults[1].status === 'fulfilled') theme = siteConfigResults[1].value;
-  else console.error("Layout theme fetch error:", siteConfigResults[1].reason);
+  if (siteConfigResults[1].status === 'fulfilled') websiteSettings = siteConfigResults[1].value || {};
+  else console.error("Layout websiteSettings fetch error:", siteConfigResults[1].reason);
+  if (siteConfigResults[2].status === 'fulfilled') theme = siteConfigResults[2].value;
+  else console.error("Layout theme fetch error:", siteConfigResults[2].reason);
+
+  // Merge key-value websiteSettings into settings
+  const mergedSettings = {
+    ...settings,
+    ...websiteSettings,
+    navbar: {
+      ...settings?.navbar,
+      links: websiteSettings?.navigation || settings?.navbar?.links,
+    },
+  };
 
   return (
     <html lang="en" className={`${montserrat.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-montserrat relative">
-        <DynamicThemeProvider initialTheme={theme} initialSettings={settings}>
+        <DynamicThemeProvider initialTheme={theme} initialSettings={mergedSettings}>
           <Suspense fallback={null}>
             <ScrollToTop />
           </Suspense>
           <Navbar 
-            logoUrl={settings?.navbar?.logoUrl} 
-            navLinks={settings?.navbar?.links} 
+            logoUrl={mergedSettings?.navbar?.logoUrl} 
+            navLinks={mergedSettings?.navbar?.links} 
           />
           <main className="flex-grow pt-[var(--navbar-height)] md:pt-0">{children}</main>
           <Footer 
-            logoUrl={settings?.navbar?.logoUrl || settings?.footer?.logoUrl} 
-            address={settings?.footer?.address} 
-            phone={settings?.footer?.phone} 
+            logoUrl={mergedSettings?.navbar?.logoUrl || mergedSettings?.footer?.logoUrl} 
+            address={mergedSettings?.footer?.address} 
+            phone={mergedSettings?.footer?.phone} 
           />
-          <FloatingWhatsApp settings={settings} />
+          <FloatingWhatsApp settings={mergedSettings} />
         </DynamicThemeProvider>
       </body>
     </html>

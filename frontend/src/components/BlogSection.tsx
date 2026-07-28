@@ -101,13 +101,13 @@ export default function BlogSection({
         
         {/* HEADER ROW WITH SLIDER CONTROLS */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-10 gap-3">
-          <div className="flex items-center justify-between w-full sm:w-auto">
-            <div className="flex items-baseline gap-2.5 flex-wrap">
-              <h2 className="text-[#1B2A4A] font-montserrat font-semibold text-[24px] sm:text-[32px] md:text-[36px] leading-tight">
-                {displayTitle}
+          <div className="flex items-center justify-between w-full sm:w-auto overflow-hidden">
+            <div className="flex items-baseline gap-2 min-w-0 overflow-hidden whitespace-nowrap">
+              <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight">
+                {displayTitle.toLowerCase()}
               </h2>
-              <span className="font-caveat font-bold text-[#D4541A] text-[28px] sm:text-[36px] md:text-[42px] leading-none">
-                {displaySubtitle}
+              <span className="font-caveat font-bold text-[#D4541A] text-[26px] sm:text-[34px] md:text-[40px] lg:text-[46px] leading-none shrink-0 capitalize pr-2 sm:pr-3">
+                {displaySubtitle.toLowerCase()}
               </span>
             </div>
             <Link
@@ -168,7 +168,7 @@ export default function BlogSection({
                   src={story.image}
                   alt={story.title}
                   fill
-                  sizes="(max-width: 640px) 280px, 340px"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
 
@@ -187,6 +187,7 @@ export default function BlogSection({
                       src={story.authorAvatar}
                       alt={story.authorName}
                       fill
+                      sizes="(max-width: 768px) 44px, 44px"
                       className="object-cover"
                     />
                   </div>

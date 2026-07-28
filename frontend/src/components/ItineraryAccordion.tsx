@@ -22,6 +22,25 @@ function renderFormattedText(text: string) {
   });
 }
 
+function getDayFullDate(startDateStr?: string | Date | null, dayIdx: number = 0): string | null {
+  if (!startDateStr) return null;
+  try {
+    const baseDate = new Date(startDateStr);
+    if (isNaN(baseDate.getTime())) return null;
+    
+    const targetDate = new Date(baseDate);
+    targetDate.setDate(targetDate.getDate() + dayIdx);
+    
+    const dayNum = String(targetDate.getDate()).padStart(2, "0");
+    const month = targetDate.toLocaleDateString("en-US", { month: "short" });
+    const year = targetDate.getFullYear();
+    
+    return `${dayNum} ${month} ${year}`;
+  } catch (e) {
+    return null;
+  }
+}
+
 function getStayAndMeals(day: ItineraryDay, index: number, totalDays: number) {
   let stay = day.stay?.trim();
   let meals = day.meals?.trim();
@@ -73,13 +92,12 @@ function getStayAndMeals(day: ItineraryDay, index: number, totalDays: number) {
     } else if (hasB) {
       meals = "Breakfast";
     } else {
-      // Guaranteed defaults based on day position
       if (index === 0) {
-        meals = "Dinner"; // Arrival day
+        meals = "Dinner";
       } else if (index === totalDays - 1) {
-        meals = "Breakfast"; // Departure day
+        meals = "Breakfast";
       } else {
-        meals = "Breakfast & Dinner"; // Middle days
+        meals = "Breakfast & Dinner";
       }
     }
   }
@@ -89,7 +107,7 @@ function getStayAndMeals(day: ItineraryDay, index: number, totalDays: number) {
 
 interface ItineraryAccordionProps {
   itinerary: ItineraryDay[];
-  startDate?: string | null;
+  startDate?: string | Date | null;
   skipDays?: number;
 }
 
@@ -135,7 +153,7 @@ export default function ItineraryAccordion({
         </h2>
         <button
           onClick={toggleExpandAll}
-          className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-[#0B1528] transition-all font-montserrat cursor-pointer"
+          className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-[#0B1528] transition-all font-montserrat cursor-pointer shrink-0"
         >
           <ChevronDown
             className={cn(
@@ -149,23 +167,27 @@ export default function ItineraryAccordion({
 
       {/* Accordion Days List */}
       <div className="space-y-3">
-        {displayItinerary.map((day) => {
+        {displayItinerary.map((day, idx) => {
           const isExpanded = openDays.includes(day.displayDay);
           const dayNumStr =
             day.displayDay < 10 ? `Day 0${day.displayDay}` : `Day ${day.displayDay}`;
+          const calDateFull = getDayFullDate(startDate, idx + skipDays);
 
           return (
             <div key={day.displayDay} className="group rounded-2xl transition-all duration-300">
-              <div className="flex items-center gap-2 sm:gap-3 w-full">
+              {/* FULL CLICKABLE HEADER BAR */}
+              <button
+                onClick={() => toggleDay(day.displayDay)}
+                className="flex items-center gap-2 sm:gap-3 w-full text-left cursor-pointer group/header focus:outline-none"
+              >
                 {/* Left: Dark Navy Day Pill Badge */}
-                <div className="bg-[#0B1528] text-white rounded-2xl sm:rounded-full font-extrabold text-xs sm:text-sm px-2.5 sm:px-3 text-center shadow-xs border border-slate-800 shrink-0 min-w-[68px] sm:min-w-[88px] flex items-center justify-center font-montserrat min-h-[42px] py-2">
+                <div className="bg-[#0B1528] text-white rounded-2xl sm:rounded-full font-extrabold text-xs sm:text-sm px-2.5 sm:px-3 text-center shadow-xs border border-slate-800 shrink-0 min-w-[68px] sm:min-w-[88px] flex items-center justify-center font-montserrat min-h-[42px] py-2 group-hover/header:bg-[#112240] transition-colors">
                   {dayNumStr}
                 </div>
 
                 {/* Right: Pure White Pill Title Bar */}
-                <button
-                  onClick={() => toggleDay(day.displayDay)}
-                  className="flex-1 min-w-0 bg-white border border-zinc-200/90 rounded-2xl sm:rounded-full px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between shadow-2xs hover:border-[#D4541A]/50 transition-all text-left cursor-pointer min-h-[42px]"
+                <div
+                  className="flex-1 min-w-0 bg-white border border-zinc-200/90 rounded-2xl sm:rounded-full px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between shadow-2xs group-hover/header:border-[#D4541A]/50 transition-all min-h-[42px]"
                 >
                   <span className="text-xs sm:text-sm font-semibold text-[#0B1528] font-montserrat leading-snug flex-1 min-w-0 pr-1 line-clamp-2">
                     {day.title}
@@ -177,12 +199,19 @@ export default function ItineraryAccordion({
                       isExpanded ? "rotate-180" : ""
                     )}
                   />
-                </button>
-              </div>
+                </div>
+              </button>
 
               {/* Expanded Details Body */}
               {isExpanded && (
-                <div className="ml-[84px] sm:ml-[112px] mt-2.5 p-4 sm:p-5 bg-[#F8F9FA] border border-zinc-100 rounded-2xl space-y-3 animate-fade-in">
+                <div className="mt-2.5 p-3.5 sm:p-5 bg-[#F8F9FA] border border-zinc-100 rounded-2xl space-y-3 animate-fade-in">
+                  {/* STARTING POINT DATE LINE */}
+                  {calDateFull && (
+                    <p className="text-xs sm:text-sm font-semibold text-[#0B1528] font-montserrat pb-0.5">
+                      {calDateFull}
+                    </p>
+                  )}
+
                   {day.description && (() => {
                     // Split on bullet character or newline
                     const bullets = day.description
@@ -228,63 +257,71 @@ export default function ItineraryAccordion({
                     ].filter(Boolean);
 
                     const parsedPhotos = rawItems.map((item: any, idx: number) => {
-                      let url = "";
-                      let label = "";
-
-                      if (typeof item === "string") {
-                        if (item.includes("|")) {
-                          const parts = item.split("|");
-                          url = normalizeImageUrl(parts[0]) || "";
-                          label = parts.slice(1).join("|").trim();
-                        } else {
-                          url = normalizeImageUrl(item) || "";
-                          if (day.activities && day.activities[idx]) {
-                            label = day.activities[idx];
-                          }
-                        }
-                      } else if (item && typeof item === "object") {
-                        const rawUrl = item.url || item.src || item.image || item.photo || "";
-                        if (typeof rawUrl === "string" && rawUrl.includes("|")) {
-                          const parts = rawUrl.split("|");
-                          url = normalizeImageUrl(parts[0]) || "";
-                          label = item.title || item.caption || item.name || item.label || parts.slice(1).join("|").trim();
-                        } else {
-                          url = normalizeImageUrl(rawUrl) || "";
-                          label = item.title || item.caption || item.name || item.label || (day.activities && day.activities[idx]) || "";
-                        }
+                      if (typeof item === 'string') {
+                        return { url: normalizeImageUrl(item), caption: '', tag: null };
                       }
+                      if (item && typeof item === 'object') {
+                        const rawUrl = item.url || item.src || item.path || '';
+                        const cap = item.caption || item.alt || item.title || item.name || item.place || item.activity || '';
+                        
+                        let tag: 'included' | 'self-paid' | null = null;
+                        const status = String(item.inclusion || item.type || item.status || item.tag || item.inclusionStatus || '').toLowerCase();
+                        
+                        if (status.includes('included') || item.included === true || item.isIncluded === true) {
+                          tag = 'included';
+                        } else if (status.includes('self') || status.includes('paid') || status.includes('optional') || item.included === false || item.isIncluded === false) {
+                          tag = 'self-paid';
+                        }
 
-                      return { url, label };
-                    }).filter(p => !!p.url);
-
-                    const uniquePhotos: { url: string; label: string }[] = [];
-                    const seenUrls = new Set<string>();
-
-                    for (const p of parsedPhotos) {
-                      if (!seenUrls.has(p.url)) {
-                        seenUrls.add(p.url);
-                        uniquePhotos.push(p);
+                        return { url: normalizeImageUrl(rawUrl), caption: cap, tag };
                       }
-                    }
+                      return null;
+                    }).filter((p): p is { url: string; caption: string; tag: 'included' | 'self-paid' | null } => Boolean(p && p.url));
 
-                    if (uniquePhotos.length === 0) return null;
+                    if (parsedPhotos.length === 0) return null;
 
                     return (
-                      <div className="pt-2 border-t border-zinc-200/60">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-                          {uniquePhotos.map((photo, pi) => (
-                            <div 
-                              key={pi} 
-                              className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-zinc-200/80 shadow-2xs group bg-zinc-100 flex flex-col justify-end"
+                      <div className="pt-2">
+                        <p className="text-xs font-bold text-[#0B1528] font-montserrat mb-2.5 flex items-center gap-1.5">
+                          <Camera className="w-3.5 h-3.5 text-[#D4541A]" />
+                          <span>Day Highlights & Photos</span>
+                        </p>
+
+                        <div className="flex items-center gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x touch-pan-x -mr-3.5 sm:mr-0 pr-3.5 sm:pr-0">
+                          {parsedPhotos.map((photo, pIdx) => (
+                            <div
+                              key={pIdx}
+                              className="group relative flex-none snap-start w-[115px] sm:w-[135px] aspect-[16/10.5] rounded-xl overflow-hidden bg-zinc-200/60 shadow-2xs border border-zinc-200/80 shrink-0"
                             >
                               <OptimizedImage
                                 src={photo.url}
-                                alt={photo.label || `${day.title} photo ${pi + 1}`}
-                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                alt={photo.caption || "Activity photo"}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                width={220}
+                                height={140}
                               />
-                              {photo.label && (
-                                <div className="relative z-10 p-2 bg-gradient-to-t from-black/85 via-black/40 to-transparent text-white text-[11px] font-semibold font-montserrat truncate leading-tight">
-                                  {photo.label}
+
+                              {/* Inclusion Badge: Included vs Self Paid */}
+                              {photo.tag && (
+                                <div className="absolute top-1.5 left-1.5 z-10">
+                                  {photo.tag === 'included' ? (
+                                    <span className="bg-emerald-600/90 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shadow-2xs backdrop-blur-xs tracking-tight">
+                                      Included
+                                    </span>
+                                  ) : (
+                                    <span className="bg-amber-600/90 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shadow-2xs backdrop-blur-xs tracking-tight">
+                                      Self Paid
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Bottom Overlay: Place / Activity Name */}
+                              {photo.caption && !photo.caption.startsWith('Photo ') && (
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1.5 pt-3.5 z-10">
+                                  <p className="text-[10px] font-bold text-white truncate font-montserrat leading-none">
+                                    {photo.caption}
+                                  </p>
                                 </div>
                               )}
                             </div>
@@ -294,26 +331,23 @@ export default function ItineraryAccordion({
                     );
                   })()}
 
+                  {/* Redesigned Premium Stay & Meals Footer */}
                   {(() => {
-                    const { stay: effectiveStay, meals: effectiveMeals } = getStayAndMeals(day, day.displayDay - 1, displayItinerary.length);
-                    if (!effectiveStay && !effectiveMeals) return null;
+                    const { stay, meals } = getStayAndMeals(day, idx, displayItinerary.length);
+                    if (!stay && !meals) return null;
 
                     return (
-                      <div className="border-t border-zinc-200/60 pt-3 flex flex-col gap-2">
-                        {effectiveStay && (
-                          <div className="flex items-center gap-3 pl-3 border-l-2 border-[#D4541A]">
-                            <BedDouble className="w-4 h-4 text-[#0B1528] shrink-0" />
-                            <span className="text-xs font-semibold text-[#0B1528] font-montserrat">
-                              {effectiveStay}
-                            </span>
+                      <div className="pt-3.5 border-t border-zinc-200/60 flex flex-wrap items-center gap-2.5 sm:gap-3 font-montserrat">
+                        {stay && (
+                          <div className="inline-flex items-center gap-2 bg-slate-100/90 border border-slate-200/70 px-3 py-1.5 rounded-full text-xs font-bold text-[#0B1528] shadow-2xs">
+                            <BedDouble className="w-3.5 h-3.5 text-[#0B1528] shrink-0" />
+                            <span>{stay}</span>
                           </div>
                         )}
-                        {effectiveMeals && (
-                          <div className="flex items-center gap-3 pl-3 border-l-2 border-[#D4541A]">
-                            <Utensils className="w-4 h-4 text-[#D4541A] shrink-0" />
-                            <span className="text-xs font-bold text-[#D4541A] font-montserrat">
-                              {effectiveMeals}
-                            </span>
+                        {meals && (
+                          <div className="inline-flex items-center gap-2 bg-orange-50/90 border border-orange-200/80 px-3 py-1.5 rounded-full text-xs font-bold text-[#D4541A] shadow-2xs">
+                            <Utensils className="w-3.5 h-3.5 text-[#D4541A] shrink-0" />
+                            <span>{meals}</span>
                           </div>
                         )}
                       </div>

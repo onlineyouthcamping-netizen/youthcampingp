@@ -236,7 +236,7 @@ export default function CommunityTrips({
   accentColor = "#D4541A",
   heroHeight = "medium",
   paddingTop = "32",
-  paddingBottom = "32",
+  paddingBottom = "80",
   selectedTripIds
 }: CommunityTripsProps) {
   const MONTHS = getAutoMonths();
@@ -370,7 +370,7 @@ export default function CommunityTrips({
     <section className="relative overflow-hidden bg-[#fafafa]">
       {/* HERO SECTION WRAPPER */}
       <div 
-        className="relative flex flex-col justify-center min-h-[460px] md:min-h-[500px]"
+        className="relative flex flex-col justify-center min-h-[360px] sm:min-h-[460px] md:min-h-[500px]"
         style={{
           paddingTop: `${paddingTop}px`,
           paddingBottom: `${paddingBottom}px`
@@ -429,18 +429,19 @@ export default function CommunityTrips({
               {tagline}
             </p>
 
-            <h2 className={`font-extrabold leading-[1.15] tracking-tight mb-2 ${getFontSizeClass()} ${isWhiteOverlay ? "text-[#0B1528]" : "text-white drop-shadow-md"}`}>
+            <h2 className={`font-montserrat font-extrabold leading-[1.15] tracking-tight mb-2 text-[32px] sm:text-5xl md:text-6xl lg:text-7xl ${isWhiteOverlay ? "text-[#0B1528]" : "text-white drop-shadow-md"}`}>
               <div>{activeHeadlinePrefix}</div>
               {(Boolean(activeStrikethroughWord) || activeRotatingWords.length > 0) && (
-                <div className="flex items-center gap-2.5 sm:gap-3.5 flex-nowrap mt-0.5 whitespace-nowrap">
+                <div className="flex items-center gap-2 sm:gap-3.5 flex-nowrap mt-0.5 whitespace-nowrap">
                   {Boolean(activeStrikethroughWord) && (
                     <span className={`relative inline-block whitespace-nowrap ${isWhiteOverlay ? "text-[#0B1528]" : "text-white"}`}>
                       {activeStrikethroughWord}
                   <svg
-                    className="absolute -left-2 top-1/2 -translate-y-1/2 w-[114%] h-[22px] sm:h-[30px] md:h-[38px] pointer-events-none overflow-visible"
+                    className="absolute -left-2 top-1/2 -translate-y-1/2 w-[114%] h-[18px] sm:h-[30px] md:h-[38px] pointer-events-none overflow-visible"
                     style={{ color: accentColor }}
                     viewBox="0 0 120 30"
                     fill="none"
+                    preserveAspectRatio="none"
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     <path
@@ -455,8 +456,8 @@ export default function CommunityTrips({
                   )}
 
                   {activeRotatingWords.length > 0 && (
-                    <span className="inline-flex relative overflow-hidden h-[34px] sm:h-[48px] md:h-[58px] items-center whitespace-nowrap">
-                      <AnimatePresence mode="wait">
+                    <span className="inline-flex relative overflow-hidden h-[38px] sm:h-[56px] md:h-[72px] items-center whitespace-nowrap pr-2 sm:pr-3">
+                      <AnimatePresence initial={false}>
                         <motion.span
                           key={activeRotatingWords[wordIdx % activeRotatingWords.length]}
                           initial={{ y: 35, opacity: 0 }}
@@ -475,8 +476,6 @@ export default function CommunityTrips({
               )}
             </h2>
 
-            <div className="h-[4px] w-14 bg-[#D4541A] rounded-full mb-3" />
-
             <p className={`text-xs sm:text-sm md:text-base font-semibold leading-relaxed max-w-[580px] ${isWhiteOverlay ? "text-[#4b5563]" : "text-zinc-200"}`}>
               {subheadline}
             </p>
@@ -485,7 +484,7 @@ export default function CommunityTrips({
       </div>
 
       {/* Month Selector Pill Bar */}
-      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-6">
+      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-6 sm:mb-8">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-center gap-2 sm:gap-3 bg-white border border-zinc-200/80 rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-2.5 sm:p-3.5">
             <button
@@ -497,7 +496,7 @@ export default function CommunityTrips({
               <ChevronLeft className="w-5 h-5 text-zinc-700" />
             </button>
 
-            <div ref={barRef} className="no-scrollbar flex gap-2.5 overflow-x-auto py-1 flex-1 scroll-smooth">
+            <div ref={barRef} className="no-scrollbar flex gap-2.5 overflow-x-auto py-1 flex-1 min-w-0 scroll-smooth">
               {MONTHS.map((m: any, i: number) => {
                 const on = activeMonth === i;
                 return (
@@ -544,13 +543,15 @@ export default function CommunityTrips({
         ) : (
           <div 
             ref={tripCardsScrollRef}
-            className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x cursor-grab"
+            className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 -mx-6 sm:-mx-8 md:-mx-12 px-6 sm:px-8 md:px-12 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x cursor-grab"
           >
             {display.map((t, idx) => (
-              <div key={t.id || idx} className="w-[68vw] min-w-[260px] max-w-[320px] sm:w-[310px] md:w-[330px] shrink-0 snap-start">
+              <div key={t.id || idx} className="w-[72vw] min-w-[260px] max-w-[320px] sm:w-[310px] md:w-[330px] shrink-0 snap-start">
                 <TripCard trip={t} index={idx} />
               </div>
             ))}
+            {/* Extra empty div to ensure padding at the end of the scroll */}
+            <div className="w-1 shrink-0" />
           </div>
         )}
       </div>

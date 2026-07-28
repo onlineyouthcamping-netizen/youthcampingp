@@ -8,14 +8,17 @@ import { Menu, X } from "lucide-react";
 import { useTheme } from "@/components/DynamicThemeProvider";
 
 interface NavLink {
-  name: string;
+  id?: string;
+  name?: string;
+  label?: string;
   href: string;
 }
 
 const defaultNavLinks: NavLink[] = [
-  { name: "Home", href: "/" },
-  { name: "Trips", href: "/trips" },
-  { name: "Contact Us", href: "/contact" },
+  { id: "nav-home", name: "Home", href: "/" },
+  { id: "nav-trips", name: "Trips", href: "/trips" },
+  { id: "nav-[#D4541A]", name: "About Us", href: "/about-us" },
+  { id: "nav-contact", name: "Contact Us", href: "/contact" },
 ];
 
 interface NavbarProps {
@@ -29,22 +32,29 @@ export default function Navbar({
 }: NavbarProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const { theme, settings } = useTheme();
-  const rawLinks = navLinks || (settings?.navbar?.links && settings.navbar.links.length > 0 ? settings.navbar.links : defaultNavLinks);
-  const resolvedNavLinks = rawLinks.filter(
-    (link: NavLink) =>
-      !["Destinations", "About Us", "Journal"].includes(link.name) &&
-      !["/destinations", "/about", "/blogs"].includes(link.href)
-  );
+  const [mounted, setMounted] = useState(false);
+  const { settings } = useTheme();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 30);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    setMounted(true);
   }, []);
+
+  // Use props/defaults on server & initial hydration pass to guarantee 100% SSR match
+  const rawLinks = (mounted && settings?.navbar?.links && settings.navbar.links.length > 0)
+    ? settings.navbar.links
+    : (navLinks || defaultNavLinks);
+
+  const resolvedNavLinks = rawLinks
+    .map((link: any, idx: number) => ({
+      id: link.id || `nav-${idx}-${link.href || 'link'}`,
+      name: link.name || link.label || "Link",
+      href: link.href || "/",
+    }))
+    .filter(
+      (link: any) =>
+        !["Destinations", "Journal"].includes(link.name) &&
+        !["/destinations", "/blogs"].includes(link.href)
+    );
 
   useEffect(() => {
     if (isMenuOpen) {
@@ -64,8 +74,8 @@ export default function Navbar({
           "fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 px-5 sm:px-8 md:px-10 flex items-center bg-white/95 backdrop-blur-md border-b border-zinc-100/80 shadow-xs h-[80px]"
         )}
       >
-        <div className="max-w-[1440px] mx-auto flex items-center justify-between w-full">
-          {/* LOGO */}
+        <div className="max-w-[1440px] w-full mx-auto flex items-center justify-between">
+          {/* BRAND LOGO */}
           <Link 
             href="/" 
             className="relative z-[60] flex items-center justify-start shrink-0"
@@ -81,10 +91,10 @@ export default function Navbar({
 
           {/* DESKTOP NAV LINKS */}
           <div className="hidden md:flex items-center gap-10 text-[16px] font-semibold text-[#1B2A4A]">
-            {resolvedNavLinks.map((link: NavLink) => {
+            {resolvedNavLinks.map((link: any) => {
               const isActive = pathname === link.href || (link.href === '/trips' && pathname.startsWith('/trips'));
               return (
-                <div key={link.name} className="relative flex flex-col items-center py-2">
+                <div key={link.id} className="relative flex flex-col items-center py-2">
                   <Link
                     href={link.href}
                     className={cn(
@@ -111,14 +121,6 @@ export default function Navbar({
             >
               Plan Your Trip
             </Link>
-
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 text-[#1B2A4A] hover:text-[#D4541A] transition-colors"
-              aria-label="Toggle menu"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
           </div>
 
           {/* MOBILE HAMBURGER BUTTON */}
@@ -144,9 +146,9 @@ export default function Navbar({
         )}
       >
         <div className="flex flex-col gap-2">
-          {resolvedNavLinks.map((link: NavLink) => (
+          {resolvedNavLinks.map((link: any) => (
             <Link
-              key={link.name}
+              key={link.id}
               href={link.href}
               onClick={() => setIsMenuOpen(false)}
               className="text-lg font-extrabold text-[#1B2A4A] hover:text-[#D4541A] min-h-[52px] flex items-center border-b border-zinc-100/80 px-2 transition-colors"

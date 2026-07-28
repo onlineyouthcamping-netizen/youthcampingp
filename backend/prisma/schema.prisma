@@ -555,6 +555,36 @@ model PageBuilder {
   @@index([name])
 }
 
+model WebsitePage {
+  id              String    @id @default(cuid())
+  tenantId        String    @default("default")
+  slug            String    @unique
+  title           String
+  content         Json?     @default("{}")
+  metaTitle       String?
+  metaDescription String?
+  ogImage         String?
+  published       Boolean   @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([slug])
+  @@index([published])
+}
+
+model WebsiteSetting {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("default")
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([key])
+}
+
 model Setting {
   id        String   @id @default(cuid())
   tenantId  String   @default("default")

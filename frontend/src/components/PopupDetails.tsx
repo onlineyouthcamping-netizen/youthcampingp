@@ -238,14 +238,14 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
       {activeId && (
         <div 
           onClick={() => setActiveId(null)}
-          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 md:p-6 pt-[96px] pb-6 bg-[#0B1528]/85 backdrop-blur-md transition-all duration-300 overflow-y-auto"
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-3.5 sm:p-6 pt-[84px] sm:pt-6 pb-4 sm:pb-6 bg-[#0B1528]/85 backdrop-blur-md transition-all duration-300 overflow-hidden"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white w-full max-w-xl rounded-[28px] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)] relative flex flex-col max-h-[88vh]"
+            className="bg-white w-full max-w-xl rounded-[28px] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)] relative flex flex-col max-h-[calc(100vh-104px)] sm:max-h-[86vh]"
           >
             {/* Dark Navy Header */}
-            <div className="bg-[#0B1528] px-6 py-5 flex items-center justify-between shrink-0">
+            <div className="bg-[#0B1528] px-5 sm:px-6 py-4.5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-[10px] bg-[#D4541A]/20 flex items-center justify-center">
                   {(() => {
@@ -282,9 +282,9 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
                     return (
                       <div key={idx} className="space-y-2.5">
                         <div className="flex items-center gap-2">
-                          <div className="w-1 h-3.5 bg-[#D4541A] rounded-full" />
-                          <h3 className="text-[10px] font-extrabold text-[#0B1528] uppercase tracking-widest font-montserrat">
-                            {cat.category}
+                          <div className="w-1.5 h-3.5 bg-[#D4541A] rounded-full shrink-0" />
+                          <h3 className="text-xs font-extrabold text-[#0B1528] uppercase tracking-widest font-montserrat">
+                            {cat.category || "GENERAL ITEMS"}
                           </h3>
                         </div>
                         <div className="flex flex-wrap gap-2">

@@ -129,7 +129,12 @@ const PERMISSIONS = [
   'station_payments.export',
   'station_payments.resend_receipt',
   'station_payments.manage_accounts',
-  'station_payments.verify_upi'
+  'station_payments.verify_upi',
+
+  // Website Management
+  'website.view',
+  'website.edit',
+  'website.publish'
 ];
 
 const ROLE_PERMISSIONS = {
@@ -212,7 +217,11 @@ const ROLE_PERMISSIONS = {
     'station_payments.export',
     'station_payments.resend_receipt',
     'station_payments.manage_accounts',
-    'station_payments.verify_upi'
+    'station_payments.verify_upi',
+    // Website Management
+    'website.view',
+    'website.edit',
+    'website.publish'
   ],
 
   sales: [

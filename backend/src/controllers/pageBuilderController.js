@@ -137,6 +137,58 @@ exports.getPublicPublishedLayout = async (req, res) => {
 
 const getDefaultSectionsForPage = (name) => {
   switch (name) {
+    case 'home':
+      return [
+        {
+          id: 'sec-hero-main',
+          type: 'hero',
+          name: 'Hero Header',
+          visible: true,
+          draft: {
+            tagline: 'EXPLORE. CONNECT. BELONG.',
+            headlinePrefix: 'Trips for the',
+            strikethroughWord: 'Ordinary',
+            rotatingWords: ['Adventurous', 'Curious', 'Wanderlust-Struck', 'Colleagues', 'Strangers'],
+            subheadline: 'Pick a month and explore group adventures that bring stories to life',
+            backgroundImage: 'https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=1800&q=85'
+          }
+        },
+        {
+          id: 'sec-featured_trips-main',
+          type: 'featured_trips',
+          name: 'Upcoming Group Trips',
+          visible: true,
+          draft: {}
+        },
+        {
+          id: 'sec-destinations-main',
+          type: 'destinations',
+          name: 'Popular Destinations',
+          visible: true,
+          draft: {}
+        },
+        {
+          id: 'sec-cta_slider-main',
+          type: 'cta_slider',
+          name: 'Media Banner Slider',
+          visible: true,
+          draft: {}
+        },
+        {
+          id: 'sec-reviews-main',
+          type: 'reviews',
+          name: 'What Travelers Say',
+          visible: true,
+          draft: {}
+        },
+        {
+          id: 'sec-recent_photos-main',
+          type: 'recent_photos',
+          name: 'Recent Photos From Our Trips',
+          visible: true,
+          draft: {}
+        }
+      ];
     case 'about-us':
       return [
         {
@@ -339,8 +391,146 @@ exports.publishLayout = async (req, res) => {
   }
 };
 
-// Stubs for other granular operations if needed by the UI
-exports.updateSection = async (req, res) => res.json({ success: true });
-exports.reorderSections = async (req, res) => res.json({ success: true });
-exports.toggleSectionVisibility = async (req, res) => res.json({ success: true });
-exports.duplicateSection = async (req, res) => res.json({ success: true });
+// Granular section update — merge content into a single section in the draft array
+exports.updateSection = async (req, res) => {
+  try {
+    const { name, sectionId } = req.params;
+    const { content, draft: draftContent, visible, name: sectionName } = req.body;
+
+    const page = await prisma.pageBuilder.findUnique({ where: { name } });
+    if (!page) {
+      return res.status(404).json({ success: false, message: 'Page not found' });
+    }
+
+    const sections = Array.isArray(page.draft) ? [...page.draft] : [];
+    const idx = sections.findIndex((s) => s && s.id === sectionId);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Section not found' });
+    }
+
+    // Merge provided fields
+    if (content !== undefined) sections[idx].content = content;
+    if (draftContent !== undefined) sections[idx].draft = draftContent;
+    if (visible !== undefined) sections[idx].visible = visible;
+    if (sectionName !== undefined) sections[idx].name = sectionName;
+
+    const updated = await prisma.pageBuilder.update({
+      where: { name },
+      data: { draft: sections, updatedAt: new Date() },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error(`🔥 [PageBuilder updateSection] name=${req.params.name}:`, error);
+    res.status(500).json({ success: false, message: 'Failed to update section', error: error.message });
+  }
+};
+
+// Reorder sections — accept [{ id, order }], sort draft array accordingly
+exports.reorderSections = async (req, res) => {
+  try {
+    const { name } = req.params;
+    const { orders } = req.body;
+
+    if (!Array.isArray(orders) || orders.length === 0) {
+      return res.status(400).json({ success: false, message: 'Orders array is required' });
+    }
+
+    const page = await prisma.pageBuilder.findUnique({ where: { name } });
+    if (!page) {
+      return res.status(404).json({ success: false, message: 'Page not found' });
+    }
+
+    const sections = Array.isArray(page.draft) ? [...page.draft] : [];
+
+    // Build order map: sectionId → desired order index
+    const orderMap = new Map();
+    for (const entry of orders) {
+      orderMap.set(entry.id, entry.order);
+    }
+
+    // Sort sections by the provided order; sections not in orderMap keep their current position at the end
+    sections.sort((a, b) => {
+      const orderA = orderMap.has(a?.id) ? orderMap.get(a.id) : Infinity;
+      const orderB = orderMap.has(b?.id) ? orderMap.get(b.id) : Infinity;
+      return orderA - orderB;
+    });
+
+    const updated = await prisma.pageBuilder.update({
+      where: { name },
+      data: { draft: sections, updatedAt: new Date() },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error(`🔥 [PageBuilder reorderSections] name=${req.params.name}:`, error);
+    res.status(500).json({ success: false, message: 'Failed to reorder sections', error: error.message });
+  }
+};
+
+// Toggle section visibility — flip the `visible` boolean
+exports.toggleSectionVisibility = async (req, res) => {
+  try {
+    const { name, sectionId } = req.params;
+
+    const page = await prisma.pageBuilder.findUnique({ where: { name } });
+    if (!page) {
+      return res.status(404).json({ success: false, message: 'Page not found' });
+    }
+
+    const sections = Array.isArray(page.draft) ? [...page.draft] : [];
+    const idx = sections.findIndex((s) => s && s.id === sectionId);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Section not found' });
+    }
+
+    sections[idx].visible = sections[idx].visible === false ? true : false;
+
+    const updated = await prisma.pageBuilder.update({
+      where: { name },
+      data: { draft: sections, updatedAt: new Date() },
+    });
+
+    res.json({ success: true, data: updated, toggled: sections[idx].visible });
+  } catch (error) {
+    console.error(`🔥 [PageBuilder toggleVisibility] name=${req.params.name}:`, error);
+    res.status(500).json({ success: false, message: 'Failed to toggle section visibility', error: error.message });
+  }
+};
+
+// Duplicate section — deep clone with new unique ID, insert right after original
+exports.duplicateSection = async (req, res) => {
+  try {
+    const { name, sectionId } = req.params;
+
+    const page = await prisma.pageBuilder.findUnique({ where: { name } });
+    if (!page) {
+      return res.status(404).json({ success: false, message: 'Page not found' });
+    }
+
+    const sections = Array.isArray(page.draft) ? [...page.draft] : [];
+    const idx = sections.findIndex((s) => s && s.id === sectionId);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Section not found' });
+    }
+
+    const original = sections[idx];
+    const clone = JSON.parse(JSON.stringify(original));
+    clone.id = `sec-${original.type || 'dup'}-${Date.now()}`;
+    clone.name = `${clone.name || 'Section'} (Copy)`;
+
+    // Insert clone right after the original
+    sections.splice(idx + 1, 0, clone);
+
+    const updated = await prisma.pageBuilder.update({
+      where: { name },
+      data: { draft: sections, updatedAt: new Date() },
+    });
+
+    res.json({ success: true, data: updated, duplicatedSection: clone });
+  } catch (error) {
+    console.error(`🔥 [PageBuilder duplicateSection] name=${req.params.name}:`, error);
+    res.status(500).json({ success: false, message: 'Failed to duplicate section', error: error.message });
+  }
+};
+
