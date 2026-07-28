@@ -484,7 +484,7 @@ export default function CommunityTrips({
       </div>
 
       {/* Month Selector Pill Bar */}
-      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-3 sm:mb-4">
+      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-1 sm:mb-1.5">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-center gap-2 sm:gap-3 bg-white border border-zinc-200/80 rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-2.5 sm:p-3.5">
             <button
@@ -534,7 +534,7 @@ export default function CommunityTrips({
       </div>
 
       {/* Trip Cards Carousel Container */}
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 md:px-14 lg:px-16 relative group pb-10 pt-1">
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 md:px-14 lg:px-16 relative group pb-10 pt-0">
         {/* Scrollable Trips Carousel */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
