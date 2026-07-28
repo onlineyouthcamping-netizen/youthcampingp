@@ -46,12 +46,17 @@ export default function PhotoGalleryModal({
 
   const tripPhotos = [heroImage, ...(images || [])].filter((p): p is string => Boolean(p));
   
+  const parsePhotoObj = (raw: string) => {
+    const parts = (raw || '').split('|');
+    return { url: parts[0], caption: parts.slice(1).join('|').trim() };
+  };
+
   const tabs = [
-    { id: "Trip", label: "Trip", photos: tripPhotos.map(p => p.split('|')[0]) },
+    { id: "Trip", label: "Trip", photos: tripPhotos.map(parsePhotoObj) },
     ...(itinerary || []).map(day => ({
       id: `Day ${day.day}`,
       label: `Day ${day.day}`,
-      photos: (day.photos || []).map(p => p.split('|')[0])
+      photos: (day.photos || []).map(parsePhotoObj)
     })).filter(tab => tab.photos.length > 0)
   ];
 
@@ -127,12 +132,17 @@ export default function PhotoGalleryModal({
                   className="relative mb-2.5 rounded-xl overflow-hidden bg-zinc-100 group break-inside-avoid"
                 >
                   <OptimizedImage
-                    src={errorImages[photo] ? FALLBACK : (normalizeImageUrl(photo) || FALLBACK)}
-                    alt={`Photo ${i + 1}`}
+                    src={errorImages[photo.url] ? FALLBACK : (normalizeImageUrl(photo.url) || FALLBACK)}
+                    alt={photo.caption || `Photo ${i + 1}`}
                     className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     width={600}
                     height={400}
                   />
+                  {photo.caption && (
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 pt-4">
+                      <p className="text-[11px] font-bold text-white truncate font-montserrat">{photo.caption}</p>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>

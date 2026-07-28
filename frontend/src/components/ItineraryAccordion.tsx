@@ -258,7 +258,10 @@ export default function ItineraryAccordion({
 
                     const parsedPhotos = rawItems.map((item: any, idx: number) => {
                       if (typeof item === 'string') {
-                        return { url: normalizeImageUrl(item), caption: '', tag: null };
+                        const parts = item.split('|');
+                        const url = parts[0];
+                        const caption = parts.slice(1).join('|').trim();
+                        return { url: normalizeImageUrl(url), caption, tag: null };
                       }
                       if (item && typeof item === 'object') {
                         const rawUrl = item.url || item.src || item.path || '';
