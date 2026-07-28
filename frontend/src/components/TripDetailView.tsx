@@ -44,7 +44,7 @@ export default function TripDetailView({ trip }: TripDetailViewProps) {
       </div>
 
       <div id="highlights">
-        <TripHighlightsList items={trip.highlights || trip.attractions || []} />
+        <TripHighlightsList items={(trip.gallery && trip.gallery.length > 0) ? trip.gallery : ((trip.images && trip.images.length > 0) ? trip.images : (trip.highlights || trip.attractions || []))} />
       </div>
 
       <div id="stay">

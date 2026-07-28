@@ -13,6 +13,8 @@ interface HighlightItem {
   image?: string;
   img?: string;
   url?: string;
+  src?: string;
+  path?: string;
 }
 
 interface TripHighlightsListProps {
@@ -41,7 +43,8 @@ export default function TripHighlightsList({ title = "Trip Highlights", items, d
 
   const baseUrls = rawList.map((item, idx) => {
     if (typeof item === "string") return item;
-    return item.image || item.img || item.url || defaultSliderPhotos[idx % defaultSliderPhotos.length];
+    const rawUrl = item.url || item.image || item.img || item.src || item.path || "";
+    return rawUrl || defaultSliderPhotos[idx % defaultSliderPhotos.length];
   });
 
   // Duplicate list to create a 100% continuous infinite loop
