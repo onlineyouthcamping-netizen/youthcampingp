@@ -421,47 +421,64 @@ exports.getTrip = async (req, res, next) => {
  */
 const sanitizeTripData = (data) => {
   if (!data) return {};
-  const sanitized = { ...data };
   
-  // List of relation fields and non-db/ui-only fields to exclude
-  const fieldsToRemove = [
-    'features',
-    'overview',
-    'tripCode',
-    'bookings',
-    'assignments',
-    'guideAssignments',
-    'trainTemplates',
-    'opsHotelBookings',
-    'opsTransportFleets',
-    'opsGuidePayments',
-    'opsMiscExpenses',
-    'opsSeatConfigs',
-    'opsChecklists',
-    'opsIncidents',
-    'opsRoomAllocations',
-    'opsVehicleAllocations',
-    'opsDayItineraries',
-    'opsTripExpenses',
-    'opsAllocationRuns',
-    'opsRoomInventories',
-    'opsTripLeaders',
-    'ticketingSops',
-    'ticketingLinks',
-    'itineraries',
-    'tripSops',
-    'tripDocuments',
-    'tripGalleries',
-    'tripNotes',
-    'reviews',
-    'createdAt',
-    'updatedAt',
-    '__v'
-  ];
+  // Whitelist of valid scalar fields on the Trip model in DB
+  const validFields = new Set([
+    'title',
+    'shortName',
+    'slug',
+    'location',
+    'price',
+    'duration',
+    'description',
+    'category',
+    'isActive',
+    'status',
+    'heroImage',
+    'images',
+    'itinerary',
+    'availableDates',
+    'variants',
+    'travelOptions',
+    'roomOptions',
+    'seo',
+    'highlights',
+    'inclusions',
+    'exclusions',
+    'faqs',
+    'addons',
+    'maxGroupSize',
+    'difficulty',
+    'departureCity',
+    'pickupCities',
+    'ageLimit',
+    'bookingUrl',
+    'customSections',
+    'attractions',
+    'activities',
+    'accommodations',
+    'popupDetails',
+    'route',
+    'ageGroup',
+    'maxAltitude',
+    'tripType',
+    'startEnd',
+    'pickupMode',
+    'stickyCardPrice',
+    'stickyCardLabel',
+    'gstPercentage',
+    'reels',
+    'tripReviews',
+    'itineraryVersions',
+    'order'
+  ]);
 
-  fieldsToRemove.forEach(field => {
-    delete sanitized[field];
-  });
+  const sanitized = {};
+  for (const key in data) {
+    if (validFields.has(key) && data[key] !== undefined) {
+      sanitized[key] = data[key];
+    }
+  }
 
   return sanitized;
 };
@@ -563,7 +580,6 @@ exports.updateTrip = async (req, res, next) => {
     delete updateData.id;
     delete updateData.tenantId;
     delete updateData.tripCode;
-    delete updateData.shortName;
     delete updateData.departurePriceOverrides; // Handled manually below
 
     if (updateData.price !== undefined) updateData.price = Number(updateData.price) || 0;
