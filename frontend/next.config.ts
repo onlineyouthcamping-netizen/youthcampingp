@@ -23,6 +23,14 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'youthcamping.online',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.youthcamping.in',
+      },
+      {
+        protocol: 'https',
+        hostname: 'youthcamping.in',
       }
     ],
   },
