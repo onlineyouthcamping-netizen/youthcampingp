@@ -484,7 +484,7 @@ export default function CommunityTrips({
       </div>
 
       {/* Month Selector Pill Bar */}
-      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-6 sm:mb-8">
+      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-8 sm:mb-12">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-center gap-2 sm:gap-3 bg-white border border-zinc-200/80 rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-2.5 sm:p-3.5">
             <button
@@ -534,16 +534,16 @@ export default function CommunityTrips({
       </div>
 
       {/* Trip Cards Carousel Container */}
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12 relative group pb-8">
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 md:px-14 lg:px-16 relative group pb-12 pt-4">
         {/* Scrollable Trips Carousel */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
             {[0, 1, 2, 3].map(i => <SkeletonCard key={i} />)}
           </div>
         ) : (
           <div 
             ref={tripCardsScrollRef}
-            className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 -mx-6 sm:-mx-8 md:-mx-12 px-6 sm:px-8 md:px-12 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x cursor-grab"
+            className="flex gap-6 sm:gap-8 overflow-x-auto pb-6 pt-3 px-1 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x cursor-grab"
           >
             {display.map((t, idx) => (
               <div key={t.id || idx} className="w-[72vw] min-w-[260px] max-w-[320px] sm:w-[310px] md:w-[330px] shrink-0 snap-start">
