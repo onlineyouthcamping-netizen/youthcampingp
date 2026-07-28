@@ -159,7 +159,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
         {/* BOTTOM PAGINATION DOTS FOR AESTHETIC AUTO-SLIDER */}
         {imagesList.length > 1 && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 pointer-events-auto">
-            {imagesList.slice(0, 5).map((_, dotIdx) => (
+            {imagesList.slice(0, 8).map((_, dotIdx) => (
               <button
                 key={dotIdx}
                 type="button"
