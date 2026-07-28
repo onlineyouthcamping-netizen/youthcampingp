@@ -9,6 +9,7 @@ const {
   updateUserPermissions,
   toggleUserActive,
   resetUserPassword,
+  deleteUser,
   listAuditLogs
 } = require('../controllers/adminUserController');
 const { protect, requirePermission, requireFounder, requireAdmin } = require('../middleware/auth');
@@ -79,6 +80,8 @@ router.put('/users/:id/role', protect, requireFounder, updateUserRole);
 router.put('/users/:id/permissions', protect, requireFounder, updateUserPermissions);
 router.put('/users/:id/toggle-active', protect, requireFounder, toggleUserActive);
 router.put('/users/:id/reset-password', protect, requireFounder, resetUserPassword);
+router.delete('/users/:id', protect, requireFounder, deleteUser);
+router.delete('/staff-profiles/:id', protect, requireFounder, deleteUser);
 
 // Audit Logging (Founder only)
 router.get('/audit-logs', protect, requireFounder, listAuditLogs);
