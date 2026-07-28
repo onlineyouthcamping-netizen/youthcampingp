@@ -162,6 +162,7 @@ exports.getPublicTripCards = async (req, res, next) => {
         slug: true,
         description: true,
         heroImage: true,
+        images: true,
         price: true,
         location: true,
         duration: true,
