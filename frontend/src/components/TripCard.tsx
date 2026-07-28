@@ -23,9 +23,10 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
     normalizeImageUrl(trip.heroImage) ||
     "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80";
 
-  // Build unique images list from Admin uploaded photos & location-matched aesthetic fallbacks
+  // Build unique images list STRICTLY from Admin uploaded trip.heroImage and trip.images
   const imagesList = (() => {
     const list: string[] = [];
+
     const heroNorm = normalizeImageUrl(trip.heroImage);
     if (heroNorm) list.push(heroNorm);
 
@@ -36,52 +37,21 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
       });
     }
 
-    // Add curated aesthetic photos for smooth auto-sliding if fewer than 3 photos are available
-    if (list.length < 3) {
-      const locLower = (trip.location || trip.title || "").toLowerCase();
-      let extraPhotos: string[] = [];
-
-      if (locLower.includes("spiti")) {
-        extraPhotos = [
-          "https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&q=80",
-          "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-          "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80"
-        ];
-      } else if (locLower.includes("kerala")) {
-        extraPhotos = [
-          "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&q=80",
-          "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=80",
-          "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80"
-        ];
-      } else if (locLower.includes("ladakh")) {
-        extraPhotos = [
-          "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80",
-          "https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800&q=80",
-          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80"
-        ];
-      } else {
-        extraPhotos = [
-          "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80",
-          "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
-          "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80"
-        ];
-      }
-
-      extraPhotos.forEach(p => {
-        if (!list.includes(p)) list.push(p);
-      });
+    // Fallback ONLY if zero images exist in DB/Admin
+    if (list.length === 0) {
+      list.push(heroImg);
     }
     return list;
   })();
 
-  // Staggered automatic photo slider across photos
+  // Staggered automatic photo slider across Admin-uploaded photos
   useEffect(() => {
     if (imagesList.length <= 1) return;
 
     const intervalMs = 3500;
     const intervalId = setInterval(() => {
       setCurrentImgIdx((prev) => (prev + 1) % imagesList.length);
-    }, intervalMs + ((index % 4) * 500));
+    }, intervalMs + ((index % 4) * 400));
 
     return () => clearInterval(intervalId);
   }, [imagesList.length, index]);
