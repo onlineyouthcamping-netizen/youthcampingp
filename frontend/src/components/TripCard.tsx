@@ -23,7 +23,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
     normalizeImageUrl(trip.heroImage) ||
     "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80";
 
-  // Build unique images list strictly from Admin uploaded trip.images and heroImage
+  // Build unique images list from Admin uploaded photos & location-matched aesthetic fallbacks
   const imagesList = (() => {
     const list: string[] = [];
     const heroNorm = normalizeImageUrl(trip.heroImage);
@@ -36,26 +36,57 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
       });
     }
 
-    // Fallback only if no heroImage and no images are uploaded
-    if (list.length === 0) {
-      list.push(heroImg);
+    // Add curated aesthetic photos for smooth auto-sliding if fewer than 3 photos are available
+    if (list.length < 3) {
+      const locLower = (trip.location || trip.title || "").toLowerCase();
+      let extraPhotos: string[] = [];
+
+      if (locLower.includes("spiti")) {
+        extraPhotos = [
+          "https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&q=80",
+          "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+          "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80"
+        ];
+      } else if (locLower.includes("kerala")) {
+        extraPhotos = [
+          "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&q=80",
+          "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=80",
+          "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80"
+        ];
+      } else if (locLower.includes("ladakh")) {
+        extraPhotos = [
+          "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80",
+          "https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800&q=80",
+          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80"
+        ];
+      } else {
+        extraPhotos = [
+          "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80",
+          "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
+          "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80"
+        ];
+      }
+
+      extraPhotos.forEach(p => {
+        if (!list.includes(p)) list.push(p);
+      });
     }
     return list;
   })();
 
-  // Staggered automatic photo slider across Admin-uploaded photos
+  // Staggered automatic photo slider across photos
   useEffect(() => {
     if (imagesList.length <= 1) return;
 
     const intervalMs = 3500;
     const intervalId = setInterval(() => {
       setCurrentImgIdx((prev) => (prev + 1) % imagesList.length);
-    }, intervalMs);
+    }, intervalMs + ((index % 4) * 500));
 
     return () => clearInterval(intervalId);
-  }, [imagesList.length]);
+  }, [imagesList.length, index]);
 
-  const activePhoto = imagesList[currentImgIdx % imagesList.length] || heroImg;
+  const activePhotoIndex = currentImgIdx % imagesList.length;
 
   // Location Badge (e.g., HIMACHAL, LADAKH, UTTARAKHAND, KERALA)
   const locationBadge = (trip.location || "HIMACHAL").toUpperCase();
@@ -132,13 +163,21 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
           onClick={onClick}
           aria-label={`View ${title}`}
         />
-        <Image
-          src={activePhoto}
-          alt={title}
-          fill
-          className="object-cover group-hover:scale-[1.04] transition-all duration-700 ease-in-out"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-        />
+
+        {/* AESTHETIC CROSSFADE PHOTO CAROUSEL */}
+        {imagesList.map((imgUrl, imgIdx) => (
+          <Image
+            key={imgIdx}
+            src={imgUrl}
+            alt={title}
+            fill
+            className={`object-cover group-hover:scale-[1.04] transition-all duration-700 ease-in-out ${
+              imgIdx === activePhotoIndex ? "opacity-100 z-0" : "opacity-0 -z-10"
+            }`}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            priority={imgIdx === 0}
+          />
+        ))}
 
         {/* TOP LEFT BADGE */}
         <div className="absolute top-3 left-3 z-20 pointer-events-none max-w-[85%]">
@@ -147,7 +186,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
           </span>
         </div>
 
-        {/* BOTTOM PAGINATION DOTS FOR ADMIN UPLOADED PHOTOS */}
+        {/* BOTTOM PAGINATION DOTS FOR AESTHETIC AUTO-SLIDER */}
         {imagesList.length > 1 && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 pointer-events-auto">
             {imagesList.slice(0, 5).map((_, dotIdx) => (
@@ -160,7 +199,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
                   setCurrentImgIdx(dotIdx);
                 }}
                 className={`rounded-full transition-all duration-300 cursor-pointer ${
-                  dotIdx === currentImgIdx
+                  dotIdx === activePhotoIndex
                     ? "w-2.5 h-2.5 bg-white shadow-md scale-110"
                     : "w-1.5 h-1.5 bg-white/60 backdrop-blur-sm hover:bg-white/90"
                 }`}
