@@ -48,7 +48,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
   useEffect(() => {
     if (imagesList.length <= 1) return;
 
-    const intervalMs = 3500;
+    const intervalMs = 5000;
     const intervalId = setInterval(() => {
       setCurrentImgIdx((prev) => (prev + 1) % imagesList.length);
     }, intervalMs + ((index % 4) * 400));
@@ -134,20 +134,52 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
           aria-label={`View ${title}`}
         />
 
-        {/* AESTHETIC CROSSFADE PHOTO CAROUSEL */}
-        {imagesList.map((imgUrl, imgIdx) => (
-          <Image
-            key={imgIdx}
-            src={imgUrl}
-            alt={title}
-            fill
-            className={`object-cover group-hover:scale-[1.04] transition-all duration-700 ease-in-out ${
-              imgIdx === activePhotoIndex ? "opacity-100 z-0" : "opacity-0 -z-10"
-            }`}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            priority={imgIdx === 0}
-          />
-        ))}
+        {/* CINEMATIC KEN BURNS PHOTO CAROUSEL */}
+        {imagesList.map((imgUrl, imgIdx) => {
+          const isActive = imgIdx === activePhotoIndex;
+          // Each photo gets a unique zoom direction for cinematic variety
+          const kenBurnsVariants = [
+            'origin-top-left scale-100',      // zoom from top-left
+            'origin-bottom-right scale-100',   // zoom from bottom-right
+            'origin-center scale-100',         // zoom from center
+            'origin-top-right scale-100',      // zoom from top-right
+            'origin-bottom-left scale-100',    // zoom from bottom-left
+            'origin-top scale-100',            // zoom from top
+            'origin-bottom scale-100',         // zoom from bottom
+            'origin-left scale-100',           // zoom from left
+          ];
+          const kenBurnsActive = [
+            'origin-top-left scale-[1.12]',
+            'origin-bottom-right scale-[1.12]',
+            'origin-center scale-[1.08]',
+            'origin-top-right scale-[1.12]',
+            'origin-bottom-left scale-[1.12]',
+            'origin-top scale-[1.10]',
+            'origin-bottom scale-[1.10]',
+            'origin-left scale-[1.10]',
+          ];
+          const variantIdx = imgIdx % kenBurnsVariants.length;
+
+          return (
+            <div
+              key={imgIdx}
+              className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${
+                isActive ? 'opacity-100 z-[1]' : 'opacity-0 z-0'
+              }`}
+            >
+              <Image
+                src={imgUrl}
+                alt={title}
+                fill
+                className={`object-cover transition-transform duration-[6000ms] ease-out will-change-transform ${
+                  isActive ? kenBurnsActive[variantIdx] : kenBurnsVariants[variantIdx]
+                }`}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                priority={imgIdx === 0}
+              />
+            </div>
+          );
+        })}
 
         {/* TOP LEFT BADGE */}
         <div className="absolute top-3 left-3 z-20 pointer-events-none max-w-[85%]">
