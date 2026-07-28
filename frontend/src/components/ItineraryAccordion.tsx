@@ -260,8 +260,20 @@ export default function ItineraryAccordion({
                       if (typeof item === 'string') {
                         const parts = item.split('|');
                         const url = parts[0];
-                        const caption = parts.slice(1).join('|').trim();
-                        return { url: normalizeImageUrl(url), caption, tag: null };
+                        let caption = parts[1] || '';
+                        let tag: 'included' | 'self-paid' | null = null;
+                        
+                        if (parts[2]) {
+                          caption = parts[1];
+                          const rawTag = parts[2].toLowerCase();
+                          if (rawTag === 'included') tag = 'included';
+                          else if (rawTag === 'self-paid' || rawTag === 'selfpaid') tag = 'self-paid';
+                        } else if (parts[1] === 'included' || parts[1] === 'self-paid') {
+                          caption = '';
+                          tag = parts[1] === 'included' ? 'included' : 'self-paid';
+                        }
+
+                        return { url: normalizeImageUrl(url), caption, tag };
                       }
                       if (item && typeof item === 'object') {
                         const rawUrl = item.url || item.src || item.path || '';
