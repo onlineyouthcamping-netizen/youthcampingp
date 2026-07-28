@@ -41,14 +41,16 @@ export default function TripHighlightsList({ title = "Trip Highlights", items, d
 
   const rawList = (items && items.length > 0) ? items : (defaultItems && defaultItems.length > 0 ? defaultItems : defaultSliderPhotos);
 
-  const baseUrls = rawList.map((item, idx) => {
-    if (typeof item === "string") return item;
+  const baseUrls = rawList.map((item) => {
+    if (typeof item === "string") return normalizeImageUrl(item);
     const rawUrl = item.url || item.image || item.img || item.src || item.path || "";
-    return rawUrl || defaultSliderPhotos[idx % defaultSliderPhotos.length];
-  });
+    return rawUrl ? normalizeImageUrl(rawUrl) : "";
+  }).filter(Boolean);
+
+  const finalUrls = baseUrls.length > 0 ? baseUrls : defaultSliderPhotos;
 
   // Duplicate list to create a 100% continuous infinite loop
-  const photoUrls = [...baseUrls, ...baseUrls];
+  const photoUrls = [...finalUrls, ...finalUrls];
 
   const handlePhotoClick = (index: number) => {
     setSelectedIndex(index % baseUrls.length);
