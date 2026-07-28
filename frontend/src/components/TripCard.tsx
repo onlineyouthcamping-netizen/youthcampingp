@@ -23,61 +23,27 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
     normalizeImageUrl(trip.heroImage) ||
     "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80";
 
-  // Build unique images list for auto photo carousel per card
+  // Build unique images list strictly from Admin uploaded trip.images and heroImage
   const imagesList = (() => {
-    const list: string[] = [heroImg];
+    const list: string[] = [];
+    const heroNorm = normalizeImageUrl(trip.heroImage);
+    if (heroNorm) list.push(heroNorm);
+
     if (trip.images && Array.isArray(trip.images)) {
       trip.images.forEach((img) => {
         const norm = normalizeImageUrl(img);
         if (norm && !list.includes(norm)) list.push(norm);
       });
     }
-    if (list.length === 1) {
-      const cardKey = index % 4;
-      if (cardKey === 0) {
-        list.push("https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&q=80");
-        list.push("https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80");
-      } else if (cardKey === 1) {
-        list.push("https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&q=80");
-        list.push("https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=80");
-      } else if (cardKey === 2) {
-        list.push("https://images.unsplash.com/photo-1605640840605-14ac1855827b?w=800&q=80");
-        list.push("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80");
-      } else {
-        list.push("https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80");
-        list.push("https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800&q=80");
-      }
+
+    // Fallback only if no heroImage and no images are uploaded
+    if (list.length === 0) {
+      list.push(heroImg);
     }
     return list;
   })();
 
-  // Staggered synchronized auto-slide effect across trip cards
-  useEffect(() => {
-    if (imagesList.length <= 1) return;
-
-    const intervalMs = 3500;
-    const updateSync = () => {
-      const step = Math.floor(Date.now() / intervalMs);
-      setCurrentImgIdx((step + index) % imagesList.length);
-    };
-
-    updateSync();
-
-    const delayToNextBoundary = intervalMs - (Date.now() % intervalMs);
-    let intervalId: ReturnType<typeof setInterval>;
-
-    const timeoutId = setTimeout(() => {
-      updateSync();
-      intervalId = setInterval(updateSync, intervalMs);
-    }, delayToNextBoundary);
-
-    return () => {
-      clearTimeout(timeoutId);
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [imagesList.length]);
-
-  const activePhoto = imagesList[currentImgIdx] || heroImg;
+  const activePhoto = imagesList[currentImgIdx % imagesList.length] || heroImg;
 
   // Location Badge (e.g., HIMACHAL, LADAKH, UTTARAKHAND, KERALA)
   const locationBadge = (trip.location || "HIMACHAL").toUpperCase();
@@ -169,19 +135,27 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
           </span>
         </div>
 
-        {/* BOTTOM PAGINATION DOTS */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 pointer-events-none">
-          {imagesList.slice(0, 5).map((_, dotIdx) => (
-            <div
-              key={dotIdx}
-              className={`rounded-full transition-all duration-300 ${
-                dotIdx === currentImgIdx
-                  ? "w-2.5 h-2.5 bg-white shadow-md scale-110"
-                  : "w-1.5 h-1.5 bg-white/60 backdrop-blur-sm"
-              }`}
-            />
-          ))}
-        </div>
+        {/* BOTTOM PAGINATION DOTS FOR ADMIN UPLOADED PHOTOS */}
+        {imagesList.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 pointer-events-auto">
+            {imagesList.slice(0, 5).map((_, dotIdx) => (
+              <button
+                key={dotIdx}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setCurrentImgIdx(dotIdx);
+                }}
+                className={`rounded-full transition-all duration-300 cursor-pointer ${
+                  dotIdx === currentImgIdx
+                    ? "w-2.5 h-2.5 bg-white shadow-md scale-110"
+                    : "w-1.5 h-1.5 bg-white/60 backdrop-blur-sm hover:bg-white/90"
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* LOWER WHITE CARD CONTENT CONTAINER WITH GENEROUS SIDE WHITESPACE PADDING */}
