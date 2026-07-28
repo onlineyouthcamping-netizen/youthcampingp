@@ -59,13 +59,13 @@ const defaultStaysList: Accommodation[] = [
     starRating: "Authentic Stay",
     roomType: "Triple Sharing",
     meals: "Local Organic Meals",
-    image: "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200",
+    image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=1200",
     amenities: ["Hot Water Geyser", "Attached Washrooms", "Traditional Wood Architecture", "Home-cooked Himalayan Food", "Bonfire Area"],
     gallery: [
       { url: "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1200", category: "Interior / Rooms", title: "Wooden Panelled Alpine Bedroom" },
       { url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200", category: "Bathroom", title: "Attached Western Bathroom with Geyser" },
       { url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200", category: "Dining Area", title: "Traditional Dining Room" },
-      { url: "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200", category: "Property & Views", title: "Snow Valley Balcony View" }
+      { url: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=1200", category: "Property & Views", title: "Snow Valley Balcony View" }
     ]
   },
   {

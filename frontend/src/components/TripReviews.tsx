@@ -103,11 +103,11 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
       </div>
 
       {/* Homepage Style Cards Grid */}
-      <div className="flex sm:grid sm:grid-cols-3 gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x flex-nowrap sm:flex-wrap">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 py-2">
         {displayList.map((rev) => (
           <div
             key={rev.id}
-            className="flex-none snap-start w-[76vw] min-w-[250px] sm:w-auto bg-white border border-zinc-200/80 rounded-[28px] overflow-hidden p-5 sm:p-6 pb-0 sm:pb-0 shadow-[0_6px_24px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] transition-all duration-300 flex flex-col justify-between"
+            className="w-full bg-white border border-zinc-200/80 rounded-[28px] overflow-hidden p-5 sm:p-6 pb-0 sm:pb-0 shadow-[0_6px_24px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] transition-all duration-300 flex flex-col justify-between"
           >
             <div>
               {/* USER HEADER ROW */}
