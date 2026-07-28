@@ -48,10 +48,10 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
   useEffect(() => {
     if (imagesList.length <= 1) return;
 
-    const intervalMs = 5000;
+    const intervalMs = 3000;
     const intervalId = setInterval(() => {
       setCurrentImgIdx((prev) => (prev + 1) % imagesList.length);
-    }, intervalMs + ((index % 4) * 400));
+    }, intervalMs);
 
     return () => clearInterval(intervalId);
   }, [imagesList.length, index]);
@@ -163,7 +163,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
           return (
             <div
               key={imgIdx}
-              className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${
+              className={`absolute inset-0 transition-opacity duration-[400ms] ease-in-out ${
                 isActive ? 'opacity-100 z-[1]' : 'opacity-0 z-0'
               }`}
             >
@@ -171,7 +171,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
                 src={imgUrl}
                 alt={title}
                 fill
-                className={`object-cover transition-transform duration-[6000ms] ease-out will-change-transform ${
+                className={`object-cover transition-transform duration-[3000ms] ease-out will-change-transform ${
                   isActive ? kenBurnsActive[variantIdx] : kenBurnsVariants[variantIdx]
                 }`}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
