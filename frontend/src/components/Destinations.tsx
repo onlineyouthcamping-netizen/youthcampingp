@@ -107,7 +107,7 @@ export default function Destinations({
   };
 
   return (
-    <section className="popular-destinations popular-section destinations-grid py-8 md:py-10 font-montserrat overflow-hidden" style={{ backgroundColor: '#F5F5F5' }}>
+    <section className="popular-destinations popular-section destinations-grid py-6 sm:py-8 font-montserrat overflow-hidden" style={{ backgroundColor: '#F5F5F5' }}>
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
         {/* HEADER ROW - FITS TITLE ON ONE LINE */}
@@ -142,7 +142,7 @@ export default function Destinations({
         {/* DESTINATION PORTRAIT CARDS SLIDER WITH NAME OVERLAY & INQUIRY FORM CLICK */}
         <div
           ref={scrollRef}
-          className="flex gap-4 sm:gap-5 overflow-x-auto no-scrollbar py-3 px-1 scroll-smooth"
+          className="flex gap-3.5 sm:gap-5 overflow-x-auto no-scrollbar py-2 px-1 scroll-smooth touch-manipulation"
         >
           {displayItems.map((item, idx) => (
             <motion.div
@@ -152,15 +152,15 @@ export default function Destinations({
               transition={{ delay: idx * 0.07, duration: 0.5 }}
               viewport={{ once: true }}
               onClick={() => setSelectedDest(item)}
-              className="group relative flex-none snap-start w-[190px] sm:w-[215px] md:w-[230px] aspect-[9/16] rounded-[24px] overflow-hidden bg-zinc-900 shadow-[0_8px_25px_rgba(0,0,0,0.12)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.22)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer isolate"
+              className="group relative flex-none snap-start w-[140px] sm:w-[170px] md:w-[190px] aspect-[9/13.5] rounded-2xl overflow-hidden bg-zinc-900 shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer isolate"
             >
               {/* DESTINATION BACKGROUND IMAGE */}
               <Image
                 src={item.img}
                 alt={item.name}
                 fill
-                sizes="(max-width: 640px) 190px, 230px"
-                className="object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
+                sizes="(max-width: 640px) 140px, 190px"
+                className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
               />
             </motion.div>
           ))}

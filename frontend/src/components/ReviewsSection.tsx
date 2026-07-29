@@ -170,57 +170,57 @@ export default function ReviewsSection({
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1, duration: 0.5 }}
                 viewport={{ once: true }}
-                className="flex-none snap-start w-[68vw] min-w-[260px] max-w-[340px] sm:w-[380px] md:w-[420px] bg-white border border-zinc-200/80 rounded-[28px] overflow-hidden p-5 sm:p-6 pb-0 sm:pb-0 shadow-[0_6px_24px_rgba(0,0,0,0.05)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] transition-all duration-300 flex flex-col justify-between"
+                className="flex-none snap-start w-[56vw] min-w-[210px] max-w-[275px] sm:w-[310px] md:w-[340px] bg-white border border-zinc-200/80 rounded-2xl overflow-hidden p-3.5 sm:p-4.5 pb-0 sm:pb-0 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   {/* USER HEADER ROW */}
-                  <div className="flex items-start gap-3.5 mb-3.5">
-                    <div className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full overflow-hidden shrink-0 border border-zinc-100 shadow-2xs">
+                  <div className="flex items-start gap-2.5 mb-2.5">
+                    <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden shrink-0 border border-zinc-100 shadow-2xs">
                       <Image
                         src={rev.avatar}
                         alt={rev.name}
                         fill
-                        sizes="56px"
+                        sizes="44px"
                         className="object-cover"
                       />
                     </div>
 
                     <div className="flex flex-col min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h3 className="font-bold text-[#111827] text-[16px] sm:text-[17px] leading-tight font-montserrat capitalize">
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <h3 className="font-bold text-[#111827] text-sm sm:text-base leading-tight font-montserrat capitalize">
                           {rev.name}
                         </h3>
                         {rev.badge && (
-                          <span className="text-[#888888] font-medium text-[13px] sm:text-[14px]">
+                          <span className="text-[#888888] font-medium text-[11px] sm:text-xs">
                             {rev.badge}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1 mt-1 text-[13px] sm:text-[14px] text-[#777777]">
+                      <div className="flex items-center gap-1 mt-0.5 text-xs text-[#777777]">
                         <span>Booked:</span>
                         <span className="font-bold text-[#111827] flex items-center gap-0.5 truncate hover:text-[#D4541A] transition-colors cursor-pointer">
                           {rev.tripName}
-                          <ExternalLink className="w-3.5 h-3.5 text-[#111827] inline shrink-0" />
+                          <ExternalLink className="w-3 h-3 text-[#111827] inline shrink-0" />
                         </span>
                       </div>
                     </div>
                   </div>
 
                   {/* RATING STARS */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-0.5">
                       {[...Array(rev.rating || 5)].map((_, i) => (
-                        <Star key={i} className="w-[17px] h-[17px] fill-[#FFB800] text-[#FFB800]" />
+                        <Star key={i} className="w-3.5 h-3.5 fill-[#FFB800] text-[#FFB800]" />
                       ))}
                     </div>
-                    <span className="text-[#777777] font-medium text-xs sm:text-[13px]">
+                    <span className="text-[#777777] font-medium text-[11px] sm:text-xs">
                       {rev.date}
                     </span>
                   </div>
 
                   {/* COMMENT */}
-                  <p className="text-[#1B2A4A] font-normal text-[14px] sm:text-[15px] leading-[1.55] line-clamp-4 mb-4 font-montserrat">
+                  <p className="text-[#1B2A4A] font-normal text-xs sm:text-sm leading-snug line-clamp-3 mb-2.5 font-montserrat">
                     {rev.comment}{" "}
                     <button
                       onClick={() => setSelectedReview(rev)}
@@ -233,7 +233,7 @@ export default function ReviewsSection({
 
                 {/* DYNAMIC PHOTO GALLERY GRID */}
                 {photoList.length > 0 && (
-                  <div className="-mx-5 -mb-5 sm:-mx-6 sm:-mb-6 mt-3 overflow-hidden rounded-b-[27px] bg-zinc-100">
+                  <div className="-mx-3.5 -mb-3.5 sm:-mx-4.5 sm:-mb-4.5 mt-2 overflow-hidden rounded-b-2xl bg-zinc-100">
                     {photoList.length === 1 ? (
                       /* SINGLE PHOTO */
                       <div
