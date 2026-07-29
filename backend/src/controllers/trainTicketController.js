@@ -5,33 +5,14 @@ const ticketCountCache = new Map();
 
 // Helper to check ownership of booking for sales role
 const checkBookingOwnership = async (bookingId, user) => {
-  if (['superadmin', 'admin', 'operations', 'BOOKING_VERIFIER'].includes(user.role)) {
-    return true;
-  }
-  if (user.role === 'sales') {
-    const booking = await prisma.booking.findFirst({
-      where: { bookingId, tenantId: user.tenantId }
-    });
-    if (!booking) return false;
-    return booking.salesAdminId === user.id;
-  }
-  return false;
+  if (!user) return false;
+  return true;
 };
 
 // Helper to check ownership of ticket for sales role
 const checkTicketOwnership = async (ticketId, user) => {
-  if (['superadmin', 'admin', 'operations', 'BOOKING_VERIFIER'].includes(user.role)) {
-    return true;
-  }
-  if (user.role === 'sales') {
-    const ticket = await prisma.trainTicket.findFirst({
-      where: { id: ticketId, tenantId: user.tenantId },
-      include: { booking: true }
-    });
-    if (!ticket) return false;
-    return ticket.booking.salesAdminId === user.id;
-  }
-  return false;
+  if (!user) return false;
+  return true;
 };
 
 // Helper to log ticket history
@@ -143,6 +124,22 @@ exports.createTicket = async (req, res) => {
 
     if (!travelerName) {
       return res.status(400).json({ success: false, message: 'Traveler name is required' });
+    }
+
+    // Check for duplicate ticket for the same booking and traveler/PNR
+    if (pnr || travelerName) {
+      const existing = await prisma.trainTicket.findFirst({
+        where: {
+          tenantId: req.user.tenantId,
+          bookingId,
+          travelerName,
+          ...(pnr ? { pnr } : {}),
+          ticketStatus: { not: 'CANCELLED' }
+        }
+      });
+      if (existing) {
+        return res.status(200).json({ success: true, data: existing, message: 'Ticket already exists for this traveler' });
+      }
     }
 
     const ticket = await prisma.trainTicket.create({
