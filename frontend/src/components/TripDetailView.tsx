@@ -26,7 +26,10 @@ export default function TripDetailView({ trip }: TripDetailViewProps) {
   return (
     <div className="lg:col-span-8 space-y-8 md:space-y-16">
       <div id="about">
-        <AboutTrip description={trip.description || ""} />
+        <AboutTrip 
+          description={trip.description || ""} 
+          customAboutTrip={(trip.customSections as any)?.aboutTrip}
+        />
       </div>
       
       <div id="itinerary">

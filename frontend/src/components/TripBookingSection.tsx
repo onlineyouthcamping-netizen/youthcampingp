@@ -21,9 +21,10 @@ export default function TripBookingSection({ trip, onPriceChange, onDateSelect }
     if (onDateSelect) onDateSelect(date);
   };
 
-  const currentSkipDays = (Array.isArray(trip.variants) && trip.variants[variantIndex]) 
-    ? (trip.variants[variantIndex]?.skipDays || 0) 
-    : 0;
+  const activeVariant = (Array.isArray(trip.variants) && trip.variants[variantIndex]) ? trip.variants[variantIndex] : null;
+  const activeItinerary = (activeVariant && Array.isArray(activeVariant.itinerary) && activeVariant.itinerary.length > 0)
+    ? activeVariant.itinerary
+    : trip.itinerary;
 
   return (
     <div className="space-y-12 md:space-y-16">
@@ -36,7 +37,7 @@ export default function TripBookingSection({ trip, onPriceChange, onDateSelect }
       
       <section id="itinerary" className="scroll-mt-32">
         <ItineraryAccordion 
-          itinerary={trip.itinerary} 
+          itinerary={activeItinerary} 
           startDate={selectedDate}
           skipDays={currentSkipDays}
         />
