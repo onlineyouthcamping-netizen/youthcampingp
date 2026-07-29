@@ -133,7 +133,7 @@ export default function RecentPhotosSection({
   };
 
   return (
-    <section className="py-8 md:py-10 font-montserrat overflow-hidden bg-[#F5F5F5]">
+    <section className="py-8 md:py-10 font-montserrat overflow-hidden bg-white">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
         {/* HEADER ROW - FITS TITLE ON ONE LINE */}
