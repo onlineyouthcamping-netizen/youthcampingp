@@ -409,7 +409,7 @@ Whether you are seeking thrilling ski slopes in Gulmarg, peaceful morning rides 
 
 export async function fetchPageBySlug(slug: string, init?: PublicRequestInit): Promise<any | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/page-builder/public/${slug}`, init ?? publicRevalidate(60));
+    const res = await fetch(`${API_BASE_URL}/page-builder/public/${slug}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const json = await res.json();
 
