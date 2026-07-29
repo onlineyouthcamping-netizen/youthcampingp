@@ -23,61 +23,40 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
     normalizeImageUrl(trip.heroImage) ||
     "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80";
 
-  // Build unique images list for auto photo carousel per card
+  // Build unique images list STRICTLY from Admin uploaded trip.heroImage and trip.images
   const imagesList = (() => {
-    const list: string[] = [heroImg];
+    const list: string[] = [];
+
+    const heroNorm = normalizeImageUrl(trip.heroImage);
+    if (heroNorm) list.push(heroNorm);
+
     if (trip.images && Array.isArray(trip.images)) {
       trip.images.forEach((img) => {
         const norm = normalizeImageUrl(img);
         if (norm && !list.includes(norm)) list.push(norm);
       });
     }
-    if (list.length === 1) {
-      const cardKey = index % 4;
-      if (cardKey === 0) {
-        list.push("https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&q=80");
-        list.push("https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80");
-      } else if (cardKey === 1) {
-        list.push("https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&q=80");
-        list.push("https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=80");
-      } else if (cardKey === 2) {
-        list.push("https://images.unsplash.com/photo-1605640840605-14ac1855827b?w=800&q=80");
-        list.push("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80");
-      } else {
-        list.push("https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80");
-        list.push("https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800&q=80");
-      }
+
+    if (list.length === 0) {
+      list.push(heroImg);
     }
+
     return list;
   })();
 
-  // Staggered synchronized auto-slide effect across trip cards
+  // Staggered automatic photo slider across Admin-uploaded photos
   useEffect(() => {
     if (imagesList.length <= 1) return;
 
-    const intervalMs = 3500;
-    const updateSync = () => {
-      const step = Math.floor(Date.now() / intervalMs);
-      setCurrentImgIdx((step + index) % imagesList.length);
-    };
+    const intervalMs = 3000;
+    const intervalId = setInterval(() => {
+      setCurrentImgIdx((prev) => (prev + 1) % imagesList.length);
+    }, intervalMs);
 
-    updateSync();
+    return () => clearInterval(intervalId);
+  }, [imagesList.length, index]);
 
-    const delayToNextBoundary = intervalMs - (Date.now() % intervalMs);
-    let intervalId: ReturnType<typeof setInterval>;
-
-    const timeoutId = setTimeout(() => {
-      updateSync();
-      intervalId = setInterval(updateSync, intervalMs);
-    }, delayToNextBoundary);
-
-    return () => {
-      clearTimeout(timeoutId);
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [imagesList.length]);
-
-  const activePhoto = imagesList[currentImgIdx] || heroImg;
+  const activePhotoIndex = currentImgIdx % imagesList.length;
 
   // Location Badge (e.g., HIMACHAL, LADAKH, UTTARAKHAND, KERALA)
   const locationBadge = (trip.location || "HIMACHAL").toUpperCase();
@@ -138,7 +117,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
   })();
 
   const title = trip.title || "Manali Kasol Amritsar Backpacking Trip";
-  const tagline = trip.description || "Get ready for an unforgettable...";
+  const tagline = (trip.description || "Get ready for an unforgettable...").replace(/<[^>]*>/g, '').trim();
 
   return (
     <div className={`trip-card group relative flex flex-col w-full hover:-translate-y-1.5 transition-all duration-300 ${className || ""}`}>
@@ -154,13 +133,53 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
           onClick={onClick}
           aria-label={`View ${title}`}
         />
-        <Image
-          src={activePhoto}
-          alt={title}
-          fill
-          className="object-cover group-hover:scale-[1.04] transition-all duration-700 ease-in-out"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-        />
+
+        {/* CINEMATIC KEN BURNS PHOTO CAROUSEL */}
+        {imagesList.map((imgUrl, imgIdx) => {
+          const isActive = imgIdx === activePhotoIndex;
+          // Each photo gets a unique zoom direction for cinematic variety
+          const kenBurnsVariants = [
+            'origin-top-left scale-100',      // zoom from top-left
+            'origin-bottom-right scale-100',   // zoom from bottom-right
+            'origin-center scale-100',         // zoom from center
+            'origin-top-right scale-100',      // zoom from top-right
+            'origin-bottom-left scale-100',    // zoom from bottom-left
+            'origin-top scale-100',            // zoom from top
+            'origin-bottom scale-100',         // zoom from bottom
+            'origin-left scale-100',           // zoom from left
+          ];
+          const kenBurnsActive = [
+            'origin-top-left scale-[1.12]',
+            'origin-bottom-right scale-[1.12]',
+            'origin-center scale-[1.08]',
+            'origin-top-right scale-[1.12]',
+            'origin-bottom-left scale-[1.12]',
+            'origin-top scale-[1.10]',
+            'origin-bottom scale-[1.10]',
+            'origin-left scale-[1.10]',
+          ];
+          const variantIdx = imgIdx % kenBurnsVariants.length;
+
+          return (
+            <div
+              key={imgIdx}
+              className={`absolute inset-0 transition-opacity duration-[400ms] ease-in-out ${
+                isActive ? 'opacity-100 z-[1]' : 'opacity-0 z-0'
+              }`}
+            >
+              <Image
+                src={imgUrl}
+                alt={title}
+                fill
+                className={`object-cover transition-transform duration-[3000ms] ease-out will-change-transform ${
+                  isActive ? kenBurnsActive[variantIdx] : kenBurnsVariants[variantIdx]
+                }`}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                priority={imgIdx === 0}
+              />
+            </div>
+          );
+        })}
 
         {/* TOP LEFT BADGE */}
         <div className="absolute top-3 left-3 z-20 pointer-events-none max-w-[85%]">
@@ -169,23 +188,31 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
           </span>
         </div>
 
-        {/* BOTTOM PAGINATION DOTS */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 pointer-events-none">
-          {imagesList.slice(0, 5).map((_, dotIdx) => (
-            <div
-              key={dotIdx}
-              className={`rounded-full transition-all duration-300 ${
-                dotIdx === currentImgIdx
-                  ? "w-2.5 h-2.5 bg-white shadow-md scale-110"
-                  : "w-1.5 h-1.5 bg-white/60 backdrop-blur-sm"
-              }`}
-            />
-          ))}
-        </div>
+        {/* BOTTOM PAGINATION DOTS FOR AESTHETIC AUTO-SLIDER */}
+        {imagesList.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 pointer-events-auto">
+            {imagesList.slice(0, 8).map((_, dotIdx) => (
+              <button
+                key={dotIdx}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setCurrentImgIdx(dotIdx);
+                }}
+                className={`rounded-full transition-all duration-300 cursor-pointer ${
+                  dotIdx === activePhotoIndex
+                    ? "w-2.5 h-2.5 bg-white shadow-md scale-110"
+                    : "w-1.5 h-1.5 bg-white/60 backdrop-blur-sm hover:bg-white/90"
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* LOWER WHITE CARD CONTENT CONTAINER */}
-      <div className="relative z-10 -mt-4 pt-6 pb-4 px-4 sm:px-5 mx-3 sm:mx-4 bg-white rounded-b-[26px] rounded-t-[16px] border border-zinc-200/80 shadow-[0_6px_24px_rgba(0,0,0,0.05)] flex flex-col flex-1 font-montserrat justify-between">
+      {/* LOWER WHITE CARD CONTENT CONTAINER WITH GENEROUS SIDE WHITESPACE PADDING */}
+      <div className="relative z-10 -mt-4 pt-6 pb-5 px-6 sm:px-7 mx-1 sm:mx-1.5 bg-white rounded-b-[26px] rounded-t-[16px] border border-zinc-200/80 shadow-[0_6px_24px_rgba(0,0,0,0.05)] flex flex-col flex-1 font-montserrat justify-between">
         <div>
           {/* META ROW: DURATION & EX-CITY */}
           <div className="flex items-center justify-between font-montserrat text-[12px] sm:text-[13px] font-normal text-[#666666] mb-2.5 gap-2 pt-0.5">
@@ -199,17 +226,17 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
             </div>
           </div>
 
-          {/* TITLE — MONTSERRAT EXTRA BOLD (800), 18-20PX, NAVY BLUE #0B1528 */}
-          <div className="min-h-[50px] flex items-center mb-1">
+          {/* TITLE — MONTSERRAT EXTRA BOLD (800), 16-18PX, NAVY BLUE #0B1528 */}
+          <div className="min-h-[46px] flex items-center mb-1">
             <h3 
-              className="trip-card-title font-montserrat text-[18px] sm:text-[20px] leading-[1.3] line-clamp-2 group-hover:text-[#D4541A] transition-colors"
+              className="trip-card-title font-montserrat text-[16px] sm:text-[18px] leading-[1.35] line-clamp-2 group-hover:text-[#D4541A] transition-colors"
               style={{ fontWeight: 800, color: '#0B1528' }}
             >
               {title}
             </h3>
           </div>
 
-          {/* TAGLINE — MONTSERRAT REGULAR (400), 14PX, #666666 */}
+          {/* TAGLINE — MONTSERRAT REGULAR (400), 13-14PX, #666666 */}
           <p className="font-montserrat text-[#666666] text-[13px] sm:text-[14px] font-normal line-clamp-1 mb-3.5">
             {tagline}
           </p>

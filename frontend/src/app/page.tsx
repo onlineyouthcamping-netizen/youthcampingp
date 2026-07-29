@@ -106,13 +106,32 @@ export default async function Home() {
   const heroDbSection = page?.sections?.find((s: any) => s.type === 'hero');
   const heroProps = heroDbSection?.draft || heroDbSection?.data || heroDbSection?.content || {};
 
+  const recentPhotosDbSection = page?.sections?.find((s: any) => s.type === 'recent_photos' || s.type === 'vibe' || s.type === 'photo_grid');
+  const recentPhotosData = recentPhotosDbSection?.draft || recentPhotosDbSection?.data || recentPhotosDbSection?.content || {};
+  const recentPhotosList = recentPhotosData.photos || recentPhotosData.items || recentPhotosData.images;
+  const recentPhotosFormatted = (Array.isArray(recentPhotosList) && recentPhotosList.length > 0)
+    ? recentPhotosList.map((p: any, i: number) => ({
+        id: p.id || `photo-${i}`,
+        url: p.src || p.url || p.image || p.imageUrl,
+        caption: p.caption || "",
+        location: p.location || ""
+      })).filter((p: any) => Boolean(p.url))
+    : undefined;
+
   // Construct dynamic section map
   const sectionMap: Record<string, React.ReactNode> = {
     community_trips: <CommunityTrips key="community_trips" trips={trips} {...heroProps} />,
     social_proof: <SocialProofBar key="social_proof" />,
     cta_banner: <CTABanner key="cta_banner" />,
     destinations: <Destinations key="destinations" />,
-    recent_photos: <RecentPhotosSection key="recent_photos" />,
+    recent_photos: (
+      <RecentPhotosSection
+        key="recent_photos"
+        photos={recentPhotosFormatted}
+        title={recentPhotosData.titlePrimary || recentPhotosData.title}
+        subtitle={recentPhotosData.titleAccent || recentPhotosData.subtitle}
+      />
+    ),
     bestie: <BestieSection key="bestie" />,
     cta_slider: <CTASlider key="cta_slider" />,
     blogs: <BlogSection key="blogs" blogs={blogs} />,
@@ -169,7 +188,13 @@ export default async function Home() {
               </div>
             );
           })}
-          {!visibleSectionKeys.includes('recent_photos') && <RecentPhotosSection />}
+          {!visibleSectionKeys.includes('recent_photos') && (
+            <RecentPhotosSection
+              photos={recentPhotosFormatted}
+              title={recentPhotosData.titlePrimary || recentPhotosData.title}
+              subtitle={recentPhotosData.titleAccent || recentPhotosData.subtitle}
+            />
+          )}
         </>
       )}
       <FloatingSocialBar />

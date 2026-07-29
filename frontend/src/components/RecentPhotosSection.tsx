@@ -82,7 +82,23 @@ export default function RecentPhotosSection({
   const scrollRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  const basePhotos = (photos && photos.length >= 4) ? photos : DEFAULT_PHOTOS;
+  const hasCustomPhotos = Boolean(photos && photos.length > 0);
+  const rawPhotos = hasCustomPhotos ? photos : DEFAULT_PHOTOS;
+
+  const displayPhotos = rawPhotos.map((p: any, idx: number) => ({
+    id: p.id || `photo-${idx}`,
+    url: normalizeImageUrl(p.url || p.image || p.src || "") || (hasCustomPhotos ? (p.url || p.image || p.src || "") : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].url),
+    caption: p.caption || p.title || (hasCustomPhotos ? "" : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].caption),
+    location: p.location || (hasCustomPhotos ? "" : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].location),
+  })).filter((p) => Boolean(p.url));
+
+  const basePhotos = displayPhotos.length > 0 ? displayPhotos : DEFAULT_PHOTOS;
+
+  let extendedPhotos = [...basePhotos];
+  while (extendedPhotos.length > 0 && extendedPhotos.length < 12) {
+    extendedPhotos = [...extendedPhotos, ...basePhotos];
+  }
+  const marqueePhotos = extendedPhotos;
 
   // Hardware-accelerated smooth continuous scroll loop
   useEffect(() => {
@@ -115,17 +131,6 @@ export default function RecentPhotosSection({
     if (selectedIndex === null) return;
     setSelectedIndex((selectedIndex + 1) % basePhotos.length);
   };
-
-  const displayPhotos = (photos && photos.length >= 4)
-    ? photos.map((p: any, idx: number) => ({
-        id: p.id || `photo-${idx}`,
-        url: normalizeImageUrl(p.url || p.image || DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].url) || DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].url,
-        caption: p.caption || p.title || DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].caption,
-        location: p.location || DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].location,
-      }))
-    : DEFAULT_PHOTOS;
-
-  const marqueePhotos = [...displayPhotos, ...displayPhotos, ...displayPhotos];
 
   return (
     <section className="py-8 md:py-10 font-montserrat overflow-hidden bg-[#F5F5F5]">

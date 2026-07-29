@@ -1,3 +1,5 @@
+const cors = require('cors');
+
 /**
  * Explicit CORS Configuration Middleware
  */
@@ -11,31 +13,43 @@ const allowedOrigins = [
   'https://ycadmin.vercel.app'
 ];
 
-exports.setupCORS = (app) => {
-  // 1. Explicit preflight handler for OPTIONS requests
-  app.options('*', (req, res) => {
-    const origin = req.headers.origin || '*';
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, Origin, x-tenant-id, X-Tenant-Id, *');
-    res.setHeader('Access-Control-Max-Age', '86400');
-    return res.status(204).end();
-  });
-
-  // 2. Global middleware for all incoming API routes
-  app.use((req, res, next) => {
-    const origin = req.headers.origin || '*';
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, Origin, x-tenant-id, X-Tenant-Id, *');
-    res.setHeader('Access-Control-Expose-Headers', '*');
-
-    if (req.method === 'OPTIONS') {
-      return res.status(204).end();
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches allowed list or subdomains
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.youthcamping.online') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      return callback(null, true);
     }
+    
+    // Default allow origin dynamically to prevent CORS blocks on admin tool
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'Accept', 
+    'X-Requested-With', 
+    'Origin', 
+    'x-tenant-id', 
+    'X-Tenant-Id',
+    'Cache-Control',
+    'Pragma'
+  ],
+  exposedHeaders: ['Content-Range', 'X-Total-Count', 'Authorization'],
+  maxAge: 86400
+};
 
-    next();
-  });
+exports.setupCORS = (app) => {
+  // Pre-flight for all routes
+  app.use(cors(corsOptions));
+  app.options('*', cors(corsOptions));
 };

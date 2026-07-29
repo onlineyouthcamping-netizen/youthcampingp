@@ -478,6 +478,13 @@ exports.getBookings = async (req, res, next) => {
           departureDate: true,
           createdAt: true,
           salesAdminId: true,
+          salesAdmin: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
           baseAmount: true,
           gstAmount: true,
           sourceMeta: true,

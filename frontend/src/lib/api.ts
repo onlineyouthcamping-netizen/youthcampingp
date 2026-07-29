@@ -1,11 +1,13 @@
 import { Trip, ItineraryDay } from "@/types";
 import { fetchWithRetry } from "./fetchWithRetry";
 
-const DEFAULT_API = "https://api.youthcamping.online";
+const DEFAULT_API = process.env.NODE_ENV !== "production" ? "http://localhost:5001/api" : "https://api.youthcamping.online/api";
 let apiURL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_API;
+
 if (!apiURL || apiURL.includes('onrender.com')) {
   apiURL = DEFAULT_API;
 }
+
 export const API_BASE_URL = apiURL.replace(/\/api$/, "") + "/api";
 const IMAGE_BASE_URL = API_BASE_URL.replace("/api", "");
 
@@ -98,7 +100,7 @@ const MOCK_SLUG_MAP: Record<string, any> = {
     title: 'Manali Kasol Amritsar Backpacking Trip',
     slug: 'manali-kasol-amritsar',
     description: 'Get ready for an unforgettable journey through snow peaks, lush valleys, and spiritual heritage.',
-    heroImage: 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=1200&q=85',
+    heroImage: 'https://vl-prod-static.b-cdn.net/system/images/000/888/076/6f012c2f939c45fd491d86b3d33b0cbb/original/IMG_3309.jpg',
     price: 12999,
     location: 'Himachal Pradesh & Punjab',
     duration: '9 Days / 8 Nights',
@@ -108,10 +110,10 @@ const MOCK_SLUG_MAP: Record<string, any> = {
     ageLimit: '16-35 Years',
     maxAltitude: '13,050 ft',
     images: [
+      'https://vl-prod-static.b-cdn.net/system/images/000/888/076/6f012c2f939c45fd491d86b3d33b0cbb/original/IMG_3309.jpg',
       'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=1200&q=85',
-      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=85',
-      'https://images.unsplash.com/photo-1605640840605-14ac1855827b?w=1200&q=85',
-      'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=1200&q=85'
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&q=85',
+      'https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=1200&q=85'
     ],
     availableDates: [{ date: '2026-08-01', capacity: 20, bookedCount: 8 }, { date: '2026-08-15', capacity: 20, bookedCount: 5 }],
     variants: [

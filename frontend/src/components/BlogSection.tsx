@@ -70,7 +70,7 @@ export default function BlogSection({
   const displayTitle = (!title || title === "New journal" || title === "Journal" || title === "Blogs") ? "Stories" : title;
   const displaySubtitle = subtitle || "From The Road";
 
-  const displayStories: BlogCardItem[] = (blogs && blogs.length >= 4)
+  const displayStories: BlogCardItem[] = (blogs && blogs.length > 0)
     ? blogs.map((b: any, idx: number) => {
         const mock = MOCK_STORIES[idx % MOCK_STORIES.length];
         const rawAuthor = b.author || mock.authorName;
@@ -78,10 +78,10 @@ export default function BlogSection({
         return {
           id: b._id || b.id || `b-${idx}`,
           title: b.title || mock.title,
-          slug: b.slug || "story",
-          image: b.image || mock.image,
+          slug: b.slug || mock.slug,
+          image: (b.image && b.image.trim() !== "") ? b.image : mock.image,
           authorName: cleanAuthor,
-          authorAvatar: b.authorImage || mock.authorAvatar,
+          authorAvatar: (b.authorImage && b.authorImage.trim() !== "") ? b.authorImage : mock.authorAvatar,
           readTime: b.readTime || mock.readTime,
         };
       })

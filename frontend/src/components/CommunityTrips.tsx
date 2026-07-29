@@ -46,13 +46,18 @@ const MOCK_TRIPS: Trip[] = [
     title: 'Manali Kasol Amritsar',
     slug: 'manali-kasol-amritsar',
     description: 'Hills. Vibes. Culture.',
-    heroImage: 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&q=80',
+    heroImage: 'https://vl-prod-static.b-cdn.net/system/images/000/888/076/6f012c2f939c45fd491d86b3d33b0cbb/original/IMG_3309.jpg',
     price: 12999,
     location: 'Himachal Pradesh & Punjab',
     duration: '9 Days / 8 Nights',
     departureCity: 'Ahmedabad',
     category: 'Backpacking',
-    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    images: [
+      'https://vl-prod-static.b-cdn.net/system/images/000/888/076/6f012c2f939c45fd491d86b3d33b0cbb/original/IMG_3309.jpg',
+      'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&q=80',
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80',
+      'https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80'
+    ], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
     availableDates: [{ date: '2026-08-01', capacity: 20, bookedCount: 8 }],
     variants: [{ location: 'Ahmedabad', duration: '9 Days / 8 Nights', originalPrice: 15999, discountedPrice: 12999, image: '' }],
     travelOptions: [], roomOptions: [], addons: [],
@@ -69,7 +74,11 @@ const MOCK_TRIPS: Trip[] = [
     duration: '11 Days / 10 Nights',
     departureCity: 'Delhi',
     category: 'Road Trip',
-    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    images: [
+      'https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80',
+      'https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800&q=80',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80'
+    ], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
     availableDates: [{ date: '2026-08-10', capacity: 15, bookedCount: 10 }],
     variants: [{ location: 'Delhi', duration: '11 Days / 10 Nights', originalPrice: 28999, discountedPrice: 24999, image: '' }],
     travelOptions: [], roomOptions: [], addons: [],
@@ -86,7 +95,11 @@ const MOCK_TRIPS: Trip[] = [
     duration: '6 Days / 5 Nights',
     departureCity: 'Dehradun',
     category: 'Adventure',
-    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    images: [
+      'https://images.unsplash.com/photo-1605640840605-14ac1855827b?w=800&q=80',
+      'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80',
+      'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80'
+    ], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
     availableDates: [{ date: '2026-08-05', capacity: 15, bookedCount: 6 }],
     variants: [{ location: 'Dehradun', duration: '6 Days / 5 Nights', originalPrice: 8999, discountedPrice: 6499, image: '' }],
     travelOptions: [], roomOptions: [], addons: [],
@@ -103,7 +116,11 @@ const MOCK_TRIPS: Trip[] = [
     duration: '6 Days / 5 Nights',
     departureCity: 'Kochi',
     category: 'Backpacking',
-    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    images: [
+      'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&q=80',
+      'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&q=80',
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80'
+    ], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
     availableDates: [{ date: '2026-08-18', capacity: 25, bookedCount: 10 }],
     variants: [{ location: 'Kochi', duration: '6 Days / 5 Nights', originalPrice: 17999, discountedPrice: 14499, image: '' }],
     travelOptions: [], roomOptions: [], addons: [],
@@ -120,7 +137,11 @@ const MOCK_TRIPS: Trip[] = [
     duration: '10 Days / 9 Nights',
     departureCity: 'Chandigarh',
     category: 'Expedition',
-    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    images: [
+      'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80',
+      'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&q=80',
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
+    ], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
     availableDates: [{ date: '2026-10-02', capacity: 18, bookedCount: 5 }],
     variants: [{ location: 'Chandigarh', duration: '10 Days / 9 Nights', originalPrice: 22999, discountedPrice: 19999, image: '' }],
     travelOptions: [], roomOptions: [], addons: [],
@@ -137,7 +158,11 @@ const MOCK_TRIPS: Trip[] = [
     duration: '7 Days / 6 Nights',
     departureCity: 'Mumbai',
     category: 'International',
-    images: [], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
+    images: [
+      'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80',
+      'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&q=80',
+      'https://images.unsplash.com/photo-1537953773345-d172ccf13cf1?w=800&q=80'
+    ], itinerary: [], highlights: [], inclusions: [], exclusions: [], faqs: [],
     availableDates: [{ date: '2026-09-12', capacity: 16, bookedCount: 9 }],
     variants: [{ location: 'Mumbai', duration: '7 Days / 6 Nights', originalPrice: 49999, discountedPrice: 44999, image: '' }],
     travelOptions: [], roomOptions: [], addons: [],
@@ -484,7 +509,7 @@ export default function CommunityTrips({
       </div>
 
       {/* Month Selector Pill Bar */}
-      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-6 sm:mb-8">
+      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-1 sm:mb-1.5">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-center gap-2 sm:gap-3 bg-white border border-zinc-200/80 rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-2.5 sm:p-3.5">
             <button
@@ -534,16 +559,16 @@ export default function CommunityTrips({
       </div>
 
       {/* Trip Cards Carousel Container */}
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12 relative group pb-8">
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 md:px-14 lg:px-16 relative group pb-10 pt-0">
         {/* Scrollable Trips Carousel */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
             {[0, 1, 2, 3].map(i => <SkeletonCard key={i} />)}
           </div>
         ) : (
           <div 
             ref={tripCardsScrollRef}
-            className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 -mx-6 sm:-mx-8 md:-mx-12 px-6 sm:px-8 md:px-12 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x cursor-grab"
+            className="flex gap-6 sm:gap-8 overflow-x-auto pb-6 pt-3 px-1 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x cursor-grab"
           >
             {display.map((t, idx) => (
               <div key={t.id || idx} className="w-[72vw] min-w-[260px] max-w-[320px] sm:w-[310px] md:w-[330px] shrink-0 snap-start">

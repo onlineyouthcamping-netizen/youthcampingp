@@ -59,13 +59,13 @@ const defaultStaysList: Accommodation[] = [
     starRating: "Authentic Stay",
     roomType: "Triple Sharing",
     meals: "Local Organic Meals",
-    image: "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200",
+    image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=1200",
     amenities: ["Hot Water Geyser", "Attached Washrooms", "Traditional Wood Architecture", "Home-cooked Himalayan Food", "Bonfire Area"],
     gallery: [
       { url: "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1200", category: "Interior / Rooms", title: "Wooden Panelled Alpine Bedroom" },
       { url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200", category: "Bathroom", title: "Attached Western Bathroom with Geyser" },
       { url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200", category: "Dining Area", title: "Traditional Dining Room" },
-      { url: "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200", category: "Property & Views", title: "Snow Valley Balcony View" }
+      { url: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=1200", category: "Property & Views", title: "Snow Valley Balcony View" }
     ]
   },
   {
@@ -111,17 +111,34 @@ export default function StaySection({ accommodations }: StaySectionProps) {
 
   const modalCategories = useMemo(() => {
     if (!selectedStay) return ["All"];
-    const catSet = new Set(selectedStay.gallery?.map(img => img.category) || []);
-    return ["All", "Interior / Rooms", "Bathroom", "Dining Area", "Property & Views"].filter(
-      c => c === "All" || catSet.has(c)
-    );
+    const gallery = selectedStay.gallery || [];
+    const catSet = new Set(gallery.map(img => img.category).filter(Boolean));
+    const knownCats = ["Interior / Rooms", "Bathroom", "Dining Area", "Property & Views"];
+    const hasAliases = (cat: string) => {
+      if (catSet.has(cat)) return true;
+      if (cat === "Property & Views" && (catSet.has("Exterior") || catSet.has("Swimming Pool"))) return true;
+      if (cat === "Interior / Rooms" && (catSet.has("Interior") || catSet.has("Premium Room"))) return true;
+      if (cat === "Dining Area" && catSet.has("Dining")) return true;
+      return false;
+    };
+    const activeKnown = knownCats.filter(hasAliases);
+    const extraCats = Array.from(catSet).filter(c => !knownCats.includes(c) && !["Exterior", "Swimming Pool", "Interior", "Premium Room", "Dining"].includes(c));
+    return ["All", ...activeKnown, ...extraCats];
   }, [selectedStay]);
 
   const filteredImages = useMemo(() => {
     if (!selectedStay) return [];
-    const gallery = selectedStay.gallery || [{ url: selectedStay.image, category: "Property & Views", title: selectedStay.name }];
+    const gallery = selectedStay.gallery && selectedStay.gallery.length > 0
+      ? selectedStay.gallery
+      : [{ url: selectedStay.image, category: "Property & Views", title: selectedStay.name }];
     if (activeCategory === "All") return gallery;
-    return gallery.filter(img => img.category === activeCategory);
+    return gallery.filter(img => {
+      if (img.category === activeCategory) return true;
+      if (activeCategory === "Property & Views" && (img.category === "Exterior" || img.category === "Swimming Pool")) return true;
+      if (activeCategory === "Interior / Rooms" && (img.category === "Interior" || img.category === "Premium Room")) return true;
+      if (activeCategory === "Dining Area" && img.category === "Dining") return true;
+      return false;
+    });
   }, [selectedStay, activeCategory]);
 
   return (

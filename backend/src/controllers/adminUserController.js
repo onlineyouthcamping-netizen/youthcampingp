@@ -320,3 +320,51 @@ exports.listAuditLogs = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Permanently Delete User Profile (Founder Hemal Patel / Super User only)
+// @route   DELETE /api/admin/users/:id
+// @access  Private (Founder / Super Admin only)
+exports.deleteUser = async (req, res, next) => {
+  try {
+    if (!isFounderAccess(req.user)) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Permanent profile deletion is strictly restricted to Founder / Super User.' });
+    }
+
+    const targetUserId = req.params.id;
+
+    if (targetUserId === req.user.id) {
+      return res.status(400).json({ success: false, message: 'Cannot delete your own superuser account' });
+    }
+
+    const targetUser = await prisma.admin.findUnique({
+      where: { id: targetUserId }
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ success: false, message: 'User profile not found' });
+    }
+
+    // Delete user from database
+    await prisma.admin.delete({
+      where: { id: targetUserId }
+    });
+
+    await cache.del(`auth:${targetUserId}`);
+    usersCache.delete(req.user.tenantId || 'default');
+
+    const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    await logAction({
+      tenantId: req.user.tenantId,
+      actorUserId: req.user.id,
+      action: 'user_deleted',
+      entityType: 'admin',
+      entityId: targetUserId,
+      beforeData: { name: targetUser.name, email: targetUser.email, role: targetUser.role },
+      ipAddress
+    });
+
+    res.json({ success: true, message: `Profile for ${targetUser.name || targetUser.email} has been permanently deleted from the system.` });
+  } catch (error) {
+    next(error);
+  }
+};
