@@ -168,7 +168,7 @@ export default function RecentPhotosSection({
           onMouseUp={() => setIsDragging(false)}
           onTouchStart={() => setIsDragging(true)}
           onTouchEnd={() => setIsDragging(false)}
-          className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 touch-pan-x cursor-grab active:cursor-grabbing select-none"
+          className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 touch-manipulation cursor-grab active:cursor-grabbing select-none"
         >
           {marqueePhotos.map((photo, idx) => {
             const actualIndex = idx % displayPhotos.length;

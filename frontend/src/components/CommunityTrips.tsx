@@ -568,7 +568,7 @@ export default function CommunityTrips({
         ) : (
           <div 
             ref={tripCardsScrollRef}
-            className="flex gap-6 sm:gap-8 overflow-x-auto pb-6 pt-3 px-1 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x cursor-grab"
+            className="flex gap-6 sm:gap-8 overflow-x-auto pb-6 pt-3 px-1 scroll-smooth snap-x snap-mandatory no-scrollbar touch-manipulation cursor-grab"
           >
             {display.map((t, idx) => (
               <div key={t.id || idx} className="w-[72vw] min-w-[260px] max-w-[320px] sm:w-[310px] md:w-[330px] shrink-0 snap-start">

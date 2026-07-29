@@ -157,7 +157,7 @@ export default function ReviewsSection({
         {/* REVIEW CARDS HORIZONTAL SCROLL / GRID */}
         <div
           ref={scrollRef}
-          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x"
+          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-manipulation"
         >
           {displayReviews.map((rev, idx) => {
             const photoList = rev.photos || [];
