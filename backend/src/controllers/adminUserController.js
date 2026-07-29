@@ -6,11 +6,10 @@ const cache = require('../lib/cache');
 const usersCache = new Map(); // tenantId -> { data, expiresAt }
 const USERS_CACHE_TTL = 5 * 60 * 1000;
 
-// Strict privacy verification: Only Hemal Patel (Founder) can access Staff Profiles & Role Management
+// Verification: Allow superadmin and admin users to access & modify Staff Profiles & Role Management
 const isFounderAccess = (user) => {
   if (!user) return false;
-  const email = (user.email || '').toLowerCase().trim();
-  return user.role === 'superadmin' && (email === 'hemal.patel@youthcamping.online' || email.includes('hemal'));
+  return user.role === 'superadmin' || user.role === 'admin';
 };
 
 // @desc    List all admin users (Founder Hemal Patel only)
