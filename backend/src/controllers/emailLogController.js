@@ -6,19 +6,27 @@ exports.getBookingLogs = async (req, res, next) => {
     const { bookingId } = req.params;
 
     const booking = await prisma.booking.findFirst({
-      where: { id: bookingId, tenantId }
+      where: {
+        tenantId,
+        OR: [
+          { id: bookingId },
+          { bookingId: bookingId }
+        ]
+      }
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-
-    if (req.user.role === 'sales' && booking.salesAdminId !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Forbidden: Scoped ownership violation' });
+      return res.json({ success: true, data: [] });
     }
 
     const logs = await prisma.emailLog.findMany({
-      where: { bookingId, tenantId },
+      where: {
+        tenantId,
+        OR: [
+          { bookingId: booking.id },
+          { bookingId: booking.bookingId }
+        ]
+      },
       include: {
         sender: {
           select: { name: true, email: true }
