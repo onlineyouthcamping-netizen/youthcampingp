@@ -176,9 +176,7 @@ const enforceOwnership = (modelName) => {
         if (!booking) {
           return res.status(404).json({ success: false, message: 'Booking not found' });
         }
-        if (role === 'sales' && booking.salesAdminId !== userId) {
-          return res.status(404).json({ success: false, message: 'Booking not found' });
-        }
+        // Allow all roles to view all bookings
         req.loadedBooking = booking; // Cache it so we don't have to query again
       }
 

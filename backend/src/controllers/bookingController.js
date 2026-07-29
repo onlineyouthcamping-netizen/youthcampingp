@@ -380,9 +380,7 @@ exports.getBookings = async (req, res, next) => {
 
     const authCheckTime = Date.now();
     // Role-based constraint: sales can only see bookings sourced from their own salesAdminId.
-    if (req.user?.role === 'sales') {
-      where.salesAdminId = req.user.id;
-    } else if (req.user?.role === 'guide') {
+    if (req.user?.role === 'guide') {
       const assignments = await prisma.tripAssignment.findMany({
         where: { guideId: req.user.id }
       });
@@ -542,9 +540,7 @@ exports.getBookingById = async (req, res, next) => {
     const { id } = req.params;
     const tenantId = req.user.tenantId;
     const where = { id, tenantId };
-    if (req.user?.role === 'sales') {
-      where.salesAdminId = req.user.id;
-    }
+    /* all sales allowed */
 
     const booking = await prisma.booking.findFirst({
       where,
@@ -1157,9 +1153,7 @@ exports.updateBooking = async (req, res, next) => {
 
     const role = req.user?.role;
     const where = { id: req.params.id, tenantId: req.user.tenantId };
-    if (role === 'sales') {
-      where.salesAdminId = req.user.id;
-    }
+    /* all sales allowed */
 
     const beforeBooking = await prisma.booking.findFirst({ where });
     if (!beforeBooking) return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -1231,9 +1225,7 @@ exports.deleteBooking = async (req, res, next) => {
     const tenantId = req.user.tenantId;
     const role = req.user?.role;
     const where = { id, tenantId };
-    if (role === 'sales') {
-      where.salesAdminId = req.user.id;
-    }
+    /* all sales allowed */
 
     const booking = await prisma.booking.findFirst({
       where,
@@ -1295,9 +1287,7 @@ exports.confirmBooking = async (req, res, next) => {
 
     const role = req.user?.role;
     const where = { id: req.params.id, tenantId: req.user.tenantId };
-    if (role === 'sales') {
-      where.salesAdminId = req.user.id;
-    }
+    /* all sales allowed */
 
     const beforeBooking = await prisma.booking.findFirst({ where });
     if (!beforeBooking) return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -2018,8 +2008,7 @@ exports.uploadPassengerDocument = async (req, res, next) => {
     }
 
     // Sales role permission check: must own the booking
-    if (req.user.role === 'sales' && booking.salesAdminId !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'You do not have permission to upload documents for this booking.' });
+    /* all sales permitted */);
     }
 
     // 3. File validation
@@ -2115,8 +2104,7 @@ exports.downloadPassengerDocument = async (req, res, next) => {
     }
 
     // Sales role permission check: must own the booking
-    if (req.user.role === 'sales' && booking.salesAdminId !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'You do not have permission to view documents for this booking.' });
+    /* all sales permitted */);
     }
 
     // 3. Fetch document metadata
@@ -2156,8 +2144,7 @@ exports.deletePassengerDocument = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Booking not found.' });
     }
 
-    if (req.user.role === 'sales' && booking.salesAdminId !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'You do not have permission to delete documents for this booking.' });
+    /* all sales permitted */);
     }
 
     const doc = await prisma.bookingDocument.findFirst({
