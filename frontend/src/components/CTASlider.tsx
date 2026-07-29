@@ -69,8 +69,11 @@ export default function CTASlider({
   }, [items.length]);
 
   return (
-    <section className="relative overflow-hidden font-sans my-4 sm:my-6">
-      <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-8 md:px-12">
+    <section className="relative overflow-hidden font-sans bg-white pt-6 pb-6 sm:pt-10 sm:pb-10">
+      {/* Two-tone background transition: top half white, bottom half grey (#F5F5F5) */}
+      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-[#F5F5F5] z-0" />
+
+      <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8">
         {showTitle && title && (
           <div className="mb-4 text-center">
             <h2 className="text-xl sm:text-2xl font-extrabold text-[#0B1528] tracking-tight">
@@ -81,7 +84,7 @@ export default function CTASlider({
 
         <div
           ref={containerRef}
-          className={`relative w-full max-w-[1240px] h-[220px] sm:h-[320px] md:h-[420px] lg:h-[480px] overflow-hidden bg-zinc-900 mx-auto shadow-xl border border-slate-100 ${borderRadius}`}
+          className={`relative w-full max-w-[1280px] h-[200px] sm:h-[280px] md:h-[360px] lg:h-[400px] overflow-hidden bg-zinc-900 mx-auto shadow-lg border border-slate-100 ${borderRadius === 'rounded-[24px]' ? 'rounded-[28px] md:rounded-[36px]' : borderRadius}`}
         >
           <AnimatePresence mode="popLayout">
             <motion.div

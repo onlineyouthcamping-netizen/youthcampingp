@@ -392,7 +392,7 @@ export default function CommunityTrips({
   };
 
   return (
-    <section className="relative overflow-hidden bg-[#fafafa]">
+    <section className="relative overflow-hidden bg-white">
       {/* HERO SECTION WRAPPER */}
       <div 
         className="relative flex flex-col justify-center min-h-[360px] sm:min-h-[460px] md:min-h-[500px]"
