@@ -128,7 +128,7 @@ const requirePermission = (permissionKey) => {
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'Unauthenticated' });
     }
-    if (hasPermission(req.user.role, permissionKey)) {
+    if (hasPermission(req.user, permissionKey)) {
       return next();
     }
     return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions' });

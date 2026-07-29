@@ -70,20 +70,20 @@ router.post('/me/integrations/:service/test', protect, requireAdmin, testIntegra
 // Dashboard statistics
 router.get('/stats', protect, requirePermission('dashboard.view'), getStats);
 
-// User & Staff Profile Management (Founder Only)
+// User & Staff Profile Management
 router.get('/users', protect, listUsers);
-router.post('/users', protect, requireFounder, createUser);
-router.get('/staff-profiles', protect, requireFounder, listUsers);
-router.get('/staff-profiles/:id', protect, requireFounder, listUsers);
-router.post('/staff-profiles', protect, requireFounder, createUser);
-router.put('/users/:id/role', protect, requireFounder, updateUserRole);
-router.put('/users/:id/permissions', protect, requireFounder, updateUserPermissions);
-router.put('/users/:id/toggle-active', protect, requireFounder, toggleUserActive);
-router.put('/users/:id/reset-password', protect, requireFounder, resetUserPassword);
-router.delete('/users/:id', protect, requireFounder, deleteUser);
-router.delete('/staff-profiles/:id', protect, requireFounder, deleteUser);
+router.post('/users', protect, createUser);
+router.get('/staff-profiles', protect, listUsers);
+router.get('/staff-profiles/:id', protect, listUsers);
+router.post('/staff-profiles', protect, createUser);
+router.put('/users/:id/role', protect, updateUserRole);
+router.put('/users/:id/permissions', protect, updateUserPermissions);
+router.put('/users/:id/toggle-active', protect, toggleUserActive);
+router.put('/users/:id/reset-password', protect, resetUserPassword);
+router.delete('/users/:id', protect, deleteUser);
+router.delete('/staff-profiles/:id', protect, deleteUser);
 
-// Audit Logging (Founder only)
-router.get('/audit-logs', protect, requireFounder, listAuditLogs);
+// Audit Logging
+router.get('/audit-logs', protect, listAuditLogs);
 
 module.exports = router;
