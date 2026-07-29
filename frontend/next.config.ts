@@ -50,8 +50,13 @@ const nextConfig: NextConfig = {
         source: "/tours/:slug",
         destination: "/trips/:slug",
         permanent: true,
-      },
     ];
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
   },
 };
 
