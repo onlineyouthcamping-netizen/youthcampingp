@@ -25,6 +25,7 @@ export default function TripBookingSection({ trip, onPriceChange, onDateSelect }
   const activeItinerary = (activeVariant && Array.isArray(activeVariant.itinerary) && activeVariant.itinerary.length > 0)
     ? activeVariant.itinerary
     : trip.itinerary;
+  const currentSkipDays = activeVariant?.skipDays || 0;
 
   return (
     <div className="space-y-12 md:space-y-16">
