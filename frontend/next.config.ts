@@ -50,6 +50,7 @@ const nextConfig: NextConfig = {
         source: "/tours/:slug",
         destination: "/trips/:slug",
         permanent: true,
+      },
     ];
   },
   eslint: {
