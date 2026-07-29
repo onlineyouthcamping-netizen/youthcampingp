@@ -6,8 +6,8 @@
 const REQUEST_TIMEOUT_MS = 30_000;
 
 const requestTimeout = (req, res, next) => {
-  // Skip health check — it should always respond fast
-  if (req.path === '/api/health' || req.path === '/health') {
+  // Skip health check & file upload endpoints (large videos can take >30s to upload)
+  if (req.path === '/api/health' || req.path === '/health' || req.path.includes('/upload')) {
     return next();
   }
 
