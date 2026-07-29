@@ -2,14 +2,14 @@ const { prisma } = require('../lib/prisma');
 const { hasPermission } = require('../config/permissions');
 
 // Helper for RBAC
-const checkManageAccess = (role) => {
-  if (!hasPermission(role, 'trips.edit') && !hasPermission(role, 'ops.manage')) {
+const checkManageAccess = (roleOrUser) => {
+  if (!hasPermission(roleOrUser, 'trips.edit') && !hasPermission(roleOrUser, 'ops.manage')) {
     throw new Error('403:Forbidden');
   }
 };
 
-const checkPublishAccess = (role) => {
-  if (!hasPermission(role, 'trips.publish')) {
+const checkPublishAccess = (roleOrUser) => {
+  if (!hasPermission(roleOrUser, 'trips.publish')) {
     throw new Error('403:Forbidden');
   }
 };
