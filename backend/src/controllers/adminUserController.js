@@ -12,17 +12,11 @@ const isFounderAccess = (user) => {
   return user.role === 'superadmin' || user.role === 'admin';
 };
 
-// @desc    List all admin users (Founder Hemal Patel only)
+// @desc    List all admin users
 // @route   GET /api/admin/users
-// @access  Private (Founder only)
+// @access  Private (Authenticated users)
 exports.listUsers = async (req, res, next) => {
   try {
-    if (!isFounderAccess(req.user)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Forbidden: Staff Profiles module is confidential and strictly accessible only to Hemal Patel (Founder).'
-      });
-    }
 
     const tenantId = req.user.tenantId || 'default';
     const cached = usersCache.get(tenantId);

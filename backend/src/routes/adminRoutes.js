@@ -71,7 +71,7 @@ router.post('/me/integrations/:service/test', protect, requireAdmin, testIntegra
 router.get('/stats', protect, requirePermission('dashboard.view'), getStats);
 
 // User & Staff Profile Management (Founder Only)
-router.get('/users', protect, requireFounder, listUsers);
+router.get('/users', protect, listUsers);
 router.post('/users', protect, requireFounder, createUser);
 router.get('/staff-profiles', protect, requireFounder, listUsers);
 router.get('/staff-profiles/:id', protect, requireFounder, listUsers);

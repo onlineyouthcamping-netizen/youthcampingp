@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import SocialProofBar from "@/components/SocialProofBar";
 import PageRenderer from "@/components/PageRenderer";
 import { fetchHomepageTrips, fetchHomepageReviews, fetchHomepageBlogs, fetchPageBySlug, fetchTheme } from "@/lib/api";
