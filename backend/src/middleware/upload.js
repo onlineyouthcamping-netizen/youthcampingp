@@ -25,10 +25,13 @@ let storage;
 if (isCloudinaryConfigured) {
   storage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: {
-      folder: 'youthcamping/trips',
-      allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-      transformation: [{ width: 1200, crop: 'limit' }, { fetch_format: 'auto', quality: 'auto' }]
+    params: async (req, file) => {
+      const isVideo = file.mimetype.startsWith('video/');
+      return {
+        folder: 'youthcamping/trips',
+        resource_type: isVideo ? 'video' : 'image',
+        allowed_formats: isVideo ? ['mp4', 'webm', 'mov', 'ogg'] : ['jpg', 'png', 'jpeg', 'webp', 'gif'],
+      };
     }
   });
   console.log('[UPLOAD] ✅ Cloudinary Storage configured and active');
@@ -60,17 +63,21 @@ if (isCloudinaryConfigured) {
 }
 
 const fileFilter = (req, file, cb) => {
-  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-  if (allowed.includes(file.mimetype)) {
+  const allowedImages = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/gif', 'image/svg+xml'];
+  const allowedVideos = ['video/mp4', 'video/webm', 'video/quicktime', 'video/ogg', 'video/x-msvideo', 'video/mov'];
+  const isVideo = allowedVideos.includes(file.mimetype) || file.mimetype.startsWith('video/');
+  const isImage = allowedImages.includes(file.mimetype) || file.mimetype.startsWith('image/');
+
+  if (isImage || isVideo) {
     cb(null, true);
   } else {
-    cb(new Error(`Invalid file type: ${file.mimetype}. Only JPG, PNG, WEBP allowed.`), false);
+    cb(new Error(`Invalid file type: ${file.mimetype}. Allowed: JPG, PNG, WEBP, GIF, MP4, WEBM, MOV.`), false);
   }
 };
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for videos and images
   fileFilter
 });
 
