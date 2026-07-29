@@ -170,7 +170,7 @@ export default function ReviewsSection({
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1, duration: 0.5 }}
                 viewport={{ once: true }}
-                className="flex-none snap-start w-[82vw] sm:w-[320px] md:w-[340px] max-w-[360px] bg-white border border-zinc-200/80 rounded-2xl overflow-hidden p-4 sm:p-5 pb-0 sm:pb-0 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+                className="flex-none snap-start w-[62vw] min-w-[220px] max-w-[270px] sm:w-[320px] md:w-[340px] bg-white border border-zinc-200/80 rounded-2xl overflow-hidden p-3.5 sm:p-5 pb-0 sm:pb-0 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   {/* USER HEADER ROW */}
