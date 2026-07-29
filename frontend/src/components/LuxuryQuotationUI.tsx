@@ -533,7 +533,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                                 </div>
                             </div>
 
-                            <div ref={exploreContainerRef} className="flex overflow-x-auto no-scrollbar gap-4 md:gap-8 pb-8 -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth snap-x">
+                            <div ref={exploreContainerRef} className="flex overflow-x-auto no-scrollbar gap-4 md:gap-8 pb-8 w-full max-w-full px-1 scroll-smooth snap-x">
                                 {(q.experiencePhotos || []).map((photo: any, i: number) => {
                                     const url = typeof photo === 'string' ? photo : photo.url;
                                     const name = typeof photo === 'string' ? `Experience ${i+1}` : (photo.name || `Experience ${i+1}`);

@@ -302,7 +302,7 @@ export default function ItineraryAccordion({
                           <span>Day Highlights & Photos</span>
                         </p>
 
-                        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x touch-pan-x -mr-3.5 sm:mr-0 pr-3.5 sm:pr-0">
+                        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x touch-pan-x w-full max-w-full px-1">
                           {parsedPhotos.map((photo, pIdx) => (
                             <div
                               key={pIdx}
