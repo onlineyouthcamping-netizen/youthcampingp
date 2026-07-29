@@ -176,7 +176,7 @@ export default function RecentPhotosSection({
               <div
                 key={`${photo.id}-${idx}`}
                 onClick={() => setSelectedIndex(actualIndex)}
-                className="group relative shrink-0 flex-none w-[160px] sm:w-[200px] md:w-[230px] aspect-[16/10.5] rounded-[24px] overflow-hidden bg-zinc-100 shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_28px_rgba(0,0,0,0.14)] hover:scale-[1.03] transition-all duration-500 cursor-pointer isolate"
+                className="group relative shrink-0 flex-none w-[135px] sm:w-[170px] md:w-[195px] aspect-[16/10.5] rounded-2xl overflow-hidden bg-zinc-100 shadow-2xs hover:shadow-md hover:scale-[1.02] transition-all duration-300 cursor-pointer isolate"
               >
                 <Image
                   src={photo.url}

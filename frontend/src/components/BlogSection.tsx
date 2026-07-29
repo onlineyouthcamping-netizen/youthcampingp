@@ -96,7 +96,7 @@ export default function BlogSection({
   };
 
   return (
-    <section className="bg-white py-8 md:py-10 border-t border-zinc-100 font-montserrat">
+    <section className="bg-white py-6 sm:py-8 border-t border-zinc-100 font-montserrat">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
         {/* HEADER ROW WITH SLIDER CONTROLS */}
@@ -159,53 +159,53 @@ export default function BlogSection({
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.08, duration: 0.5 }}
               viewport={{ once: true }}
-              className="flex-none snap-start w-[68vw] min-w-[260px] max-w-[340px] sm:w-[320px] md:w-[340px] flex flex-col bg-white border border-zinc-200/80 rounded-[24px] overflow-hidden shadow-[0_6px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.14)] hover:-translate-y-1.5 transition-all duration-300 isolate"
+              className="flex-none snap-start w-[56vw] min-w-[210px] max-w-[270px] sm:w-[290px] md:w-[310px] flex flex-col bg-white border border-zinc-200/80 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 isolate"
             >
               {/* TOP PHOTO CONTAINER */}
-              <div className="relative w-full aspect-[16/10] bg-zinc-100 overflow-hidden">
+              <div className="relative w-full aspect-[16/10.5] bg-zinc-100 overflow-hidden">
                 <Link href={`/blogs/${story.slug}`} className="absolute inset-0 z-10" aria-label={story.title} />
                 <Image
                   src={story.image}
                   alt={story.title}
                   fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  sizes="(max-width: 768px) 270px, 310px"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
 
                 {/* BOOK ICON BADGE AT TOP-RIGHT */}
-                <div className="absolute top-3.5 right-3.5 z-20 text-white/90 drop-shadow-md">
-                  <BookOpen className="w-4.5 h-4.5" />
+                <div className="absolute top-2.5 right-2.5 z-20 text-white/90 drop-shadow-md">
+                  <BookOpen className="w-3.5 h-3.5" />
                 </div>
               </div>
 
               {/* CARD BODY WITH AVATAR, TITLE & AUTHOR/READ TIME */}
-              <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between">
-                <div className="flex gap-3 items-start w-full">
+              <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between gap-2">
+                <div className="flex gap-2.5 items-start w-full">
                   {/* AUTHOR AVATAR PHOTO */}
-                  <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden shrink-0 border border-zinc-200 shadow-2xs">
+                  <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden shrink-0 border border-zinc-200 shadow-2xs">
                     <Image
                       src={story.authorAvatar}
                       alt={story.authorName}
                       fill
-                      sizes="(max-width: 768px) 44px, 44px"
+                      sizes="36px"
                       className="object-cover"
                     />
                   </div>
 
                   {/* TITLE & FOOTER META */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
-                    <h3 className="text-[#1B2A4A] font-montserrat font-semibold text-[15px] sm:text-[16px] leading-[1.35] line-clamp-2 mb-2.5 group-hover:text-[#D4541A] transition-colors">
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <h3 className="text-[#1B2A4A] font-montserrat font-bold text-xs sm:text-sm leading-snug line-clamp-2 mb-1.5 group-hover:text-[#D4541A] transition-colors">
                       <Link href={`/blogs/${story.slug}`}>
                         {story.title}
                       </Link>
                     </h3>
 
                     {/* AUTHOR NAME & READING TIME ROW */}
-                    <div className="flex items-center justify-between font-montserrat text-xs text-[#999999] gap-2 pt-1 border-t border-zinc-100/80">
+                    <div className="flex items-center justify-between font-montserrat text-[11px] text-[#999999] gap-1.5 pt-1 border-t border-zinc-100">
                       <span className="truncate">
                         by <span className="text-[#666666] font-medium">{story.authorName}</span>
                       </span>
-                      <span className="shrink-0 text-zinc-400 font-normal">
+                      <span className="shrink-0 text-zinc-400 font-normal text-[10px]">
                         {story.readTime}
                       </span>
                     </div>
