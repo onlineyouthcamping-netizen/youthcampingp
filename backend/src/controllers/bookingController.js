@@ -2008,8 +2008,7 @@ exports.uploadPassengerDocument = async (req, res, next) => {
     }
 
     // Sales role permission check: must own the booking
-    /* all sales permitted */);
-    }
+    // Sales role permission check: all sales permitted
 
     // 3. File validation
     if (!req.file) {
@@ -2104,8 +2103,6 @@ exports.downloadPassengerDocument = async (req, res, next) => {
     }
 
     // Sales role permission check: must own the booking
-    /* all sales permitted */);
-    }
 
     // 3. Fetch document metadata
     const doc = await prisma.bookingDocument.findFirst({
@@ -2144,8 +2141,6 @@ exports.deletePassengerDocument = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Booking not found.' });
     }
 
-    /* all sales permitted */);
-    }
 
     const doc = await prisma.bookingDocument.findFirst({
       where: { bookingId, passengerId, tenantId }
