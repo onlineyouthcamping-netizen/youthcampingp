@@ -153,7 +153,7 @@ export default function StaySection({ accommodations }: StaySectionProps) {
       {/* Stays Horizontal 1.5 Cards Peek Slider on Mobile & Grid on Desktop */}
       <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-manipulation flex-nowrap sm:flex-wrap">
         {staysList.map((stay, i) => (
-          <div key={i} className="flex-none snap-start w-[62vw] min-w-[210px] max-w-[250px] sm:w-auto flex flex-col">
+          <div key={i} className="flex-none snap-start w-[78vw] sm:w-auto max-w-[300px] flex flex-col">
             <div 
               onClick={() => {
                 setSelectedStay(stay);

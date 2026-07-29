@@ -159,7 +159,7 @@ export default function BlogSection({
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.08, duration: 0.5 }}
               viewport={{ once: true }}
-              className="flex-none snap-start w-[56vw] min-w-[210px] max-w-[270px] sm:w-[290px] md:w-[310px] flex flex-col bg-white border border-zinc-200/80 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 isolate"
+              className="flex-none snap-start w-[82vw] sm:w-[320px] md:w-[340px] max-w-[360px] flex flex-col bg-white border border-zinc-200/80 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 isolate"
             >
               {/* TOP PHOTO CONTAINER */}
               <div className="relative w-full aspect-[16/10.5] bg-zinc-100 overflow-hidden">

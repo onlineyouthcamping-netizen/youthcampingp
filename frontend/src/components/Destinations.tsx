@@ -152,7 +152,7 @@ export default function Destinations({
               transition={{ delay: idx * 0.07, duration: 0.5 }}
               viewport={{ once: true }}
               onClick={() => setSelectedDest(item)}
-              className="group relative flex-none snap-start w-[140px] sm:w-[170px] md:w-[190px] aspect-[9/13.5] rounded-2xl overflow-hidden bg-zinc-900 shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer isolate"
+              className="group relative flex-none snap-start w-[68vw] sm:w-[190px] md:w-[210px] max-w-[220px] aspect-[9/13.5] rounded-2xl overflow-hidden bg-zinc-900 shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer isolate"
             >
               {/* DESTINATION BACKGROUND IMAGE */}
               <Image

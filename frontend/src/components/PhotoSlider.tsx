@@ -35,7 +35,7 @@ export default function PhotoSlider({
   const infiniteList = [...list, ...list, ...list];
 
   return (
-    <section className="py-12 md:py-16 bg-white overflow-hidden border-t border-zinc-100 font-montserrat">
+    <section className="py-8 sm:py-12 bg-white overflow-hidden border-t border-zinc-100 font-montserrat">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12 mb-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-zinc-100 pb-4">
           <div>
@@ -65,7 +65,7 @@ export default function PhotoSlider({
           {infiniteList.map((slide, i) => (
             <div
               key={i}
-              className="flex-none w-[240px] sm:w-[280px] md:w-[320px] h-[160px] sm:h-[180px] md:h-[200px] bg-zinc-100 rounded-[20px] sm:rounded-[24px] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group relative"
+              className="flex-none w-[180px] sm:w-[240px] md:w-[280px] h-[130px] sm:h-[160px] md:h-[180px] bg-zinc-100 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 group relative"
             >
               <Link href={slide.link || "/trips"} prefetch={false} className="block w-full h-full relative">
                 <OptimizedImage
