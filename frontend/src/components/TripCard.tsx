@@ -117,6 +117,26 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
   })();
 
   const title = trip.title || "Manali Kasol Amritsar Backpacking Trip";
+
+  const splitTripTitle = (fullTitle: string) => {
+    const keywords = ["Backpacking Trip", "Road Trip", "Group Trip", "Backpacking", "Roadtrip", "Trek", "Expedition", "Tour", "Trip"];
+    for (const kw of keywords) {
+      const idx = fullTitle.toLowerCase().lastIndexOf(kw.toLowerCase());
+      if (idx > 0) {
+        return {
+          main: fullTitle.substring(0, idx).trim(),
+          sub: fullTitle.substring(idx).trim()
+        };
+      }
+    }
+    const words = fullTitle.split(" ");
+    if (words.length > 1) {
+      return { main: words.slice(0, -1).join(" "), sub: words[words.length - 1] };
+    }
+    return { main: fullTitle, sub: "" };
+  };
+
+  const { main: mainTitle, sub: subTitle } = splitTripTitle(title);
   const tagline = (trip.description || "Get ready for an unforgettable...").replace(/<[^>]*>/g, '').trim();
 
   return (
@@ -226,14 +246,19 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
             </div>
           </div>
 
-          {/* TITLE — MONTSERRAT EXTRA BOLD (800), 16-18PX, NAVY BLUE #0B1528 */}
-          <div className="min-h-[46px] flex items-center mb-1">
+          {/* TITLE — MONTSERRAT EXTRA BOLD (800) + CAVEAT ORANGE HANDWRITTEN SUBTITLE */}
+          <div className="min-h-[50px] flex flex-col justify-center mb-1">
             <h3 
-              className="trip-card-title font-montserrat text-[16px] sm:text-[18px] leading-[1.35] line-clamp-2 group-hover:text-[#D4541A] transition-colors"
+              className="trip-card-title font-montserrat text-[17px] sm:text-[18px] leading-[1.25] font-black group-hover:text-[#0B1528] transition-colors"
               style={{ fontWeight: 800, color: '#0B1528' }}
             >
-              {title}
+              {mainTitle}
             </h3>
+            {subTitle && (
+              <span className="font-caveat font-bold text-[#D4541A] text-[20px] sm:text-[22px] leading-none block mt-0.5">
+                {subTitle}
+              </span>
+            )}
           </div>
 
           {/* TAGLINE — MONTSERRAT REGULAR (400), 13-14PX, #666666 */}

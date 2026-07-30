@@ -70,8 +70,8 @@ export default function CTASlider({
 
   return (
     <section className="relative overflow-hidden font-sans bg-white pt-6 pb-6 sm:pt-10 sm:pb-10">
-      {/* Two-tone background transition: top half white, bottom half grey (#F5F5F5) */}
-      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-[#F5F5F5] z-0" />
+      {/* Two-tone background transition: top half white, bottom half grey (#E2E7ED) */}
+      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-[#E2E7ED] z-0" />
 
       <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8">
         {showTitle && title && (

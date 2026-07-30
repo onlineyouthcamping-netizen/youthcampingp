@@ -80,8 +80,11 @@ export default function AboutTrip({ description, customAboutTrip }: AboutTripPro
   };
 
   return (
-    <section className="relative space-y-4">
-      <h2 className="text-xl md:text-2xl font-bold text-[#0B1528] font-montserrat">{sectionTitle}</h2>
+    <section className="relative space-y-5">
+      <h2 className="text-xl md:text-2xl font-bold text-[#0B1528] font-montserrat">
+        {sectionTitle.split(' ')[0]}{' '}
+        <span className="text-[#D4541A] font-caveat italic">{sectionTitle.split(' ').slice(1).join(' ')}</span>
+      </h2>
       
       <div className="bg-[#F8F9FA] border border-zinc-100/90 rounded-[20px] p-6 sm:p-7 relative">
         {/* Mobile View */}
@@ -134,7 +137,7 @@ export default function AboutTrip({ description, customAboutTrip }: AboutTripPro
                     <IconComponent className="w-4.5 h-4.5" style={{ color: card.iconColor || "#D4541A" }} />
                   </div>
                   <div>
-                    <p className="text-zinc-900 font-bold text-xs sm:text-sm font-montserrat leading-tight">{card.title}</p>
+                    <p className="text-[#0B1528] font-bold text-xs sm:text-sm font-montserrat leading-tight">{card.title}</p>
                     <p className="text-zinc-400 font-medium text-[11px] font-montserrat leading-tight mt-0.5">{card.subtitle}</p>
                   </div>
                 </div>

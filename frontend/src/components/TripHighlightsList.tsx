@@ -83,9 +83,9 @@ export default function TripHighlightsList({ title = "Trip Highlights", items, d
       {/* Header Row */}
       <div className="border-b border-zinc-100 pb-2.5">
         <h2 className="text-xl md:text-2xl font-extrabold text-[#0B1528] font-montserrat">
-          TRIP GLIMPSES
+          Trip <span className="text-[#D4541A] font-caveat italic">Glimpses</span>
         </h2>
-        <p className="text-xs text-[#D4541A] font-semibold font-montserrat mt-0.5">
+        <p className="text-xs text-[#D4541A] font-semibold font-caveat italic mt-0.5">
           Moments that stay with you, memories that last forever.
         </p>
       </div>

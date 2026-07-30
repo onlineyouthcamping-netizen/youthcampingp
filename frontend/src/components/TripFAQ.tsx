@@ -51,8 +51,8 @@ export default function TripFAQ({ faqs }: TripFAQProps) {
     <section className="space-y-6 scroll-mt-[140px]" id="faq">
       {/* Header System */}
       <div>
-        <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
-          FREQUENTLY ASKED <span className="text-[#D4541A]">QUESTIONS</span>
+        <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight font-montserrat leading-none">
+          Frequently Asked <span className="text-[#D4541A] font-caveat italic">Questions</span>
         </h2>
       </div>
 

@@ -119,13 +119,13 @@ export default function PageRenderer({ sections = [], trips = [], reviews = [], 
           if (!s) return '#ffffff';
           
           // Map exact backgrounds for components with custom/hardcoded styling
-          if (['destinations', 'recent_photos', 'photo_grid', 'image_gallery'].includes(s.type)) return '#F5F5F5';
-          if (['trips', 'upcoming_trips', 'featured_trips', 'trending_trips', 'blogs', 'journal', 'reviews'].includes(s.type)) return '#ffffff';
+          if (['destinations', 'recent_photos', 'photo_grid', 'image_gallery'].includes(s.type)) return '#E2E7ED';
+          if (['trips', 'upcoming_trips', 'featured_trips', 'trending_trips', 'reviews'].includes(s.type)) return '#ffffff';
           if (s.type === 'bestie') return '#BDD5D5';
           
-          if (['hero', 'cta_banner', 'cta_slider', 'cinematic_banner', 'video_section', 'reality'].includes(s.type)) return 'transparent';
+          if (['hero', 'cta_banner', 'cta_slider', 'cinematic_banner', 'video_section', 'reality', 'blogs', 'journal'].includes(s.type)) return 'transparent';
           
-          const patterns = ['#ffffff', '#f6f6f6'];
+          const patterns = ['#ffffff', '#E2E7ED'];
           return patterns[idx % patterns.length];
         };
 
@@ -226,11 +226,11 @@ export default function PageRenderer({ sections = [], trips = [], reviews = [], 
         const getBackgroundClass = (idx: number) => {
           const s = visibleSections[idx];
           if (!s) return 'bg-transparent';
-          if (['destinations', 'recent_photos', 'photo_grid', 'image_gallery'].includes(s.type)) return 'bg-[#F5F5F5]';
-          if (['trips', 'upcoming_trips', 'featured_trips', 'trending_trips', 'blogs', 'journal', 'reviews'].includes(s.type)) return 'bg-white';
-          if (['hero', 'cta_banner', 'cta_slider', 'cinematic_banner', 'video_section', 'reality'].includes(s.type)) return 'bg-transparent';
+          if (['destinations', 'recent_photos', 'photo_grid', 'image_gallery'].includes(s.type)) return 'bg-[#E2E7ED]';
+          if (['trips', 'upcoming_trips', 'featured_trips', 'trending_trips', 'reviews'].includes(s.type)) return 'bg-white';
+          if (['hero', 'cta_banner', 'cta_slider', 'cinematic_banner', 'video_section', 'reality', 'blogs', 'journal'].includes(s.type)) return 'bg-transparent';
           
-          const patterns = ['bg-[#ffffff]', 'bg-[#f6f6f6]'];
+          const patterns = ['bg-[#ffffff]', 'bg-[#E2E7ED]'];
           return patterns[idx % patterns.length];
         };
 

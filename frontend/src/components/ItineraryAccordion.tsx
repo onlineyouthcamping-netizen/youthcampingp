@@ -13,7 +13,7 @@ function renderFormattedText(text: string) {
   return parts.map((part, index) => {
     if (index % 2 === 1) {
       return (
-        <strong key={index} className="font-bold text-zinc-900">
+        <strong key={index} className="font-bold text-[#0B1528]">
           {part}
         </strong>
       );
@@ -149,7 +149,7 @@ export default function ItineraryAccordion({
       {/* Header Row: Itinerary Overview & Expand All Toggle */}
       <div className="flex items-center justify-between border-b border-zinc-100/90 pb-3">
         <h2 className="text-xl md:text-2xl font-extrabold text-[#0B1528] font-montserrat">
-          Itinerary Overview
+          Itinerary <span className="text-[#D4541A] font-caveat italic">Overview</span>
         </h2>
         <button
           onClick={toggleExpandAll}

@@ -45,7 +45,7 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
 
   return (
     <>
-      <div className="sticky top-[90px] space-y-4 hidden lg:block pb-16">
+      <div className="sticky top-[96px] space-y-4 hidden lg:block pb-8 max-h-[calc(100vh-110px)] overflow-y-auto no-scrollbar">
         {/* Main Booking Card (Dark Navy Matching Reference Screenshot) */}
         <div className="bg-[#0B1528] rounded-[24px] overflow-hidden shadow-xl p-6 md:p-7 text-white border border-slate-800">
           <span className="text-zinc-400 font-bold text-xs uppercase tracking-wider block mb-2 font-montserrat">
@@ -88,7 +88,7 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
 
         {/* Private Trips Available Card */}
         <div className="bg-white border border-zinc-100 rounded-[20px] p-5 shadow-xs">
-          <h4 className="text-zinc-900 font-bold text-sm font-montserrat mb-0.5">Private Trips Available</h4>
+          <h4 className="text-[#0B1528] font-bold text-sm font-montserrat mb-0.5">Private Trips Available</h4>
           <p className="text-zinc-400 font-medium text-xs font-montserrat mb-4">for Group of 12+ Travellers</p>
           <button 
             onClick={handleWhatsAppBooking}

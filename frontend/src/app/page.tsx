@@ -168,7 +168,7 @@ export default async function Home() {
         <>
           {visibleSectionKeys.map((key: string, idx: number) => {
             const isAlternate = theme?.sectionBgAlternate ?? true;
-            const alternateClass = isAlternate && idx % 2 === 1 ? "bg-zinc-50/50" : "bg-transparent";
+            const alternateClass = isAlternate && idx % 2 === 1 ? "bg-[#E2E7ED]" : "bg-transparent";
             
             if (key === 'cta_banner' || key === 'cta_slider') {
               return sectionMap[key];

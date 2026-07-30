@@ -96,8 +96,10 @@ export default function BlogSection({
   };
 
   return (
-    <section className="bg-white py-6 sm:py-8 border-t border-zinc-100 font-montserrat">
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
+    <section className="relative overflow-hidden font-montserrat bg-white py-6 sm:py-8">
+      {/* Two-tone background transition: top half white, bottom half grey (#E2E7ED) */}
+      <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-[#E2E7ED] z-0" />
+      <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
         {/* HEADER ROW WITH SLIDER CONTROLS */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-10 gap-3">
@@ -112,7 +114,7 @@ export default function BlogSection({
             </div>
             <Link
               href="/blogs"
-              className="group sm:hidden inline-flex items-center gap-1.5 text-xs font-bold text-[#111827] hover:text-[#D4541A] transition-colors"
+              className="group sm:hidden inline-flex items-center gap-1.5 text-xs font-bold text-[#0B1528] hover:text-[#D4541A] transition-colors"
             >
               <span>View All</span>
               <ArrowRight className="w-3.5 h-3.5 text-[#D4541A] group-hover:translate-x-0.5 transition-transform" />
@@ -139,7 +141,7 @@ export default function BlogSection({
 
             <Link
               href="/blogs"
-              className="group hidden sm:inline-flex items-center gap-2 text-sm sm:text-[16px] font-bold text-[#111827] hover:text-[#D4541A] transition-colors ml-2"
+              className="group hidden sm:inline-flex items-center gap-2 text-sm sm:text-[16px] font-bold text-[#0B1528] hover:text-[#D4541A] transition-colors ml-2"
             >
               <span>View All Stories</span>
               <ArrowRight className="w-4 h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />

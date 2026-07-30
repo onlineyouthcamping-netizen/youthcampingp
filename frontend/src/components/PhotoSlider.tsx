@@ -39,10 +39,10 @@ export default function PhotoSlider({
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12 mb-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-zinc-100 pb-4">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
-              {title}
+            <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight font-montserrat leading-none">
+              {title.split(' ')[0]}{' '}
+              <span className="text-[#D4541A] font-caveat italic">{title.split(' ').slice(1).join(' ')}</span>
             </h2>
-            <div className="w-12 h-1 bg-[#D4541A] rounded-full mt-2" />
           </div>
           <p className="text-zinc-500 font-semibold text-xs sm:text-sm font-montserrat max-w-sm">
             Capturing unfiltered traveler moments across the mountains.

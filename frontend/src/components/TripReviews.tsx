@@ -86,8 +86,8 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
       {/* Header System */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-zinc-100 pb-3">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none">
-            WHAT <span className="text-[#D4541A]">TRAVELERS SAY</span>
+          <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight font-montserrat leading-none">
+            What <span className="text-[#D4541A] font-caveat italic">Travelers Say</span>
           </h2>
         </div>
 
@@ -124,7 +124,7 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
 
                 <div className="flex flex-col min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="font-bold text-[#111827] text-[15px] sm:text-[16px] leading-tight font-montserrat capitalize truncate">
+                    <h3 className="font-bold text-[#0B1528] text-[15px] sm:text-[16px] leading-tight font-montserrat capitalize truncate">
                       {rev.name}
                     </h3>
                   </div>
@@ -135,9 +135,9 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
 
                   <div className="flex items-center gap-1 mt-0.5 text-[12px] sm:text-[13px] text-[#777777]">
                     <span>Booked:</span>
-                    <span className="font-bold text-[#111827] flex items-center gap-0.5 truncate hover:text-[#D4541A] transition-colors cursor-pointer">
+                    <span className="font-bold text-[#0B1528] flex items-center gap-0.5 truncate hover:text-[#D4541A] transition-colors cursor-pointer">
                       {rev.tripName}
-                      <ExternalLink className="w-3 h-3 text-[#111827] inline shrink-0" />
+                      <ExternalLink className="w-3 h-3 text-[#0B1528] inline shrink-0" />
                     </span>
                   </div>
                 </div>

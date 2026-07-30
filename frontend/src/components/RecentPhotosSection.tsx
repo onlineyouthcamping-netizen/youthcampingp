@@ -133,7 +133,7 @@ export default function RecentPhotosSection({
   };
 
   return (
-    <section className="py-8 md:py-10 font-montserrat overflow-hidden bg-white">
+    <section className="py-8 md:py-10 font-montserrat overflow-hidden bg-[#E2E7ED]" style={{ backgroundColor: '#E2E7ED' }}>
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
         {/* HEADER ROW - FITS TITLE ON ONE LINE */}
@@ -149,7 +149,7 @@ export default function RecentPhotosSection({
 
           <Link
             href="/trips"
-            className="group shrink-0 inline-flex items-center gap-1.5 text-xs sm:text-[15px] font-bold text-[#111827] hover:text-[#D4541A] transition-colors whitespace-nowrap"
+            className="group shrink-0 inline-flex items-center gap-1.5 text-xs sm:text-[15px] font-bold text-[#0B1528] hover:text-[#D4541A] transition-colors whitespace-nowrap"
           >
             <span>View All</span>
             <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
@@ -198,7 +198,7 @@ export default function RecentPhotosSection({
         <div className="flex items-center gap-1.5 sm:gap-2 mt-4 text-[11px] sm:text-[13px] md:text-sm text-zinc-600 font-montserrat whitespace-nowrap overflow-hidden">
           <Camera className="w-4 h-4 text-[#D4541A] shrink-0" />
           <span className="truncate">
-            Tag us <strong className="text-zinc-900 font-bold">@youthcamping.in</strong> and use{" "}
+            Tag us <strong className="text-[#0B1528] font-bold">@youthcamping.in</strong> and use{" "}
             <strong className="text-[#D4541A] font-bold">#YouthCamping</strong> to get featured!
           </span>
         </div>

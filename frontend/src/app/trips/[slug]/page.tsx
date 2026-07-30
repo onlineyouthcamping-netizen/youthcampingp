@@ -38,17 +38,47 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
         <TripGallerySection trip={trip} />
 
         {/* Main 12-Column Layout Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 mt-4 md:mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mt-3 md:mt-4">
           {/* Left Column (8 Cols): Title, Quick Info, Tabs, & Content */}
-          <div className="lg:col-span-8 space-y-3">
+          <div className="lg:col-span-8 space-y-5">
             {/* Title Section */}
             <div>
-              <h1 
-                style={{ fontWeight: 600, color: '#0B1528' }} 
-                className="text-[24px] sm:text-[30px] md:text-[36px] font-semibold tracking-tight leading-[1.2] font-montserrat"
-              >
-                {trip.title || "Manali Kasol Amritsar Backpacking Trip"}
-              </h1>
+              {(() => {
+                const fullTitle = trip.title || "Manali Kasol Amritsar Backpacking Trip";
+                const keywords = ["Backpacking Trip", "Road Trip", "Group Trip", "Backpacking", "Roadtrip", "Trek", "Expedition", "Tour", "Trip"];
+                let main = fullTitle;
+                let sub = "";
+                for (const kw of keywords) {
+                  const idx = fullTitle.toLowerCase().lastIndexOf(kw.toLowerCase());
+                  if (idx > 0) {
+                    main = fullTitle.substring(0, idx).trim();
+                    sub = fullTitle.substring(idx).trim();
+                    break;
+                  }
+                }
+                if (!sub) {
+                  const words = fullTitle.split(" ");
+                  if (words.length > 1) {
+                    main = words.slice(0, -1).join(" ");
+                    sub = words[words.length - 1];
+                  }
+                }
+                return (
+                  <div>
+                    <h1 
+                      style={{ fontWeight: 800, color: '#0B1528' }} 
+                      className="text-[26px] sm:text-[34px] md:text-[40px] font-black tracking-tight leading-[1.15] font-montserrat"
+                    >
+                      {main}
+                    </h1>
+                    {sub && (
+                      <span className="font-caveat font-bold text-[#D4541A] text-[28px] sm:text-[36px] md:text-[42px] leading-tight block mt-1">
+                        {sub}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Quick Info Bar (2-Column Grid on Mobile, Flex Row on Desktop) */}
@@ -81,7 +111,7 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
           </div>
 
           {/* Right Column (4 Cols): Dark Navy Card, Travelling Options, Room Sharing */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 relative min-w-0">
             <StickyBookingCard trip={trip} />
           </div>
         </div>

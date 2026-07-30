@@ -146,7 +146,7 @@ export default function ReviewsSection({
 
             <Link
               href="/reviews"
-              className="group inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-[15px] font-bold text-[#111827] hover:text-[#D4541A] transition-colors ml-1 sm:ml-2 whitespace-nowrap"
+              className="group inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-[15px] font-bold text-[#0B1528] hover:text-[#D4541A] transition-colors ml-1 sm:ml-2 whitespace-nowrap"
             >
               <span>View All</span>
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
@@ -187,7 +187,7 @@ export default function ReviewsSection({
 
                     <div className="flex flex-col min-w-0 flex-1">
                       <div className="flex items-center gap-1 flex-wrap">
-                        <h3 className="font-bold text-[#111827] text-sm sm:text-base leading-tight font-montserrat capitalize">
+                        <h3 className="font-bold text-[#0B1528] text-sm sm:text-base leading-tight font-montserrat capitalize">
                           {rev.name}
                         </h3>
                         {rev.badge && (
@@ -199,9 +199,9 @@ export default function ReviewsSection({
 
                       <div className="flex items-center gap-1 mt-0.5 text-xs text-[#777777]">
                         <span>Booked:</span>
-                        <span className="font-bold text-[#111827] flex items-center gap-0.5 truncate hover:text-[#D4541A] transition-colors cursor-pointer">
+                        <span className="font-bold text-[#0B1528] flex items-center gap-0.5 truncate hover:text-[#D4541A] transition-colors cursor-pointer">
                           {rev.tripName}
-                          <ExternalLink className="w-3 h-3 text-[#111827] inline shrink-0" />
+                          <ExternalLink className="w-3 h-3 text-[#0B1528] inline shrink-0" />
                         </span>
                       </div>
                     </div>

@@ -21,14 +21,14 @@ export default function TripBookingSection({ trip, onPriceChange, onDateSelect }
     if (onDateSelect) onDateSelect(date);
   };
 
-  const activeVariant = (Array.isArray(trip.variants) && trip.variants[variantIndex]) ? trip.variants[variantIndex] : null;
+  const activeVariant = (Array.isArray(trip.variants) && trip.variants[variantIndex]) ? (trip.variants[variantIndex] as any) : null;
   const activeItinerary = (activeVariant && Array.isArray(activeVariant.itinerary) && activeVariant.itinerary.length > 0)
     ? activeVariant.itinerary
     : trip.itinerary;
   const currentSkipDays = activeVariant?.skipDays || 0;
 
   return (
-    <div className="space-y-12 md:space-y-16">
+    <div className="space-y-6 md:space-y-7">
       <BookingOptions 
         trip={trip} 
         onDateSelect={handleDateSelect} 

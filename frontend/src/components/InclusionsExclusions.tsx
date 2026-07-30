@@ -39,11 +39,11 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
   const excList = exclusions && exclusions.length > 0 ? exclusions : defaultExclusions;
 
   return (
-    <div className="space-y-4 scroll-mt-[140px]" id="inclusions">
+    <div className="space-y-5 scroll-mt-[140px]" id="inclusions">
       {/* Header System — Title + Tab Switcher inline */}
       <div className="flex items-center justify-between gap-3 flex-wrap border-b border-zinc-100/90 pb-3">
-        <h2 className="text-xl sm:text-2xl font-black text-[#0B1528] tracking-tight uppercase font-montserrat leading-none shrink-0">
-          INCLUSIONS & <span className="text-[#D4541A]">EXCLUSIONS</span>
+        <h2 className="text-xl sm:text-2xl font-black text-[#0B1528] tracking-tight font-montserrat leading-none shrink-0">
+          Inclusions & <span className="text-[#D4541A] font-caveat italic">Exclusions</span>
         </h2>
 
         {/* Segmented Tab Switcher for Mobile Screens */}

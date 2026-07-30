@@ -107,7 +107,7 @@ export default function Destinations({
   };
 
   return (
-    <section className="popular-destinations popular-section destinations-grid py-6 sm:py-8 font-montserrat overflow-hidden" style={{ backgroundColor: '#F5F5F5' }}>
+    <section className="popular-destinations popular-section destinations-grid py-6 sm:py-8 font-montserrat overflow-hidden" style={{ backgroundColor: '#E2E7ED' }}>
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         
         {/* HEADER ROW - FITS TITLE ON ONE LINE */}

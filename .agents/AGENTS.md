@@ -65,3 +65,12 @@ Everything in YouthCamping OS revolves around **Bookings**. The Booking workspac
 
 ### Reticle Verification & Runtime Proof
 * **Verification Rule**: Verify runtime behavior, API network requests (expecting status 200 OK), store state updates, and console error absence (`console.error` absent) on key edits using Reticle tools before declaring feature completeness.
+
+---
+
+### Frontend Design Lock & Data-Design Separation
+* **Design Status**: **PRODUCTION LOCKED**. The visual appearance, component styling, color palette, typography, spacing scale, and layout structure are frozen.
+* **Admin vs Frontend Contract**:
+  - **Admin Panel / API**: Modifies DATA ONLY (trip names, prices, descriptions, itinerary items, dates, photos, FAQs, reviews).
+  - **Frontend**: Renders dynamic data inside LOCKED UI templates without mutating layout, fonts, colors, or structural dimensions.
+* **Emergency Override**: Visual design modifications are strictly forbidden unless accompanied by explicit instruction: `"Override Design Lock: [specific change needed]"`.
