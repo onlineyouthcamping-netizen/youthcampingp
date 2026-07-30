@@ -140,20 +140,17 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
   const tagline = (trip.description || "Get ready for an unforgettable...").replace(/<[^>]*>/g, '').trim();
 
   return (
-    <div className={`trip-card group relative flex flex-col w-full hover:-translate-y-1.5 transition-all duration-300 ${className || ""}`}>
+    <Link 
+      href={`/trips/${trip.slug}`}
+      onClick={onClick}
+      className={`trip-card group relative flex flex-col w-full hover:-translate-y-1.5 transition-all duration-300 block text-inherit no-underline cursor-pointer ${className || ""}`}
+    >
 
       {/* TOP FLOATING PHOTO CONTAINER WITH RICH DROP SHADOW */}
       <div
         className="relative z-20 w-full rounded-[26px] overflow-hidden bg-zinc-100 shadow-[0_16px_36px_rgba(0,0,0,0.22)] group-hover:shadow-[0_20px_44px_rgba(0,0,0,0.28)] transition-shadow duration-300"
         style={{ aspectRatio: "16/10.5" }}
       >
-        <Link
-          href={`/trips/${trip.slug}`}
-          className="absolute inset-0 z-10"
-          onClick={onClick}
-          aria-label={`View ${title}`}
-        />
-
         {/* CINEMATIC KEN BURNS PHOTO CAROUSEL */}
         {imagesList.map((imgUrl, imgIdx) => {
           const isActive = imgIdx === activePhotoIndex;
@@ -277,18 +274,16 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
           </div>
 
           {/* VIEW TRIP LINK */}
-          <Link
-            href={`/trips/${trip.slug}`}
-            onClick={onClick}
-            className="inline-flex items-center gap-1.5 font-montserrat font-bold text-xs sm:text-[14px] text-[#1B2A4A] group-hover:text-[#D4541A] transition-colors"
+          <div
+            className="inline-flex items-center gap-1.5 font-montserrat font-bold text-xs sm:text-[14px] text-[#0B1528] group-hover:text-[#D4541A] transition-colors"
           >
             <span>View Trip</span>
             <span className="text-[#D4541A] font-bold text-sm group-hover:translate-x-1 transition-transform">
               →
             </span>
-          </Link>
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
