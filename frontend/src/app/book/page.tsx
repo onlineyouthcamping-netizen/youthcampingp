@@ -637,49 +637,58 @@ function BookingForm() {
   };
 
   const renderSummaryCard = (isCard = true) => {
+    const displayCityName = selectedCity?.cityName 
+      ? `${selectedCity.cityName}${selectedCity.pickupPoint ? ` (${selectedCity.pickupPoint})` : ''}` 
+      : (initialParams.pickupCity || 'Delhi');
+
     const content = (
-      <div className="p-4 space-y-3.5 bg-white">
-        <div className="space-y-1">
-          <span className="text-[9px] text-[#D4541A] font-extrabold uppercase tracking-widest block">
-            LIVE EXPEDITION SUMMARY
-          </span>
-          <h3 className="text-sm font-black capitalize tracking-tight text-slate-900 leading-tight">
+      <div className="p-4 sm:p-5 space-y-4 bg-white font-montserrat">
+        {/* Sleek Header Banner */}
+        <div className="bg-[#0B1528] rounded-xl p-3.5 text-white space-y-1 shadow-sm border border-slate-800">
+          <div className="flex items-center justify-between">
+            <span className="text-[8px] font-black uppercase tracking-widest text-[#D4541A] bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-xs">
+              LIVE EXPEDITION
+            </span>
+            <span className="text-[9px] font-extrabold text-slate-300 bg-white/5 px-2 py-0.5 rounded-md border border-white/10">
+              {formData.participants} Pax
+            </span>
+          </div>
+          <h3 className="text-sm sm:text-base font-black tracking-tight text-white leading-snug pt-0.5">
             {initialParams.tripName || 'Trip Checkout'}
           </h3>
         </div>
 
-        <div className="h-px bg-slate-100" />
-
-        {/* High Visual Priority Section */}
-        <div className="grid grid-cols-2 gap-2">
-          {/* Visual Priority 1: Departure Date */}
-          <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl space-y-1">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">DEPARTURE DATE</span>
+        {/* High Visual Priority Metric Cards */}
+        <div className="grid grid-cols-2 gap-2.5">
+          {/* Departure Date Card */}
+          <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl space-y-0.5">
+            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-400 block">DEPARTURE DATE</span>
             <p className="text-xs font-black text-slate-900 leading-tight truncate">{initialParams.date || 'Flexible'}</p>
           </div>
 
-          {/* Visual Priority 2: Package Price */}
-          <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl space-y-1">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">PACKAGE PRICE</span>
+          {/* Package Base Price Card */}
+          <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-xl space-y-0.5">
+            <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-400 block">BASE PACKAGE</span>
             <p className="text-xs font-black text-slate-900 font-mono leading-tight">₹{pricing.originalTotalBase.toLocaleString()}</p>
           </div>
         </div>
 
-        {/* General Details List */}
-        <div className="space-y-2 text-xs border-t border-b border-slate-100 py-2.5">
-          <div className="flex items-start justify-between text-slate-650 gap-2 min-w-0">
-            <span className="flex items-center font-extrabold shrink-0 text-[8px] uppercase tracking-wider text-slate-400 mt-0.5">JOINING CITY</span>
-            <span className="font-extrabold text-slate-900 capitalize text-right break-all max-w-[60%] inline-block leading-tight">{selectedCity?.cityName || 'Delhi'}</span>
+        {/* Key Itemized Specifications */}
+        <div className="bg-slate-50/70 border border-slate-200/60 rounded-xl p-3 space-y-2.5 text-xs">
+          <div className="flex items-center justify-between text-slate-700 gap-2 min-w-0">
+            <span className="font-extrabold shrink-0 text-[8px] uppercase tracking-widest text-slate-400">JOINING CITY</span>
+            <span className="font-extrabold text-slate-900 capitalize text-right break-words max-w-[65%] leading-tight">{displayCityName}</span>
           </div>
 
-          <div className="flex items-center justify-between text-slate-650 gap-2 min-w-0">
-            <span className="flex items-center font-extrabold shrink-0 text-[8px] uppercase tracking-wider text-slate-400">TRAVELERS</span>
-            <span className="font-extrabold text-slate-900 shrink-0">{formData.participants} Pax</span>
+          <div className="flex items-center justify-between text-slate-700 gap-2 min-w-0">
+            <span className="font-extrabold shrink-0 text-[8px] uppercase tracking-widest text-slate-400">TRAVELERS</span>
+            <span className="font-black text-slate-900 shrink-0 bg-white border border-slate-200 px-2 py-0.5 rounded-md text-[10px]">{formData.participants} Pax</span>
           </div>
 
-          {/* Per-traveler options breakdown */}
+          {/* Traveler Option Adjustments */}
           {formData.participantsList.some(t => t.roomSharing !== 'Triple Sharing' || (!isDirectJoin && t.trainOption !== 'Sleeper')) && (
-            <div className="space-y-1 pl-2.5 border-l-2 border-slate-200">
+            <div className="pt-1.5 border-t border-slate-200/60 space-y-1">
+              <span className="text-[8px] font-extrabold uppercase tracking-widest text-[#D4541A] block mb-1">TRAVELER UPGRADES</span>
               {formData.participantsList.map((t, i) => {
                 const trainOpts = tripData?.travelOptions?.length > 0 ? tripData.travelOptions : [];
                 const roomOpts = tripData?.roomOptions?.length > 0 ? tripData.roomOptions : [];
@@ -688,37 +697,52 @@ function BookingForm() {
                 const roomDelta = roomOpts.find((o: any) => o.label === t.roomSharing)?.priceDelta || 0;
                 if (trainDelta === 0 && roomDelta === 0) return null;
                 return (
-                  <div key={i} className="text-[9px] text-slate-400 space-y-0.5">
-                    <span className="font-bold capitalize text-slate-505">Traveler {i+1} Adjustments</span>
-                    {roomDelta !== 0 && <div className="flex justify-between gap-2"><span>{t.roomSharing}</span><span className={roomDelta > 0 ? 'text-slate-650 font-bold' : 'text-emerald-600 font-bold'}>{roomDelta > 0 ? '+' : ''}₹{roomDelta.toLocaleString()}</span></div>}
-                    {!isDirectJoin && trainDelta !== 0 && <div className="flex justify-between gap-2"><span>{t.trainOption}</span><span className={trainDelta > 0 ? 'text-slate-650 font-bold' : 'text-emerald-600 font-bold'}>{trainDelta > 0 ? '+' : ''}₹{trainDelta.toLocaleString()}</span></div>}
+                  <div key={i} className="text-[9px] bg-white border border-slate-200/70 rounded-lg p-2 space-y-0.5">
+                    <span className="font-extrabold text-slate-800 block">Traveler {i+1} ({t.name || 'Pax'})</span>
+                    {roomDelta !== 0 && (
+                      <div className="flex justify-between text-slate-600 font-medium">
+                        <span>{t.roomSharing}</span>
+                        <span className={roomDelta > 0 ? 'text-slate-900 font-bold' : 'text-emerald-600 font-bold'}>{roomDelta > 0 ? '+' : ''}₹{roomDelta.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {!isDirectJoin && trainDelta !== 0 && (
+                      <div className="flex justify-between text-slate-600 font-medium">
+                        <span>{t.trainOption}</span>
+                        <span className={trainDelta > 0 ? 'text-slate-900 font-bold' : 'text-emerald-600 font-bold'}>{trainDelta > 0 ? '+' : ''}₹{trainDelta.toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           )}
 
-          <div className="flex items-center justify-between text-slate-650 gap-2 min-w-0">
-            <span className="flex items-center font-extrabold shrink-0 text-[8px] uppercase tracking-wider text-slate-400">GST @ {tripData?.gstPercentage ?? 5}%</span>
-            <span className="font-extrabold text-slate-900 shrink-0">+₹{pricing.fullPackageGst.toLocaleString()}</span>
+          {/* Tax line */}
+          <div className="flex items-center justify-between text-slate-700 gap-2 min-w-0 pt-1 border-t border-slate-200/60">
+            <span className="font-extrabold shrink-0 text-[8px] uppercase tracking-widest text-slate-400">GST @ {tripData?.gstPercentage ?? 5}%</span>
+            <span className="font-extrabold text-slate-900 shrink-0">+ ₹{pricing.fullPackageGst.toLocaleString()}</span>
           </div>
         </div>
 
-        {/* Calculations & Total */}
+        {/* Final Payment Card */}
         <div className="space-y-2 pt-0.5">
-          {/* Visual Priority 3: Pay Now / Grand Total */}
-          <div className="bg-gradient-to-br from-[#D4541A] to-[#FF8A00] p-3 rounded-xl flex flex-col justify-between text-white shadow-sm">
-            <span className="text-[8px] font-extrabold uppercase tracking-widest opacity-95 block">PAY NOW</span>
-            <div className="flex items-end justify-between mt-0.5">
-              <span className="text-lg font-black tracking-tight">₹{pricing.finalTotal.toLocaleString()}</span>
+          <div className="bg-gradient-to-br from-[#D4541A] to-[#FF8A00] p-4 rounded-2xl flex flex-col justify-between text-white shadow-md shadow-[#D4541A]/15">
+            <div className="flex justify-between items-center">
+              <span className="text-[8px] font-extrabold uppercase tracking-widest opacity-90 block">TOTAL AMOUNT (PAY NOW)</span>
+              <span className="text-[9px] font-black uppercase bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-xs">INC. GST</span>
             </div>
-            <p className="text-[8px] font-semibold opacity-85 mt-0.5">₹{(pricing.finalTotal - pricing.depositGst).toLocaleString()} + ₹{pricing.depositGst.toLocaleString()} GST</p>
+            <div className="mt-1">
+              <span className="text-2xl sm:text-3xl font-black tracking-tight">₹{pricing.finalTotal.toLocaleString()}</span>
+            </div>
+            <p className="text-[9.5px] font-bold opacity-90 mt-1 pt-1 border-t border-white/20">
+              Breakdown: ₹{(pricing.finalTotal - pricing.depositGst).toLocaleString()} Base + GST ₹{pricing.depositGst.toLocaleString()}
+            </p>
           </div>
 
           {paymentMode === 'Partial Payment' && (
-            <div className="flex justify-between items-center bg-slate-50 border border-slate-200/60 rounded-lg px-2.5 py-1.5 text-xs">
-              <span className="flex items-center font-extrabold text-[8px] uppercase tracking-wider text-slate-400">REMAINING BALANCE</span>
-              <span className="font-black text-slate-800 text-xs">₹{pricing.remainingBalance.toLocaleString()}</span>
+            <div className="flex justify-between items-center bg-rose-50/80 border border-rose-200/70 rounded-xl px-3 py-2 text-xs">
+              <span className="flex items-center font-extrabold text-[8px] uppercase tracking-widest text-rose-700">REMAINING BALANCE</span>
+              <span className="font-black text-rose-800 text-xs font-mono">₹{pricing.remainingBalance.toLocaleString()}</span>
             </div>
           )}
         </div>
@@ -727,7 +751,7 @@ function BookingForm() {
 
     if (isCard) {
       return (
-        <div className="bg-white border border-slate-200/80 rounded-[20px] overflow-hidden shadow-xs">
+        <div className="bg-white border border-slate-200/90 rounded-[24px] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
           {content}
         </div>
       );
