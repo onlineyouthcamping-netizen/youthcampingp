@@ -602,7 +602,7 @@ button, a, [role="button"] {
   main, #__next, root {
     max-width: 100% !important;
     width: 100% !important;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
   }
 
   [class*="overflow-x-auto"],
