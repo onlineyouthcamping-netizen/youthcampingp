@@ -52,20 +52,39 @@ const logHistory = async (ticketId, action, req, extra = {}) => {
 exports.getTicketsByBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const isOwner = await checkBookingOwnership(bookingId, req.user);
-    if (!isOwner) {
-      return res.status(403).json({ success: false, message: 'Forbidden: You do not own this booking' });
+    const tenantId = req.user?.tenantId || 'default';
+
+    // 1. Resolve booking record by id OR custom bookingId
+    const booking = await prisma.booking.findFirst({
+      where: {
+        OR: [
+          { id: String(bookingId) },
+          { bookingId: String(bookingId) }
+        ],
+        ...(tenantId && tenantId !== 'all' ? { tenantId } : {})
+      },
+      select: { id: true, bookingId: true }
+    });
+
+    if (!booking) {
+      return res.json({ success: true, data: [] });
     }
 
+    // 2. Fetch train tickets matching custom bookingId OR CUID id
     const tickets = await prisma.trainTicket.findMany({
-      where: { bookingId, tenantId: req.user.tenantId },
+      where: {
+        OR: [
+          { bookingId: booking.bookingId },
+          { bookingId: booking.id }
+        ]
+      },
       orderBy: { createdAt: 'asc' }
     });
 
     return res.json({ success: true, data: tickets });
   } catch (err) {
     console.error('getTicketsByBooking error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch tickets' });
+    return res.status(500).json({ success: false, message: 'Failed to fetch tickets', details: err.message });
   }
 };
 
@@ -111,10 +130,25 @@ exports.getTicketHistory = async (req, res) => {
 exports.createTicket = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const isOwner = await checkBookingOwnership(bookingId, req.user);
-    if (!isOwner) {
-      return res.status(403).json({ success: false, message: 'Forbidden: You do not own this booking' });
+    const tenantId = req.user?.tenantId || 'default';
+
+    const booking = await prisma.booking.findFirst({
+      where: {
+        OR: [
+          { id: String(bookingId) },
+          { bookingId: String(bookingId) }
+        ],
+        ...(tenantId && tenantId !== 'all' ? { tenantId } : {})
+      },
+      select: { id: true, bookingId: true, tenantId: true }
+    });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
     }
+
+    const targetBookingId = booking.bookingId;
+    const targetTenantId = booking.tenantId || tenantId;
 
     const {
       travelerName, passengerReference, pnr, trainName, trainNumber,
@@ -130,8 +164,8 @@ exports.createTicket = async (req, res) => {
     if (pnr || travelerName) {
       const existing = await prisma.trainTicket.findFirst({
         where: {
-          tenantId: req.user.tenantId,
-          bookingId,
+          tenantId: targetTenantId,
+          bookingId: targetBookingId,
           travelerName,
           ...(pnr ? { pnr } : {}),
           ticketStatus: { not: 'CANCELLED' }
@@ -144,8 +178,8 @@ exports.createTicket = async (req, res) => {
 
     const ticket = await prisma.trainTicket.create({
       data: {
-        tenantId: req.user.tenantId,
-        bookingId,
+        tenantId: targetTenantId,
+        bookingId: targetBookingId,
         travelerName,
         passengerReference: passengerReference || null,
         pnr: pnr || null,
@@ -173,7 +207,7 @@ exports.createTicket = async (req, res) => {
     return res.status(201).json({ success: true, data: ticket, message: 'Ticket created successfully' });
   } catch (err) {
     console.error('createTicket error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to create ticket' });
+    return res.status(500).json({ success: false, message: 'Failed to create ticket', details: err.message });
   }
 };
 

@@ -2008,17 +2008,14 @@ exports.uploadPassengerDocument = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Booking not found.' });
     }
 
-    // Sales role permission check: must own the booking
-    // Sales role permission check: all sales permitted
-
     // 3. File validation
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
     }
 
-    // Size limit check: 1 MB
-    if (req.file.size > 1024 * 1024) {
-      return res.status(400).json({ success: false, message: 'File size must be under 1 MB.' });
+    // Size limit check: 5 MB
+    if (req.file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({ success: false, message: 'File size must be under 5 MB.' });
     }
 
     // MimeType check (PDF, JPG, PNG)
@@ -2040,12 +2037,7 @@ exports.uploadPassengerDocument = async (req, res, next) => {
       return res.status(500).json({ success: false, message: 'Document upload failed. Please retry later.' });
     }
 
-    // 5. Database record creation or update
-    const existingDoc = await prisma.bookingDocument.findFirst({
-      where: { bookingId, passengerId, tenantId }
-    });
-
-    let doc;
+    // 5. Always create a NEW database record so multiple documents per passenger are supported
     const docData = {
       tenantId,
       bookingId,
@@ -2059,16 +2051,9 @@ exports.uploadPassengerDocument = async (req, res, next) => {
       status: 'UPLOADED'
     };
 
-    if (existingDoc) {
-      doc = await prisma.bookingDocument.update({
-        where: { id: existingDoc.id },
-        data: docData
-      });
-    } else {
-      doc = await prisma.bookingDocument.create({
-        data: docData
-      });
-    }
+    const doc = await prisma.bookingDocument.create({
+      data: docData
+    });
 
     // Log booking activity
     await logBookingActivity({
@@ -2086,7 +2071,8 @@ exports.uploadPassengerDocument = async (req, res, next) => {
 
 exports.downloadPassengerDocument = async (req, res, next) => {
   try {
-    const { id: bookingId, passengerId } = req.params;
+    const { id: bookingId, passengerId, docId } = req.params;
+    const targetDocId = docId || req.query.docId;
     const tenantId = req.user.tenantId || 'default';
 
     // 1. Role-based permissions
@@ -2103,12 +2089,18 @@ exports.downloadPassengerDocument = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Booking not found.' });
     }
 
-    // Sales role permission check: must own the booking
-
     // 3. Fetch document metadata
-    const doc = await prisma.bookingDocument.findFirst({
-      where: { bookingId, passengerId, tenantId }
-    });
+    let doc = null;
+    if (targetDocId) {
+      doc = await prisma.bookingDocument.findFirst({
+        where: { id: String(targetDocId), bookingId, tenantId }
+      });
+    } else {
+      doc = await prisma.bookingDocument.findFirst({
+        where: { bookingId, passengerId, tenantId },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
 
     if (!doc) {
       return res.status(404).json({ success: false, message: 'Document not found.' });
@@ -2127,7 +2119,8 @@ exports.downloadPassengerDocument = async (req, res, next) => {
 
 exports.deletePassengerDocument = async (req, res, next) => {
   try {
-    const { id: bookingId, passengerId } = req.params;
+    const { id: bookingId, passengerId, docId } = req.params;
+    const targetDocId = docId || req.query.docId;
     const tenantId = req.user.tenantId || 'default';
 
     if (req.user.role === 'guide') {
@@ -2142,10 +2135,17 @@ exports.deletePassengerDocument = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Booking not found.' });
     }
 
-
-    const doc = await prisma.bookingDocument.findFirst({
-      where: { bookingId, passengerId, tenantId }
-    });
+    let doc = null;
+    if (targetDocId) {
+      doc = await prisma.bookingDocument.findFirst({
+        where: { id: String(targetDocId), bookingId, tenantId }
+      });
+    } else {
+      doc = await prisma.bookingDocument.findFirst({
+        where: { bookingId, passengerId, tenantId },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
 
     if (!doc) {
       return res.status(404).json({ success: false, message: 'Document not found.' });
@@ -2164,7 +2164,7 @@ exports.deletePassengerDocument = async (req, res, next) => {
     await logBookingActivity({
       bookingId,
       action: 'DOCUMENT_DELETED',
-      details: `Deleted document "${doc.originalFileName}" for passenger ${passengerId}`,
+      details: `Deleted document "${doc.originalFileName}" for passenger ${doc.passengerId || passengerId}`,
       performedByAdminId: req.user.id
     });
 

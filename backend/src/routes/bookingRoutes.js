@@ -92,6 +92,8 @@ router.post('/:id/tasks', authenticate, requirePermission('bookings.edit'), enfo
 router.post('/:id/passengers/:passengerId/document', authenticate, documentUpload.single('document'), uploadPassengerDocument);
 router.get('/:id/passengers/:passengerId/document', authenticate, downloadPassengerDocument);
 router.delete('/:id/passengers/:passengerId/document', authenticate, deletePassengerDocument);
+router.get('/:id/documents/:docId', authenticate, downloadPassengerDocument);
+router.delete('/:id/documents/:docId', authenticate, deletePassengerDocument);
 router.post('/:id/cancel', authenticate, requirePermission('bookings.edit'), cancelBookingWithRefund);
 router.post('/:id/status', authenticate, requirePermission('bookings.edit'), cancelBookingWithRefund);
 router.delete('/:id', authenticate, requirePermission('bookings.delete'), enforceOwnership('booking'), deleteBooking);
