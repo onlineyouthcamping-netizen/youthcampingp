@@ -577,7 +577,9 @@ function BookingForm() {
         sourceBookingLinkId: initialParams.sourceBookingLinkId || null,
         sourceBookingLinkPayload: initialParams.sourceBookingLinkPayload || null,
         sourceBookingLinkSignature: initialParams.sourceBookingLinkSignature || null,
-        pickupCity: selectedCity?.cityName || 'Delhi',
+        pickupCity: selectedCity?.cityName 
+          ? `${selectedCity.cityName}${selectedCity.pickupPoint ? ` (${selectedCity.pickupPoint})` : ''}` 
+          : (initialParams.pickupCity || 'Delhi'),
         skipDays: selectedCity?.skipDays || 0,
         adjustedPrice: selectedCity?.price ?? (pricing.originalTotalBase / formData.participants),
         baseAmount: pricing.netBase,
@@ -588,7 +590,10 @@ function BookingForm() {
         status: 'pending',
         paymentStatus: paymentMode === 'Full Payment' ? 'Paid' : 'Partial',
         paymentMode: 'UPI',
-        notes: `City/State: ${formData.cityState}. Requests: ${formData.specialRequests}. WhatsApp Opt-in: ${whatsappOptIn ? 'Yes' : 'No'}`,
+        specialRequests: formData.specialRequests || '',
+        notes: formData.specialRequests 
+          ? `${formData.specialRequests} (City/State: ${formData.cityState})` 
+          : `City/State: ${formData.cityState}`,
         passengers: formData.participantsList.map(p => ({
           name: p.name,
           phone: p.phone,
@@ -806,11 +811,16 @@ function BookingForm() {
                     Joining Point
                   </p>
                   <p className="text-xs font-extrabold text-slate-900 leading-tight capitalize mt-0.5 truncate">
-                    {typeof selectedCity === 'object' && selectedCity?.cityName ? selectedCity.cityName : (tripData?.location || 'Delhi')}
-                    {typeof selectedCity === 'object' && selectedCity?.pickupPoint ? ` (${selectedCity.pickupPoint})` : ''}
+                    {selectedCity?.cityName 
+                      ? `${selectedCity.cityName}${selectedCity.pickupPoint ? ` (${selectedCity.pickupPoint})` : ''}` 
+                      : (initialParams.pickupCity || tripData?.location || 'Delhi')}
                   </p>
                   <a 
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(typeof selectedCity === 'object' && selectedCity?.cityName ? `${selectedCity.cityName} ${selectedCity.pickupPoint || ''}` : (tripData?.location || 'Delhi'))}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      selectedCity?.cityName 
+                        ? `${selectedCity.cityName} ${selectedCity.pickupPoint || ''}` 
+                        : (initialParams.pickupCity || tripData?.location || 'Delhi')
+                    )}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[9px] text-[#D4541A] hover:text-[#E65200] font-bold mt-0.5 inline-flex items-center gap-0.5 transition-colors"
@@ -1490,35 +1500,34 @@ function BookingForm() {
             )}
 
             {/* Nav buttons */}
-            <div className="flex justify-start items-center gap-4 mt-6">
-              {currentStep > 1 && (
+            <div className="flex items-center justify-between gap-3 mt-6 pt-4 border-t border-slate-100">
+              {currentStep > 1 ? (
                 <button
                   onClick={handlePrev}
                   type="button"
-                  className="bg-white border border-slate-200 text-slate-700 rounded-xl py-3 px-6 font-bold capitalize tracking-widest text-[10px] flex items-center gap-2 hover:bg-slate-50 transition-all active:scale-95 shadow-xs"
+                  className="bg-white border border-slate-200 text-slate-700 rounded-xl py-3 px-6 font-bold capitalize tracking-widest text-xs flex items-center gap-2 hover:bg-slate-50 transition-all active:scale-95 shadow-xs min-h-[44px]"
                 >
-                  <ChevronLeft size={14} /> Back
+                  <ChevronLeft size={16} /> Back
                 </button>
-              )}
+              ) : <div />}
 
-              {/* Desktop Only Next Action Button */}
-              <div className="hidden lg:block ml-auto">
+              <div className="flex items-center gap-3">
                 {currentStep < 4 ? (
                   <button
                     onClick={handleNext}
                     type="button"
-                    className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-3 px-6 font-extrabold uppercase tracking-widest text-[10px] flex items-center gap-1.5 shadow-md shadow-[#D4541A]/15 transition-all active:scale-95"
+                    className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-3 px-6 font-extrabold uppercase tracking-widest text-xs flex items-center gap-1.5 shadow-md shadow-[#D4541A]/15 transition-all active:scale-95 min-h-[44px]"
                   >
-                    Continue <ChevronRight size={12} strokeWidth={3} />
+                    Continue <ChevronRight size={14} strokeWidth={3} />
                   </button>
                 ) : (
                   <button
                     onClick={handleFinalSubmit}
                     disabled={loading}
                     type="button"
-                    className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-3 px-6 font-extrabold uppercase tracking-widest text-[10px] flex items-center gap-1.5 shadow-md shadow-[#D4541A]/25 transition-all active:scale-95 disabled:opacity-50"
+                    className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-3 px-6 font-extrabold uppercase tracking-widest text-xs flex items-center gap-1.5 shadow-md shadow-[#D4541A]/25 transition-all active:scale-95 disabled:opacity-50 min-h-[44px]"
                   >
-                    {loading ? <Loader2 className="animate-spin w-3 h-3" /> : <ShieldCheck size={12} strokeWidth={3} />}
+                    {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <ShieldCheck size={16} strokeWidth={3} />}
                     {loading ? 'Processing...' : 'Confirm'}
                   </button>
                 )}
@@ -1555,9 +1564,11 @@ function BookingForm() {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div>
             <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#D4541A] block">LIVE PACKAGE PRICE</span>
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">₹{pricing.finalTotal.toLocaleString()}</span>
-              <span className="text-[10px] text-slate-500 font-semibold">(Inc. GST)</span>
+              <span className="text-[10px] text-slate-600 font-extrabold">
+                (₹{(pricing.finalTotal - pricing.depositGst).toLocaleString()} + GST ₹{pricing.depositGst.toLocaleString()})
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
