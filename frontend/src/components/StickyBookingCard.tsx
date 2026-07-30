@@ -45,7 +45,7 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
 
   return (
     <>
-      <div className="sticky top-[96px] space-y-4 hidden lg:block pb-8 max-h-[calc(100vh-110px)] overflow-y-auto no-scrollbar">
+      <div className="sticky top-[96px] space-y-4 hidden lg:block">
         {/* Main Booking Card (Dark Navy Matching Reference Screenshot) */}
         <div className="bg-[#0B1528] rounded-[24px] overflow-hidden shadow-xl p-6 md:p-7 text-white border border-slate-800">
           <span className="text-zinc-400 font-bold text-xs uppercase tracking-wider block mb-2 font-montserrat">
