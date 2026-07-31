@@ -69,7 +69,17 @@ if (!process.env.ALLOW_PRODUCTION_DATABASE) {
 }
 
 for (const variableName of ['DATABASE_URL', 'DIRECT_URL']) {
-  const value = String(process.env[variableName] || '').trim();
+  let value = String(process.env[variableName] || '').trim();
+  // Strip leading/trailing quotes, backslashes, and variable name prefixes if present in raw env value
+  value = value.replace(/^["'\\]+|["'\\]+$/g, '').trim();
+  if (value.startsWith('DIRECT_URL=')) {
+    value = value.substring('DIRECT_URL='.length).replace(/^["'\\]+|["'\\]+$/g, '').trim();
+  }
+  if (value.startsWith('DATABASE_URL=')) {
+    value = value.substring('DATABASE_URL='.length).replace(/^["'\\]+|["'\\]+$/g, '').trim();
+  }
+  process.env[variableName] = value;
+
   const host = parseDatabaseHost(value);
 
   if (!host) {
