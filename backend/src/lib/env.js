@@ -91,9 +91,12 @@ for (const variableName of ['DATABASE_URL', 'DIRECT_URL']) {
   }
 }
 
-// Fallback JWT_SECRET if missing or short
+// Sanitize & Fallback JWT_SECRET
+if (process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = String(process.env.JWT_SECRET).replace(/^["'\\]+|["'\\]+$/g, '').trim();
+}
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  process.env.JWT_SECRET = process.env.JWT_SECRET || 'yc_super_secure_production_jwt_secret_key_2026_default_fallback_hash';
+  process.env.JWT_SECRET = 'yc_super_secure_production_jwt_secret_key_2026_default_fallback_hash';
 }
 
 module.exports = {
