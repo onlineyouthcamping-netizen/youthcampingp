@@ -78,7 +78,7 @@ exports.searchAll = async (req, res, next) => {
 
     const results = {};
     const permissions = req.user.permissions || [];
-    const isSuper = req.user.role === 'superadmin' || req.user.role === 'admin';
+    const isSuper = req.user.role === 'superadmin';
 
     // 1. Search Bookings
     if (permissions.includes('bookings.view')) {
