@@ -5,8 +5,12 @@ const { logAction } = require('../utils/auditLogger');
 const { sanitizeUser } = require('../utils/sanitize');
 const { ROLE_PERMISSIONS, PERMISSIONS } = require('../config/permissions');
 
+const crypto = require('crypto');
+const getSecretHash = () => crypto.createHash('sha256').update(process.env.JWT_SECRET || '').digest('hex').substring(0, 8);
+
 // Generate JWT with tenantId and tokenVersion
 const generateToken = (id, role, tenantId = 'default', tokenVersion = 0) => {
+  console.log(`[AUTH GENERATE] Secret Hash: ${getSecretHash()} | User ID: ${id} | Role: ${role}`);
   return jwt.sign({ id, role, tenantId, tokenVersion }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });

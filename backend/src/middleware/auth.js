@@ -23,12 +23,22 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Missing Bearer token' });
     }
 
-    const token = authHeader.slice('Bearer '.length).trim();
+    let token = authHeader.slice('Bearer '.length).trim();
+    token = token.replace(/^["'\\]+|["'\\]+$/g, '').trim();
     if (!token) {
-      return res.status(401).json({ success: false, message: 'Missing token' });
+      return res.status(401).json({ success: false, code: 'MISSING_TOKEN', message: 'Missing token' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const crypto = require('crypto');
+    const secretHash = crypto.createHash('sha256').update(process.env.JWT_SECRET || '').digest('hex').substring(0, 8);
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (jwtErr) {
+      console.error(`[AUTH ERROR] Path: ${req.path} | Secret Hash: ${secretHash} | Token Len: ${token.length} | Error: ${jwtErr.name} - ${jwtErr.message}`);
+      throw jwtErr;
+    }
 
     if (!decoded.id || FORBIDDEN_SYNTHETIC_IDENTITIES.has(decoded.id)) {
       return res.status(401).json({ success: false, message: 'Account not found' });
