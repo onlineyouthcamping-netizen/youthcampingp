@@ -484,32 +484,43 @@ exports.getStats = async (req, res, next) => {
     const paymentsToday = todayOutflow._sum.amount || 0;
     const netCashInflow = collectionToday - paymentsToday;
 
+    const role = req.user.role;
+    const userPerms = req.user.permissions || req.user.customPermissions || [];
+    
+    const hasPerm = (requiredPerm) => {
+      if (role === 'superadmin') return true;
+      if (Array.isArray(userPerms)) {
+        return userPerms.includes(requiredPerm) || userPerms.includes('*');
+      }
+      return false;
+    };
+
     const resData = {
-      bookings: totalBookings,
-      trips: totalTrips,
-      totalBookings,
-      totalTrips,
-      totalRevenue,
-      pendingPayments,
-      pendingVendorsCost,
-      pendingVendorsCount,
-      monthlyRevenue: formattedMonthlyRevenue,
-      recentBookings: mappedRecentBookings,
-      tasksTotal,
-      tasksCompleted,
-      tasksOverdue,
-      tasksPending,
-      employeeStatus: {
+      bookings: hasPerm('bookings.view') ? totalBookings : 0,
+      trips: hasPerm('trips.view') ? totalTrips : 0,
+      totalBookings: hasPerm('bookings.view') ? totalBookings : 0,
+      totalTrips: hasPerm('trips.view') ? totalTrips : 0,
+      totalRevenue: hasPerm('accounting.view') ? totalRevenue : undefined,
+      pendingPayments: (hasPerm('accounting.view') || hasPerm('bookings.view')) ? pendingPayments : undefined,
+      pendingVendorsCost: (hasPerm('accounting.view') || hasPerm('vendors.view')) ? pendingVendorsCost : undefined,
+      pendingVendorsCount: (hasPerm('accounting.view') || hasPerm('vendors.view')) ? pendingVendorsCount : undefined,
+      monthlyRevenue: hasPerm('accounting.view') ? formattedMonthlyRevenue : undefined,
+      recentBookings: hasPerm('bookings.view') ? mappedRecentBookings : undefined,
+      tasksTotal: hasPerm('tasks.view') || hasPerm('ops.view') ? tasksTotal : undefined,
+      tasksCompleted: hasPerm('tasks.view') || hasPerm('ops.view') ? tasksCompleted : undefined,
+      tasksOverdue: hasPerm('tasks.view') || hasPerm('ops.view') ? tasksOverdue : undefined,
+      tasksPending: hasPerm('tasks.view') || hasPerm('ops.view') ? tasksPending : undefined,
+      employeeStatus: hasPerm('users.view') ? {
         online: onlineEmployees,
         offline: offlineEmployees
-      },
-      employeeWorkload: adminWorkloads.map(emp => ({
+      } : undefined,
+      employeeWorkload: hasPerm('users.view') ? adminWorkloads.map(emp => ({
         name: emp.name,
         state: emp.state,
         pct: emp.pct || 50,
         color: emp.color
-      })),
-      attentionItems: [
+      })) : undefined,
+      attentionItems: hasPerm('ops.view') || hasPerm('bookings.view') ? [
         { label: "Payments waiting verification", count: payVerifyCount, color: "bg-[#E23D4D]", urgent: true, path: "/admin/approvals-hub?tab=booking-verification" },
         { label: "Aadhaar pending", count: aadhaarPendingCount, color: "bg-[#D97706]", path: "/admin/approvals-hub?tab=booking-verification" },
         { label: "Hotels pending confirmation", count: hotelPendingCount, color: "bg-[#D97706]", path: "/admin/departure-workspace" },
@@ -519,15 +530,15 @@ exports.getStats = async (req, res, next) => {
         { label: "Tasks pending > 24 hours", count: tasksOver24Count, color: "bg-[#E23D4D]", urgent: true, path: "/admin/departure-workspace" },
         { label: "Missing train tickets", count: missingTicketsCount, color: "bg-[#E23D4D]", urgent: true, path: "/admin/approvals-hub?tab=ticket-approvals" },
         { label: "Missing tempo confirmation", count: tempoPendingCount, color: "bg-[#D97706]", path: "/admin/departure-workspace" }
-      ],
-      tripsRunningNow,
-      tripsDepartingNext7Days,
-      todaysSchedule,
-      cashFlow: {
+      ] : undefined,
+      tripsRunningNow: hasPerm('trips.view') ? tripsRunningNow : undefined,
+      tripsDepartingNext7Days: hasPerm('trips.view') ? tripsDepartingNext7Days : undefined,
+      todaysSchedule: hasPerm('ops.view') ? todaysSchedule : undefined,
+      cashFlow: hasPerm('accounting.view') ? {
         collectionToday,
         paymentsToday,
         netCashInflow
-      }
+      } : undefined
     };
 
     // Cache the data in Redis for 15 seconds
