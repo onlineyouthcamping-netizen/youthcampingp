@@ -135,17 +135,24 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+const logDeniedAccess = (req, reason, requiredPermission = null) => {
+  const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+  console.warn(`[SECURITY AUDIT - DENIED ACCESS] Timestamp: ${new Date().toISOString()} | UserID: ${req.user?.id || 'unauthenticated'} | Role: ${req.user?.role || 'none'} | Path: ${req.originalUrl || req.path} | IP: ${clientIp} | RequiredPerm: ${requiredPermission || 'none'} | Reason: ${reason}`);
+};
+
 /**
  * Middleware to enforce role-permission checks.
  */
 const requirePermission = (permissionKey) => {
   return (req, res, next) => {
     if (!req.user) {
+      logDeniedAccess(req, 'Missing user context', permissionKey);
       return res.status(401).json({ success: false, code: 'UNAUTHENTICATED', message: 'Unauthenticated' });
     }
     if (hasPermission(req.user, permissionKey)) {
       return next();
     }
+    logDeniedAccess(req, 'Insufficient permissions', permissionKey);
     return res.status(403).json({ success: false, code: 'INSUFFICIENT_PERMISSIONS', requiredPermission: permissionKey, message: 'Forbidden: Insufficient permissions' });
   };
 };

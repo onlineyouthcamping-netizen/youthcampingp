@@ -76,11 +76,14 @@ async function runTestSuite() {
     'bookings.view',
     'trips.view',
     'company_documents.view',
-    'station_payments.view',
-    'website.view'
+    'station_payments.view'
   ];
 
-  assert(hasPermission('finance', 'accounting.view'), "Finance role has explicit access to 'accounting.view'");
+  assert(hasPermission('superadmin', 'accounting.view'), "Superadmin role has full access to 'accounting.view'");
+  assert(hasPermission('finance', 'accounting.view'), "Finance role has access to 'accounting.view'");
+  assert(!hasPermission('sales', 'accounting.view'), "Sales role is DENIED access to 'accounting.view'");
+  assert(!hasPermission('operations', 'accounting.view'), "Operations role is DENIED access to 'accounting.view'");
+  assert(!hasPermission('guide', 'accounting.view'), "Guide role is DENIED access to 'accounting.view'");
 
   requiredAdminPermissions.forEach(perm => {
     assert(hasPermission('admin', perm), `Admin role has explicit access to '${perm}'`);
@@ -99,6 +102,13 @@ async function runTestSuite() {
     res.json({ success: true, message: 'Granted' });
   });
 
+  app.get('/test-restricted-finance', (req, res, next) => {
+    req.user = { id: 'sales_user_1', role: 'sales', permissions: [] };
+    next();
+  }, requirePermission('accounting.view'), (req, res) => {
+    res.json({ success: true, message: 'Finance Granted' });
+  });
+
   const server = http.createServer(app);
   await new Promise(resolve => server.listen(0, resolve));
   const port = server.address().port;
@@ -115,6 +125,11 @@ async function runTestSuite() {
   });
   const data2 = await res2.json();
   assert(res2.status === 401 && data2.code === 'INVALID_TOKEN', 'Invalid JWT token returns 401 with code: INVALID_TOKEN');
+
+  // Test 4.3: Denied Permission -> 403 INSUFFICIENT_PERMISSIONS
+  const resDenied = await fetch(`${baseUrl}/test-restricted-finance`);
+  const dataDenied = await resDenied.json();
+  assert(resDenied.status === 403 && dataDenied.code === 'INSUFFICIENT_PERMISSIONS', 'Unauthorized endpoint returns 403 Forbidden with code: INSUFFICIENT_PERMISSIONS');
 
   // Test 4.3: Expired Token -> 401 TOKEN_EXPIRED
   const res3 = await fetch(`${baseUrl}/test-protected`, {

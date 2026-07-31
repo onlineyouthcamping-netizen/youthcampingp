@@ -247,8 +247,6 @@ const ROLE_PERMISSIONS = {
     'tickets.submit',
     'tickets.bulk',
     'tickets.alerts.view',
-    'accounting.view',
-    'accounting.submit',
     'emails.view',
     'emails.send',
     'emails.send_bulk',
