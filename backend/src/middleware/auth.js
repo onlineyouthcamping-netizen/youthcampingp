@@ -256,7 +256,7 @@ const requireAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ success: false, message: 'Unauthenticated' });
   }
-  if (['superadmin', 'admin'].includes(req.user.role)) {
+  if (['superadmin', 'admin'].includes(req.user.role) || hasPermission(req.user, 'settings.view') || hasPermission(req.user, 'audit.view')) {
     return next();
   }
   return res.status(403).json({ success: false, message: 'Access Denied: Admin privileges required.' });
