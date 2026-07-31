@@ -71,6 +71,7 @@ app.use('/api', require('./middleware/requestTimeout'));
 app.use('/api', require('./middleware/circuitBreaker'));
 
 // 3. Import & Mount Routes
+app.use('/api/admin/rbac', require('./routes/rbacRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/trips', require('./routes/tripKnowledge'));
 app.use('/api/trips', require('./routes/tripDocuments'));

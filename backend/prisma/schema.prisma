@@ -3861,3 +3861,162 @@ model TripActivityLog {
   @@index([tripId])
   @@index([createdAt])
 }
+
+// ==========================================
+// ENTERPRISE RBAC ARCHITECTURE MODELS
+// ==========================================
+
+model Role {
+  id             String   @id @default(cuid())
+  tenantId       String   @default("default")
+  name           String
+  description    String?  @db.Text
+  isSystem       Boolean  @default(false)
+  isCustom       Boolean  @default(true)
+  isArchived     Boolean  @default(false)
+  status         String   @default("active")
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  permissions     RolePermission[]
+  userAssignments UserRoleAssignment[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([isCustom])
+  @@index([isSystem])
+}
+
+model Permission {
+  id           String   @id @default(cuid())
+  module       String
+  action       String   @unique
+  name         String
+  description  String?  @db.Text
+  resourceType String?
+  tier         String   @default("free")
+  createdAt    DateTime @default(now())
+
+  rolePermissions  RolePermission[]
+  userPermissions  UserCustomPermission[]
+  groupPermissions GroupPermission[]
+  delegations      PermissionDelegation[]
+
+  @@index([module])
+  @@index([action])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  addedAt      DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model UserRoleAssignment {
+  id         String   @id @default(cuid())
+  userId     String
+  roleId     String
+  isPrimary  Boolean  @default(false)
+  assignedAt DateTime @default(now())
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+model UserCustomPermission {
+  id           String    @id @default(cuid())
+  userId       String
+  permissionId String
+  isDenied     Boolean   @default(false)
+  grantedBy    String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+  @@index([expiresAt])
+}
+
+model PermissionGroup {
+  id          String   @id @default(cuid())
+  name        String
+  module      String?
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  permissions GroupPermission[]
+}
+
+model GroupPermission {
+  groupId      String
+  permissionId String
+
+  group      PermissionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  permission Permission      @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, permissionId])
+}
+
+model PermissionDelegation {
+  id           String    @id @default(cuid())
+  fromUserId   String
+  toUserId     String
+  permissionId String
+  delegatedAt  DateTime  @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([expiresAt])
+}
+
+model RbacAuditLog {
+  id           String   @id @default(cuid())
+  tenantId     String   @default("default")
+  userId       String?
+  userName     String?
+  userEmail    String?
+  action       String
+  resourceType String?
+  resourceId   String?
+  details      String?  @db.Text
+  oldValue     Json?
+  newValue     Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model RoleTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?  @db.Text
+  permissionsJson Json
+  tier            String   @default("free")
+  category        String   @default("general")
+  adoptionCount   Int      @default(0)
+  featured        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+}

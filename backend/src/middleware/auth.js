@@ -109,6 +109,8 @@ const authenticate = async (req, res, next) => {
 
     req.user = user;
     req.admin = user;
+    req.hasPermission = (permKey) => hasPermission(req.user, permKey);
+    req.can = (permKey) => hasPermission(req.user, permKey);
     if (req._timings) req._timings.auth = Date.now() - authStart;
     next();
   } catch (err) {
