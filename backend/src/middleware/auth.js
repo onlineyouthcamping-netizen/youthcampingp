@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { prisma } = require('../lib/prisma');
-const { hasPermission } = require('../config/permissions');
+const { hasPermission, ROLE_PERMISSIONS, PERMISSIONS } = require('../config/permissions');
 
 const FORBIDDEN_SYNTHETIC_IDENTITIES = new Set([
   'root_admin_bypass',
