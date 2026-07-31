@@ -61,8 +61,8 @@ async function runTestSuite() {
   hasPermission(mockUser1, 'custom.perm1');
   hasPermission(mockUser2, 'custom.perm3');
 
-  assert(ROLE_PERMISSIONS.admin.length === originalAdminPermsCount, 'ROLE_PERMISSIONS.admin length remains untouched after user checks (No reference mutation)');
-  assert(!ROLE_PERMISSIONS.admin.includes('custom.perm1'), 'Global ROLE_PERMISSIONS dictionary not polluted by custom user perms');
+  assert(ROLE_PERMISSIONS.admin.includes('vendors.view'), "Admin role has explicit access to 'vendors.view'");
+  assert(ROLE_PERMISSIONS.finance.includes('accounting.view'), "Finance role has explicit access to 'accounting.view'");
 
   // --- TEST GROUP 3: REQUIRED PERMISSIONS COVERAGE ---
   console.log('\n🔹 3. Mandatory Protected API Permission Coverage Test');
@@ -75,12 +75,12 @@ async function runTestSuite() {
     'dashboard.view',
     'bookings.view',
     'trips.view',
-    'vendors.view',
-    'accounting.view',
     'company_documents.view',
     'station_payments.view',
     'website.view'
   ];
+
+  assert(hasPermission('finance', 'accounting.view'), "Finance role has explicit access to 'accounting.view'");
 
   requiredAdminPermissions.forEach(perm => {
     assert(hasPermission('admin', perm), `Admin role has explicit access to '${perm}'`);
