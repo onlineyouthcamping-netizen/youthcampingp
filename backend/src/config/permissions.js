@@ -221,7 +221,13 @@ const ROLE_PERMISSIONS = {
     // Website Management
     'website.view',
     'website.edit',
-    'website.publish'
+    'website.publish',
+    // Notifications, ERP, and Timelines
+    'notifications.view_own',
+    'notifications.mark_read',
+    'activity.view',
+    'recurring_tasks.view',
+    'customers.timeline.view'
   ],
 
   sales: [

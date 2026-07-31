@@ -134,8 +134,8 @@ exports.getMe = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User profile not found' });
     }
 
-    // Role-based permissions calculation
-    let permissions = admin.role === 'superadmin' ? PERMISSIONS : (ROLE_PERMISSIONS[admin.role] || []);
+    // Role-based permissions calculation (shallow clone to prevent mutating global ROLE_PERMISSIONS)
+    let permissions = admin.role === 'superadmin' ? [...PERMISSIONS] : [...(ROLE_PERMISSIONS[admin.role] || [])];
     if (Array.isArray(admin.customPermissions)) {
       admin.customPermissions.forEach(p => {
         if (!permissions.includes(p)) permissions.push(p);

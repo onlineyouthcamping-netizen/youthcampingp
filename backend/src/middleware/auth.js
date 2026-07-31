@@ -80,17 +80,17 @@ const authenticate = async (req, res, next) => {
 
     // Check if account is active
     if (!admin.isActive) {
-      return res.status(403).json({ success: false, message: 'Account is deactivated' });
+      return res.status(403).json({ success: false, code: 'USER_DEACTIVATED', message: 'Account is deactivated' });
     }
 
     // Verify token version (only revoke if token is older than admin.tokenVersion)
     if (decoded.tokenVersion !== undefined && admin.tokenVersion !== undefined && admin.tokenVersion > 0) {
       if (decoded.tokenVersion < admin.tokenVersion) {
-        return res.status(401).json({ success: false, message: 'Token revoked: credentials changed' });
+        return res.status(401).json({ success: false, code: 'TOKEN_REVOKED', message: 'Token revoked: credentials changed' });
       }
     }
 
-    const defaultPerms = admin.role === 'superadmin' ? (PERMISSIONS || []) : (ROLE_PERMISSIONS[admin.role] || []);
+    const defaultPerms = admin.role === 'superadmin' ? [...PERMISSIONS] : [...(ROLE_PERMISSIONS[admin.role] || [])];
     const customPerms = Array.isArray(admin.customPermissions) ? admin.customPermissions : [];
     const permissions = Array.from(new Set([...defaultPerms, ...customPerms]));
 
@@ -118,10 +118,10 @@ const authenticate = async (req, res, next) => {
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired', status: 401, success: false, message: 'Token expired' });
+      return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED', status: 401, success: false, message: 'Token expired' });
     }
     console.error('JWT Verification Error:', err);
-    return res.status(401).json({ error: 'Invalid or expired token', status: 401, success: false, message: 'Invalid or expired token' });
+    return res.status(401).json({ error: 'Invalid or expired token', code: 'INVALID_TOKEN', status: 401, success: false, message: 'Invalid or expired token' });
   }
 };
 
@@ -131,12 +131,12 @@ const authenticate = async (req, res, next) => {
 const requirePermission = (permissionKey) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: 'Unauthenticated' });
+      return res.status(401).json({ success: false, code: 'UNAUTHENTICATED', message: 'Unauthenticated' });
     }
     if (hasPermission(req.user, permissionKey)) {
       return next();
     }
-    return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions' });
+    return res.status(403).json({ success: false, code: 'INSUFFICIENT_PERMISSIONS', requiredPermission: permissionKey, message: 'Forbidden: Insufficient permissions' });
   };
 };
 
