@@ -376,24 +376,44 @@ const ROLE_PERMISSIONS = {
 function hasPermission(roleOrUser, permission) {
   if (!roleOrUser) return false;
 
-  const role = typeof roleOrUser === 'string' ? roleOrUser : (roleOrUser.role || 'viewer');
+  const role = (typeof roleOrUser === 'string' ? roleOrUser : (roleOrUser.role || '')).toLowerCase();
   const custom = typeof roleOrUser === 'object' ? roleOrUser.customPermissions : null;
+  const userPerms = typeof roleOrUser === 'object' ? roleOrUser.permissions : null;
 
   if (role === 'superadmin') return true;
 
-  // Check default role permissions
+  // Build combined permissions set
+  const combined = new Set();
   const defaultAllowed = ROLE_PERMISSIONS[role] || [];
-  if (defaultAllowed.includes(permission)) return true;
+  defaultAllowed.forEach(p => combined.add(p));
 
-  // Check custom permissions array if present
-  if (custom !== null && custom !== undefined && Array.isArray(custom)) {
-    if (custom.includes(permission)) return true;
-
-    for (const item of custom) {
-      if (ROLE_PERMISSIONS[item] && ROLE_PERMISSIONS[item].includes(permission)) {
-        return true;
+  if (Array.isArray(custom)) {
+    custom.forEach(p => {
+      combined.add(p);
+      if (ROLE_PERMISSIONS[p]) {
+        ROLE_PERMISSIONS[p].forEach(rp => combined.add(rp));
       }
-    }
+    });
+  }
+
+  if (Array.isArray(userPerms)) {
+    userPerms.forEach(p => combined.add(p));
+  }
+
+  if (combined.has(permission)) return true;
+
+  // Check aliases
+  if ((permission === 'ops.view' || permission === 'operations.view') && (combined.has('ops.view') || combined.has('operations.view') || combined.has('trips.view'))) {
+    return true;
+  }
+  if ((permission === 'guides.view' || permission === 'guides.manage') && (combined.has('ops.view') || combined.has('operations.view') || combined.has('guides.view'))) {
+    return true;
+  }
+  if (permission === 'vendors.view' && (combined.has('ops.view') || combined.has('operations.view') || combined.has('vendors.view'))) {
+    return true;
+  }
+  if (permission === 'bookings.view' && (combined.has('bookings.view') || combined.has('inquiries.view') || combined.has('quotations.view'))) {
+    return true;
   }
 
   return false;

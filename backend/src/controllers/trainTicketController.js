@@ -469,9 +469,9 @@ exports.approveTicket = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
-    // Sales cannot approve
-    if (req.user.role === 'sales') {
-      return res.status(403).json({ success: false, message: 'Forbidden: Sales role cannot approve tickets' });
+    // Check permission to approve tickets
+    if (!req.hasPermission('tickets.approve')) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions to approve tickets' });
     }
 
     const ticket = await prisma.trainTicket.findUnique({ where: { id: ticketId } });
@@ -515,9 +515,9 @@ exports.rejectTicket = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
-    // Sales cannot reject
-    if (req.user.role === 'sales') {
-      return res.status(403).json({ success: false, message: 'Forbidden: Sales role cannot reject tickets' });
+    // Check permission to reject tickets
+    if (!req.hasPermission('tickets.approve')) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions to reject tickets' });
     }
 
     const ticket = await prisma.trainTicket.findUnique({ where: { id: ticketId } });
@@ -567,9 +567,9 @@ exports.reopenTicket = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
-    // Sales cannot reopen
-    if (req.user.role === 'sales') {
-      return res.status(403).json({ success: false, message: 'Forbidden: Sales role cannot reopen tickets' });
+    // Check permission to reopen tickets
+    if (!req.hasPermission('tickets.reopen') && !req.hasPermission('tickets.approve')) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions to reopen tickets' });
     }
 
     const ticket = await prisma.trainTicket.findUnique({ where: { id: ticketId } });
@@ -728,9 +728,7 @@ exports.bulkUpdateTickets = async (req, res) => {
       tenantId: req.user.tenantId,
       isLocked: false
     };
-    if (req.user.role === 'sales') {
-      eligibleWhere.booking = { salesAdminId: req.user.id };
-    } else if (!['superadmin', 'admin', 'operations', 'BOOKING_VERIFIER'].includes(req.user.role)) {
+    if (!req.hasPermission('tickets.bulk') && !req.hasPermission('tickets.approve') && !req.hasPermission('tickets.edit')) {
       return res.json({ success: true, data: { updatedCount: 0, tickets: [] }, message: '0 tickets updated successfully' });
     }
 

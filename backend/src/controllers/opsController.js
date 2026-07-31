@@ -1282,7 +1282,7 @@ exports.getChecklist = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to checklist logs' });
     }
 
@@ -1313,7 +1313,7 @@ exports.initializeChecklist = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to initialize checklists' });
     }
 
@@ -1478,7 +1478,7 @@ exports.initializeChecklist = async (req, res) => {
 exports.completeChecklistItem = async (req, res) => {
   try {
     const { id, notes } = req.body;
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to checklist items' });
     }
     const item = await prisma.opsTripChecklist.findUnique({ where: { id } });
@@ -1520,7 +1520,7 @@ exports.completeChecklistItem = async (req, res) => {
 exports.reopenChecklistItem = async (req, res) => {
   try {
     const { id, notes } = req.body;
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to checklist items' });
     }
     const item = await prisma.opsTripChecklist.findUnique({ where: { id } });
@@ -1594,7 +1594,7 @@ exports.getIncidents = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to incident logs' });
     }
 
@@ -1622,7 +1622,7 @@ exports.createIncident = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to create incident logs' });
     }
 
@@ -1668,7 +1668,7 @@ exports.resolveIncident = async (req, res) => {
     const { id } = req.params;
     const { resolution } = req.body;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to resolve incidents' });
     }
 
@@ -1707,7 +1707,7 @@ exports.reopenIncident = async (req, res) => {
     const { id } = req.params;
     const { notes } = req.body;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to reopen incidents' });
     }
 
@@ -1762,7 +1762,7 @@ exports.createRoomInventory = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to modify room inventory' });
     }
 
@@ -1826,7 +1826,7 @@ exports.createRoomInventory = async (req, res) => {
 exports.deleteRoomInventory = async (req, res) => {
   try {
     const { id } = req.params;
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to delete room inventory' });
     }
 
@@ -1844,7 +1844,7 @@ exports.generateAllocation = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to run allocations' });
     }
 
@@ -1884,7 +1884,7 @@ exports.generateAllocation = async (req, res) => {
 exports.confirmAllocation = async (req, res) => {
   try {
     const { allocationRunId, roomAllocations: reqRoomAllocs, vehicleAllocations: reqVehicleAllocs } = req.body;
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to confirm allocations' });
     }
 
@@ -2044,7 +2044,7 @@ exports.getConfirmedAllocations = async (req, res) => {
 exports.overrideAllocation = async (req, res) => {
   try {
     const { allocationRunId, targetType, targetId, afterValue, reason } = req.body;
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to override allocations' });
     }
 
@@ -2088,7 +2088,7 @@ exports.overrideAllocation = async (req, res) => {
 // ── MANUAL ALLOCATION SAVE (hardened: validated, transactional, audited) ──
 exports.saveManualAllocations = async (req, res) => {
   try {
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role cannot save allocations' });
     }
 
@@ -2320,7 +2320,7 @@ exports.saveManualAllocations = async (req, res) => {
 exports.getSopLibrary = async (req, res) => {
   try {
     const tenantId = req.user.tenantId || 'default';
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to SOP library' });
     }
 
@@ -2357,7 +2357,7 @@ exports.getSopLibrary = async (req, res) => {
 exports.createSopLibrary = async (req, res) => {
   try {
     const tenantId = req.user.tenantId || 'default';
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to create SOPs' });
     }
 
@@ -2387,7 +2387,7 @@ exports.createSopLibrary = async (req, res) => {
 exports.updateSopLibrary = async (req, res) => {
   try {
     const { id } = req.params;
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to edit SOPs' });
     }
 
@@ -2416,7 +2416,7 @@ exports.updateSopLibrary = async (req, res) => {
 exports.archiveSopLibrary = async (req, res) => {
   try {
     const { id } = req.params;
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to SOP archive actions' });
     }
 
@@ -2442,7 +2442,7 @@ exports.archiveSopLibrary = async (req, res) => {
 exports.restoreSopLibrary = async (req, res) => {
   try {
     const { id } = req.params;
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to SOP restore actions' });
     }
 
@@ -2472,7 +2472,7 @@ exports.getTripLeader = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role has no access to leader assignments' });
     }
 
@@ -2506,7 +2506,7 @@ exports.assignTripLeader = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to assign leaders' });
     }
 
@@ -2609,7 +2609,7 @@ exports.patchTripLeader = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to update leaders' });
     }
 
@@ -2687,7 +2687,7 @@ exports.archiveTripLeader = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to archive leaders' });
     }
 
@@ -2744,7 +2744,7 @@ exports.restoreTripLeader = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
-    if (req.user?.role === 'sales') {
+    if (!req.hasPermission('ops.view') && !req.hasPermission('operations.view')) {
       return res.status(403).json({ success: false, message: 'Sales role is not allowed to restore leaders' });
     }
 
