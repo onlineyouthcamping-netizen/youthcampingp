@@ -343,13 +343,22 @@ const templates = {
       <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
         <tr>
           <td style="vertical-align: middle;">
-            <div style="font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; text-transform: uppercase;">
-              YOUTH<span style="color: #ff5722;">CAMPING</span>
-            </div>
+            <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+              <tr>
+                <td style="vertical-align: middle; padding-right: 10px;">
+                  <img src="${LOGO_URL}" alt="YouthCamping Logo" style="height: 36px; width: auto; display: block; border: 0;" />
+                </td>
+                <td style="vertical-align: middle;">
+                  <div style="font-size: 20px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; text-transform: uppercase;">
+                    YOUTH<span style="color: #ff5722;">CAMPING</span>
+                  </div>
+                </td>
+              </tr>
+            </table>
           </td>
           <td style="text-align: right; vertical-align: middle;">
             <span style="display: inline-block; padding: 6px 14px; background-color: #e6f7ed; border: 1px solid #a7f3d0; border-radius: 999px; color: #059669; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
-              ✓ CONFIRMED BOOKING
+              CONFIRMED BOOKING
             </span>
           </td>
         </tr>
@@ -380,7 +389,7 @@ const templates = {
         ${trip.title || booking.tripName}
       </h1>
       <div style="font-size: 13px; color: #64748b; font-weight: 600;">
-        <span style="color: #ff5722; font-size: 14px;">📍</span> ${pickupCity} &bull; ${passengersList.length || 1} Traveller${(passengersList.length || 1) > 1 ? 's' : ''}
+        ${pickupCity} &bull; ${passengersList.length || 1} Traveller${(passengersList.length || 1) > 1 ? 's' : ''}
       </div>
     </div>
 
@@ -405,7 +414,7 @@ const templates = {
               </div>
               <div style="margin-bottom: 16px;">
                 <span style="display: inline-block; padding: 5px 14px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 999px; color: #059669; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
-                  ✓ CONFIRMED
+                  CONFIRMED
                 </span>
               </div>
 
@@ -414,7 +423,7 @@ const templates = {
               </div>
               <div>
                 <span style="display: inline-block; padding: 5px 14px; background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 8px; color: #ea580c; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
-                  🎫 ${rawTicketStatus}
+                  ${rawTicketStatus}
                 </span>
               </div>
             </div>
@@ -449,7 +458,7 @@ const templates = {
     <!-- 6. Passenger Details Manifest -->
     <div style="padding: 0 24px 24px 24px; background-color: #ffffff;">
       <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.8px; margin-bottom: 8px;">
-        <span style="color: #ff5722; margin-right: 4px;">👤</span> PASSENGER DETAILS (${passengersList.length || 1})
+        PASSENGER DETAILS (${passengersList.length || 1})
       </div>
       <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
@@ -470,7 +479,7 @@ const templates = {
     <!-- 7. Itemized Financial Breakdown -->
     <div style="padding: 0 24px 24px 24px; background-color: #ffffff;">
       <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.8px; margin-bottom: 8px;">
-        <span style="color: #ff5722; margin-right: 4px;">📄</span> ITEMIZED FINANCIAL BREAKDOWN
+        ITEMIZED FINANCIAL BREAKDOWN
       </div>
       <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
@@ -491,7 +500,7 @@ const templates = {
     <!-- 8. Advance Payment Received -->
     <div style="padding: 0 24px 24px 24px; background-color: #ffffff;">
       <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.8px; margin-bottom: 8px;">
-        <span style="color: #ff5722; margin-right: 4px;">💳</span> ADVANCE PAYMENT RECEIVED
+        ADVANCE PAYMENT RECEIVED
       </div>
       <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff; padding: 14px 16px;">
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -522,17 +531,26 @@ const templates = {
       <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
         <tr>
           <td style="vertical-align: middle;">
-            <div style="font-size: 16px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
-              YOUTH<span style="color: #ff5722;">CAMPING</span>
-            </div>
+            <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+              <tr>
+                <td style="vertical-align: middle; padding-right: 10px;">
+                  <img src="${LOGO_URL}" alt="YouthCamping Logo" style="height: 26px; width: auto; display: block; border: 0;" />
+                </td>
+                <td style="vertical-align: middle;">
+                  <div style="font-size: 16px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
+                    YOUTH<span style="color: #ff5722;">CAMPING</span>
+                  </div>
+                </td>
+              </tr>
+            </table>
           </td>
           <td style="text-align: center; vertical-align: middle; color: #94a3b8; font-size: 11px; font-weight: 500;">
             Adventure. Community. Memories.
           </td>
           <td style="text-align: right; vertical-align: middle;">
-            <a href="https://instagram.com" target="_blank" style="color: #94a3b8; text-decoration: none; margin-left: 10px; font-size: 14px;">📷</a>
-            <a href="https://youtube.com" target="_blank" style="color: #94a3b8; text-decoration: none; margin-left: 10px; font-size: 14px;">▶️</a>
-            <a href="https://facebook.com" target="_blank" style="color: #94a3b8; text-decoration: none; margin-left: 10px; font-size: 14px;">🌐</a>
+            <a href="https://instagram.com" target="_blank" style="color: #94a3b8; text-decoration: none; margin-left: 10px; font-size: 11px; font-weight: 600;">Instagram</a>
+            <a href="https://youtube.com" target="_blank" style="color: #94a3b8; text-decoration: none; margin-left: 10px; font-size: 11px; font-weight: 600;">YouTube</a>
+            <a href="https://youthcamping.online" target="_blank" style="color: #94a3b8; text-decoration: none; margin-left: 10px; font-size: 11px; font-weight: 600;">Website</a>
           </td>
         </tr>
       </table>
@@ -551,7 +569,7 @@ const templates = {
 
   payment: (booking, amount) => {
     const content = `
-      <h1>Payment Received 💳</h1>
+      <h1>Payment Received</h1>
       <p>Hi ${booking.fullName},</p>
       <p>We've successfully received your payment of <strong>₹${amount.toLocaleString()}</strong> for your upcoming trip.</p>
       
@@ -587,7 +605,7 @@ const templates = {
   reminder: (booking) => {
     const trip = booking.tripRef || {};
     const content = `
-      <h1>Get Ready for Adventure! 🏔️</h1>
+      <h1>Get Ready for Adventure!</h1>
       <p>Hi ${booking.fullName},</p>
       <p>Your adventure to <strong>${trip.title || booking.tripName || booking.tripId}</strong> is just around the corner! We wanted to send a quick reminder about your upcoming trip.</p>
       
@@ -630,7 +648,7 @@ const templates = {
   invoice: (booking) => {
     const trip = booking.tripRef || {};
     const content = `
-      <h1>Your Trip Invoice 📄</h1>
+      <h1>Your Trip Invoice</h1>
       <p>Hi ${booking.fullName},</p>
       <p>Please find the invoice details for your booking <strong>${booking.bookingId}</strong> below.</p>
       
