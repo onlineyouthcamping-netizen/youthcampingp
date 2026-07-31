@@ -65,17 +65,22 @@ exports.adminLogin = async (req, res, next) => {
           ipAddress
         }).catch(err => console.error('⚠️ [Auth] Failed to log action:', err.message));
 
+        const defaultPerms = admin.role === 'superadmin' ? (PERMISSIONS || []) : (ROLE_PERMISSIONS[admin.role] || []);
+        const customPerms = Array.isArray(admin.customPermissions) ? admin.customPermissions : [];
+        const permissions = Array.from(new Set([...defaultPerms, ...customPerms]));
+
         return res.json({
           success: true,
           data: {
-            token: generateToken(admin.id, admin.role, admin.tenantId, admin.tokenVersion),
+            token: generateToken(admin.id, admin.role, admin.tenantId, admin.tokenVersion || 0),
             admin: {
               id: admin.id,
               name: admin.name,
               email: admin.email,
               role: admin.role,
               tenantId: admin.tenantId,
-              permissions: admin.role === 'superadmin' ? PERMISSIONS : (ROLE_PERMISSIONS[admin.role] || [])
+              customPermissions: customPerms,
+              permissions
             }
           }
         });

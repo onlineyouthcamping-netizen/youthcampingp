@@ -83,13 +83,11 @@ const authenticate = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Account is deactivated' });
     }
 
-    // Verify token version
-    if (decoded.tokenVersion !== undefined) {
-      if (decoded.tokenVersion !== admin.tokenVersion) {
+    // Verify token version (only revoke if token is older than admin.tokenVersion)
+    if (decoded.tokenVersion !== undefined && admin.tokenVersion !== undefined && admin.tokenVersion > 0) {
+      if (decoded.tokenVersion < admin.tokenVersion) {
         return res.status(401).json({ success: false, message: 'Token revoked: credentials changed' });
       }
-    } else if (admin.tokenVersion > 0) {
-      return res.status(401).json({ success: false, message: 'Token revoked: please log in again' });
     }
 
     const defaultPerms = admin.role === 'superadmin' ? (PERMISSIONS || []) : (ROLE_PERMISSIONS[admin.role] || []);
