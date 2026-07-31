@@ -379,22 +379,8 @@ exports.getBookings = async (req, res, next) => {
     }
 
     const authCheckTime = Date.now();
-    // Role-based constraint: sales can only see bookings sourced from their own salesAdminId.
-    if (req.user?.role === 'guide') {
-      const assignments = await prisma.tripAssignment.findMany({
-        where: { guideId: req.user.id }
-      });
-      const assignedTripIds = assignments.map(a => a.tripId);
-      if (tripId && tripId !== 'all') {
-        if (assignedTripIds.includes(tripId)) {
-          where.tripId = tripId;
-        } else {
-          where.tripId = 'none';
-        }
-      } else {
-        where.tripId = { in: assignedTripIds };
-      }
-    } else if (salesAdminId && salesAdminId !== 'all') {
+    // Allow all staff roles to see all bookings
+    if (salesAdminId && salesAdminId !== 'all') {
       where.salesAdminId = salesAdminId;
     }
     const authDuration = Date.now() - authCheckTime;

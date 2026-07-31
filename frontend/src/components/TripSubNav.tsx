@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TripSubNavProps {
   sections: { id: string; label: string }[];
@@ -10,9 +11,25 @@ interface TripSubNavProps {
 export default function TripSubNav({ sections }: TripSubNavProps) {
   const [activeSection, setActiveSection] = useState("");
   const [isSticky, setIsSticky] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const hasDraggedRef = useRef(false);
+
+  const checkScrollState = () => {
+    const el = scrollContainerRef.current;
+    if (el) {
+      setCanScrollLeft(el.scrollLeft > 4);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+    }
+  };
 
   useEffect(() => {
     // Use IntersectionObserver on a sentinel element for reliable sticky detection
@@ -54,6 +71,41 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
     return () => observer.disconnect();
   }, [sections]);
 
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    checkScrollState();
+    const handleScroll = () => checkScrollState();
+    const handleResize = () => checkScrollState();
+
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [sections]);
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        const canScroll = (e.deltaY > 0 && canScrollRight) || (e.deltaY < 0 && canScrollLeft);
+        if (canScroll) {
+          e.preventDefault();
+          el.scrollLeft += e.deltaY;
+        }
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [canScrollLeft, canScrollRight]);
+
   // Horizontal Scroll Sync: Center the active tab
   useEffect(() => {
     if (activeSection && scrollContainerRef.current) {
@@ -87,6 +139,43 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
     }
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    isDraggingRef.current = true;
+    hasDraggedRef.current = false;
+    startXRef.current = e.pageX - el.offsetLeft;
+    scrollLeftRef.current = el.scrollLeft;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - startXRef.current) * 1.5;
+    if (Math.abs(walk) > 4) {
+      hasDraggedRef.current = true;
+    }
+    el.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    isDraggingRef.current = false;
+  };
+
+  const scrollByAmount = (direction: "left" | "right") => {
+    const el = scrollContainerRef.current;
+    if (el) {
+      const scrollAmount = el.clientWidth * 0.6;
+      el.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
   return (
     <>
       {/* Sentinel — when this scrolls out of view, the nav becomes sticky */}
@@ -94,20 +183,47 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
 
       <div 
         ref={navRef}
-        className="sticky top-[80px] z-[9990] bg-white border-b border-zinc-200/90 mb-6 py-2.5 shadow-2xs transition-all"
+        className={cn(
+          "sticky top-[80px] z-[9990] bg-white border-b border-zinc-200/90 mb-6 py-2.5 transition-all group/subnav",
+          isSticky ? "shadow-md" : "shadow-2xs"
+        )}
       >
-        <div className="w-full">
+        <div className="relative w-full flex items-center">
+          {/* Left Arrow & Fade */}
+          {canScrollLeft && (
+            <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pr-4 bg-gradient-to-r from-white via-white/90 to-transparent pointer-events-none">
+              <button
+                type="button"
+                onClick={() => scrollByAmount("left")}
+                aria-label="Scroll left"
+                className="pointer-events-auto flex items-center justify-center w-7 h-7 rounded-full bg-white border border-zinc-200 shadow-md text-zinc-700 hover:text-[#D4541A] hover:border-[#D4541A] transition-all cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           <div 
             ref={scrollContainerRef}
-            className="flex items-center gap-6 md:gap-9 overflow-x-auto no-scrollbar pb-3 pt-1"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUpOrLeave}
+            onMouseLeave={handleMouseUpOrLeave}
+            className="flex items-center gap-6 md:gap-9 overflow-x-auto no-scrollbar pb-3 pt-1 w-full select-none cursor-grab active:cursor-grabbing scroll-smooth touch-pan-x"
           >
             {sections.map((section, idx) => (
               <button
                 key={section.id}
                 data-section={section.id}
-                onClick={() => scrollToSection(section.id)}
+                onClick={(e) => {
+                  if (hasDraggedRef.current) {
+                    e.preventDefault();
+                    return;
+                  }
+                  scrollToSection(section.id);
+                }}
                 className={cn(
-                  "group relative text-xs sm:text-sm font-bold capitalize tracking-wide whitespace-nowrap py-1 transition-all font-montserrat cursor-pointer",
+                  "group relative text-xs sm:text-sm font-bold capitalize tracking-wide whitespace-nowrap py-1 transition-all font-montserrat cursor-pointer shrink-0",
                   idx === 0 ? "pl-0" : "",
                   activeSection === section.id 
                     ? "text-[#D4541A]" 
@@ -123,6 +239,20 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
               </button>
             ))}
           </div>
+
+          {/* Right Arrow & Fade */}
+          {canScrollRight && (
+            <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center pl-4 bg-gradient-to-l from-white via-white/90 to-transparent pointer-events-none">
+              <button
+                type="button"
+                onClick={() => scrollByAmount("right")}
+                aria-label="Scroll right"
+                className="pointer-events-auto flex items-center justify-center w-7 h-7 rounded-full bg-white border border-zinc-200 shadow-md text-zinc-700 hover:text-[#D4541A] hover:border-[#D4541A] transition-all cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>

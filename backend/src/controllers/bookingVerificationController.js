@@ -97,11 +97,7 @@ exports.submitForVerification = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    // Only the sales person who owns the booking, admin, or superadmin can submit
-    if (role === 'sales' && booking.salesAdminId !== userId) {
-      return res.status(403).json({ success: false, message: 'You can only submit your own bookings for verification' });
-    }
-    if (!['sales', 'admin', 'superadmin', 'BOOKING_VERIFIER'].includes(role)) {
+    if (!['sales', 'admin', 'superadmin', 'BOOKING_VERIFIER', 'operations', 'finance'].includes(role)) {
       return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions' });
     }
 
@@ -184,10 +180,7 @@ exports.getVerificationQueue = async (req, res) => {
       where.status = req.query.status;
     }
 
-    // Role-based filtering: sales sees only own bookings
-    if (role === 'sales') {
-      where.booking = { salesAdminId: userId };
-    }
+    // Allow all staff roles to see all verifications in queue
 
     const cacheKey = `verification_count_${JSON.stringify(where)}`;
     let totalPromise;

@@ -151,53 +151,55 @@ export default function StaySection({ accommodations }: StaySectionProps) {
       </div>
 
       {/* Stays Horizontal 1.5 Cards Peek Slider on Mobile & Grid on Desktop */}
-      <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-manipulation flex-nowrap sm:flex-wrap">
+      <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-manipulation flex-nowrap sm:flex-wrap">
         {staysList.map((stay, i) => (
-          <div key={i} className="flex-none snap-start w-[78vw] sm:w-auto max-w-[300px] flex flex-col">
+          <div key={i} className="flex-none snap-start w-[48vw] sm:w-auto max-w-[190px] flex flex-col">
             <div 
               onClick={() => {
                 setSelectedStay(stay);
                 setActiveCategory("All");
               }}
-              className="bg-white border border-zinc-200/90 rounded-[18px] overflow-hidden shadow-2xs hover:border-[#D4541A] transition-all cursor-pointer group flex flex-col justify-between h-full"
+              className="bg-white border border-zinc-200/90 rounded-[14px] overflow-hidden shadow-2xs hover:border-[#D4541A] transition-all cursor-pointer group flex flex-col justify-between h-full"
             >
               <div>
                 {/* Full-Bleed Stay Photo with Nights Badge */}
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 shadow-2xs">
+                <div className="relative aspect-[16/10.5] w-full overflow-hidden bg-zinc-100 shadow-2xs">
                   <OptimizedImage 
                     src={normalizeImageUrl(stay.image) || defaultStaysList[i % defaultStaysList.length].image} 
                     alt={stay.name} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute top-2 right-2 bg-[#D4541A] text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs font-montserrat">
-                    {stay.nights}
-                  </div>
+                  {stay.nights && (
+                    <div className="absolute top-1.5 right-1.5 bg-[#D4541A] text-white text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs font-montserrat">
+                      {stay.nights}
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Maximize2 className="w-5 h-5 text-white" />
+                    <Maximize2 className="w-4 h-4 text-white" />
                   </div>
                 </div>
 
                 {/* Stay Details */}
-                <div className="p-3 pb-0">
-                  <h3 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat line-clamp-1 group-hover:text-[#D4541A] transition-colors">
+                <div className="p-2 sm:p-2.5 pb-0">
+                  <h3 className="text-[11px] sm:text-xs font-bold text-[#0B1528] font-montserrat line-clamp-1 group-hover:text-[#D4541A] transition-colors">
                     {stay.name}
                   </h3>
                   
-                  <div className="flex items-center gap-1 text-[11px] text-zinc-500 font-medium font-montserrat mt-1">
-                    <MapPin className="w-3 h-3 text-[#D4541A] shrink-0" />
+                  <div className="flex items-center gap-1 text-[10px] text-zinc-500 font-medium font-montserrat mt-0.5">
+                    <MapPin className="w-2.5 h-2.5 text-[#D4541A] shrink-0" />
                     <span className="truncate">{stay.location}</span>
                   </div>
                 </div>
               </div>
 
               {/* Amenities Tag Row */}
-              <div className="p-3 pt-2 mt-1.5 border-t border-zinc-100 flex items-center justify-between text-[10px] font-semibold text-zinc-600 font-montserrat">
+              <div className="p-2 sm:p-2.5 pt-1.5 mt-1 border-t border-zinc-100 flex items-center justify-between text-[9px] font-semibold text-zinc-600 font-montserrat">
                 <div className="flex items-center gap-1 truncate mr-1">
-                  <Building className="w-3 h-3 text-zinc-400 shrink-0" />
+                  <Building className="w-2.5 h-2.5 text-zinc-400 shrink-0" />
                   <span className="truncate">{stay.type}</span>
                 </div>
                 {stay.starRating && (
-                  <span className="text-[#D4541A] font-bold bg-orange-50 px-1.5 py-0.5 rounded text-[9px] shrink-0">
+                  <span className="text-[#D4541A] font-bold bg-orange-50 px-1 py-0.5 rounded text-[8px] sm:text-[9px] shrink-0">
                     {stay.starRating}
                   </span>
                 )}
