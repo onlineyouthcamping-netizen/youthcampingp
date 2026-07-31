@@ -357,9 +357,36 @@ exports.listAuditLogs = async (req, res, next) => {
         tenantId: req.user.tenantId
       },
       orderBy: { createdAt: 'desc' },
-      take: 200 // Max 200 logs
+      take: 500
     });
-    res.json({ success: true, data: logs });
+
+    const actorUserIds = [...new Set(logs.map(l => l.actorUserId).filter(Boolean))];
+    const admins = await prisma.admin.findMany({
+      where: { id: { in: actorUserIds } },
+      select: { id: true, name: true, email: true, role: true }
+    });
+
+    const adminMap = new Map(admins.map(a => [a.id, a]));
+
+    const enrichedLogs = logs.map(log => {
+      const actorInfo = log.actorUserId ? adminMap.get(log.actorUserId) : null;
+      return {
+        ...log,
+        actor: actorInfo ? {
+          id: actorInfo.id,
+          name: actorInfo.name || actorInfo.email.split('@')[0],
+          email: actorInfo.email,
+          role: actorInfo.role || 'admin'
+        } : {
+          id: log.actorUserId || 'system',
+          name: log.actorUserId ? 'Admin User' : 'Automated System',
+          email: 'system@youthcamping.online',
+          role: 'system'
+        }
+      };
+    });
+
+    res.json({ success: true, data: enrichedLogs });
   } catch (error) {
     next(error);
   }
