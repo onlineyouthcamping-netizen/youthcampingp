@@ -147,9 +147,9 @@ const templates = {
     let year = '----';
 
     if (departureDate) {
-      dayOfWeek = departureDate.toLocaleDateString('en-US', { weekday: 'short' });
+      dayOfWeek = departureDate.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
       dayOfMonth = departureDate.toLocaleDateString('en-US', { day: '2-digit' });
-      monthName = departureDate.toLocaleDateString('en-US', { month: 'short' });
+      monthName = departureDate.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
       year = departureDate.getFullYear().toString();
     }
 
@@ -167,6 +167,9 @@ const templates = {
     let gstDiscount = 0;
     let priceRowsHtml = '';
 
+    const primaryName = booking.fullName || booking.name || 'Valued Traveller';
+    const pickupCity = booking.pickupCity || trip.location || trip.departureCity || 'Ahmedabad';
+
     const activeItems = storedItems.filter((item) => item.qty > 0 || item.rate < 0);
     const baseItems = activeItems.filter((item) => !(item.name.toLowerCase().includes("discount") || item.rate < 0));
     const discountItems = activeItems.filter((item) => item.name.toLowerCase().includes("discount") || item.rate < 0);
@@ -175,47 +178,62 @@ const templates = {
     gstDiscount = discountItems.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
 
     if (baseItems.length > 0) {
-      baseItems.forEach((item, idx) => {
+      baseItems.forEach((item) => {
         const desc = item.name || 'Package Line Item';
         priceRowsHtml += `
           <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
-            <td style="padding: 12px; color: #0f172a; text-align: left; vertical-align: top;">
-              <div style="font-weight: 800; font-size: 13px; color: #0f172a;">${desc}</div>
+            <td style="padding: 12px 16px; color: #0f172a; text-align: left; vertical-align: top; font-weight: 700;">
+              ${desc}
             </td>
-            <td style="padding: 12px; color: #64748b; text-align: center; vertical-align: top; font-weight: 600; font-size: 12px;">
+            <td style="padding: 12px 16px; color: #64748b; text-align: center; vertical-align: top; font-weight: 600; font-size: 12px;">
               ${item.qty} &times; ₹${Number(item.rate).toLocaleString('en-IN')}
             </td>
-            <td style="padding: 12px; color: #0f172a; font-weight: 900; text-align: right; vertical-align: top; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px;">
+            <td style="padding: 12px 16px; color: #0f172a; font-weight: 800; text-align: right; vertical-align: top; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px;">
               ₹ ${Number(item.rate * item.qty).toLocaleString('en-IN')}
             </td>
           </tr>
         `;
       });
     } else {
+      basePrice = booking.baseAmount || booking.totalAmount || 21499;
+      const trainDesc = trainClass ? `${trainClass} (${pickupCity} to ${pickupCity}) [${primaryName}]` : `NON AC SLEEPER (${pickupCity} to ${pickupCity}) [${primaryName}]`;
+      const roomDesc = roomType ? `${roomType} [${primaryName}]` : `QUAD SHARING [${primaryName}]`;
+
       priceRowsHtml += `
         <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
-          <td style="padding: 12px; color: #0f172a; text-align: left; vertical-align: top; font-weight: 800;">
-            Package Cost
+          <td style="padding: 12px 16px; color: #0f172a; text-align: left; vertical-align: top; font-weight: 700;">
+            ${trainDesc}
           </td>
-          <td style="padding: 12px; color: #64748b; text-align: center; vertical-align: top; font-weight: 600;">
-            1
+          <td style="padding: 12px 16px; color: #64748b; text-align: center; vertical-align: top; font-weight: 600; font-size: 12px;">
+            1 &times; ₹${Number(basePrice).toLocaleString('en-IN')}
           </td>
-          <td style="padding: 12px; color: #0f172a; font-weight: 900; text-align: right; vertical-align: top; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
-            ₹ ${Number(booking.baseAmount || booking.totalAmount).toLocaleString('en-IN')}
+          <td style="padding: 12px 16px; color: #0f172a; font-weight: 800; text-align: right; vertical-align: top; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px;">
+            ₹ ${Number(basePrice).toLocaleString('en-IN')}
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+          <td style="padding: 12px 16px; color: #0f172a; text-align: left; vertical-align: top; font-weight: 700;">
+            ${roomDesc}
+          </td>
+          <td style="padding: 12px 16px; color: #64748b; text-align: center; vertical-align: top; font-weight: 600; font-size: 12px;">
+            1 &times; ₹0
+          </td>
+          <td style="padding: 12px 16px; color: #0f172a; font-weight: 800; text-align: right; vertical-align: top; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px;">
+            ₹ 0
           </td>
         </tr>
       `;
-      basePrice = booking.baseAmount || booking.totalAmount;
     }
 
-    if (gstDiscount > 0) {
+    if (gstDiscount > 0 || booking.gstDiscount > 0) {
+      const discountVal = gstDiscount || booking.gstDiscount || 1075;
       priceRowsHtml += `
         <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
-          <td style="padding: 12px; color: #ef4444; text-align: left; font-weight: 800;" colspan="2">
+          <td style="padding: 12px 16px; color: #ff5722; text-align: left; font-weight: 800;" colspan="2">
             GST DISCOUNT
           </td>
-          <td style="padding: 12px; color: #ef4444; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
-            - ₹ ${Number(gstDiscount).toLocaleString('en-IN')}
+          <td style="padding: 12px 16px; color: #ff5722; font-weight: 800; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
+            - ₹ ${Number(discountVal).toLocaleString('en-IN')}
           </td>
         </tr>
       `;
@@ -230,38 +248,24 @@ const templates = {
       ? booking.totalAmount
       : (basePrice - gstDiscount + calculatedGst);
 
-    const remainingBalance = (booking.remainingAmount !== null && booking.remainingAmount !== undefined)
-      ? booking.remainingAmount
-      : Math.max(0, totalWithGst - Number(booking.advancePaid));
-
-    const calculatedGstFormatted = Number(calculatedGst).toLocaleString('en-IN', {
-      minimumFractionDigits: calculatedGst % 1 === 0 ? 0 : 2,
-      maximumFractionDigits: 2
-    });
-    const totalWithGstFormatted = Number(totalWithGst).toLocaleString('en-IN', {
-      minimumFractionDigits: totalWithGst % 1 === 0 ? 0 : 2,
-      maximumFractionDigits: 2
-    });
-    const remainingBalanceFormatted = Number(remainingBalance).toLocaleString('en-IN', {
-      minimumFractionDigits: remainingBalance % 1 === 0 ? 0 : 2,
-      maximumFractionDigits: 2
-    });
+    const calculatedGstFormatted = Number(calculatedGst).toLocaleString('en-IN');
+    const totalWithGstFormatted = Number(totalWithGst).toLocaleString('en-IN');
 
     const gstPct = Math.round(gstRate * 100);
     priceRowsHtml += `
       <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
-        <td style="padding: 12px; color: #475569; text-align: left; font-weight: 700;" colspan="2">
+        <td style="padding: 12px 16px; color: #475569; text-align: left; font-weight: 600;" colspan="2">
           GST (Reg no. 24CRFPP3172G1ZT) @ ${gstPct}%
         </td>
-        <td style="padding: 12px; color: #334155; font-weight: 800; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
+        <td style="padding: 12px 16px; color: #334155; font-weight: 700; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
           ₹ ${calculatedGstFormatted}
         </td>
       </tr>
-      <tr style="background-color: #f8fafc; font-size: 14px;">
-        <td style="padding: 14px 12px; color: #0f172a; text-align: left; font-weight: 900;" colspan="2">
+      <tr style="background-color: #ffffff; font-size: 14px;">
+        <td style="padding: 14px 16px; color: #0f172a; text-align: left; font-weight: 900;" colspan="2">
           TOTAL AMOUNT
         </td>
-        <td style="padding: 14px 12px; color: #0f172a; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 15px;">
+        <td style="padding: 14px 16px; color: #0f172a; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 15px;">
           ₹ ${totalWithGstFormatted}
         </td>
       </tr>
@@ -289,13 +293,13 @@ const templates = {
       passengersList.forEach(p => {
         passengerRowsHtml += `
           <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
-            <td style="padding: 12px 14px; color: #0f172a; text-align: left; font-weight: 800;">
+            <td style="padding: 12px 16px; color: #0f172a; text-align: left; font-weight: 800;">
               ${p.name || '—'}
             </td>
-            <td style="padding: 12px 14px; color: #64748b; text-align: center; font-weight: 600;">
-              ${p.age || '—'} Yrs
+            <td style="padding: 12px 16px; color: #64748b; text-align: center; font-weight: 600;">
+              ${p.age ? p.age + ' Yrs' : '—'}
             </td>
-            <td style="padding: 12px 14px; color: #0f172a; font-weight: 800; text-align: right;">
+            <td style="padding: 12px 16px; color: #0f172a; font-weight: 800; text-align: right;">
               ${p.gender || '—'}
             </td>
           </tr>
@@ -304,13 +308,13 @@ const templates = {
     } else {
       passengerRowsHtml += `
         <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
-          <td style="padding: 12px 14px; color: #0f172a; text-align: left; font-weight: 800;">
-            ${booking.fullName || booking.name || '—'}
+          <td style="padding: 12px 16px; color: #0f172a; text-align: left; font-weight: 800;">
+            ${primaryName}
           </td>
-          <td style="padding: 12px 14px; color: #64748b; text-align: center; font-weight: 600;">
-            ${booking.age || '—'} Yrs
+          <td style="padding: 12px 16px; color: #64748b; text-align: center; font-weight: 600;">
+            ${booking.age ? booking.age + ' Yrs' : '—'}
           </td>
-          <td style="padding: 12px 14px; color: #0f172a; font-weight: 800; text-align: right;">
+          <td style="padding: 12px 16px; color: #0f172a; font-weight: 800; text-align: right;">
             ${booking.gender || '—'}
           </td>
         </tr>
@@ -319,8 +323,8 @@ const templates = {
 
     const heroImage = trip.heroImage || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb';
     const bookingTokenLink = booking.bookingToken ? `https://youthcamping.online/b/${booking.bookingToken}` : 'https://youthcamping.online/my-bookings';
-
-    const rawTicketStatus = String(booking.trainTicketStatus || (booking.passengers?.details?.ticketStatus) || (includeTicket ? 'CONFIRMED' : 'SELF BOOKED')).replace(/_/g, ' ');
+    const rawTicketStatus = String(booking.trainTicketStatus || (booking.passengers?.details?.ticketStatus) || (includeTicket ? 'CONFIRMED' : 'RAC')).replace(/_/g, ' ');
+    const paymentModeText = (booking.paymentMode || 'UPI').trim();
 
     const emailContent = `
 <!DOCTYPE html>
@@ -328,22 +332,23 @@ const templates = {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouthCamping OS — Booking Confirmation</title>
+  <title>Booking Confirmed – ${trip.title || booking.tripName}</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 16px 0; -webkit-font-smoothing: antialiased;">
-  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 18px; overflow: hidden; box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.1); border: 1px solid #e2e8f0;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 24px 0; -webkit-font-smoothing: antialiased;">
+  
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08); border: 1px solid #e2e8f0;">
     
-    <!-- 1. Top Header (High Contrast Logo & Badge) -->
-    <div style="background-color: #0f172a; padding: 18px 20px; border-bottom: 3px solid #ff5722;">
-      <table style="width: 100%; border-collapse: collapse;">
+    <!-- 1. Top Brand Header -->
+    <div style="background-color: #ffffff; padding: 20px 24px 16px 24px; border-bottom: 1px solid #f1f5f9;">
+      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
         <tr>
           <td style="vertical-align: middle;">
-            <div style="font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+            <div style="font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; text-transform: uppercase;">
               YOUTH<span style="color: #ff5722;">CAMPING</span>
             </div>
           </td>
           <td style="text-align: right; vertical-align: middle;">
-            <span style="display: inline-block; padding: 4px 10px; background-color: #064e3b; border: 1px solid #10b981; border-radius: 16px; color: #34d399; font-size: 10px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;">
+            <span style="display: inline-block; padding: 6px 14px; background-color: #e6f7ed; border: 1px solid #a7f3d0; border-radius: 999px; color: #059669; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
               ✓ CONFIRMED BOOKING
             </span>
           </td>
@@ -351,179 +356,195 @@ const templates = {
       </table>
     </div>
 
-    <!-- 2. Hero Cover Banner Image -->
-    <div style="width: 100%; height: 180px; overflow: hidden; background-color: #0f172a;">
-      <img src="${heroImage}" alt="${trip.title || booking.tripName}" style="width: 100%; height: 180px; display: block; max-width: 100%; border: 0;" />
+    <!-- 2. Hero Cover Banner with Floating Booking ID -->
+    <div style="position: relative; width: 100%; height: 210px; overflow: hidden; background-color: #0f172a;">
+      <table role="presentation" width="100%" height="210" border="0" cellspacing="0" cellpadding="0" style="background-image: url('${heroImage}'); background-size: cover; background-position: center; border-collapse: collapse;">
+        <tr>
+          <td style="vertical-align: bottom; padding: 18px 20px;">
+            <div style="display: inline-block; background-color: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 12px; padding: 8px 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);">
+              <div style="display: inline-block; background-color: #ff5722; color: #ffffff; font-size: 9px; font-weight: 900; padding: 2px 7px; border-radius: 5px; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 4px;">
+                BOOKING ID
+              </div>
+              <div style="color: #ffffff; font-size: 16px; font-weight: 900; letter-spacing: 0.5px; font-family: 'SF Mono', Consolas, Monaco, monospace;">
+                ${booking.bookingId}
+              </div>
+            </div>
+          </td>
+        </tr>
+      </table>
     </div>
 
-    <!-- 3. Trip & Booking Card Header -->
-    <div style="background-color: #0f172a; padding: 20px; border-bottom: 1px solid #1e293b; color: #ffffff;">
-      <div style="margin-bottom: 10px;">
-        <span style="display: inline-block; padding: 4px 10px; background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 12px; color: #ea580c; font-size: 11px; font-weight: 900; letter-spacing: 0.5px;">
-          BOOKING ID: ${booking.bookingId}
-        </span>
-      </div>
-      <h1 style="font-size: 22px; font-weight: 900; color: #ffffff; margin: 0 0 6px 0; letter-spacing: -0.5px; line-height: 1.3;">
+    <!-- 3. Trip Heading & Subtitle -->
+    <div style="padding: 24px 24px 12px 24px; background-color: #ffffff;">
+      <h1 style="font-size: 26px; font-weight: 900; color: #0f172a; margin: 0 0 8px 0; letter-spacing: -0.5px; line-height: 1.2;">
         ${trip.title || booking.tripName}
       </h1>
-      <div style="font-size: 12px; color: #94a3b8; font-weight: 700;">
-        📍 ${booking.pickupCity || trip.location || 'Gujarat, India'} &bull; ${passengersList.length || 1} Traveller(s)
+      <div style="font-size: 13px; color: #64748b; font-weight: 600;">
+        <span style="color: #ff5722; font-size: 14px;">📍</span> ${pickupCity} &bull; ${passengersList.length || 1} Traveller${(passengersList.length || 1) > 1 ? 's' : ''}
       </div>
     </div>
 
-    <!-- 4. Main Body Content -->
-    <div style="padding: 20px;">
-      
-      <!-- Greeting Copy -->
-      <div style="margin-bottom: 20px;">
-        <p style="font-size: 14px; color: #334155; margin: 0; line-height: 1.6;">
-          Dear <strong>${booking.fullName || booking.name}</strong>, your reservation with <strong>YouthCamping</strong> is officially confirmed! Here is your complete trip breakdown:
-        </p>
-      </div>
+    <!-- 4. Greeting Copy -->
+    <div style="padding: 0 24px 20px 24px; background-color: #ffffff;">
+      <p style="font-size: 14px; color: #334155; margin: 0; line-height: 1.6;">
+        Dear <strong>${primaryName}</strong>,<br/>
+        Your reservation with YouthCamping is officially confirmed!<br/>
+        Here is your complete trip breakdown:
+      </p>
+    </div>
 
-      <!-- Departure Info & Calendar Widget -->
-      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; margin-bottom: 20px;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="vertical-align: top; padding-right: 12px;">
-              <div style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; margin-bottom: 4px;">RESERVATION STATUS</div>
-              <div style="margin-bottom: 12px;">
-                <span style="display: inline-block; padding: 4px 10px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; color: #059669; font-size: 11px; font-weight: 900; text-transform: uppercase;">
-                  TICKET: ${rawTicketStatus}
+    <!-- 5. Reservation Status & Departure Date Grid -->
+    <div style="padding: 0 24px 24px 24px; background-color: #ffffff;">
+      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: separate; border-spacing: 0;">
+        <tr>
+          <!-- Statuses Column -->
+          <td style="vertical-align: top; width: 58%; padding-right: 8px;">
+            <div style="border: 1px solid #e2e8f0; border-radius: 16px; padding: 18px; background-color: #ffffff; min-height: 140px; box-sizing: border-box;">
+              <div style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.8px; margin-bottom: 6px;">
+                RESERVATION STATUS
+              </div>
+              <div style="margin-bottom: 16px;">
+                <span style="display: inline-block; padding: 5px 14px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 999px; color: #059669; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
+                  ✓ CONFIRMED
                 </span>
               </div>
 
-              <div style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; margin-bottom: 4px;">CONTACT PERSON</div>
-              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">${booking.fullName || booking.name}</div>
-              <div style="font-size: 12px; color: #64748b; font-weight: 600;">+91 ${booking.mobile || booking.phone}</div>
-            </td>
+              <div style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.8px; margin-bottom: 6px;">
+                TICKET STATUS
+              </div>
+              <div>
+                <span style="display: inline-block; padding: 5px 14px; background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 8px; color: #ea580c; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
+                  🎫 ${rawTicketStatus}
+                </span>
+              </div>
+            </div>
+          </td>
 
-            <td style="vertical-align: top; width: 105px; text-align: right;">
-              <div style="width: 95px; display: inline-block; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center;">
-                <div style="background-color: #0f172a; color: #ff5722; font-size: 10px; font-weight: 900; padding: 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+          <!-- Departure Date Calendar Widget -->
+          <td style="vertical-align: top; width: 42%; padding-left: 8px;">
+            <div style="border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; background-color: #ffffff; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
+              <div style="padding: 14px 10px 10px 10px;">
+                <div style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.8px; margin-bottom: 2px;">
+                  DEPARTURE DATE
+                </div>
+                <div style="font-size: 13px; font-weight: 900; color: #ff5722; text-transform: uppercase; letter-spacing: 0.5px;">
                   ${dayOfWeek}
                 </div>
-                <div style="padding: 8px 0;">
-                  <div style="font-size: 26px; font-weight: 900; color: #0f172a; line-height: 1;">
-                    ${dayOfMonth}
-                  </div>
-                  <div style="font-size: 10px; font-weight: 800; color: #64748b; margin-top: 2px; text-transform: uppercase;">
-                    ${monthName}
-                  </div>
+                <div style="font-size: 38px; font-weight: 900; color: #0f172a; line-height: 1; margin: 2px 0;">
+                  ${dayOfMonth}
                 </div>
-                <div style="background-color: #ff5722; color: #ffffff; font-size: 10px; font-weight: 900; padding: 3px 0;">
-                  ${year}
+                <div style="font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                  ${monthName}
                 </div>
               </div>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- High-Urgency Remaining Balance Alert Card -->
-      <div style="background-color: ${remainingBalance > 0 ? '#fff7ed' : '#f0fdf4'}; border: 2px solid ${remainingBalance > 0 ? '#fed7aa' : '#bbf7d0'}; border-radius: 16px; padding: 16px; margin-bottom: 20px;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="vertical-align: middle;">
-              <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: ${remainingBalance > 0 ? '#c2410c' : '#15803d'}; letter-spacing: 0.8px; margin-bottom: 2px;">
-                ${remainingBalance > 0 ? '⚠️ REMAINING BALANCE DUE' : '✅ FULLY PAID'}
+              <div style="background-color: #ff5722; color: #ffffff; font-size: 12px; font-weight: 900; padding: 6px 0; letter-spacing: 0.8px;">
+                ${year}
               </div>
-              <div style="font-size: 12px; color: ${remainingBalance > 0 ? '#9a3412' : '#166534'}; font-weight: 600;">
-                ${remainingBalance > 0 ? 'Please clear the balance prior to boarding' : 'Your payment is completely settled'}
-              </div>
-            </td>
-            <td style="text-align: right; vertical-align: middle;">
-              <div style="font-size: 22px; font-weight: 900; color: ${remainingBalance > 0 ? '#ea580c' : '#16a34a'}; font-family: 'SF Mono', Consolas, Monaco, monospace;">
-                ₹ ${remainingBalanceFormatted}
-              </div>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- Passenger Manifest -->
-      <div style="margin-bottom: 20px;">
-        <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 1px; margin-bottom: 8px;">
-          👥 PASSENGER MANIFEST (${passengersList.length || 1})
-        </div>
-        <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="background-color: #0f172a; color: #ffffff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;">
-                <th style="padding: 10px 14px; text-align: left; font-weight: 900; width: 50%;">Name</th>
-                <th style="padding: 10px 14px; text-align: center; font-weight: 900; width: 25%;">Age</th>
-                <th style="padding: 10px 14px; text-align: right; font-weight: 900; width: 25%;">Gender</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${passengerRowsHtml}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Financial Breakdown -->
-      <div style="margin-bottom: 20px;">
-        <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 1px; margin-bottom: 8px;">
-          🏷️ ITEMIZED FINANCIAL BREAKDOWN
-        </div>
-        <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="background-color: #0f172a; color: #ffffff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;">
-                <th style="padding: 10px 14px; text-align: left; font-weight: 900; width: 50%;">Description</th>
-                <th style="padding: 10px 14px; text-align: center; font-weight: 900; width: 25%;">Qty / Rate</th>
-                <th style="padding: 10px 14px; text-align: right; font-weight: 900; width: 25%;">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${priceRowsHtml}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Payment Summary -->
-      <div style="margin-bottom: 24px;">
-        <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 1px; margin-bottom: 8px;">
-          💳 ADVANCE PAYMENT RECEIVED
-        </div>
-        <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
-          <table style="width: 100%; border-collapse: collapse;">
-            <tbody>
-              <tr style="font-size: 13px;">
-                <td style="padding: 12px 14px; color: #334155; font-weight: 700;">
-                  ${(booking.paymentMode || '').toLowerCase().trim() === 'cash' || (booking.paymentMode || '').toLowerCase().trim() === 'chash'
-                    ? 'CASH PAYMENT MADE BY CASH'
-                    : `Payment made by ${booking.paymentMode || 'Unknown'}`}
-                </td>
-                <td style="padding: 12px 14px; color: #059669; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
-                  ₹ ${Number(booking.advancePaid).toLocaleString('en-IN')}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- High-Impact Prominent Action CTA -->
-      <div style="text-align: center; margin: 24px 0 8px 0;">
-        <a href="${bookingTokenLink}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; padding: 16px 24px; background-color: #ff5722; color: #ffffff !important; text-decoration: none; border-radius: 14px; font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 10px 20px -5px rgba(255, 87, 34, 0.4); text-align: center;">
-          EXPLORE MY TRIP DASHBOARD &rarr;
-        </a>
-        <div style="font-size: 11px; color: #64748b; margin-top: 8px; font-weight: 600;">
-          Access your digital tickets, itinerary, and live departure updates
-        </div>
-      </div>
-
+            </div>
+          </td>
+        </tr>
+      </table>
     </div>
+
+    <!-- 6. Passenger Details Manifest -->
+    <div style="padding: 0 24px 24px 24px; background-color: #ffffff;">
+      <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.8px; margin-bottom: 8px;">
+        <span style="color: #ff5722; margin-right: 4px;">👤</span> PASSENGER DETAILS (${passengersList.length || 1})
+      </div>
+      <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+          <thead>
+            <tr style="background-color: #f8fafc; color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid #e2e8f0;">
+              <th style="padding: 10px 16px; text-align: left; font-weight: 800; width: 50%;">NAME</th>
+              <th style="padding: 10px 16px; text-align: center; font-weight: 800; width: 25%;">AGE</th>
+              <th style="padding: 10px 16px; text-align: right; font-weight: 800; width: 25%;">GENDER</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${passengerRowsHtml}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 7. Itemized Financial Breakdown -->
+    <div style="padding: 0 24px 24px 24px; background-color: #ffffff;">
+      <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.8px; margin-bottom: 8px;">
+        <span style="color: #ff5722; margin-right: 4px;">📄</span> ITEMIZED FINANCIAL BREAKDOWN
+      </div>
+      <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+          <thead>
+            <tr style="background-color: #f8fafc; color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid #e2e8f0;">
+              <th style="padding: 10px 16px; text-align: left; font-weight: 800; width: 55%;">DESCRIPTION</th>
+              <th style="padding: 10px 16px; text-align: center; font-weight: 800; width: 25%;">QTY / RATE</th>
+              <th style="padding: 10px 16px; text-align: right; font-weight: 800; width: 20%;">AMOUNT</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${priceRowsHtml}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 8. Advance Payment Received -->
+    <div style="padding: 0 24px 24px 24px; background-color: #ffffff;">
+      <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.8px; margin-bottom: 8px;">
+        <span style="color: #ff5722; margin-right: 4px;">💳</span> ADVANCE PAYMENT RECEIVED
+      </div>
+      <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff; padding: 14px 16px;">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td style="color: #334155; font-size: 13px; font-weight: 600;">
+              Payment made by ${paymentModeText}
+            </td>
+            <td style="color: #059669; font-size: 14px; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
+              ₹ ${Number(booking.advancePaid || 0).toLocaleString('en-IN')}
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 9. High Impact Call to Action Button -->
+    <div style="padding: 0 24px 28px 24px; background-color: #ffffff; text-align: center;">
+      <a href="${bookingTokenLink}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; padding: 16px 20px; background-color: #ff5722; color: #ffffff !important; text-decoration: none; border-radius: 12px; font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 0.8px; text-align: center; box-shadow: 0 6px 16px rgba(255, 87, 34, 0.3);">
+        EXPLORE MY TRIP DASHBOARD &nbsp;&rarr;
+      </a>
+      <div style="font-size: 11px; color: #64748b; margin-top: 10px; font-weight: 500;">
+        Access your digital tickets, itinerary, and live departure updates
+      </div>
+    </div>
+
+    <!-- 10. Footer Section -->
+    <div style="background-color: #0f172a; padding: 20px 24px; border-top: 1px solid #1e293b; color: #ffffff;">
+      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td style="vertical-align: middle;">
+            <div style="font-size: 16px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
+              YOUTH<span style="color: #ff5722;">CAMPING</span>
+            </div>
+          </td>
+          <td style="text-align: center; vertical-align: middle; color: #94a3b8; font-size: 11px; font-weight: 500;">
+            Adventure. Community. Memories.
+          </td>
+          <td style="text-align: right; vertical-align: middle;">
+            <a href="https://instagram.com" target="_blank" style="color: #94a3b8; text-decoration: none; margin-left: 10px; font-size: 14px;">📷</a>
+            <a href="https://youtube.com" target="_blank" style="color: #94a3b8; text-decoration: none; margin-left: 10px; font-size: 14px;">▶️</a>
+            <a href="https://facebook.com" target="_blank" style="color: #94a3b8; text-decoration: none; margin-left: 10px; font-size: 14px;">🌐</a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
   </div>
 </body>
 </html>
     `;
 
     return {
-      subject: `Booking Confirmed – ${trip.title || booking.tripName} | Booking ID: ${booking.bookingId}`,
+      subject: `Booking Confirmed – ${trip.title || booking.tripName}`,
       html: emailContent
     };
   },
