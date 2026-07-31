@@ -362,10 +362,11 @@ const ROLE_PERMISSIONS = {
     'tickets.bulk',
     'tickets.templates.manage',
     'tickets.alerts.view',
-    'emails.view',
-    'emails.send',
-    'emails.view_logs'
-  ]
+  'bookings.view_all',
+  'emails.view',
+  'emails.send',
+  'emails.view_logs'
+]
 };
 
 /**
@@ -380,7 +381,11 @@ function hasPermission(roleOrUser, permission) {
 
   if (role === 'superadmin') return true;
 
-  // If custom permissions array is explicitly set for this user (customized access control)
+  // Check default role permissions
+  const defaultAllowed = ROLE_PERMISSIONS[role] || [];
+  if (defaultAllowed.includes(permission)) return true;
+
+  // Check custom permissions array if present
   if (custom !== null && custom !== undefined && Array.isArray(custom)) {
     if (custom.includes(permission)) return true;
 
@@ -389,12 +394,9 @@ function hasPermission(roleOrUser, permission) {
         return true;
       }
     }
-    return false;
   }
 
-  // Fallback to default role permissions when no customPermissions override is set
-  const allowed = ROLE_PERMISSIONS[role] || [];
-  return allowed.includes(permission);
+  return false;
 }
 
 module.exports = {

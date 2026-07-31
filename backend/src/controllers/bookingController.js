@@ -379,8 +379,12 @@ exports.getBookings = async (req, res, next) => {
     }
 
     const authCheckTime = Date.now();
-    // Allow all staff roles to see all bookings
-    if (salesAdminId && salesAdminId !== 'all') {
+    const userRole = (req.user?.role || '').toLowerCase();
+    const canViewAll = ['superadmin', 'admin', 'operations', 'finance', 'booking_verifier'].includes(userRole) || hasPermission(req.user, 'bookings.view_all');
+
+    if (!canViewAll && userRole === 'sales') {
+      where.salesAdminId = req.user.id;
+    } else if (salesAdminId && salesAdminId !== 'all') {
       where.salesAdminId = salesAdminId;
     }
     const authDuration = Date.now() - authCheckTime;

@@ -4,6 +4,7 @@ const { adminLogin, forgotPassword } = require('../controllers/authController');
 const { getStats } = require('../controllers/dashboardController');
 const {
   listUsers,
+  getSalesExecutives,
   createUser,
   updateUserRole,
   updateUserPermissions,
@@ -71,6 +72,7 @@ router.post('/me/integrations/:service/test', protect, requireAdmin, testIntegra
 router.get('/stats', protect, requirePermission('dashboard.view'), getStats);
 
 // User & Staff Profile Management
+router.get('/users/sales-executives', protect, getSalesExecutives);
 router.get('/users', protect, listUsers);
 router.post('/users', protect, createUser);
 router.get('/staff-profiles', protect, listUsers);

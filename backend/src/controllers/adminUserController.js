@@ -47,6 +47,28 @@ exports.listUsers = async (req, res, next) => {
   }
 };
 
+// @desc    Get active sales executive user options (for dropdown filters)
+// @route   GET /api/admin/users/sales-executives
+// @access  Private (Authenticated staff)
+exports.getSalesExecutives = async (req, res, next) => {
+  try {
+    const tenantId = req.user.tenantId || 'default';
+    const users = await prisma.admin.findMany({
+      where: { tenantId, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      },
+      orderBy: { name: 'asc' }
+    });
+    res.json({ success: true, data: users });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Create a new admin user (Founder Hemal Patel only)
 // @route   POST /api/admin/users
 // @access  Private (Founder only)
