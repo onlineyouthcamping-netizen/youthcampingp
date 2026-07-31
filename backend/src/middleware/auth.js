@@ -45,6 +45,8 @@ const authenticate = async (req, res, next) => {
     if (cached && Date.now() < cached.expiresAt && cached.tokenVersion === decoded.tokenVersion) {
       req.user = cached.user;
       req.admin = cached.user;
+      req.hasPermission = (permKey) => hasPermission(req.user, permKey);
+      req.can = (permKey) => hasPermission(req.user, permKey);
       if (req._timings) req._timings.auth = Date.now() - authStart;
       return next();
     }
@@ -70,6 +72,8 @@ const authenticate = async (req, res, next) => {
         tenantId: user.tenantId || 'default'
       };
       req.admin = req.user;
+      req.hasPermission = (permKey) => hasPermission(req.user, permKey);
+      req.can = (permKey) => hasPermission(req.user, permKey);
       if (req._timings) req._timings.auth = Date.now() - authStart;
       return next();
     }
@@ -80,10 +84,6 @@ const authenticate = async (req, res, next) => {
     }
 
     // Verify token version
-    // Policy: New tokens always include tokenVersion. If the token has a
-    // tokenVersion, it must match the database. Legacy tokens without
-    // tokenVersion are accepted during the migration period but will be
-    // rejected once tokenVersion is set on the admin record.
     if (decoded.tokenVersion !== undefined) {
       if (decoded.tokenVersion !== admin.tokenVersion) {
         return res.status(401).json({ success: false, message: 'Token revoked: credentials changed' });
@@ -92,12 +92,17 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Token revoked: please log in again' });
     }
 
+    const defaultPerms = admin.role === 'superadmin' ? (PERMISSIONS || []) : (ROLE_PERMISSIONS[admin.role] || []);
+    const customPerms = Array.isArray(admin.customPermissions) ? admin.customPermissions : [];
+    const permissions = Array.from(new Set([...defaultPerms, ...customPerms]));
+
     const user = {
       id: admin.id,
       name: admin.name,
       email: admin.email,
       role: admin.role,
-      customPermissions: admin.customPermissions || [],
+      customPermissions: customPerms,
+      permissions,
       tenantId: admin.tenantId || 'default'
     };
 

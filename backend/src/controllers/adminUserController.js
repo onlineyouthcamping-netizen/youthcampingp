@@ -205,6 +205,35 @@ exports.updateUserPermissions = async (req, res, next) => {
       data: updateData
     });
 
+    // Sync Enterprise RBAC UserRoleAssignment and UserCustomPermission tables
+    try {
+      if (role !== undefined) {
+        const roleObj = await prisma.role.findFirst({ where: { name: { equals: role, mode: 'insensitive' } } });
+        if (roleObj) {
+          await prisma.userRoleAssignment.upsert({
+            where: { userId_roleId: { userId: targetUserId, roleId: roleObj.id } },
+            create: { tenantId: req.user.tenantId || 'default', userId: targetUserId, roleId: roleObj.id, assignedBy: req.user.id },
+            update: {}
+          });
+        }
+      }
+
+      if (Array.isArray(customPermissions)) {
+        for (const pKey of customPermissions) {
+          const permObj = await prisma.permission.findFirst({ where: { key: pKey } });
+          if (permObj) {
+            await prisma.userCustomPermission.upsert({
+              where: { userId_permissionId: { userId: targetUserId, permissionId: permObj.id } },
+              create: { tenantId: req.user.tenantId || 'default', userId: targetUserId, permissionId: permObj.id, isGranted: true, grantedBy: req.user.id },
+              update: { isGranted: true, grantedBy: req.user.id }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Enterprise RBAC table sync warning:', e.message);
+    }
+
     await cache.del(`auth:${targetUserId}`);
     usersCache.delete(req.user.tenantId || 'default');
 
