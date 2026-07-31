@@ -8,6 +8,7 @@ const { logAction } = require('../utils/auditLogger');
 const { logBookingActivity } = require('../utils/bookingActivityLogger');
 const { verifySignedPayload } = require('./bookingLinkController');
 const cache = require('../lib/cache');
+const { hasPermission } = require('../config/permissions');
 
 // Helper to safely parse dates and avoid crashes with "Invalid Date"
 const safeParseDate = (dateVal) => {
