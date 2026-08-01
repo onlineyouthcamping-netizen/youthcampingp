@@ -32,7 +32,7 @@ export default function PhotoSlider({
   ];
 
   const list = slides.length > 0 ? slides : defaultSlides;
-  const infiniteList = [...list, ...list, ...list];
+  const infiniteList = list;
 
   return (
     <section className="py-8 sm:py-12 bg-white overflow-hidden border-t border-zinc-100 font-montserrat">

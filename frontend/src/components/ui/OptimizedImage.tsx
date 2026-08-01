@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { cn } from "@/lib/utils";
 
 interface OptimizedImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> {
@@ -8,18 +8,9 @@ interface OptimizedImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElem
   alt: string;
   fallbackSrc?: string;
   priority?: boolean;
-  /** Cloudinary width transform — default 1200. Use 800 for cards, 400 for thumbnails. */
+  /** Target display width (e.g., 360 for thumbnails/cards, 720 for hero). */
   cloudinaryWidth?: number;
-  /** Optional Bunny CDN derivative used without changing the stored source URL. */
   bunnyVariant?: string;
-}
-
-const RESPONSIVE_WIDTHS = [320, 480, 640, 800, 960, 1200, 1280, 1600, 1920];
-
-function getResponsiveWidths(maxWidth: number) {
-  const widths = RESPONSIVE_WIDTHS.filter((width) => width <= maxWidth);
-  if (!widths.includes(maxWidth)) widths.push(maxWidth);
-  return widths.sort((a, b) => a - b);
 }
 
 function withCloudinaryWidth(url: string, width: number) {
@@ -46,45 +37,50 @@ function withCloudinaryWidth(url: string, width: number) {
 export function OptimizedImage({ 
   src, 
   alt, 
-  fallbackSrc = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80', 
+  fallbackSrc = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=50', 
   className = '', 
   priority,
-  cloudinaryWidth = 600,
+  cloudinaryWidth = 360,
   bunnyVariant,
   ...props 
 }: OptimizedImageProps) {
   const { onLoad, onError, ...imageProps } = props;
   const [errorObj, setErrorObj] = useState(false);
 
-  // 1. Validation and Normalization (Synchronous)
+  // 1. Validation and Normalization
   let finalSrc = src;
 
   if (!finalSrc || typeof finalSrc !== 'string' || finalSrc.includes('image:')) {
     finalSrc = fallbackSrc;
   } else if (finalSrc.startsWith('/uploads/')) {
-    finalSrc = fallbackSrc; // Block local /uploads/
+    finalSrc = fallbackSrc; // Block unoptimized local uploads
   } else if (finalSrc.includes('unsplash.com') && !finalSrc.startsWith('https://')) {
-    finalSrc = fallbackSrc; // Block incomplete unsplash
+    finalSrc = fallbackSrc;
   } else if (!finalSrc.startsWith('http') && !finalSrc.startsWith('/')) {
-    finalSrc = fallbackSrc; // Block invalid URLs
+    finalSrc = fallbackSrc;
   }
 
   const isCloudinary = finalSrc && finalSrc.includes('res.cloudinary.com');
   const isUnsplash = finalSrc && finalSrc.includes('images.unsplash.com');
   const isBunny = finalSrc && finalSrc.includes('vl-prod-static.b-cdn.net');
-  const resolvedWidth = cloudinaryWidth || 500;
+  const resolvedWidth = cloudinaryWidth || 360;
+
+  let srcSet: string | undefined = undefined;
 
   if (isUnsplash) {
-    // Force compact target width & aggressive WebP compression
+    // Ultra-lightweight WebP compression (< 15 KB per photo)
     const cleanUrl = finalSrc.includes('?') ? finalSrc.split('?')[0] : finalSrc;
-    const params = new URLSearchParams(finalSrc.includes('?') ? finalSrc.split('?')[1] : '');
-    params.set('auto', 'format');
-    params.set('fit', 'crop');
-    params.set('q', '65');
-    params.set('w', resolvedWidth.toString());
-    finalSrc = `${cleanUrl}?${params.toString()}`;
+    const w1 = Math.min(360, resolvedWidth);
+    const w2 = Math.min(720, resolvedWidth * 2);
+
+    finalSrc = `${cleanUrl}?auto=format&fit=crop&q=50&w=${w1}`;
+    srcSet = `${cleanUrl}?auto=format&fit=crop&q=50&w=${w1} ${w1}w, ${cleanUrl}?auto=format&fit=crop&q=50&w=${w2} ${w2}w`;
   } else if (isCloudinary) {
-    finalSrc = withCloudinaryWidth(finalSrc, resolvedWidth);
+    const w1 = Math.min(360, resolvedWidth);
+    const w2 = Math.min(720, resolvedWidth * 2);
+
+    finalSrc = withCloudinaryWidth(finalSrc, w1);
+    srcSet = `${withCloudinaryWidth(finalSrc, w1)} ${w1}w, ${withCloudinaryWidth(finalSrc, w2)} ${w2}w`;
   } else if (isBunny && bunnyVariant && finalSrc.includes('/original/')) {
     finalSrc = finalSrc.replace('/original/', `/${bunnyVariant}/`);
   }
@@ -94,8 +90,10 @@ export function OptimizedImage({
   return (
     <img
       src={currentSrc}
+      srcSet={srcSet}
+      sizes={imageProps.sizes || "(max-width: 640px) 360px, (max-width: 1024px) 600px, 720px"}
       alt={alt}
-      loading={priority ? "eager" : (props.loading || "eager")}
+      loading={priority ? "eager" : (props.loading || "lazy")}
       fetchPriority={priority ? "high" : "auto"}
       decoding="async"
       className={cn(
