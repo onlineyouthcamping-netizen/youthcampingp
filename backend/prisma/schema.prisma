@@ -443,6 +443,7 @@ model Booking {
   ticketApprovals          TicketApproval[]
   opsClientPayments        OpsClientPayment[]
   stationPayments          StationPaymentCollection[]
+  attachments              BookingAttachment[]
 
   @@index([tenantId])
   @@index([status])
@@ -451,6 +452,31 @@ model Booking {
   @@index([salesAdminId])
   @@index([tenantId, status, createdAt(sort: Desc)])
   @@index([tenantId, salesAdminId, status, createdAt(sort: Desc)])
+}
+
+model BookingAttachment {
+  id             String    @id @default(cuid())
+  tenantId       String    @default("default")
+  bookingId      String
+  fileName       String
+  originalName   String?
+  fileType       String
+  fileSize       Int
+  fileUrl        String
+  title          String?
+  description    String?
+  uploadedBy     String?
+  uploadedById   String?
+  uploadedAt     DateTime  @default(now())
+  version        Int       @default(1)
+  sentStatus     String    @default("NOT_SENT")
+  sentAt         DateTime?
+  versionHistory Json?
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([bookingId])
 }
 
 model BookingDocument {

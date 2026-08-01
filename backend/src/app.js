@@ -116,14 +116,14 @@ app.use('/api/package-builder', require('./routes/packageBuilderRoutes'));
 app.use('/api/erp', require('./routes/erpRoutes'));
 app.use('/api/tickets', require('./routes/ticketApprovalRoutes'));
 app.use('/api/station-payments', require('./routes/stationPaymentRoutes'));
+app.use('/api/attachments', require('./routes/attachmentRoutes'));
 
 const { protect: protectAnalytics } = require('./middleware/auth');
 const { getBookingLinksAnalytics } = require('./controllers/bookingLinkController');
 app.get('/api/analytics', protectAnalytics, getBookingLinksAnalytics);
 
-
-
 // Serve Static Files
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Revalidation Proxy
