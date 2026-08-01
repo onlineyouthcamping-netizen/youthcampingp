@@ -166,7 +166,7 @@ export default function ItineraryAccordion({
       </div>
 
       {/* Accordion Days List */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {displayItinerary.map((day, idx) => {
           const isExpanded = openDays.includes(day.displayDay);
           const dayNumStr =
@@ -174,32 +174,24 @@ export default function ItineraryAccordion({
           const calDateFull = getDayFullDate(startDate, idx + skipDays);
 
           return (
-            <div key={day.displayDay} className="day-item group rounded-[8px] mb-2 transition-all duration-300">
+            <div key={day.displayDay} className="day-item group rounded-[8px] mb-1.5 transition-all duration-300">
               {/* FULL CLICKABLE HEADER BAR */}
               <button
                 onClick={() => toggleDay(day.displayDay)}
-                className="flex items-center gap-2 sm:gap-2.5 w-full text-left cursor-pointer group/header focus:outline-none min-h-[40px]"
+                className="flex items-center gap-2 sm:gap-2.5 w-full text-left cursor-pointer group/header focus:outline-none min-h-[36px]"
               >
-                {/* Left: Day Badge (Compact 64px x 34px rounded-[8px] badge with subtle orange accent ring) */}
-                <div className="day-badge w-[64px] h-[34px] bg-[#0E1726] text-white rounded-[8px] font-bold text-xs flex items-center justify-center text-center shadow-2xs border border-slate-700/80 ring-1 ring-[#D4541A]/50 shrink-0 font-montserrat group-hover/header:bg-[#162338] transition-all">
+                {/* Left: Day Badge (Compact 60px x 34px rounded-[8px] badge with subtle orange accent ring) */}
+                <div className="day-badge w-[60px] h-[34px] bg-[#0E1726] text-white rounded-[8px] font-bold text-xs flex items-center justify-center text-center shadow-2xs border border-slate-700/80 ring-1 ring-[#D4541A]/50 shrink-0 font-montserrat group-hover/header:bg-[#162338] transition-all">
                   {dayNumStr}
                 </div>
 
                 {/* Right: Title Bar (White compact bar with rounded-[8px] corners) */}
                 <div
-                  className="flex-1 min-w-0 bg-white border border-zinc-200/80 rounded-[8px] px-3.5 py-2 flex items-center justify-between shadow-2xs group-hover/header:border-[#D4541A]/50 transition-all min-h-[40px]"
+                  className="flex-1 min-w-0 bg-white border border-zinc-200/80 rounded-[8px] px-3 py-1.5 flex items-center justify-between shadow-2xs group-hover/header:border-[#D4541A]/50 transition-all min-h-[36px]"
                 >
-                  <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
-                    {/* Orange Left Icon */}
-                    {(day.title && (day.title.toLowerCase().includes('train') || day.title.toLowerCase().includes('departure'))) ? (
-                      <span className="text-[#D4541A] text-xs shrink-0 font-bold">🚆</span>
-                    ) : (
-                      <ChevronRight className="w-3.5 h-3.5 text-[#D4541A] stroke-[2.8] shrink-0" />
-                    )}
-                    <span className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat leading-snug truncate">
-                      {day.title}
-                    </span>
-                  </div>
+                  <span className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat leading-snug truncate flex-1 min-w-0 pr-2">
+                    {day.title}
+                  </span>
 
                   <ChevronDown
                     className={cn(
