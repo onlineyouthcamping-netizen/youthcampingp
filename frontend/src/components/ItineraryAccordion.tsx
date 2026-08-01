@@ -175,74 +175,76 @@ export default function ItineraryAccordion({
 
           return (
             <div key={day.displayDay} className="day-item group transition-all duration-300">
-              {/* CLICKABLE HEADER ROW — Compact: Badge | Orange Chevron | Title | Dropdown */}
+              {/* CLICKABLE HEADER ROW — Two Separate Boxes Side by Side */}
               <button
                 onClick={() => toggleDay(day.displayDay)}
-                className="flex items-center gap-3 w-full text-left cursor-pointer group/header focus:outline-none py-2.5 border-b border-zinc-100 hover:bg-zinc-50/60 transition-colors"
+                className="flex items-center gap-2.5 w-full text-left cursor-pointer group/header focus:outline-none"
               >
-                {/* Day Badge Pill */}
-                <div className="day-badge px-3 py-1.5 bg-[#0E1726] text-white rounded-lg font-bold text-xs flex items-center justify-center shrink-0 font-montserrat min-w-[60px]">
+                {/* Box 1: Day Badge */}
+                <div className="day-badge px-3.5 py-2 bg-[#0E1726] text-white rounded-lg font-bold text-xs flex items-center justify-center shrink-0 font-montserrat whitespace-nowrap min-w-[68px]">
                   {dayNumStr}
                 </div>
 
-                {/* Orange Chevron Separator */}
-                <ChevronRight className="w-4 h-4 text-[#D4541A] shrink-0" />
-
-                {/* Plain Title Text (no box/border) */}
-                <span className="flex-1 min-w-0 text-sm font-semibold text-[#0B1528] font-montserrat leading-snug truncate">
-                  {day.title}
-                </span>
-
-                {/* Orange Dropdown Chevron */}
-                <ChevronDown
-                  className={cn(
-                    "w-4 h-4 text-[#D4541A] shrink-0 ml-1 transition-transform duration-300",
-                    isExpanded ? "rotate-180" : ""
-                  )}
-                />
+                {/* Box 2: Title Box (separate bordered container) */}
+                <div className="flex-1 min-w-0 bg-white border border-zinc-200 rounded-lg px-4 py-2 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-[#0B1528] font-montserrat leading-snug truncate flex-1 min-w-0">
+                    {day.title}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "w-4 h-4 text-[#D4541A] shrink-0 ml-2 transition-transform duration-300",
+                      isExpanded ? "rotate-180" : ""
+                    )}
+                  />
+                </div>
               </button>
 
-              {/* Expanded Details Body */}
+              {/* Expanded Details Body — Popup Card Style */}
               {isExpanded && (
-                <div className="mt-2 p-4 bg-[#F8F9FA] border border-zinc-100 rounded-[10px] space-y-3 animate-in fade-in duration-200">
+                <div className="mt-2.5 p-5 bg-white border border-zinc-200/80 rounded-xl shadow-xs space-y-4 animate-in fade-in duration-200">
                   {/* STARTING POINT DATE LINE */}
                   {calDateFull && (
-                    <p className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat pt-1 pb-0.5">
-                      {calDateFull}
-                    </p>
+                    <div className="border-b border-zinc-100 pb-2.5">
+                      <p className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat">
+                        {calDateFull}
+                      </p>
+                    </div>
                   )}
 
                   {day.description && (() => {
-                    // Split on bullet character or newline
+                    // Split on bullet character, newline, or numbers
                     const bullets = day.description
                       .split(/\s*[•·]\s*/)
                       .map(s => s.trim())
                       .filter(Boolean);
 
                     return bullets.length > 1 ? (
-                      <ul className="space-y-2">
+                      <ul className="space-y-2.5">
                         {bullets.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-600 font-montserrat leading-relaxed">
-                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#D4541A] shrink-0" />
+                          <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-700 font-montserrat leading-relaxed">
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                             <span>{renderFormattedText(item)}</span>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-xs sm:text-sm text-zinc-600 font-montserrat leading-relaxed">
+                      <p className="text-xs sm:text-sm text-zinc-700 font-montserrat leading-relaxed">
                         {renderFormattedText(day.description)}
                       </p>
                     );
                   })()}
 
                   {day.activities && day.activities.length > 0 && (
-                    <div className="space-y-1.5">
+                    <div className="space-y-2 pt-1 border-t border-zinc-100">
                       <p className="text-xs font-bold text-[#0B1528] font-montserrat">
                         Key Highlights:
                       </p>
-                      <ul className="list-disc list-inside space-y-1 text-xs text-zinc-600 font-montserrat">
+                      <ul className="space-y-1.5">
                         {day.activities.map((act, ai) => (
-                          <li key={ai}>{act}</li>
+                          <li key={ai} className="flex items-start gap-2 text-xs text-zinc-600 font-montserrat">
+                            <Check className="w-3.5 h-3.5 text-[#F97316] shrink-0 mt-0.5" />
+                            <span>{act}</span>
+                          </li>
                         ))}
                       </ul>
                     </div>

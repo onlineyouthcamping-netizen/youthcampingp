@@ -275,38 +275,41 @@ export default function BookingOptions({
                     onVariantSelect?.(i);
                   }}
                   className={cn(
-                    "itinerary-card w-[210px] sm:w-[240px] min-h-[235px] shrink-0 bg-white rounded-[12px] p-[12px] border-2 transition-all cursor-pointer shadow-xs snap-start flex flex-col justify-between select-none",
+                    "itinerary-card w-[210px] sm:w-[240px] min-h-[235px] shrink-0 bg-white rounded-[12px] border-2 transition-all cursor-pointer shadow-xs snap-start flex flex-col justify-between select-none overflow-hidden",
                     isSelected 
                       ? "itinerary-card-active border-[#D97934] ring-2 ring-[#D97934]/20 shadow-md" 
                       : "border-[#E5E7EB] hover:border-zinc-300"
                   )}
                 >
-                  {/* Card Thumbnail Image Container (115px Natural Aspect Ratio) */}
-                  <div className="relative h-[115px] w-full shrink-0 overflow-hidden rounded-[8px] bg-zinc-100">
+                  {/* Card Thumbnail Image — extends down to title */}
+                  <div className="relative flex-1 w-full overflow-hidden bg-zinc-100 min-h-[130px]">
                     <OptimizedImage 
                       src={imageSrc} 
                       alt={v.location} 
-                      className="card-image absolute inset-0 w-full h-[115px] object-cover transition-transform duration-500 hover:scale-105" 
+                      className="card-image absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
                     />
                   </div>
 
-                  {/* Card Location */}
-                  <div className="card-location my-1.5 flex-1 overflow-hidden font-montserrat">
-                    <h3 className="text-[13px] sm:text-[14px] font-bold text-zinc-900 leading-snug line-clamp-2">
-                      {v.location}
-                    </h3>
-                  </div>
-                  
-                  {/* Card Footer (Price + Duration) */}
-                  <div className="card-footer flex items-center justify-between h-[22px] shrink-0 pt-1 border-t border-zinc-100">
-                    <span className="card-price text-[15px] sm:text-[16px] font-extrabold text-[#D97934] font-montserrat whitespace-nowrap">
-                      ₹{v.discountedPrice?.toLocaleString()}/-
-                    </span>
-                    {displayDuration && (
-                      <span className="card-duration text-[11px] sm:text-[12px] font-semibold text-zinc-500 font-montserrat text-right whitespace-nowrap truncate max-w-[90px]">
-                        {displayDuration}
+                  {/* Card Content — compact, no white space */}
+                  <div className="px-3 pb-2 pt-1.5 flex flex-col gap-0.5 mt-auto">
+                    {/* City Name */}
+                    <div className="card-location overflow-hidden font-montserrat">
+                      <h3 className="text-[12px] sm:text-[13px] font-bold text-zinc-900 leading-tight line-clamp-1 truncate">
+                        {v.location}
+                      </h3>
+                    </div>
+                    
+                    {/* Price + Duration */}
+                    <div className="card-footer flex items-center justify-between shrink-0 pt-1 border-t border-zinc-100">
+                      <span className="card-price text-[15px] sm:text-[16px] font-extrabold text-[#D97934] font-montserrat whitespace-nowrap">
+                        ₹{v.discountedPrice?.toLocaleString()}/-
                       </span>
-                    )}
+                      {displayDuration && (
+                        <span className="card-duration text-[11px] sm:text-[12px] font-semibold text-zinc-500 font-montserrat text-right whitespace-nowrap truncate max-w-[90px]">
+                          {displayDuration}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -316,7 +319,7 @@ export default function BookingOptions({
 
         {/* Travel Options Section */}
         {!isDirectJoin && travelOptions.length > 0 && (
-          <div className="space-y-2.5 pt-3 border-t border-zinc-100">
+          <div className="space-y-2 pt-3 border-t border-zinc-100">
             <div className="flex items-center justify-between">
               <h3 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
                 <Train className="w-4 h-4 text-[#F97316]" />
@@ -337,7 +340,7 @@ export default function BookingOptions({
                     onTravelSelect?.(idx);
                   }}
                   className={cn(
-                    "option-button width-full flex items-center justify-between min-h-[48px] p-[12px_16px] rounded-xl border text-sm font-semibold font-montserrat transition-all cursor-pointer text-left",
+                    "option-button w-full flex items-center justify-between min-h-[48px] p-[12px_16px] rounded-xl border text-sm font-semibold font-montserrat transition-all cursor-pointer text-left",
                     selectedTravel === idx
                       ? "border-[#F97316] bg-orange-50/30 text-[#0B1528] ring-1 ring-[#F97316]"
                       : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300"
@@ -369,7 +372,7 @@ export default function BookingOptions({
 
         {/* Room Sharing Options Section */}
         {roomOptions.length > 0 && (
-          <div className="space-y-2.5 pt-3 border-t border-zinc-100">
+          <div className="space-y-2 pt-3 border-t border-zinc-100">
             <div className="flex items-center justify-between">
               <h3 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
                 <BedDouble className="w-4 h-4 text-[#F97316]" />
@@ -390,7 +393,7 @@ export default function BookingOptions({
                     onRoomSelect?.(idx);
                   }}
                   className={cn(
-                    "option-button width-full flex items-center justify-between min-h-[48px] p-[12px_16px] rounded-xl border text-sm font-semibold font-montserrat transition-all cursor-pointer text-left",
+                    "option-button w-full flex items-center justify-between min-h-[48px] p-[12px_16px] rounded-xl border text-sm font-semibold font-montserrat transition-all cursor-pointer text-left",
                     selectedRoom === idx
                       ? "border-[#F97316] bg-orange-50/30 text-[#0B1528] ring-1 ring-[#F97316]"
                       : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300"
@@ -429,7 +432,7 @@ export default function BookingOptions({
             </h2>
             {selectedDate && (
               <span className="text-[11px] font-bold text-[#F97316] bg-orange-50 px-2 py-0.5 rounded font-montserrat">
-                Selected: {selectedDate}
+                Selected: {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
             )}
           </div>
@@ -457,7 +460,7 @@ export default function BookingOptions({
           </div>
 
           {/* Date Chips for Selected Month */}
-          <div className="date-grid grid grid-cols-4 sm:grid-cols-7 gap-[8px] pt-1">
+          <div className="date-grid grid grid-cols-5 sm:grid-cols-7 gap-2 pt-1">
             {(groupedDates[activeMonth] || []).map((ad, i) => {
               const hasOverride = trip.departurePriceOverrides?.some((o: any) => o.departureDate === ad.date && o.isActive);
               return (
@@ -469,7 +472,7 @@ export default function BookingOptions({
                   onDateSelect?.(ad.date);
                 }}
                 className={cn(
-                  "date-button w-[56px] h-[56px] flex flex-col items-center justify-center rounded-xl font-montserrat transition-all cursor-pointer shadow-2xs relative",
+                  "date-button w-[58px] h-[54px] flex flex-col items-center justify-center rounded-lg font-montserrat transition-all cursor-pointer shadow-2xs relative border",
                   selectedDate === ad.date 
                     ? "border-[#F97316] bg-[#F97316] text-white scale-105 shadow-md" 
                     : hasOverride

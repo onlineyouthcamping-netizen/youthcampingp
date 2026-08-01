@@ -248,83 +248,48 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
             onClick={(e) => e.stopPropagation()}
             className="bg-white w-full max-w-xl rounded-[28px] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)] relative flex flex-col max-h-[calc(100vh-104px)] sm:max-h-[86vh]"
           >
-            {/* Dark Navy Header */}
-            <div className="bg-[#0B1528] px-5 sm:px-6 py-4.5 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-[10px] bg-[#D4541A]/20 flex items-center justify-center">
-                  {(() => {
-                    const Icon = activeId === "cancellation" ? ShieldCheck 
-                              : activeId === "terms" ? FileText
-                              : activeId === "carry" ? Backpack
-                              : activeId === "gears" ? ShoppingBag
-                              : activeId === "etiquette" ? Info
-                              : activeId === "inclusions" ? CheckCircle
-                              : MessageSquare;
-                    return <Icon className="w-4.5 h-4.5 text-[#D4541A]" />;
-                  })()}
-                </div>
-                <h2 className="text-base font-extrabold text-white font-montserrat tracking-tight">
-                  {activeSection?.label}
-                </h2>
-              </div>
+            {/* Clean White Header matching reference screenshots */}
+            <div className="bg-white px-6 py-4 border-b border-zinc-100 flex items-center justify-between shrink-0">
+              <h2 className="text-lg font-bold text-[#1E293B] font-montserrat">
+                {activeSection?.label}
+              </h2>
               <button 
                 onClick={() => setActiveId(null)}
-                className="text-zinc-400 hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10 cursor-pointer"
+                className="text-zinc-400 hover:text-zinc-700 transition-colors p-1 rounded-full hover:bg-zinc-100 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-zinc-600" />
               </button>
             </div>
 
             {/* Modal Content */}
-            <div className="p-5 md:p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5">
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5 bg-white">
 
               {/* CATEGORICAL type (Things to Carry / Gears) */}
               {activeSection?.type === "categorical" && (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   {activeSection.content.map((cat: any, idx: number) => {
                     if (!cat || !cat.items) return null;
                     return (
-                      <div key={idx} className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-4 bg-[#FF5400] rounded-full shrink-0" />
-                          <h3 className="text-[11px] font-black text-[#0B1528] uppercase tracking-wider font-montserrat">
-                            {cat.category || "GENERAL ITEMS"}
+                      <div key={idx} className="space-y-2.5">
+                        {cat.category && (
+                          <h3 className="text-sm font-bold text-[#334155] font-montserrat">
+                            {cat.category}
                           </h3>
-                        </div>
-                        <div className="flex flex-wrap gap-2.5">
+                        )}
+                        <ol className="space-y-2.5 pl-1">
                           {cat.items.map((item: any, i: number) => {
                             const text = item.text || item.label || item;
-                            const rawPrice = item.price || (item.linkText && !item.linkText.toLowerCase().includes("free") ? item.linkText : null);
-                            const isFree = !rawPrice || rawPrice.toLowerCase().includes("free") || rawPrice === "(0)" || rawPrice === "0";
-                            const displayPrice = isFree ? null : rawPrice;
-
                             return (
-                              <div
+                              <li
                                 key={i}
-                                className="inline-flex items-center justify-between gap-2.5 bg-[#F8F9FB] border border-zinc-200/90 hover:border-[#FF5400]/40 text-[#0B1528] font-bold text-xs font-montserrat px-3.5 py-2 rounded-xl transition-all shadow-2xs hover:shadow-xs"
+                                className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-600 font-montserrat leading-relaxed"
                               >
-                                <div className="flex items-center gap-2">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#FF5400] shrink-0" />
-                                  <span>{text}</span>
-                                </div>
-                                {item.link ? (
-                                  <a 
-                                    href={item.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[#FF5400] font-black text-[10px] bg-orange-50 hover:bg-orange-100 border border-orange-200/80 px-2.5 py-0.5 rounded-md transition-colors"
-                                  >
-                                    {item.linkText || "Download"}
-                                  </a>
-                                ) : displayPrice ? (
-                                  <span className="text-[10px] font-black text-white bg-[#FF5400] px-2.5 py-0.5 rounded-full shadow-2xs font-montserrat tracking-wide">
-                                    {displayPrice}
-                                  </span>
-                                ) : null}
-                              </div>
+                                <span className="font-semibold text-zinc-400 min-w-[20px]">{i + 1}.</span>
+                                <span className="text-zinc-700 font-medium">{text}</span>
+                              </li>
                             );
                           })}
-                        </div>
+                        </ol>
                       </div>
                     );
                   })}
@@ -334,20 +299,20 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
               {/* TABLE type (Rented Gears with price) */}
               {activeSection?.type === "table" && (
                 <div className="space-y-4">
-                  <div className="rounded-[16px] border border-zinc-200/80 overflow-hidden">
+                  <div className="rounded-xl border border-zinc-200/80 overflow-hidden">
                     <table className="w-full border-collapse">
                       <thead>
-                        <tr className="bg-[#0B1528]">
-                          <th className="text-left px-5 py-3 text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 font-montserrat">Item</th>
-                          <th className="text-right px-5 py-3 text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 font-montserrat">Price</th>
+                        <tr className="bg-zinc-50 border-b border-zinc-200">
+                          <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider text-zinc-600 font-montserrat">Item</th>
+                          <th className="text-right px-5 py-3 text-xs font-bold uppercase tracking-wider text-zinc-600 font-montserrat">Price</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-100">
                         {activeSection.content.map((row: any, i: number) => (
-                          <tr key={i} className="hover:bg-orange-50/30 transition-colors">
-                            <td className="px-5 py-3.5 font-semibold text-[#0B1528] text-xs font-montserrat">{row.item}</td>
-                            <td className="px-5 py-3.5 text-right">
-                              <span className="font-extrabold text-xs text-[#D4541A] bg-orange-50 border border-orange-100 px-2.5 py-1 rounded-full font-montserrat">
+                          <tr key={i} className="hover:bg-zinc-50/50 transition-colors">
+                            <td className="px-5 py-3 font-medium text-[#1E293B] text-xs font-montserrat">{row.item}</td>
+                            <td className="px-5 py-3 text-right">
+                              <span className="font-bold text-xs text-[#F97316] bg-orange-50 border border-orange-100 px-2.5 py-1 rounded-full font-montserrat">
                                 {row.price}
                               </span>
                             </td>
@@ -357,9 +322,9 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
                     </table>
                   </div>
                   {activeSection.note && (
-                    <div className="flex items-start gap-3 p-4 bg-orange-50/50 rounded-[14px] border border-orange-100">
-                      <Info className="w-4 h-4 text-[#D4541A] shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-zinc-600 font-semibold font-montserrat leading-relaxed italic">{activeSection.note}</p>
+                    <div className="flex items-start gap-3 p-3.5 bg-orange-50/60 rounded-xl border border-orange-100">
+                      <Info className="w-4 h-4 text-[#F97316] shrink-0 mt-0.5" />
+                      <p className="text-xs text-zinc-600 font-medium font-montserrat leading-relaxed">{activeSection.note}</p>
                     </div>
                   )}
                 </div>
@@ -369,17 +334,17 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
               {activeSection?.type === "list" && (
                 <div className="space-y-2.5">
                   {activeSection.content.map((item: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between gap-4 bg-[#F8F9FB] border border-zinc-200/80 rounded-[14px] px-4 py-3.5 hover:border-[#D4541A]/30 transition-all">
-                      <span className="text-xs font-semibold text-zinc-500 font-montserrat leading-snug flex-1">{item.label}</span>
-                      <span className="font-extrabold text-xs text-[#D4541A] bg-orange-50 border border-orange-100 px-3 py-1 rounded-full font-montserrat shrink-0 whitespace-nowrap">
+                    <div key={i} className="flex items-center justify-between gap-4 bg-zinc-50/60 border border-zinc-200/70 rounded-xl px-4 py-3 hover:border-orange-200 transition-all">
+                      <span className="text-xs sm:text-sm font-medium text-zinc-700 font-montserrat leading-snug flex-1">{item.label}</span>
+                      <span className="font-bold text-xs text-[#F97316] bg-orange-50 border border-orange-100 px-3 py-1 rounded-full font-montserrat shrink-0 whitespace-nowrap">
                         {item.val}
                       </span>
                     </div>
                   ))}
                   {activeSection.note && (
-                    <div className="flex items-start gap-3 p-4 bg-amber-50/50 rounded-[14px] border border-amber-100 mt-3">
-                      <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-zinc-600 font-semibold font-montserrat leading-relaxed italic">{activeSection.note}</p>
+                    <div className="flex items-start gap-3 p-3.5 bg-amber-50/60 rounded-xl border border-amber-100 mt-3">
+                      <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <p className="text-xs text-zinc-600 font-medium font-montserrat leading-relaxed">{activeSection.note}</p>
                     </div>
                   )}
                 </div>
@@ -387,11 +352,11 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
 
               {/* SIMPLE type (Terms & Conditions, Inclusions) */}
               {activeSection?.type === "simple" && (
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {activeSection.content.map((item: any, i: number) => (
-                    <div key={i} className="flex items-start gap-3 p-4 bg-[#F8F9FB] border border-zinc-200/80 rounded-[14px]">
-                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#D4541A] shrink-0" />
-                      <p className="text-xs text-zinc-700 font-semibold font-montserrat leading-relaxed">{item}</p>
+                    <div key={i} className="flex items-start gap-3 text-xs sm:text-sm text-zinc-700 font-montserrat leading-relaxed">
+                      <CheckCircle className="w-4.5 h-4.5 text-zinc-500 shrink-0 mt-0.5 stroke-[1.5]" />
+                      <p className="font-medium text-zinc-700">{item}</p>
                     </div>
                   ))}
                 </div>

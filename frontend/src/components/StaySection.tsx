@@ -112,18 +112,12 @@ export default function StaySection({ accommodations }: StaySectionProps) {
   const modalCategories = useMemo(() => {
     if (!selectedStay) return ["All"];
     const gallery = selectedStay.gallery || [];
-    const catSet = new Set(gallery.map(img => img.category).filter(Boolean));
-    const knownCats = ["Interior / Rooms", "Bathroom", "Dining Area", "Property & Views"];
-    const hasAliases = (cat: string) => {
-      if (catSet.has(cat)) return true;
-      if (cat === "Property & Views" && (catSet.has("Exterior") || catSet.has("Swimming Pool"))) return true;
-      if (cat === "Interior / Rooms" && (catSet.has("Interior") || catSet.has("Premium Room"))) return true;
-      if (cat === "Dining Area" && catSet.has("Dining")) return true;
-      return false;
-    };
-    const activeKnown = knownCats.filter(hasAliases);
-    const extraCats = Array.from(catSet).filter(c => !knownCats.includes(c) && !["Exterior", "Swimming Pool", "Interior", "Premium Room", "Dining"].includes(c));
-    return ["All", ...activeKnown, ...extraCats];
+    const catSet = new Set<string>();
+    gallery.forEach(img => {
+      if (img && img.category) catSet.add(img.category);
+    });
+    if (catSet.size === 0) return ["All", "Property & Views"];
+    return ["All", ...Array.from(catSet)];
   }, [selectedStay]);
 
   const filteredImages = useMemo(() => {
@@ -132,13 +126,7 @@ export default function StaySection({ accommodations }: StaySectionProps) {
       ? selectedStay.gallery
       : [{ url: selectedStay.image, category: "Property & Views", title: selectedStay.name }];
     if (activeCategory === "All") return gallery;
-    return gallery.filter(img => {
-      if (img.category === activeCategory) return true;
-      if (activeCategory === "Property & Views" && (img.category === "Exterior" || img.category === "Swimming Pool")) return true;
-      if (activeCategory === "Interior / Rooms" && (img.category === "Interior" || img.category === "Premium Room")) return true;
-      if (activeCategory === "Dining Area" && img.category === "Dining") return true;
-      return false;
-    });
+    return gallery.filter(img => img && img.category === activeCategory);
   }, [selectedStay, activeCategory]);
 
   return (
