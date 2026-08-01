@@ -166,7 +166,7 @@ export default function ItineraryAccordion({
       </div>
 
       {/* Accordion Days List */}
-      <div className="space-y-1.5">
+      <div className="space-y-3">
         {displayItinerary.map((day, idx) => {
           const isExpanded = openDays.includes(day.displayDay);
           const dayNumStr =
@@ -174,40 +174,45 @@ export default function ItineraryAccordion({
           const calDateFull = getDayFullDate(startDate, idx + skipDays);
 
           return (
-            <div key={day.displayDay} className="day-item group rounded-[8px] mb-1.5 transition-all duration-300">
+            <div 
+              key={day.displayDay} 
+              className={cn(
+                "accordion-item day-item group rounded-[8px] border transition-all duration-200 ease-in-out overflow-hidden shadow-2xs mb-3",
+                isExpanded 
+                  ? "border-[#D97934] ring-1 ring-[#D97934]/30 bg-white shadow-xs" 
+                  : "border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] hover:border-[#D97934] hover:shadow-sm"
+              )}
+            >
               {/* FULL CLICKABLE HEADER BAR */}
               <button
                 onClick={() => toggleDay(day.displayDay)}
-                className="flex items-center gap-2 sm:gap-2.5 w-full text-left cursor-pointer group/header focus:outline-none min-h-[36px]"
+                className="w-full flex items-center gap-3 sm:gap-4 p-3.5 sm:p-4 text-left cursor-pointer group/header focus:outline-none min-h-[52px]"
               >
-                {/* Left: Day Badge (Compact 60px x 34px rounded-[8px] badge with subtle orange accent ring) */}
-                <div className="day-badge w-[60px] h-[34px] bg-[#0E1726] text-white rounded-[8px] font-bold text-xs flex items-center justify-center text-center shadow-2xs border border-slate-700/80 ring-1 ring-[#D4541A]/50 shrink-0 font-montserrat group-hover/header:bg-[#162338] transition-all">
+                {/* Left: Day Badge (Fixed 56px/64px x 44px/48px rounded-[10px]/[12px] dark navy badge) */}
+                <div className="day-badge w-[56px] sm:w-[64px] h-[44px] sm:h-[48px] bg-[#1A1A2E] text-white rounded-[10px] sm:rounded-[12px] font-bold text-xs sm:text-[14px] flex items-center justify-center text-center shadow-2xs shrink-0 font-montserrat group-hover/header:bg-[#0E1726] transition-colors">
                   {dayNumStr}
                 </div>
 
-                {/* Right: Title Bar (White compact bar with rounded-[8px] corners) */}
-                <div
-                  className="flex-1 min-w-0 bg-white border border-zinc-200/80 rounded-[8px] px-3 py-1.5 flex items-center justify-between shadow-2xs group-hover/header:border-[#D4541A]/50 transition-all min-h-[36px]"
-                >
-                  <span className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat leading-snug truncate flex-1 min-w-0 pr-2">
-                    {day.title}
-                  </span>
+                {/* Middle: Title Text */}
+                <span className="text-[15px] sm:text-[18px] font-semibold text-[#0B1528] font-montserrat leading-snug flex-1 min-w-0 pr-6 sm:pr-8 line-clamp-2">
+                  {day.title}
+                </span>
 
-                  <ChevronDown
-                    className={cn(
-                      "w-4 h-4 text-zinc-400 shrink-0 ml-1 transition-transform duration-300",
-                      isExpanded ? "rotate-180 text-[#D4541A]" : ""
-                    )}
-                  />
-                </div>
+                {/* Right: Chevron Arrow (24px x 24px with 200ms cubic-bezier rotation) */}
+                <ChevronDown
+                  className={cn(
+                    "w-6 h-6 text-[#D4541A] shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
+                    isExpanded ? "rotate-180" : ""
+                  )}
+                />
               </button>
 
               {/* Expanded Details Body */}
               {isExpanded && (
-                <div className="mt-2.5 p-4 bg-[#F8F9FA] border border-zinc-100 rounded-[8px] space-y-3 animate-fade-in">
+                <div className="px-3.5 sm:px-4 pb-4 pt-1 bg-[#F9FAFB] border-t border-zinc-100 space-y-3 animate-in fade-in duration-200">
                   {/* STARTING POINT DATE LINE */}
                   {calDateFull && (
-                    <p className="text-xs sm:text-sm font-semibold text-[#0B1528] font-montserrat pb-0.5">
+                    <p className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat pt-1 pb-0.5">
                       {calDateFull}
                     </p>
                   )}
