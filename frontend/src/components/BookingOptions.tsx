@@ -483,15 +483,7 @@ export default function BookingOptions({
             )})}
           </div>
 
-          {/* View All Dates Button */}
-          <button 
-            type="button"
-            onClick={() => setShowAllDatesModal(true)}
-            className="w-full h-[48px] min-h-[48px] py-2.5 px-4 border border-[#F97316]/60 text-[#0B1528] bg-white rounded-xl font-bold text-sm hover:bg-orange-50/30 transition-all font-montserrat flex items-center justify-center gap-2 cursor-pointer shadow-2xs mt-2"
-          >
-            <Calendar className="w-4 h-4 text-[#F97316]" />
-            View All Departure Dates ({months.length} Months Available)
-          </button>
+          {/* View All Dates Button (Removed per user request) */}
         </div>
       </section>
 
