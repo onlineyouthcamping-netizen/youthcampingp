@@ -346,7 +346,10 @@ const templates = {
             <table role="presentation" border="0" cellspacing="0" cellpadding="0">
               <tr>
                 <td style="vertical-align: middle;">
-                  <img src="${LOGO_URL}" alt="YouthCamping Logo" style="height: 36px; width: auto; display: block; border: 0;" />
+                  <img src="${LOGO_URL}" alt="YOUTHCAMPING" style="height: 36px; width: auto; max-width: 180px; display: block; border: 0;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                  <div style="display: none; font-size: 20px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; text-transform: uppercase;">
+                    YOUTH<span style="color: #ff5722;">CAMPING</span>
+                  </div>
                 </td>
               </tr>
             </table>
@@ -529,7 +532,10 @@ const templates = {
             <table role="presentation" border="0" cellspacing="0" cellpadding="0">
               <tr>
                 <td style="vertical-align: middle;">
-                  <img src="${LOGO_URL}" alt="YouthCamping Logo" style="height: 26px; width: auto; display: block; border: 0;" />
+                  <img src="${LOGO_URL}" alt="YOUTHCAMPING" style="height: 26px; width: auto; max-width: 140px; display: block; border: 0;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                  <div style="display: none; font-size: 16px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
+                    YOUTH<span style="color: #ff5722;">CAMPING</span>
+                  </div>
                 </td>
               </tr>
             </table>
