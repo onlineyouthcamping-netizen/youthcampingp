@@ -168,7 +168,7 @@ export default function StaySection({ accommodations }: StaySectionProps) {
                 </div>
 
                 {/* Stay Details */}
-                <div className="p-2 sm:p-2.5 pb-0">
+                <div className="p-2 sm:p-2.5 pb-1">
                   <h3 className="text-[11px] sm:text-xs font-bold text-[#0B1528] font-montserrat line-clamp-1 group-hover:text-[#D4541A] transition-colors">
                     {stay.name}
                   </h3>
@@ -177,6 +177,18 @@ export default function StaySection({ accommodations }: StaySectionProps) {
                     <MapPin className="w-2.5 h-2.5 text-[#D4541A] shrink-0" />
                     <span className="truncate">{stay.location}</span>
                   </div>
+
+                  {/* Highlights Pills on Main Card */}
+                  {stay.amenities && stay.amenities.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {stay.amenities.slice(0, 3).map((amenity, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1 bg-orange-50/80 border border-orange-200/60 text-[9px] font-bold text-[#D4541A] px-1.5 py-0.5 rounded-md font-montserrat">
+                          <CheckCircle2 className="w-2.5 h-2.5 text-[#D4541A] shrink-0" />
+                          <span className="truncate max-w-[90px]">{amenity}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
