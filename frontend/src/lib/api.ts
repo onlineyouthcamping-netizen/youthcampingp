@@ -37,6 +37,11 @@ export const normalizeImageUrl = (url: any): string | undefined => {
     return undefined;
   }
 
+  // Block old broken black & white thumbs-up PNG placeholders uploaded to /uploads/trips/
+  if (url.includes('image-1778570') || url.includes('image-1778571') || url.includes('177857099') || url.includes('177857100')) {
+    return undefined;
+  }
+
   // Enforce valid HTTP/HTTPS URLs
   if (url.startsWith('http://') || url.startsWith('https://')) {
     if (url === "https://images.unsplash.com/photo-" || url.endsWith('photo-')) return undefined;

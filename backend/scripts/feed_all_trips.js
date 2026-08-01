@@ -33,8 +33,8 @@ const tripsToFeed = [
       { date: "2026-09-15", capacity: 30 }
     ],
     variants: [
-      { location: "Haridwar to Haridwar", duration: "08D/07N", discountedPrice: 16500 },
-      { location: "Rishikesh to Rishikesh", duration: "08D/07N", discountedPrice: 15999 }
+      { location: "Haridwar to Haridwar", duration: "08D/07N", discountedPrice: 16500, image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?q=80&w=800" },
+      { location: "Rishikesh to Rishikesh", duration: "08D/07N", discountedPrice: 15999, image: "https://images.unsplash.com/photo-1597037750734-450f6f406560?q=80&w=800" }
     ]
   },
   {
@@ -66,8 +66,8 @@ const tripsToFeed = [
       { date: "2026-06-12", capacity: 30 }
     ],
     variants: [
-      { location: "Rishikesh to Rishikesh", duration: "06D/05N", discountedPrice: 12999 },
-      { location: "Delhi to Delhi", duration: "07D/06N", discountedPrice: 14999 }
+      { location: "Rishikesh to Rishikesh", duration: "06D/05N", discountedPrice: 12999, image: "https://images.unsplash.com/photo-1597037750734-450f6f406560?q=80&w=800" },
+      { location: "Delhi to Delhi", duration: "07D/06N", discountedPrice: 14999, image: "https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=800" }
     ]
   },
   {
@@ -101,9 +101,9 @@ const tripsToFeed = [
       { date: "2026-07-15", capacity: 20 }
     ],
     variants: [
-      { location: "Leh to Leh (Dual Rider)", duration: "07D/06N", discountedPrice: 11999 },
-      { location: "Leh to Leh (Solo Rider)", duration: "07D/06N", discountedPrice: 16999 },
-      { location: "Seat in Backup SUV", duration: "07D/06N", discountedPrice: 13999 }
+      { location: "Leh to Leh (Dual Rider)", duration: "07D/06N", discountedPrice: 11999, image: "https://images.unsplash.com/photo-1566324810848-18e474eb4d0b?q=80&w=800" },
+      { location: "Leh to Leh (Solo Rider)", duration: "07D/06N", discountedPrice: 16999, image: "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?q=80&w=800" },
+      { location: "Seat in Backup SUV", duration: "07D/06N", discountedPrice: 13999, image: "https://images.unsplash.com/photo-1533587851505-d119e13fa0d7?q=80&w=800" }
     ]
   },
   {
@@ -138,8 +138,8 @@ const tripsToFeed = [
       { date: "2026-06-10", capacity: 25 }
     ],
     variants: [
-      { location: "Srinagar to Srinagar", duration: "06D/05N", discountedPrice: 11999 },
-      { location: "Jammu to Jammu", duration: "08D/07N", discountedPrice: 14999 }
+      { location: "Srinagar to Srinagar", duration: "06D/05N", discountedPrice: 11999, image: "https://images.unsplash.com/photo-1598091383021-15ddea10925d?q=80&w=800" },
+      { location: "Jammu to Jammu", duration: "08D/07N", discountedPrice: 14999, image: "https://images.unsplash.com/photo-1566837945700-30057527ade0?q=80&w=800" }
     ]
   },
   {
@@ -172,8 +172,8 @@ const tripsToFeed = [
       { date: "2026-06-20", capacity: 30 }
     ],
     variants: [
-      { location: "Delhi to Delhi", duration: "08D/07N", discountedPrice: 17999 },
-      { location: "Chandigarh to Chandigarh", duration: "08D/07N", discountedPrice: 16499 }
+      { location: "Delhi to Delhi", duration: "08D/07N", discountedPrice: 17999, image: "https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=800" },
+      { location: "Chandigarh to Chandigarh", duration: "08D/07N", discountedPrice: 16499, image: "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=800" }
     ]
   },
   {
@@ -204,8 +204,8 @@ const tripsToFeed = [
       { date: "2026-06-10", capacity: 35 }
     ],
     variants: [
-      { location: "Delhi to Delhi", duration: "06D/05N", discountedPrice: 11999 },
-      { location: "Ahmedabad to Ahmedabad", duration: "08D/07N", discountedPrice: 14499 }
+      { location: "Delhi to Delhi", duration: "06D/05N", discountedPrice: 11999, image: "https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=800" },
+      { location: "Ahmedabad to Ahmedabad", duration: "08D/07N", discountedPrice: 14499, image: "https://images.unsplash.com/photo-1605140885332-f4ad6071b03c?q=80&w=800" }
     ]
   }
 ];
