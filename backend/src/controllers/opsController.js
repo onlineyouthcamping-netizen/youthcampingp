@@ -146,14 +146,6 @@ async function parseDepartureFilter(req, res, requireDepartureDate = true) {
           }
         }
       });
-      if (bookingsCount === 0) {
-        res.status(400).json({
-          success: false,
-          code: 'DEPARTURE_NOT_FOUND',
-          message: `The departure date ${formattedDate} is not configured and has no active bookings for trip ${tripId}.`
-        });
-        return null;
-      }
     }
   }
 
