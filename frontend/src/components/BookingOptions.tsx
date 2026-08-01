@@ -259,10 +259,9 @@ export default function BookingOptions({
   return (
     <div className="space-y-6">
       {/* Unified Booking Box */}
-      <section className="bg-white rounded-[20px] p-4 md:p-5 border border-zinc-100 shadow-sm space-y-6">
-        {/* Starting Location Section - Horizontal Slide */}
+      <section className="bg-white rounded-[20px] p-4 md:p-5 border border-zinc-100 shadow-sm space-y-6">        {/* Starting Location Section - Horizontal Slide */}
         <div>
-          <div className="flex flex-row overflow-x-auto no-scrollbar gap-3.5 sm:gap-4 pb-3 -mx-1 px-1 snap-x select-none">
+          <div className="flex flex-row overflow-x-auto no-scrollbar gap-[16px] pb-3 -mx-1 px-1 snap-x select-none">
             {variants.map((v, i) => {
               const displayDuration = (v as any).duration || trip.duration;
               const imageSrc = normalizeImageUrl(v.image) || "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=800";
@@ -276,47 +275,38 @@ export default function BookingOptions({
                     onVariantSelect?.(i);
                   }}
                   className={cn(
-                    "departure-location-card w-[210px] sm:w-[240px] h-[225px] sm:h-[240px] shrink-0 bg-white rounded-[16px] overflow-hidden border-2 transition-all cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.05)] snap-start flex flex-col justify-between select-none",
+                    "itinerary-card w-[210px] sm:w-[240px] h-[220px] shrink-0 bg-white rounded-[8px] p-[12px] border-2 transition-all cursor-pointer shadow-xs snap-start flex flex-col justify-between select-none",
                     isSelected 
-                      ? "departure-location-card-active border-[#F97316] ring-2 ring-[#F97316]/25 shadow-xs" 
+                      ? "itinerary-card-active border-[#D97934] ring-2 ring-[#D97934]/20" 
                       : "border-[#E5E7EB] hover:border-zinc-300"
                   )}
                 >
-                  {/* Card Thumbnail Image Container */}
-                  <div className="relative h-[120px] sm:h-[135px] w-full shrink-0 overflow-hidden rounded-t-[14px] bg-zinc-100">
+                  {/* Card Thumbnail Image Container (Fixed 80px Height) */}
+                  <div className="relative h-[80px] w-full shrink-0 overflow-hidden rounded-[6px] bg-zinc-100">
                     <OptimizedImage 
                       src={imageSrc} 
                       alt={v.location} 
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
+                      className="card-image absolute inset-0 w-full h-[80px] object-cover transition-transform duration-500 hover:scale-105" 
                     />
                   </div>
 
-                  {/* Card Content Area */}
-                  <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between overflow-hidden">
-                    {/* Location Title with Max-Width Truncation */}
-                    <div className="min-h-[24px] flex items-center mb-1 overflow-hidden">
-                      <h3 className="departure-location-card-title text-[13px] sm:text-[14px] font-semibold text-zinc-700 max-w-full truncate whitespace-nowrap block font-montserrat">
-                        {v.location}
-                      </h3>
-                    </div>
-                    
-                    {/* Card Footer locked to Bottom */}
-                    <div className="flex items-center justify-between mt-auto pt-2.5 border-t border-zinc-100/90 shrink-0 min-h-[30px]">
-                      <span className="text-[13px] sm:text-[14px] font-bold text-[#F97316] font-montserrat tracking-tight whitespace-nowrap">
-                        ₹{v.discountedPrice?.toLocaleString()}/-
+                  {/* Card Location (Middle: Max 2 lines, 14px font, ellipsis) */}
+                  <div className="card-location my-2 flex-1 overflow-hidden font-montserrat">
+                    <h3 className="text-[14px] font-semibold text-zinc-700 leading-snug line-clamp-2">
+                      {v.location}
+                    </h3>
+                  </div>
+                  
+                  {/* Card Footer (Bottom: Price + Duration in fixed 20px footer) */}
+                  <div className="card-footer flex items-center justify-between h-[20px] shrink-0 pt-1 border-t border-zinc-100">
+                    <span className="card-price text-[16px] font-bold text-[#D97934] font-montserrat whitespace-nowrap">
+                      ₹{v.discountedPrice?.toLocaleString()}/-
+                    </span>
+                    {displayDuration && (
+                      <span className="card-duration text-[12px] text-zinc-500 font-montserrat text-right whitespace-nowrap truncate max-w-[90px]">
+                        {displayDuration}
                       </span>
-                      {displayDuration && (
-                        <div className="flex items-center gap-1 text-[#6B7280] text-[11px] font-montserrat min-w-0 max-w-[95px] sm:max-w-[110px]">
-                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-zinc-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                            <line x1="16" y1="2" x2="16" y2="6" />
-                            <line x1="8" y1="2" x2="8" y2="6" />
-                            <line x1="3" y1="10" x2="21" y2="10" />
-                          </svg>
-                          <span className="font-semibold truncate whitespace-nowrap">{displayDuration}</span>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               );
@@ -337,7 +327,7 @@ export default function BookingOptions({
               </span>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="option-group option-group-2col">
               {travelOptions.map((opt, idx) => (
                 <button
                   key={idx}
@@ -347,28 +337,28 @@ export default function BookingOptions({
                     onTravelSelect?.(idx);
                   }}
                   className={cn(
-                    "flex items-center justify-between p-3 rounded-xl border text-xs font-semibold font-montserrat transition-all cursor-pointer text-left",
+                    "option-button width-full flex items-center justify-between min-h-[48px] p-[12px_16px] rounded-xl border text-sm font-semibold font-montserrat transition-all cursor-pointer text-left",
                     selectedTravel === idx
                       ? "border-[#F97316] bg-orange-50/30 text-[#0B1528] ring-1 ring-[#F97316]"
                       : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300"
                   )}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1 pr-2">
                     <div className={cn(
                       "w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
                       selectedTravel === idx ? "border-[#F97316] bg-[#F97316]" : "border-zinc-300"
                     )}>
                       {selectedTravel === idx && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
                     </div>
-                    <span>{opt.label}</span>
+                    <span className="option-label text-[14px] truncate max-w-[180px]">{opt.label}</span>
                   </div>
                   {opt.priceDelta > 0 ? (
-                    <span className="text-[#F97316] font-bold text-[11px]">
+                    <span className="option-badge w-[60px] shrink-0 text-right text-[#F97316] font-bold text-[12px]">
                       +₹{opt.priceDelta.toLocaleString()}
                     </span>
                   ) : (
-                    <span className="text-emerald-600 font-extrabold text-[10px] uppercase bg-emerald-50 px-1.5 py-0.5 rounded">
-                      Included
+                    <span className="option-badge w-[60px] shrink-0 text-right text-emerald-600 font-extrabold text-[11px] uppercase">
+                      INCLUDED
                     </span>
                   )}
                 </button>
@@ -390,7 +380,7 @@ export default function BookingOptions({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="option-group option-group-3col">
               {roomOptions.map((opt, idx) => (
                 <button
                   key={idx}
@@ -400,28 +390,28 @@ export default function BookingOptions({
                     onRoomSelect?.(idx);
                   }}
                   className={cn(
-                    "flex items-center justify-between p-3 rounded-xl border text-xs font-semibold font-montserrat transition-all cursor-pointer text-left",
+                    "option-button width-full flex items-center justify-between min-h-[48px] p-[12px_16px] rounded-xl border text-sm font-semibold font-montserrat transition-all cursor-pointer text-left",
                     selectedRoom === idx
                       ? "border-[#F97316] bg-orange-50/30 text-[#0B1528] ring-1 ring-[#F97316]"
                       : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300"
                   )}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1 pr-2">
                     <div className={cn(
                       "w-4 h-4 rounded-full border flex items-center justify-center shrink-0",
                       selectedRoom === idx ? "border-[#F97316] bg-[#F97316]" : "border-zinc-300"
                     )}>
                       {selectedRoom === idx && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
                     </div>
-                    <span>{opt.label}</span>
+                    <span className="option-label text-[14px] truncate max-w-[180px]">{opt.label}</span>
                   </div>
                   {opt.priceDelta > 0 ? (
-                    <span className="text-[#F97316] font-bold text-[11px]">
+                    <span className="option-badge w-[60px] shrink-0 text-right text-[#F97316] font-bold text-[12px]">
                       +₹{opt.priceDelta.toLocaleString()}
                     </span>
                   ) : (
-                    <span className="text-emerald-600 font-extrabold text-[10px] uppercase bg-emerald-50 px-1.5 py-0.5 rounded">
-                      Base
+                    <span className="option-badge w-[60px] shrink-0 text-right text-emerald-600 font-extrabold text-[11px] uppercase">
+                      BASE
                     </span>
                   )}
                 </button>
@@ -445,14 +435,14 @@ export default function BookingOptions({
           </div>
           
           {/* Month Tabs (Auto-purges ended months) */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          <div className="month-tabs flex items-center gap-[12px] overflow-x-auto no-scrollbar pb-1">
             {months.map((month) => (
               <button
                 key={month}
                 type="button"
                 onClick={() => setActiveMonth(month)}
                 className={cn(
-                  "relative px-3.5 py-1.5 rounded-xl border text-xs font-bold font-montserrat transition-all shrink-0 cursor-pointer",
+                  "month-tab flex-1 min-w-[80px] text-center relative px-3.5 py-1.5 rounded-xl border text-xs font-bold font-montserrat transition-all shrink-0 cursor-pointer",
                   activeMonth === month 
                     ? "border-[#F97316] text-[#F97316] bg-orange-50/50 ring-1 ring-[#F97316]" 
                     : "border-zinc-200 text-zinc-500 hover:border-zinc-300 bg-white"
@@ -467,7 +457,7 @@ export default function BookingOptions({
           </div>
 
           {/* Date Chips for Selected Month */}
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div className="date-grid grid grid-cols-4 sm:grid-cols-7 gap-[8px] pt-1">
             {(groupedDates[activeMonth] || []).map((ad, i) => {
               const hasOverride = trip.departurePriceOverrides?.some((o: any) => o.departureDate === ad.date && o.isActive);
               return (
@@ -479,7 +469,7 @@ export default function BookingOptions({
                   onDateSelect?.(ad.date);
                 }}
                 className={cn(
-                  "flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border font-montserrat transition-all cursor-pointer shadow-2xs min-w-[54px] relative",
+                  "date-button w-[56px] h-[56px] flex flex-col items-center justify-center rounded-xl font-montserrat transition-all cursor-pointer shadow-2xs relative",
                   selectedDate === ad.date 
                     ? "border-[#F97316] bg-[#F97316] text-white scale-105 shadow-md" 
                     : hasOverride
@@ -497,7 +487,7 @@ export default function BookingOptions({
           <button 
             type="button"
             onClick={() => setShowAllDatesModal(true)}
-            className="w-full py-2.5 px-4 border border-[#F97316]/60 text-[#0B1528] bg-white rounded-xl font-bold text-xs hover:bg-orange-50/30 transition-all font-montserrat flex items-center justify-center gap-2 cursor-pointer shadow-2xs mt-2"
+            className="w-full h-[48px] min-h-[48px] py-2.5 px-4 border border-[#F97316]/60 text-[#0B1528] bg-white rounded-xl font-bold text-sm hover:bg-orange-50/30 transition-all font-montserrat flex items-center justify-center gap-2 cursor-pointer shadow-2xs mt-2"
           >
             <Calendar className="w-4 h-4 text-[#F97316]" />
             View All Departure Dates ({months.length} Months Available)
