@@ -49,27 +49,17 @@ export function OptimizedImage({
   fallbackSrc = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80', 
   className = '', 
   priority,
-  cloudinaryWidth,
+  cloudinaryWidth = 600,
   bunnyVariant,
   ...props 
 }: OptimizedImageProps) {
   const { onLoad, onError, ...imageProps } = props;
-  const [isLoaded, setIsLoaded] = useState(priority ? true : false);
   const [errorObj, setErrorObj] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  useEffect(() => {
-    if (priority) {
-      setIsLoaded(true);
-    } else if (imgRef.current?.complete) {
-      setIsLoaded(true);
-    }
-  }, [src, priority]);
 
   // 1. Validation and Normalization (Synchronous)
   let finalSrc = src;
 
-  if (!finalSrc || typeof finalSrc !== 'string') {
+  if (!finalSrc || typeof finalSrc !== 'string' || finalSrc.includes('image:')) {
     finalSrc = fallbackSrc;
   } else if (finalSrc.startsWith('/uploads/')) {
     finalSrc = fallbackSrc; // Block local /uploads/
@@ -82,17 +72,17 @@ export function OptimizedImage({
   const isCloudinary = finalSrc && finalSrc.includes('res.cloudinary.com');
   const isUnsplash = finalSrc && finalSrc.includes('images.unsplash.com');
   const isBunny = finalSrc && finalSrc.includes('vl-prod-static.b-cdn.net');
-  const resolvedWidth = cloudinaryWidth || 1200;
+  const resolvedWidth = cloudinaryWidth || 600;
   const widths = getResponsiveWidths(resolvedWidth);
   let srcSet: string | undefined = undefined;
 
   if (isUnsplash) {
-    // Directly adjust Unsplash query parameters instead of routing through Cloudinary fetch
+    // Directly adjust Unsplash query parameters for maximum performance & WebP compression
     const cleanUrl = finalSrc.includes('?') ? finalSrc.split('?')[0] : finalSrc;
     const params = new URLSearchParams(finalSrc.includes('?') ? finalSrc.split('?')[1] : '');
     params.set('auto', 'format');
     params.set('fit', 'crop');
-    params.set('q', '80');
+    params.set('q', '75');
     
     params.set('w', resolvedWidth.toString());
     finalSrc = `${cleanUrl}?${params.toString()}`;
@@ -116,7 +106,6 @@ export function OptimizedImage({
 
   return (
     <img
-      ref={imgRef}
       src={currentSrc}
       srcSet={srcSet}
       sizes={imageProps.sizes || "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
@@ -125,17 +114,11 @@ export function OptimizedImage({
       fetchPriority={priority ? "high" : "auto"}
       decoding="async"
       className={cn(
-        "w-full h-full object-cover transition-opacity duration-500 ease-in-out",
-        isLoaded ? 'opacity-100' : 'opacity-0',
+        "w-full h-full object-cover",
         className
       )}
-      onLoad={(event) => {
-        setIsLoaded(true);
-        onLoad?.(event);
-      }}
       onError={(event) => {
         setErrorObj(true);
-        setIsLoaded(true);
         onError?.(event);
       }}
       {...imageProps}

@@ -317,6 +317,7 @@ export default function ItineraryAccordion({
                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                                 width={300}
                                 height={200}
+                                cloudinaryWidth={400}
                               />
 
                               {/* Apple Glass Floating Badge Top-Left */}
