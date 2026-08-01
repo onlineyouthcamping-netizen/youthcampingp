@@ -318,6 +318,8 @@ export default function ItineraryAccordion({
                                 width={300}
                                 height={200}
                                 cloudinaryWidth={400}
+                                loading="eager"
+                                priority={true}
                               />
 
                               {/* Apple Glass Floating Badge Top-Left */}
