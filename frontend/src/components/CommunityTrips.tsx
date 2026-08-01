@@ -322,12 +322,23 @@ export default function CommunityTrips({
 
   // If the admin panel specified selectedTripIds, order by them first and append all remaining trips so all published trips stay scrollable
   const sourceTrips = useMemo(() => {
-    if (!Array.isArray(selectedTripIds) || selectedTripIds.length === 0) {
-      return sortedTrips;
+    let baseList = sortedTrips;
+    if (Array.isArray(selectedTripIds) && selectedTripIds.length > 0) {
+      const chosen = selectedTripIds
+        .map(id => sortedTrips.find(t => t.id === id || t.slug === id || t.shortName === id))
+        .filter(Boolean) as Trip[];
+      const remaining = sortedTrips.filter(t => !chosen.some(c => c.id === t.id || c.slug === t.slug));
+      baseList = [...chosen, ...remaining];
     }
-    const chosen = selectedTripIds.map(id => sortedTrips.find(t => t.id === id || t.slug === id || t.shortName === id)).filter(Boolean) as Trip[];
-    const remaining = sortedTrips.filter(t => !chosen.some(c => c.id === t.id));
-    return [...chosen, ...remaining];
+
+    // Strict deduplication by trip ID & Slug so duplicate cards are impossible
+    const seen = new Set<string>();
+    return baseList.filter(t => {
+      const key = (t.id || t.slug || t.title || '').toLowerCase().trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }, [selectedTripIds, sortedTrips]);
 
   const pickMonth = useCallback((i: number) => {

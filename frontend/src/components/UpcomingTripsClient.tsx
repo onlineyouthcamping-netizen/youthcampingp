@@ -138,10 +138,18 @@ interface Props { trips?: Trip[]; }
 export default function UpcomingTripsClient({ trips: propTrips = [] }: Props) {
   const sortedTrips = useMemo(() => {
     const raw = propTrips && propTrips.length > 0 ? propTrips : MOCK_TRIPS;
-    return [...raw].sort((a, b) => {
+    const sorted = [...raw].sort((a, b) => {
       const orderA = typeof a.order === 'number' ? a.order : 999;
       const orderB = typeof b.order === 'number' ? b.order : 999;
       return orderA - orderB;
+    });
+
+    const seen = new Set<string>();
+    return sorted.filter(t => {
+      const key = (t.id || t.slug || t.title || '').toLowerCase().trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
   }, [propTrips]);
 
