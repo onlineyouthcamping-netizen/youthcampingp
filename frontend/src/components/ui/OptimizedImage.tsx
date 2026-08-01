@@ -72,32 +72,19 @@ export function OptimizedImage({
   const isCloudinary = finalSrc && finalSrc.includes('res.cloudinary.com');
   const isUnsplash = finalSrc && finalSrc.includes('images.unsplash.com');
   const isBunny = finalSrc && finalSrc.includes('vl-prod-static.b-cdn.net');
-  const resolvedWidth = cloudinaryWidth || 600;
-  const widths = getResponsiveWidths(resolvedWidth);
-  let srcSet: string | undefined = undefined;
+  const resolvedWidth = cloudinaryWidth || 500;
 
   if (isUnsplash) {
-    // Directly adjust Unsplash query parameters for maximum performance & WebP compression
+    // Force compact target width & aggressive WebP compression
     const cleanUrl = finalSrc.includes('?') ? finalSrc.split('?')[0] : finalSrc;
     const params = new URLSearchParams(finalSrc.includes('?') ? finalSrc.split('?')[1] : '');
     params.set('auto', 'format');
     params.set('fit', 'crop');
-    params.set('q', '75');
-    
+    params.set('q', '65');
     params.set('w', resolvedWidth.toString());
     finalSrc = `${cleanUrl}?${params.toString()}`;
-    
-    srcSet = widths
-      .map(w => {
-        params.set('w', w.toString());
-        return `${cleanUrl}?${params.toString()} ${w}w`;
-      })
-      .join(', ');
   } else if (isCloudinary) {
     finalSrc = withCloudinaryWidth(finalSrc, resolvedWidth);
-    srcSet = widths
-      .map((width) => `${withCloudinaryWidth(finalSrc as string, width)} ${width}w`)
-      .join(', ');
   } else if (isBunny && bunnyVariant && finalSrc.includes('/original/')) {
     finalSrc = finalSrc.replace('/original/', `/${bunnyVariant}/`);
   }
@@ -107,10 +94,8 @@ export function OptimizedImage({
   return (
     <img
       src={currentSrc}
-      srcSet={srcSet}
-      sizes={imageProps.sizes || "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
       alt={alt}
-      loading={priority ? "eager" : "lazy"}
+      loading={priority ? "eager" : (props.loading || "eager")}
       fetchPriority={priority ? "high" : "auto"}
       decoding="async"
       className={cn(
