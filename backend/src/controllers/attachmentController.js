@@ -1,7 +1,7 @@
 const { prisma } = require('../lib/prisma');
 const path = require('path');
 const fs = require('fs');
-const { sendMail } = require('../lib/email');
+const { sendEmail } = require('../lib/email');
 
 // Helper to look up booking by CUID id or bookingId string
 async function findBookingByIdentifier(bookingIdentifier) {
@@ -328,9 +328,10 @@ exports.sendBookingAttachments = async (req, res) => {
       for (const att of attachments) {
         const diskPath = path.join(process.cwd(), att.fileUrl);
         if (fs.existsSync(diskPath)) {
+          const fileContent = fs.readFileSync(diskPath).toString('base64');
           emailAttachments.push({
-            filename: att.originalName || att.fileName,
-            path: diskPath
+            name: att.originalName || att.fileName,
+            content: fileContent
           });
         }
       }
@@ -355,7 +356,7 @@ exports.sendBookingAttachments = async (req, res) => {
         </div>
       `;
 
-      await sendMail({
+      await sendEmail({
         to: recipientEmail,
         subject,
         html: htmlContent,
