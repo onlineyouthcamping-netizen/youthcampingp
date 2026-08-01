@@ -54,7 +54,7 @@ export const normalizeImageUrl = (url: any): string | undefined => {
     return url;
   }
 
-  return url;
+  return undefined;
 };
 
 export async function fetchTrips(init?: RequestInit): Promise<Trip[]> {

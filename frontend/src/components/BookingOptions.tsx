@@ -64,7 +64,7 @@ export default function BookingOptions({
   ], []);
 
   const variants = useMemo(() => {
-    if (trip.variants && trip.variants.length >= 3) {
+    if (trip.variants && Array.isArray(trip.variants) && trip.variants.length > 0) {
       return trip.variants;
     }
     return defaultVariants;

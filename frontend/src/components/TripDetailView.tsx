@@ -25,42 +25,42 @@ export default function TripDetailView({ trip }: TripDetailViewProps) {
 
   return (
     <div className="lg:col-span-8 space-y-7 md:space-y-8">
-      <div id="about">
+      <div id="about" className="scroll-mt-[140px] md:scroll-mt-[160px]">
         <AboutTrip 
           description={trip.description || ""} 
           customAboutTrip={(trip as any).customSections?.aboutTrip}
         />
       </div>
       
-      <div id="itinerary">
+      <div id="itinerary" className="scroll-mt-[140px] md:scroll-mt-[160px]">
         <TripBookingSection 
           trip={trip} 
           onDateSelect={(date) => setSelectedDate(date)}
         />
       </div>
 
-      <div id="inclusions">
+      <div id="inclusions" className="scroll-mt-[140px] md:scroll-mt-[160px]">
         <InclusionsExclusions 
           inclusions={trip.inclusions || []}
           exclusions={trip.exclusions || []}
         />
       </div>
 
-      <div id="highlights">
+      <div id="highlights" className="scroll-mt-[140px] md:scroll-mt-[160px]">
         <TripHighlightsList items={(trip.highlights && Array.isArray(trip.highlights) && trip.highlights.length > 0) ? trip.highlights : ((trip.gallery && Array.isArray(trip.gallery) && trip.gallery.length > 0) ? trip.gallery : (trip.images || []))} />
       </div>
 
-      <div id="stay">
+      <div id="stay" className="scroll-mt-[140px] md:scroll-mt-[160px]">
         <StaySection accommodations={trip.accommodations || []} />
       </div>
 
-      <div id="reviews">
+      <div id="reviews" className="scroll-mt-[140px] md:scroll-mt-[160px]">
         <TripReviews reviews={trip.reviews || []} />
       </div>
 
       <ReviewReels reels={trip.reels || []} />
 
-      <div id="faqs">
+      <div id="faqs" className="scroll-mt-[140px] md:scroll-mt-[160px]">
         <TripFAQ faqs={trip.faqs || []} />
       </div>
 
