@@ -355,6 +355,18 @@ export default function CommunityTrips({
   const filtered = sourceTrips.filter(t => monthMatch(t, md));
   const display = filtered.length > 0 ? filtered : sourceTrips;
 
+  // Preload upcoming trip images for silky 60 FPS transitions
+  useEffect(() => {
+    if (!display || display.length === 0) return;
+    display.slice(0, 5).forEach((trip) => {
+      const src = trip.heroImage || (trip.images && trip.images[0]);
+      if (src && typeof window !== 'undefined') {
+        const img = new window.Image();
+        img.src = src;
+      }
+    });
+  }, [display]);
+
   const safeTripIdx = Math.min(currentTripIdx, Math.max(0, display.length - 1));
   const activeTrip = display[safeTripIdx] || display[0];
 
@@ -428,15 +440,15 @@ export default function CommunityTrips({
           <AnimatePresence mode="wait">
             <motion.div
               key={currentBgPhoto}
-              initial={{ opacity: 0, scale: 1 }}
-              animate={{ opacity: 1, scale: 1.06 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{
-                opacity: { duration: 1.2 },
-                scale: { duration: 25, ease: "linear", repeat: Infinity, repeatType: "reverse" }
+                duration: 0.3,
+                ease: [0.4, 0, 0.2, 1]
               }}
               className="w-full h-full relative"
-              style={{ willChange: "transform" }}
+              style={{ willChange: "opacity", transform: "translateZ(0)" }}
             >
               {currentBgPhoto && (/\.(mp4|webm|mov|ogg)$/i.test(currentBgPhoto) || currentBgPhoto.includes('/video/')) ? (
                 <video
@@ -452,7 +464,7 @@ export default function CommunityTrips({
                   src={currentBgPhoto}
                   alt="Group of young travellers"
                   fill
-                  className="object-cover object-center"
+                  className="object-cover object-center carousel-image-cinematic"
                   priority
                 />
               )}
@@ -588,18 +600,26 @@ export default function CommunityTrips({
             {[0, 1, 2, 3].map(i => <SkeletonCard key={i} />)}
           </div>
         ) : (
-          <div 
-            ref={tripCardsScrollRef}
-            className="flex gap-6 sm:gap-8 overflow-x-auto pb-6 pt-3 px-1 scroll-smooth snap-x snap-mandatory no-scrollbar touch-manipulation cursor-grab"
-          >
-            {display.map((t, idx) => (
-              <div key={t.id || idx} className="w-[62vw] min-w-[220px] max-w-[270px] sm:w-[310px] md:w-[330px] shrink-0 snap-start">
-                <TripCard trip={t} index={idx} />
-              </div>
-            ))}
-            {/* Extra empty div to ensure padding at the end of the scroll */}
-            <div className="w-1 shrink-0" />
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={activeMonth}
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 16 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              ref={tripCardsScrollRef}
+              className="flex gap-6 sm:gap-8 overflow-x-auto pb-6 pt-3 px-1 scroll-smooth snap-x snap-mandatory no-scrollbar touch-manipulation cursor-grab"
+              style={{ willChange: "transform, opacity", transform: "translateZ(0)" }}
+            >
+              {display.map((t, idx) => (
+                <div key={t.id || idx} className="w-[62vw] min-w-[220px] max-w-[270px] sm:w-[310px] md:w-[330px] shrink-0 snap-start carousel-card-animated">
+                  <TripCard trip={t} index={idx} />
+                </div>
+              ))}
+              {/* Extra empty div to ensure padding at the end of the scroll */}
+              <div className="w-1 shrink-0" />
+            </motion.div>
+          </AnimatePresence>
         )}
       </div>
     </section>
