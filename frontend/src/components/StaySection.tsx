@@ -107,7 +107,11 @@ export default function StaySection({ accommodations }: StaySectionProps) {
   const [selectedStay, setSelectedStay] = useState<Accommodation | null>(null);
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const staysList = accommodations && accommodations.length > 0 ? accommodations : defaultStaysList;
+  if (!accommodations || accommodations.length === 0) {
+    return null;
+  }
+
+  const staysList = accommodations;
 
   const modalCategories = useMemo(() => {
     if (!selectedStay) return ["All"];

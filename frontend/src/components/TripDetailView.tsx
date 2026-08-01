@@ -50,9 +50,11 @@ export default function TripDetailView({ trip }: TripDetailViewProps) {
         <TripHighlightsList items={(trip.highlights && Array.isArray(trip.highlights) && trip.highlights.length > 0) ? trip.highlights : ((trip.gallery && Array.isArray(trip.gallery) && trip.gallery.length > 0) ? trip.gallery : (trip.images || []))} />
       </div>
 
-      <div id="stay" className="scroll-mt-[140px] md:scroll-mt-[160px]">
-        <StaySection accommodations={trip.accommodations || []} />
-      </div>
+      {trip.accommodations && Array.isArray(trip.accommodations) && trip.accommodations.length > 0 && (
+        <div id="stay" className="scroll-mt-[140px] md:scroll-mt-[160px]">
+          <StaySection accommodations={trip.accommodations} />
+        </div>
+      )}
 
       <div id="reviews" className="scroll-mt-[140px] md:scroll-mt-[160px]">
         <TripReviews reviews={trip.reviews || []} />
