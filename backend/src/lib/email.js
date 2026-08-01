@@ -9,7 +9,7 @@ const emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 const BRAND_COLOR = '#0f172a';
 const ACCENT_COLOR = '#ff5722';
 const ACCENT_HOVER = '#e64a19';
-const LOGO_URL = 'https://youthcamping.online/logo.png';
+const LOGO_URL = 'https://www.youthcamping.online/logo.png';
 
 const getPublicSiteBaseUrl = () => {
   const envUrl = process.env.PUBLIC_SITE_URL || process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL;
