@@ -45,7 +45,7 @@ export default function TripGallerySection({ trip }: TripGallerySectionProps) {
 
   return (
     <>
-      <div className="w-full mb-4 md:mb-6 relative z-0">
+      <div className="w-full mb-6 md:mb-8 relative z-0 clear-both">
         {/* Mobile: Single hero image with floating badge */}
         <div 
           className="relative md:hidden w-full aspect-[16/10] rounded-[20px] overflow-hidden cursor-pointer shadow-lg bg-zinc-100"
@@ -69,7 +69,7 @@ export default function TripGallerySection({ trip }: TripGallerySectionProps) {
         </div>
  
         {/* Desktop: Multi-image grid with 7:5 split (object-top prevents top image cropping) */}
-        <div className="hidden md:grid md:grid-cols-12 gap-3.5 h-[440px] lg:h-[480px] w-full bg-white p-0">
+        <div className="hidden md:grid md:grid-cols-12 gap-3.5 h-[400px] lg:h-[450px] w-full bg-white p-0 overflow-hidden rounded-[20px]">
           {/* Main Large Image (Left 7 Cols) */}
           <div 
             className="relative col-span-7 h-full cursor-pointer overflow-hidden group/item rounded-[16px] lg:rounded-[20px] shadow-sm bg-zinc-100"

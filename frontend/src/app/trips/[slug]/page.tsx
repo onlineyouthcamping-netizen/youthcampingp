@@ -78,7 +78,7 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
         </div>
 
         {/* 3. Quick Info Bar (Full Width) */}
-        <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-8 gap-y-3 gap-x-4 py-3.5 border-y border-zinc-200/80 w-full">
+        <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-8 gap-y-3 gap-x-4 py-4 my-4 border-y border-zinc-200/80 w-full relative z-10 bg-white">
           {[
             { label: "Duration", val: trip.duration || "9 Days / 8 Nights", icon: Clock3 },
             { 
