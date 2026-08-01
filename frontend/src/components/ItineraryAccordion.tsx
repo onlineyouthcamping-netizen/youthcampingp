@@ -166,7 +166,7 @@ export default function ItineraryAccordion({
       </div>
 
       {/* Accordion Days List */}
-      <div className="space-y-3">
+      <div className="space-y-1">
         {displayItinerary.map((day, idx) => {
           const isExpanded = openDays.includes(day.displayDay);
           const dayNumStr =
@@ -174,37 +174,32 @@ export default function ItineraryAccordion({
           const calDateFull = getDayFullDate(startDate, idx + skipDays);
 
           return (
-            <div key={day.displayDay} className="day-item group mb-2.5 sm:mb-3 transition-all duration-300">
-              {/* CLICKABLE HEADER ROW (Two Side-by-Side Boxes of Identical Height) */}
+            <div key={day.displayDay} className="day-item group transition-all duration-300">
+              {/* CLICKABLE HEADER ROW — Compact: Badge | Orange Chevron | Title | Dropdown */}
               <button
                 onClick={() => toggleDay(day.displayDay)}
-                className="flex items-center gap-2.5 sm:gap-3 w-full text-left cursor-pointer group/header focus:outline-none h-[42px] sm:h-[46px]"
+                className="flex items-center gap-3 w-full text-left cursor-pointer group/header focus:outline-none py-2.5 border-b border-zinc-100 hover:bg-zinc-50/60 transition-colors"
               >
-                {/* Left Box: Day Badge (Fixed 64px/72px width x 42px/46px height with rounded-[10px] corners) */}
-                <div className="day-badge w-[64px] sm:w-[72px] h-[42px] sm:h-[46px] bg-[#0E1726] text-white rounded-[10px] font-bold text-xs sm:text-sm flex items-center justify-center text-center shadow-2xs border border-slate-700/80 ring-1 ring-[#D4541A]/50 shrink-0 font-montserrat group-hover/header:bg-[#162338] transition-all">
+                {/* Day Badge Pill */}
+                <div className="day-badge px-3 py-1.5 bg-[#0E1726] text-white rounded-lg font-bold text-xs flex items-center justify-center shrink-0 font-montserrat min-w-[60px]">
                   {dayNumStr}
                 </div>
 
-                {/* Right Box: Itinerary Title Box (Flex-1 width x 42px/46px height with rounded-[10px] corners) */}
-                <div
-                  className={cn(
-                    "flex-1 min-w-0 bg-white border border-zinc-200/90 rounded-[10px] px-4 flex items-center justify-between shadow-2xs h-[42px] sm:h-[46px] transition-all",
-                    isExpanded 
-                      ? "border-[#D97934] ring-1 ring-[#D97934]/30" 
-                      : "group-hover/header:border-[#D4541A]/50 group-hover/header:bg-[#F9FAFB]"
-                  )}
-                >
-                  <span className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat leading-snug truncate flex-1 min-w-0 pr-2">
-                    {day.title}
-                  </span>
+                {/* Orange Chevron Separator */}
+                <ChevronRight className="w-4 h-4 text-[#D4541A] shrink-0" />
 
-                  <ChevronDown
-                    className={cn(
-                      "w-4 h-4 text-zinc-400 shrink-0 ml-1 transition-transform duration-300",
-                      isExpanded ? "rotate-180 text-[#D4541A]" : ""
-                    )}
-                  />
-                </div>
+                {/* Plain Title Text (no box/border) */}
+                <span className="flex-1 min-w-0 text-sm font-semibold text-[#0B1528] font-montserrat leading-snug truncate">
+                  {day.title}
+                </span>
+
+                {/* Orange Dropdown Chevron */}
+                <ChevronDown
+                  className={cn(
+                    "w-4 h-4 text-[#D4541A] shrink-0 ml-1 transition-transform duration-300",
+                    isExpanded ? "rotate-180" : ""
+                  )}
+                />
               </button>
 
               {/* Expanded Details Body */}
