@@ -35,7 +35,7 @@ function withCloudinaryWidth(url: string, width: number) {
   const transforms = sourceTransforms.filter((part) => !/^w_\d+$/.test(part));
 
   if (!transforms.some((part) => part.startsWith('f_'))) transforms.unshift('f_auto');
-  if (!transforms.some((part) => part.startsWith('q_'))) transforms.push('q_auto');
+  if (!transforms.some((part) => part.startsWith('q_'))) transforms.push('q_auto:eco');
   transforms.push(`w_${width}`);
   if (!transforms.some((part) => part.startsWith('c_'))) transforms.push('c_limit');
 
