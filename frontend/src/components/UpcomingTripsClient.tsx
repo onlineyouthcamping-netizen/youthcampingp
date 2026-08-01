@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Trip } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -136,8 +136,16 @@ function DestinationRow({ location, trips }: { location: string; trips: Trip[] }
 interface Props { trips?: Trip[]; }
 
 export default function UpcomingTripsClient({ trips: propTrips = [] }: Props) {
-  const sourceTrips = propTrips.length >= 4 ? propTrips : [...propTrips, ...MOCK_TRIPS.slice(propTrips.length)];
-  const groups = groupByLocation(sourceTrips);
+  const sortedTrips = useMemo(() => {
+    const raw = propTrips && propTrips.length > 0 ? propTrips : MOCK_TRIPS;
+    return [...raw].sort((a, b) => {
+      const orderA = typeof a.order === 'number' ? a.order : 999;
+      const orderB = typeof b.order === 'number' ? b.order : 999;
+      return orderA - orderB;
+    });
+  }, [propTrips]);
+
+  const groups = groupByLocation(sortedTrips);
   const locationKeys = Object.keys(groups);
 
   return (

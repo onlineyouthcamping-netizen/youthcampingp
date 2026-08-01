@@ -310,14 +310,20 @@ export default function CommunityTrips({
     return () => clearInterval(bgTimer);
   }, [bgPhotosList.length]);
 
-  const allAvailableTrips = propTrips.length >= 8 
-    ? propTrips 
-    : [...propTrips, ...MOCK_TRIPS.slice(propTrips.length)];
+  // Sort trips strictly by their order sequence field (1, 2, 3, 4...)
+  const sortedTrips = useMemo(() => {
+    const raw = propTrips && propTrips.length > 0 ? propTrips : MOCK_TRIPS;
+    return [...raw].sort((a, b) => {
+      const orderA = typeof a.order === 'number' ? a.order : 999;
+      const orderB = typeof b.order === 'number' ? b.order : 999;
+      return orderA - orderB;
+    });
+  }, [propTrips]);
 
   // If the admin panel specified selectedTripIds, filter and order by them
   const sourceTrips = Array.isArray(selectedTripIds) && selectedTripIds.length > 0
-    ? selectedTripIds.map(id => allAvailableTrips.find(t => t.id === id)).filter(Boolean) as Trip[]
-    : allAvailableTrips;
+    ? selectedTripIds.map(id => sortedTrips.find(t => t.id === id)).filter(Boolean) as Trip[]
+    : sortedTrips;
 
   const pickMonth = useCallback((i: number) => {
     if (i === activeMonth) return;
