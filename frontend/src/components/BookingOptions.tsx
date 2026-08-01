@@ -262,9 +262,12 @@ export default function BookingOptions({
       <section className="bg-white rounded-[20px] p-4 md:p-5 border border-zinc-100 shadow-sm space-y-6">
         {/* Starting Location Section - Horizontal Slide */}
         <div>
-          <div className="flex flex-row overflow-x-auto no-scrollbar gap-[14px] pb-4 -mx-1 px-1 snap-x">
+          <div className="flex flex-row overflow-x-auto no-scrollbar gap-3.5 sm:gap-4 pb-3 -mx-1 px-1 snap-x select-none">
             {variants.map((v, i) => {
               const displayDuration = (v as any).duration || trip.duration;
+              const imageSrc = normalizeImageUrl(v.image) || "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=800";
+              const isSelected = selectedVariant === i;
+              
               return (
                 <div 
                   key={i}
@@ -273,34 +276,44 @@ export default function BookingOptions({
                     onVariantSelect?.(i);
                   }}
                   className={cn(
-                    "min-w-[200px] md:min-w-[240px] bg-white rounded-[16px] overflow-hidden border-2 transition-all cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.05)] snap-start flex flex-col justify-between",
-                    selectedVariant === i ? "border-[#F97316] ring-1 ring-[#F97316]/30 shadow-xs" : "border-[#E5E7EB] hover:border-zinc-300"
+                    "departure-location-card w-[210px] sm:w-[240px] h-[225px] sm:h-[240px] shrink-0 bg-white rounded-[16px] overflow-hidden border-2 transition-all cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.05)] snap-start flex flex-col justify-between select-none",
+                    isSelected 
+                      ? "departure-location-card-active border-[#F97316] ring-2 ring-[#F97316]/25 shadow-xs" 
+                      : "border-[#E5E7EB] hover:border-zinc-300"
                   )}
                 >
-                  <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-[14px]">
+                  {/* Card Thumbnail Image Container */}
+                  <div className="relative h-[120px] sm:h-[135px] w-full shrink-0 overflow-hidden rounded-t-[14px] bg-zinc-100">
                     <OptimizedImage 
-                      src={normalizeImageUrl(v.image) || "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6"} 
-                      alt={v.location} className="absolute inset-0 w-full h-full object-cover" 
+                      src={imageSrc} 
+                      alt={v.location} 
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
                     />
                   </div>
-                  <div className="p-3.5 flex-1 flex flex-col justify-between">
-                    <h3 style={{ fontWeight: 500 }} className="text-[13px] sm:text-[14px] font-medium text-zinc-600 line-clamp-2 leading-snug mb-2 font-montserrat">
-                      {v.location}
-                    </h3>
+
+                  {/* Card Content Area */}
+                  <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between overflow-hidden">
+                    {/* Location Title with Max-Width Truncation */}
+                    <div className="min-h-[24px] flex items-center mb-1 overflow-hidden">
+                      <h3 className="departure-location-card-title text-[13px] sm:text-[14px] font-semibold text-zinc-700 max-w-full truncate whitespace-nowrap block font-montserrat">
+                        {v.location}
+                      </h3>
+                    </div>
                     
-                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-zinc-100">
-                      <span className="text-[13px] font-bold text-[#F97316] font-montserrat">
+                    {/* Card Footer locked to Bottom */}
+                    <div className="flex items-center justify-between mt-auto pt-2.5 border-t border-zinc-100/90 shrink-0 min-h-[30px]">
+                      <span className="text-[13px] sm:text-[14px] font-bold text-[#F97316] font-montserrat tracking-tight whitespace-nowrap">
                         ₹{v.discountedPrice?.toLocaleString()}/-
                       </span>
                       {displayDuration && (
-                        <div className="flex items-center gap-1 text-[#6B7280] text-[11px] font-montserrat">
-                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <div className="flex items-center gap-1 text-[#6B7280] text-[11px] font-montserrat min-w-0 max-w-[95px] sm:max-w-[110px]">
+                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-zinc-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                             <line x1="16" y1="2" x2="16" y2="6" />
                             <line x1="8" y1="2" x2="8" y2="6" />
                             <line x1="3" y1="10" x2="21" y2="10" />
                           </svg>
-                          <span className="font-semibold whitespace-nowrap">{displayDuration}</span>
+                          <span className="font-semibold truncate whitespace-nowrap">{displayDuration}</span>
                         </div>
                       )}
                     </div>

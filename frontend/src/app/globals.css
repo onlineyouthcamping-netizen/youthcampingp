@@ -1072,3 +1072,43 @@ article h3 {
   color: #D4541A;
 }
 
+/* ============================================
+   DEPARTURE LOCATION VARIANT CARDS SYSTEM
+   ============================================ */
+.departure-location-card {
+  width: 210px;
+  height: 225px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: #ffffff;
+  border: 2px solid #E5E7EB;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  scroll-snap-align: start;
+}
+
+@media (min-width: 640px) {
+  .departure-location-card {
+    width: 240px;
+    height: 240px;
+  }
+}
+
+.departure-location-card-active {
+  border-color: #F97316 !important;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25) !important;
+}
+
+.departure-location-card-title {
+  font-weight: 600;
+  color: #374151;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
