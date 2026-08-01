@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, BedDouble, Utensils, Camera } from "lucide-react";
+import { ChevronDown, ChevronRight, BedDouble, Utensils, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ItineraryDay } from "@/types";
 import { normalizeImageUrl } from "@/lib/api";
