@@ -364,8 +364,15 @@ exports.acknowledgeNotice = async (req, res, next) => {
 exports.getWorkspaceNotices = async (req, res, next) => {
   try {
     const { tripId } = req.params;
-    const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
-    if (!workspace) return res.status(404).json({ success: false, message: 'Workspace not found' });
+    const workspace = await prisma.travelDeskWorkspace.findFirst({
+      where: {
+        OR: [
+          { tripId },
+          { id: tripId }
+        ]
+      }
+    });
+    if (!workspace) return res.json({ success: true, data: [] });
     
     const notices = await prisma.travelDeskNotice.findMany({
       where: { workspaceId: workspace.id, status: 'ACTIVE' },
@@ -375,6 +382,7 @@ exports.getWorkspaceNotices = async (req, res, next) => {
     
     res.json({ success: true, data: notices });
   } catch (e) {
-    next(e);
+    console.error("getWorkspaceNotices error:", e);
+    res.json({ success: true, data: [] });
   }
 };

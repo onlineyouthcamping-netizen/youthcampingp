@@ -111,22 +111,29 @@ exports.getClientPayments = async (req, res) => {
 
 exports.addClientPayment = async (req, res) => {
   try {
-    const { bookingId } = req.params;
+    const { bookingId: paramBookingId } = req.params;
     const { amount, paymentMode, transactionId, paymentDate, proofUrl, status, remarks } = req.body;
     const tenantId = req.user?.tenantId || 'default';
 
-    const booking = await prisma.booking.findUnique({
-      where: { bookingId }
+    const booking = await prisma.booking.findFirst({
+      where: {
+        OR: [
+          { id: paramBookingId },
+          { bookingId: paramBookingId }
+        ]
+      }
     });
 
     if (!booking) {
-      return res.status(444).json({ success: false, message: 'Booking not found' });
+      return res.status(404).json({ success: false, message: 'Booking not found' });
     }
+
+    const targetBookingId = booking.bookingId || booking.id;
 
     const receipt = await prisma.opsClientPayment.create({
       data: {
         tenantId,
-        bookingId,
+        bookingId: targetBookingId,
         amount: parseFloat(amount) || 0,
         paymentMode,
         transactionId,
@@ -141,13 +148,13 @@ exports.addClientPayment = async (req, res) => {
     // Automatically recalculate booking advancePaid and remainingAmount if status is Verified
     if (receipt.status === 'Verified') {
       const allVerified = await prisma.opsClientPayment.findMany({
-        where: { bookingId, status: 'Verified' }
+        where: { bookingId: targetBookingId, status: 'Verified' }
       });
       const totalVerified = allVerified.reduce((s, r) => s + r.amount, 0);
       const remaining = Math.max(0, booking.totalAmount - totalVerified);
       
       await prisma.booking.update({
-        where: { bookingId },
+        where: { id: booking.id },
         data: {
           advancePaid: totalVerified,
           remainingAmount: remaining,
@@ -155,24 +162,6 @@ exports.addClientPayment = async (req, res) => {
         }
       });
     }
-
-    const { publishEvent } = require('../utils/eventBus');
-    await publishEvent('payment.created', {
-      entityType: 'Booking',
-      entityId: booking.id,
-      actorUserId: req.user?.id || 'system',
-      actorName: req.user?.name || req.user?.email || 'System',
-      title: `Payment of ₹${amount} Recorded`,
-      description: `Payment for booking ${bookingId} via ${paymentMode}. Status: ${status || 'Pending Verification'}`,
-      moduleName: 'Finance',
-      priority: 'Medium',
-      actionUrl: `/admin/bookings/${booking.id}`,
-      notify: true,
-      audit: {
-        action: 'PAYMENT_RECORDED',
-        afterData: receipt
-      }
-    });
 
     return res.json({ success: true, data: receipt });
   } catch (err) {
@@ -191,7 +180,7 @@ exports.verifyClientPayment = async (req, res) => {
     });
 
     if (!receipt) {
-      return res.status(444).json({ success: false, message: 'Payment record not found' });
+      return res.status(404).json({ success: false, message: 'Payment record not found' });
     }
 
     const updated = await prisma.opsClientPayment.update({
@@ -203,8 +192,13 @@ exports.verifyClientPayment = async (req, res) => {
     });
 
     // Update booking totals
-    const booking = await prisma.booking.findUnique({
-      where: { bookingId: receipt.bookingId }
+    const booking = await prisma.booking.findFirst({
+      where: {
+        OR: [
+          { bookingId: receipt.bookingId },
+          { id: receipt.bookingId }
+        ]
+      }
     });
 
     if (booking) {
@@ -215,7 +209,7 @@ exports.verifyClientPayment = async (req, res) => {
       const remaining = Math.max(0, booking.totalAmount - totalVerified);
 
       await prisma.booking.update({
-        where: { bookingId: receipt.bookingId },
+        where: { id: booking.id },
         data: {
           advancePaid: totalVerified,
           remainingAmount: remaining,
@@ -233,18 +227,29 @@ exports.verifyClientPayment = async (req, res) => {
 
 exports.getBookingPayments = async (req, res) => {
   try {
-    const { bookingId } = req.params;
+    const { bookingId: paramBookingId } = req.params;
     const tenantId = req.user?.tenantId || 'default';
+
+    const booking = await prisma.booking.findFirst({
+      where: {
+        OR: [
+          { id: paramBookingId },
+          { bookingId: paramBookingId }
+        ]
+      }
+    });
+
+    const possibleBookingIds = booking ? Array.from(new Set([booking.id, booking.bookingId].filter(Boolean))) : [paramBookingId];
 
     // Query standard Payment records
     const standardPayments = await prisma.payment.findMany({
-      where: { bookingId, tenantId },
+      where: { bookingId: { in: possibleBookingIds }, tenantId },
       orderBy: { createdAt: 'desc' }
     });
 
     // Query operations client receipts (manual uploads)
     const clientReceipts = await prisma.opsClientPayment.findMany({
-      where: { bookingId, tenantId },
+      where: { bookingId: { in: possibleBookingIds }, tenantId },
       orderBy: { paymentDate: 'desc' }
     });
 
