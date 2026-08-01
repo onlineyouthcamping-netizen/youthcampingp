@@ -116,7 +116,7 @@ export default function ItineraryAccordion({
   startDate,
   skipDays = 0,
 }: ItineraryAccordionProps) {
-  const [openDays, setOpenDays] = useState<number[]>([1]);
+  const [openDays, setOpenDays] = useState<number[]>([]);
   const [isAllExpanded, setIsAllExpanded] = useState(false);
 
   const rawList = Array.isArray(itinerary) ? itinerary : [];
@@ -178,25 +178,33 @@ export default function ItineraryAccordion({
               {/* FULL CLICKABLE HEADER BAR */}
               <button
                 onClick={() => toggleDay(day.displayDay)}
-                className="flex items-center gap-3 w-full text-left cursor-pointer group/header focus:outline-none min-h-[60px]"
+                className="flex items-center gap-2.5 sm:gap-3 w-full text-left cursor-pointer group/header focus:outline-none min-h-[46px]"
               >
-                {/* Left: Day Badge (Fixed 60px x 40px) */}
-                <div className="day-badge w-[60px] h-[40px] bg-[#0B1528] text-white rounded-[8px] font-extrabold text-xs flex items-center justify-center text-center shadow-xs border border-slate-800 shrink-0 font-montserrat group-hover/header:bg-[#112240] transition-colors">
+                {/* Left: Pill Day Badge (Fixed 72px x 36px rounded-full with orange ring accent) */}
+                <div className="day-badge w-[72px] h-[36px] bg-[#0E1726] text-white rounded-full font-bold text-xs flex items-center justify-center text-center shadow-2xs border border-slate-700/80 ring-2 ring-[#D4541A]/50 shrink-0 font-montserrat group-hover/header:bg-[#162338] transition-all">
                   {dayNumStr}
                 </div>
 
-                {/* Right: Title Bar */}
+                {/* Right: Title Bar (White rounded bar with Orange Chevron icon) */}
                 <div
-                  className="flex-1 min-w-0 bg-white border border-zinc-200/90 rounded-[8px] p-4 flex items-center justify-between shadow-2xs group-hover/header:border-[#D4541A]/50 transition-all min-h-[60px]"
+                  className="flex-1 min-w-0 bg-white border border-zinc-200/80 rounded-[14px] px-4 py-2.5 flex items-center justify-between shadow-2xs group-hover/header:border-[#D4541A]/50 transition-all min-h-[46px]"
                 >
-                  <span className="text-xs sm:text-sm font-semibold text-[#0B1528] font-montserrat leading-snug flex-1 min-w-0 pr-1 line-clamp-2">
-                    {day.title}
-                  </span>
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
+                    {/* Orange Left Icon (Train/Bus for train/bus days, or ChevronRight >) */}
+                    {(day.title && (day.title.toLowerCase().includes('train') || day.title.toLowerCase().includes('departure'))) ? (
+                      <span className="text-[#D4541A] text-sm shrink-0 font-bold">🚆</span>
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-[#D4541A] stroke-[2.8] shrink-0" />
+                    )}
+                    <span className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat leading-snug truncate">
+                      {day.title}
+                    </span>
+                  </div>
 
                   <ChevronDown
                     className={cn(
-                      "w-4 h-4 text-[#D4541A] shrink-0 ml-1.5 transition-transform duration-300",
-                      isExpanded ? "rotate-180" : ""
+                      "w-4 h-4 text-zinc-400 shrink-0 ml-1 transition-transform duration-300",
+                      isExpanded ? "rotate-180 text-[#D4541A]" : ""
                     )}
                   />
                 </div>
