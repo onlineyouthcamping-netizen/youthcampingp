@@ -296,6 +296,41 @@ export default function StaySection({ accommodations }: StaySectionProps) {
                   </div>
                 )}
 
+                {/* Meals Menu Breakdown Section */}
+                {((selectedStay as any).mealsBreakdown || (selectedStay as any).meals) && (
+                  <div className="p-4 bg-zinc-50 border border-zinc-200/80 rounded-2xl space-y-3">
+                    <p className="text-xs font-bold text-[#0B1528] uppercase tracking-wider font-montserrat flex items-center gap-2">
+                      <Utensils className="w-4 h-4 text-[#D4541A]" />
+                      <span>Food & Meals Menu Breakdown</span>
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-montserrat">
+                      {(selectedStay as any).mealsBreakdown?.breakfast && (
+                        <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
+                          <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">Breakfast</span>
+                          <p className="text-zinc-600 font-medium leading-relaxed">{(selectedStay as any).mealsBreakdown.breakfast}</p>
+                        </div>
+                      )}
+                      {(selectedStay as any).mealsBreakdown?.lunch && (
+                        <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
+                          <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">Lunch</span>
+                          <p className="text-zinc-600 font-medium leading-relaxed">{(selectedStay as any).mealsBreakdown.lunch}</p>
+                        </div>
+                      )}
+                      {(selectedStay as any).mealsBreakdown?.dinner && (
+                        <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
+                          <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">Dinner</span>
+                          <p className="text-zinc-600 font-medium leading-relaxed">{(selectedStay as any).mealsBreakdown.dinner}</p>
+                        </div>
+                      )}
+                    </div>
+                    {(selectedStay as any).disclaimer && (
+                      <p className="text-[11px] text-zinc-500 italic pt-1 font-montserrat leading-relaxed">
+                        {(selectedStay as any).disclaimer}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Photos Grid with Category Badge Overlay */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {filteredImages.map((img, idx) => (
