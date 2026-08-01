@@ -184,8 +184,8 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
       <div 
         ref={navRef}
         className={cn(
-          "sticky top-[80px] z-[9990] bg-white border-b border-zinc-200/90 mb-6 py-2.5 transition-all group/subnav",
-          isSticky ? "shadow-md" : "shadow-2xs"
+          "sticky top-[80px] z-[9990] bg-white transition-all group/subnav mb-2 py-1.5",
+          isSticky ? "shadow-xs border-b border-zinc-200/90" : "border-b border-zinc-100/60"
         )}
       >
         <div className="relative w-full flex items-center">
