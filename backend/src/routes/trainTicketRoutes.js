@@ -36,6 +36,7 @@ router.get('/alerts', requirePermission('tickets.alerts.view'), getAlerts);
 router.get('/templates/effective', requirePermission('tickets.view'), getEffectiveTemplates);
 router.get('/templates', requirePermission('tickets.view'), getTemplates);
 router.post('/templates', requirePermission('tickets.templates.manage'), createTemplate);
+router.put('/templates/:id', requirePermission('tickets.templates.manage'), updateTemplate);
 router.patch('/templates/:id', requirePermission('tickets.templates.manage'), updateTemplate);
 router.delete('/templates/:id', requirePermission('tickets.templates.manage'), deleteTemplate);
 router.post('/templates/:id/archive', requirePermission('tickets.templates.manage'), archiveTemplate);
@@ -51,6 +52,7 @@ router.post('/bulk-update', requirePermission('tickets.bulk'), bulkUpdateTickets
 
 // Ticket-level operations
 router.get('/:ticketId/history', requirePermission('tickets.view'), getTicketHistory);
+router.put('/:ticketId', requirePermission('tickets.edit'), updateTicket);
 router.patch('/:ticketId', requirePermission('tickets.edit'), updateTicket);
 router.post('/:ticketId/submit', requirePermission('tickets.submit'), submitTicket);
 router.post('/:ticketId/approve', requirePermission('tickets.approve'), approveTicket);
