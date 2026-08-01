@@ -34,7 +34,10 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
   return (
     <div className="bg-white min-h-screen font-montserrat pb-20 lg:pb-0">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10 pt-[84px] pb-8 space-y-4 md:space-y-6">
-        {/* 1. Title Section (Top Full Width) */}
+        {/* 1. Photo Gallery Grid (At top of page below header) */}
+        <TripGallerySection trip={trip} />
+
+        {/* 2. Title Section (Below photos) */}
         <div>
           {(() => {
             const fullTitle = trip.title || "Manali Kasol Amritsar Backpacking Trip";
@@ -73,9 +76,6 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
             );
           })()}
         </div>
-
-        {/* 2. Photo Gallery Grid (Full Width) */}
-        <TripGallerySection trip={trip} />
 
         {/* 3. Quick Info Bar (Full Width) */}
         <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-8 gap-y-3 gap-x-4 py-3.5 border-y border-zinc-200/80 w-full">
