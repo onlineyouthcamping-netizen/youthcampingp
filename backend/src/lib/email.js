@@ -345,13 +345,8 @@ const templates = {
           <td style="vertical-align: middle;">
             <table role="presentation" border="0" cellspacing="0" cellpadding="0">
               <tr>
-                <td style="vertical-align: middle; padding-right: 10px;">
-                  <img src="${LOGO_URL}" alt="YouthCamping Logo" style="height: 36px; width: auto; display: block; border: 0;" />
-                </td>
                 <td style="vertical-align: middle;">
-                  <div style="font-size: 20px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; text-transform: uppercase;">
-                    YOUTH<span style="color: #ff5722;">CAMPING</span>
-                  </div>
+                  <img src="${LOGO_URL}" alt="YouthCamping Logo" style="height: 36px; width: auto; display: block; border: 0;" />
                 </td>
               </tr>
             </table>
@@ -533,13 +528,8 @@ const templates = {
           <td style="vertical-align: middle;">
             <table role="presentation" border="0" cellspacing="0" cellpadding="0">
               <tr>
-                <td style="vertical-align: middle; padding-right: 10px;">
-                  <img src="${LOGO_URL}" alt="YouthCamping Logo" style="height: 26px; width: auto; display: block; border: 0;" />
-                </td>
                 <td style="vertical-align: middle;">
-                  <div style="font-size: 16px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
-                    YOUTH<span style="color: #ff5722;">CAMPING</span>
-                  </div>
+                  <img src="${LOGO_URL}" alt="YouthCamping Logo" style="height: 26px; width: auto; display: block; border: 0;" />
                 </td>
               </tr>
             </table>
