@@ -320,10 +320,15 @@ export default function CommunityTrips({
     });
   }, [propTrips]);
 
-  // If the admin panel specified selectedTripIds, filter and order by them
-  const sourceTrips = Array.isArray(selectedTripIds) && selectedTripIds.length > 0
-    ? selectedTripIds.map(id => sortedTrips.find(t => t.id === id)).filter(Boolean) as Trip[]
-    : sortedTrips;
+  // If the admin panel specified selectedTripIds, order by them first and append all remaining trips so all published trips stay scrollable
+  const sourceTrips = useMemo(() => {
+    if (!Array.isArray(selectedTripIds) || selectedTripIds.length === 0) {
+      return sortedTrips;
+    }
+    const chosen = selectedTripIds.map(id => sortedTrips.find(t => t.id === id || t.slug === id || t.shortName === id)).filter(Boolean) as Trip[];
+    const remaining = sortedTrips.filter(t => !chosen.some(c => c.id === t.id));
+    return [...chosen, ...remaining];
+  }, [selectedTripIds, sortedTrips]);
 
   const pickMonth = useCallback((i: number) => {
     if (i === activeMonth) return;

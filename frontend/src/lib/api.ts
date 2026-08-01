@@ -86,9 +86,9 @@ export async function fetchPublicTrips(init?: PublicRequestInit): Promise<Trip[]
   }
 }
 
-export async function fetchHomepageTrips(limit = 12): Promise<Trip[]> {
+export async function fetchHomepageTrips(limit = 50): Promise<Trip[]> {
   try {
-    const safeLimit = Math.max(1, Math.min(12, Math.trunc(limit)));
+    const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
     const res = await fetch(`${API_BASE_URL}/trips/public/cards?limit=${safeLimit}`, publicRevalidate(180));
     if (!res.ok) return [];
     const json = await res.json();
