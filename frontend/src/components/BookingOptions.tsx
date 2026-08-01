@@ -275,35 +275,35 @@ export default function BookingOptions({
                     onVariantSelect?.(i);
                   }}
                   className={cn(
-                    "itinerary-card w-[210px] sm:w-[240px] h-[220px] shrink-0 bg-white rounded-[8px] p-[12px] border-2 transition-all cursor-pointer shadow-xs snap-start flex flex-col justify-between select-none",
+                    "itinerary-card w-[210px] sm:w-[240px] min-h-[235px] shrink-0 bg-white rounded-[12px] p-[12px] border-2 transition-all cursor-pointer shadow-xs snap-start flex flex-col justify-between select-none",
                     isSelected 
-                      ? "itinerary-card-active border-[#D97934] ring-2 ring-[#D97934]/20" 
+                      ? "itinerary-card-active border-[#D97934] ring-2 ring-[#D97934]/20 shadow-md" 
                       : "border-[#E5E7EB] hover:border-zinc-300"
                   )}
                 >
-                  {/* Card Thumbnail Image Container (Fixed 80px Height) */}
-                  <div className="relative h-[80px] w-full shrink-0 overflow-hidden rounded-[6px] bg-zinc-100">
+                  {/* Card Thumbnail Image Container (115px Natural Aspect Ratio) */}
+                  <div className="relative h-[115px] w-full shrink-0 overflow-hidden rounded-[8px] bg-zinc-100">
                     <OptimizedImage 
                       src={imageSrc} 
                       alt={v.location} 
-                      className="card-image absolute inset-0 w-full h-[80px] object-cover transition-transform duration-500 hover:scale-105" 
+                      className="card-image absolute inset-0 w-full h-[115px] object-cover transition-transform duration-500 hover:scale-105" 
                     />
                   </div>
 
-                  {/* Card Location (Middle: Max 2 lines, 14px font, ellipsis) */}
-                  <div className="card-location my-2 flex-1 overflow-hidden font-montserrat">
-                    <h3 className="text-[14px] font-semibold text-zinc-700 leading-snug line-clamp-2">
+                  {/* Card Location */}
+                  <div className="card-location my-1.5 flex-1 overflow-hidden font-montserrat">
+                    <h3 className="text-[13px] sm:text-[14px] font-bold text-zinc-900 leading-snug line-clamp-2">
                       {v.location}
                     </h3>
                   </div>
                   
-                  {/* Card Footer (Bottom: Price + Duration in fixed 20px footer) */}
-                  <div className="card-footer flex items-center justify-between h-[20px] shrink-0 pt-1 border-t border-zinc-100">
-                    <span className="card-price text-[16px] font-bold text-[#D97934] font-montserrat whitespace-nowrap">
+                  {/* Card Footer (Price + Duration) */}
+                  <div className="card-footer flex items-center justify-between h-[22px] shrink-0 pt-1 border-t border-zinc-100">
+                    <span className="card-price text-[15px] sm:text-[16px] font-extrabold text-[#D97934] font-montserrat whitespace-nowrap">
                       ₹{v.discountedPrice?.toLocaleString()}/-
                     </span>
                     {displayDuration && (
-                      <span className="card-duration text-[12px] text-zinc-500 font-montserrat text-right whitespace-nowrap truncate max-w-[90px]">
+                      <span className="card-duration text-[11px] sm:text-[12px] font-semibold text-zinc-500 font-montserrat text-right whitespace-nowrap truncate max-w-[90px]">
                         {displayDuration}
                       </span>
                     )}
