@@ -345,6 +345,9 @@ exports.getTrip = async (req, res, next) => {
             { shortName: id },
             { title: { contains: id, mode: 'insensitive' } },
             { slug: { contains: id, mode: 'insensitive' } }
+          ]
+        },
+        include: includeRelations
       });
     }
     if (!trip && id.includes('-')) {
