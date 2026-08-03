@@ -275,10 +275,9 @@ exports.createOpsMessage = async (req, res) => {
       if (prisma.notification) {
         const staffUsers = await prisma.admin.findMany({
           where: {
-            tenantId: ctx.tenantId,
             id: { not: req.user.id }
           },
-          select: { id: true }
+          select: { id: true, tenantId: true }
         });
 
         if (staffUsers.length > 0) {
@@ -289,7 +288,7 @@ exports.createOpsMessage = async (req, res) => {
 
           await prisma.notification.createMany({
             data: staffUsers.map(u => ({
-              tenantId: ctx.tenantId,
+              tenantId: u.tenantId || ctx.tenantId || 'default',
               recipientUserId: u.id,
               title,
               message: `${req.user.name || 'Staff'}: ${excerpt}`,
