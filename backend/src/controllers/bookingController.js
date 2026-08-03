@@ -1188,51 +1188,37 @@ exports.updateBooking = async (req, res, next) => {
     else if (isPriceGstChange) logActionType = 'price_gst_change';
     else if (isPaymentUpdate) logActionType = 'payment_update';
 
-    await logAction({
-      tenantId: req.user.tenantId,
-      actorUserId: req.user.id,
-      action: logActionType,
-      entityType: 'booking',
-      entityId: req.params.id,
-      beforeData: beforeBooking,
-      afterData: updateData,
-      ipAddress: req.ip || null
-    });
+    try {
+      await logAction({
+        tenantId: req.user?.tenantId || 'default',
+        actorUserId: req.user?.id || 'system',
+        action: logActionType,
+        entityType: 'booking',
+        entityId: req.params.id,
+        beforeData: beforeBooking,
+        afterData: updateData,
+        ipAddress: req.ip || null
+      });
 
-    // Log to booking activity log
-    const detailParts = [];
-    if (updateData.status && updateData.status !== beforeBooking.status) detailParts.push(`status changed to ${updateData.status}`);
-    if (updateData.totalAmount !== undefined && updateData.totalAmount !== beforeBooking.totalAmount) detailParts.push(`total amount changed to ₹${updateData.totalAmount}`);
-    if (updateData.advancePaid !== undefined && updateData.advancePaid !== beforeBooking.advancePaid) detailParts.push(`advance paid changed to ₹${updateData.advancePaid}`);
-    if (updateData.paymentStatus && updateData.paymentStatus !== beforeBooking.paymentStatus) detailParts.push(`payment status changed to ${updateData.paymentStatus}`);
-    if (updateData.salesAdminId && updateData.salesAdminId !== beforeBooking.salesAdminId) detailParts.push(`salesperson reassigned`);
-    if (updateData.notes !== undefined && updateData.notes !== beforeBooking.notes) detailParts.push(`notes updated`);
-    if (req.body.passengers !== undefined) detailParts.push(`co-travelers updated`);
-    if (updateData.departureDate !== undefined) {
-      const newDepStr = formatDateStr(updateData.departureDate);
-      const oldDepStr = formatDateStr(beforeBooking.departureDate);
-      if (newDepStr !== oldDepStr) {
-        const reasonSuffix = reason ? ` (Reason: ${reason})` : '';
-        detailParts.push(`departure date changed to ${newDepStr}${reasonSuffix}`);
+      await logBookingActivity({
+        bookingId: req.params.id,
+        action: updateData.status ? 'STATUS_CHANGE' : 'DETAILS_UPDATE',
+        details: activityDetails,
+        performedByAdminId: req.user?.id || 'system'
+      });
+
+      const authScope = req.user?.role === 'sales' ? `sales-${req.user?.id}` : (req.user?.role || 'admin');
+      if (req.user?.tenantId && beforeBooking?.bookingId) {
+        await cache.del(`admin:summary:booking:${req.user.tenantId}:${beforeBooking.bookingId}:${authScope}`);
+        if (authScope !== 'admin') {
+          await cache.del(`admin:summary:booking:${req.user.tenantId}:${beforeBooking.bookingId}:admin`);
+        }
       }
-    }
-    
-    const activityDetails = detailParts.length > 0 ? `Booking updated: ${detailParts.join(', ')}` : 'Booking details updated';
-
-    await logBookingActivity({
-      bookingId: req.params.id,
-      action: updateData.status ? 'STATUS_CHANGE' : 'DETAILS_UPDATE',
-      details: activityDetails,
-      performedByAdminId: req.user.id
-    });
-
-    const authScope = req.user?.role === 'sales' ? `sales-${req.user.id}` : (req.user?.role || 'admin');
-    await cache.del(`admin:summary:booking:${req.user.tenantId}:${beforeBooking.bookingId}:${authScope}`);
-    if (authScope !== 'admin') {
-      await cache.del(`admin:summary:booking:${req.user.tenantId}:${beforeBooking.bookingId}:admin`);
+    } catch (logErr) {
+      console.error("Non-critical logging error in updateBooking:", logErr);
     }
 
-    res.json({ success: true, message: 'Booking updated' });
+    res.json({ success: true, message: 'Booking updated', data: booking });
   } catch (error) { next(error); }
 };
 
