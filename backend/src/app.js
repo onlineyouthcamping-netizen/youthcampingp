@@ -77,7 +77,7 @@ app.use('/api', require('../middleware/rateLimit'));
 
 // 3. Import & Mount Routes
 app.use('/api/health', require('../routes/health'));
-app.use('/api/trips', require('../routes/trips'));
+app.use('/api/trips', require('./routes/tripRoutes'));
 app.use('/api/destinations', require('../routes/destinations'));
 app.use('/api/stories', require('../routes/stories'));
 app.use('/api/reviews', require('../routes/reviews'));
