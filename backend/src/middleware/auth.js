@@ -284,12 +284,56 @@ const requireAdmin = (req, res, next) => {
   return res.status(403).json({ success: false, message: 'Access Denied: Admin privileges required.' });
 };
 
+const optionalAuthenticate = async (req, res, next) => {
+  try {
+    let authHeader = req.headers.authorization || '';
+    if (!authHeader && req.query.token) {
+      authHeader = `Bearer ${req.query.token}`;
+    }
+    if (!authHeader.startsWith('Bearer ')) {
+      req.user = { id: 'public', role: 'public', tenantId: 'default' };
+      return next();
+    }
+    let token = authHeader.slice('Bearer '.length).trim();
+    token = token.replace(/^["'\\]+|["'\\]+$/g, '').trim();
+    if (!token) {
+      req.user = { id: 'public', role: 'public', tenantId: 'default' };
+      return next();
+    }
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (jwtErr) {
+      req.user = { id: 'public', role: 'public', tenantId: 'default' };
+      return next();
+    }
+    if (!decoded.id || FORBIDDEN_SYNTHETIC_IDENTITIES.has(decoded.id)) {
+      req.user = { id: 'public', role: 'public', tenantId: 'default' };
+      return next();
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, email: true, name: true, role: true, tenantId: true, permissions: true }
+    });
+    if (user) {
+      req.user = user;
+    } else {
+      req.user = { id: 'public', role: 'public', tenantId: 'default' };
+    }
+    return next();
+  } catch (err) {
+    req.user = { id: 'public', role: 'public', tenantId: 'default' };
+    return next();
+  }
+};
+
 const protect = authenticate;
 const protectUser = authenticate;
 const protectAny = authenticate;
 
 module.exports = {
   authenticate,
+  optionalAuthenticate,
   protect,
   protectUser,
   protectAny,

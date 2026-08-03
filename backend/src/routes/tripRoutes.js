@@ -17,7 +17,7 @@ const {
   seedLiveData,
   getTripDepartures
 } = require('../controllers/tripController');
-const { authenticate, requirePermission, enforceOwnership } = require('../middleware/auth');
+const { authenticate, optionalAuthenticate, requirePermission, enforceOwnership } = require('../middleware/auth');
 const { stripFinancialFieldsForGuides } = require('../middleware/financialStripper');
 
 // Public routes
@@ -25,15 +25,15 @@ router.get('/public/cards', getPublicTripCards);
 router.get('/public/slug/:slug', getPublicTripDetail);
 router.get('/public/lookup/:identifier', getPublicTripLookup);
 
-router.get('/', authenticate, stripFinancialFieldsForGuides, getTrips);
-router.get('/compact', authenticate, stripFinancialFieldsForGuides, getCompactTrips);
+router.get('/', optionalAuthenticate, stripFinancialFieldsForGuides, getTrips);
+router.get('/compact', optionalAuthenticate, stripFinancialFieldsForGuides, getCompactTrips);
 
 router.get('/seed/live-data', authenticate, requirePermission('trips.edit'), seedLiveData);
 
-router.get('/slug/:slug', authenticate, stripFinancialFieldsForGuides, getTripBySlug);
+router.get('/slug/:slug', optionalAuthenticate, stripFinancialFieldsForGuides, getTripBySlug);
 
 router.get('/:id/departures', authenticate, getTripDepartures);
-router.get('/:id', authenticate, enforceOwnership('trip'), stripFinancialFieldsForGuides, getTrip);
+router.get('/:id', optionalAuthenticate, stripFinancialFieldsForGuides, getTrip);
 
 // Admin routes
 router.post('/', authenticate, requirePermission('trips.create'), createTrip);
