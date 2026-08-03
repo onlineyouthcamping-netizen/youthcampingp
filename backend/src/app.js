@@ -127,6 +127,7 @@ app.use('/api/erp', require('./routes/erpRoutes'));
 app.use('/api/tickets', require('./routes/ticketApprovalRoutes'));
 app.use('/api/station-payments', require('./routes/stationPaymentRoutes'));
 app.use('/api/attachments', require('./routes/attachmentRoutes'));
+app.use('/api', require('./routes/guideAdminRoutes'));
 
 const { protect: protectAnalytics } = require('./middleware/auth');
 const { getBookingLinksAnalytics } = require('./controllers/bookingLinkController');
