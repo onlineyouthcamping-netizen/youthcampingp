@@ -230,7 +230,7 @@ const templates = {
       priceRowsHtml += `
         <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
           <td style="padding: 12px 16px; color: #ff5722; text-align: left; font-weight: 800;" colspan="2">
-            GST DISCOUNT
+            DISCOUNT
           </td>
           <td style="padding: 12px 16px; color: #ff5722; font-weight: 800; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
             - ₹ ${Number(discountVal).toLocaleString('en-IN')}
