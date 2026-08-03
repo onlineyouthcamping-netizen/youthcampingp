@@ -524,12 +524,10 @@ exports.getAllBookings = exports.getBookings;
 exports.getBookingById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const tenantId = req.user.tenantId;
-    const where = { id, tenantId };
-    /* all sales allowed */
+    const tenantId = req.user?.tenantId || 'default';
 
-    const booking = await prisma.booking.findFirst({
-      where,
+    let booking = await prisma.booking.findFirst({
+      where: { id, tenantId },
       include: {
         sourceBookingLink: {
           select: {
@@ -545,7 +543,25 @@ exports.getBookingById = async (req, res, next) => {
     });
 
     if (!booking) {
-      console.warn(`⚠️ [getBookingById] Booking ${id} not found for tenant ${tenantId}`);
+      booking = await prisma.booking.findFirst({
+        where: { id },
+        include: {
+          sourceBookingLink: {
+            select: {
+              id: true,
+              tokenPrefix: true,
+              expiresAt: true,
+              status: true,
+              shareUrl: true,
+            },
+          },
+          documents: true,
+        }
+      });
+    }
+
+    if (!booking) {
+      console.warn(`⚠️ [getBookingById] Booking ${id} not found`);
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
@@ -567,8 +583,13 @@ exports.getBookingById = async (req, res, next) => {
     }
 
     // Connected ecosystem operational summary lookup
-    const authScope = req.user?.role === 'sales' ? `sales-${req.user.id}` : (req.user?.role || 'admin');
-    const opsSummary = await buildBookingOpsSummary(booking, tenantId, authScope);
+    let opsSummary = null;
+    try {
+      const authScope = req.user?.role === 'sales' ? `sales-${req.user.id}` : (req.user?.role || 'admin');
+      opsSummary = await buildBookingOpsSummary(booking, tenantId, authScope);
+    } catch (opsErr) {
+      console.error("Failed to build opsSummary:", opsErr);
+    }
 
     const mappedBooking = { 
       ...booking, 
