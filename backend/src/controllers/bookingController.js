@@ -1071,46 +1071,57 @@ exports.updateBooking = async (req, res, next) => {
     // Add email back to updateData if it exists
     if (email !== undefined) updateData.email = email;
 
-    // Explicitly handle passengers json mapping if custom fields are present
-    let existingBooking = await prisma.booking.findFirst({
-      where: { id: req.params.id, tenantId: req.user?.tenantId || 'default' }
-    });
-    if (!existingBooking) {
-      existingBooking = await prisma.booking.findFirst({
-        where: { id: req.params.id }
-      });
-    }
-    let currentPassengers = existingBooking?.passengers || { details: {}, persons: [] };
-    if (typeof currentPassengers === 'string') {
-      try {
-        currentPassengers = JSON.parse(currentPassengers);
-      } catch (e) {
-        currentPassengers = { details: {}, persons: [] };
-      }
-    }
-    if (currentPassengers && !currentPassengers.details) {
-      currentPassengers = { details: currentPassengers, persons: [] };
-    }
+    // Only touch passengers json mapping if custom fields are explicitly present
+    const hasPassengerCustomFields = [
+      'trainClass', 'ticketStatus', 'roomType', 'basePrice', 'foodPreference',
+      'mealPreference', 'dietary', 'roomAllocation', 'guideAssignment',
+      'pickupStatus', 'travelStatus', 'participantNotes'
+    ].some(field => req.body[field] !== undefined);
 
-    updateData.passengers = {
-      details: {
-        ...currentPassengers.details,
-        trainClass: updateData.trainClass !== undefined ? updateData.trainClass : currentPassengers.details.trainClass,
-        ticketStatus: updateData.ticketStatus !== undefined ? updateData.ticketStatus : currentPassengers.details.ticketStatus,
-        roomType: updateData.roomType !== undefined ? updateData.roomType : currentPassengers.details.roomType,
-        basePrice: updateData.basePrice !== undefined ? updateData.basePrice : currentPassengers.details.basePrice,
-        gstAmount: updateData.gstAmount !== undefined ? updateData.gstAmount : currentPassengers.details.gstAmount,
-        foodPreference: req.body.foodPreference !== undefined ? req.body.foodPreference : currentPassengers.details.foodPreference,
-        mealPreference: req.body.mealPreference !== undefined ? req.body.mealPreference : currentPassengers.details.mealPreference,
-        dietary: req.body.dietary !== undefined ? req.body.dietary : currentPassengers.details.dietary,
-        roomAllocation: req.body.roomAllocation !== undefined ? req.body.roomAllocation : currentPassengers.details.roomAllocation,
-        guideAssignment: req.body.guideAssignment !== undefined ? req.body.guideAssignment : currentPassengers.details.guideAssignment,
-        pickupStatus: req.body.pickupStatus !== undefined ? req.body.pickupStatus : currentPassengers.details.pickupStatus,
-        travelStatus: req.body.travelStatus !== undefined ? req.body.travelStatus : currentPassengers.details.travelStatus,
-        participantNotes: req.body.participantNotes !== undefined ? req.body.participantNotes : currentPassengers.details.participantNotes,
-      },
-      persons: updateData.passengers !== undefined ? updateData.passengers : currentPassengers.persons
-    };
+    if (hasPassengerCustomFields) {
+      let existingBooking = await prisma.booking.findFirst({
+        where: { id: req.params.id, tenantId: req.user?.tenantId || 'default' }
+      });
+      if (!existingBooking) {
+        existingBooking = await prisma.booking.findFirst({
+          where: { id: req.params.id }
+        });
+      }
+
+      let currentPassengers = existingBooking?.passengers || {};
+      if (typeof currentPassengers === 'string') {
+        try { currentPassengers = JSON.parse(currentPassengers); } catch (e) { currentPassengers = {}; }
+      }
+
+      let safeDetails = {};
+      let safePersons = [];
+      if (Array.isArray(currentPassengers)) {
+        safePersons = currentPassengers;
+      } else if (currentPassengers && typeof currentPassengers === 'object') {
+        safeDetails = (currentPassengers.details && typeof currentPassengers.details === 'object' && !Array.isArray(currentPassengers.details)) ? currentPassengers.details : {};
+        safePersons = Array.isArray(currentPassengers.persons) ? currentPassengers.persons : [];
+      }
+
+      updateData.passengers = {
+        details: {
+          ...safeDetails,
+          ...(req.body.trainClass !== undefined && { trainClass: req.body.trainClass }),
+          ...(req.body.ticketStatus !== undefined && { ticketStatus: req.body.ticketStatus }),
+          ...(req.body.roomType !== undefined && { roomType: req.body.roomType }),
+          ...(req.body.basePrice !== undefined && { basePrice: req.body.basePrice }),
+          ...(req.body.gstAmount !== undefined && { gstAmount: req.body.gstAmount }),
+          ...(req.body.foodPreference !== undefined && { foodPreference: req.body.foodPreference }),
+          ...(req.body.mealPreference !== undefined && { mealPreference: req.body.mealPreference }),
+          ...(req.body.dietary !== undefined && { dietary: req.body.dietary }),
+          ...(req.body.roomAllocation !== undefined && { roomAllocation: req.body.roomAllocation }),
+          ...(req.body.guideAssignment !== undefined && { guideAssignment: req.body.guideAssignment }),
+          ...(req.body.pickupStatus !== undefined && { pickupStatus: req.body.pickupStatus }),
+          ...(req.body.travelStatus !== undefined && { travelStatus: req.body.travelStatus }),
+          ...(req.body.participantNotes !== undefined && { participantNotes: req.body.participantNotes }),
+        },
+        persons: Array.isArray(req.body.passengers) ? req.body.passengers : safePersons
+      };
+    }
 
     if (updateData.ticketStatus !== undefined) {
       updateData.trainTicketStatus = updateData.ticketStatus;
@@ -1143,13 +1154,19 @@ exports.updateBooking = async (req, res, next) => {
     if (updateData.amount !== undefined) updateData.amount = Number(updateData.amount) || 0;
     if (updateData.remainingAmount !== undefined) updateData.remainingAmount = Number(updateData.remainingAmount) || 0;
     if (updateData.age !== undefined && updateData.age !== null) updateData.age = parseInt(updateData.age) || null;
-    if (updateData.departureDate !== undefined && updateData.departureDate !== null) {
-      updateData.departureDate = new Date(updateData.departureDate);
+    if (updateData.departureDate !== undefined && updateData.departureDate !== null && updateData.departureDate !== "") {
+      const d = new Date(updateData.departureDate);
+      if (!isNaN(d.getTime())) updateData.departureDate = d;
+      else delete updateData.departureDate;
+    } else if (updateData.departureDate === "") {
+      delete updateData.departureDate;
     }
     if (updateData.skipDays !== undefined) updateData.skipDays = parseInt(updateData.skipDays) || 0;
     if (updateData.adjustedPrice !== undefined) updateData.adjustedPrice = parseFloat(updateData.adjustedPrice) || null;
     if (updateData.joiningDate !== undefined && updateData.joiningDate !== null && updateData.joiningDate !== "") {
-      updateData.joiningDate = new Date(updateData.joiningDate);
+      const d = new Date(updateData.joiningDate);
+      if (!isNaN(d.getTime())) updateData.joiningDate = d;
+      else delete updateData.joiningDate;
     } else if (updateData.joiningDate === "") {
       updateData.joiningDate = null;
     }
@@ -1169,7 +1186,15 @@ exports.updateBooking = async (req, res, next) => {
       }
     }
 
-    const beforeBooking = existingBooking;
+    let beforeBooking = await prisma.booking.findFirst({
+      where: { id: req.params.id, tenantId: req.user?.tenantId || 'default' }
+    });
+    if (!beforeBooking) {
+      beforeBooking = await prisma.booking.findFirst({
+        where: { id: req.params.id }
+      });
+    }
+
     if (!beforeBooking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
     const booking = await prisma.booking.update({
