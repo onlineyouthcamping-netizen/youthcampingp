@@ -84,6 +84,15 @@ const PERMISSIONS = [
   'vendors.edit',
   'vendors.import',
   'vendors.activate',
+  'vendors.delete',
+  'vendors.deactivate',
+  'vendors.payments.view',
+  'vendors.payments.manage',
+  'vendors.mapping.manage',
+  'vendors.costing.calculate',
+  'vendors.rates.manage',
+  'vendors.rate.manage',
+  'vendors.trip.assign',
   'package.vendor.select',
   'ops.vendor.allocate',
   'ops.vendor.confirm',
@@ -199,6 +208,15 @@ const ROLE_PERMISSIONS = {
     'vendors.edit',
     'vendors.import',
     'vendors.activate',
+    'vendors.delete',
+    'vendors.deactivate',
+    'vendors.payments.view',
+    'vendors.payments.manage',
+    'vendors.mapping.manage',
+    'vendors.costing.calculate',
+    'vendors.rates.manage',
+    'vendors.rate.manage',
+    'vendors.trip.assign',
     'package.vendor.select',
     'ops.vendor.allocate',
     'ops.vendor.confirm',
@@ -410,7 +428,10 @@ function hasPermission(roleOrUser, permission) {
   if ((permission === 'guides.view' || permission === 'guides.manage') && (combined.has('ops.view') || combined.has('operations.view') || combined.has('guides.view'))) {
     return true;
   }
-  if (permission === 'vendors.view' && (combined.has('ops.view') || combined.has('operations.view') || combined.has('vendors.view'))) {
+  if ((permission === 'vendors.view' || permission === 'vendors.payments.view') && (combined.has('ops.view') || combined.has('operations.view') || combined.has('vendors.view'))) {
+    return true;
+  }
+  if (permission.startsWith('vendors.') && (combined.has('vendors.edit') || combined.has('vendors.create') || combined.has('ops.manage') || combined.has('operations.edit'))) {
     return true;
   }
   if (permission === 'bookings.view' && (combined.has('bookings.view') || combined.has('inquiries.view') || combined.has('quotations.view'))) {
