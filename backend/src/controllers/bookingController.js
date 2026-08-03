@@ -1195,11 +1195,27 @@ exports.updateBooking = async (req, res, next) => {
       });
     }
 
-    if (!beforeBooking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    const ALLOWED_BOOKING_FIELDS = new Set([
+      'tripId', 'tripName', 'status', 'name', 'fullName', 'phone', 'mobile',
+      'email', 'age', 'gender', 'numberOfTravelers', 'baseAmount', 'gstAmount',
+      'depositGst', 'totalAmount', 'amount', 'advancePaid', 'remainingAmount',
+      'paymentMode', 'paymentStatus', 'payment_status', 'payment_method',
+      'upi_reference', 'notes', 'adminNotes', 'sourceBookingLinkId',
+      'salesAdminId', 'sourceMeta', 'departureDate', 'pickupCity', 'skipDays',
+      'adjustedPrice', 'joiningDate', 'reminderSent', 'passengers',
+      'trainTicketRequired', 'trainTicketStatus'
+    ]);
+
+    const sanitizedData = {};
+    for (const key of Object.keys(updateData)) {
+      if (ALLOWED_BOOKING_FIELDS.has(key)) {
+        sanitizedData[key] = updateData[key];
+      }
+    }
 
     const booking = await prisma.booking.update({
       where: { id: req.params.id },
-      data: updateData
+      data: sanitizedData
     });
 
     // Log audit log (normalize Decimal/Number comparison using String())
