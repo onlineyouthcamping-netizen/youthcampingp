@@ -1437,7 +1437,7 @@ exports.getTrips = async (req, res, next) => {
       select: { id: true, title: true, price: true, availableDates: true }
     });
     const formatted = trips.map(t => ({ id: t.id, tripCode: t.id, title: t.title, tripName: t.title, price: t.price, availableDates: t.availableDates }));
-    tripsCache.set(tenantId, { data: formatted, expiresAt: Date.now() + TRIPS_CACHE_TTL });
+    tripsCache.set(userTenant, { data: formatted, expiresAt: Date.now() + TRIPS_CACHE_TTL });
 
     res.status(200).json({
       success: true,
@@ -1462,7 +1462,7 @@ exports.createTrip = async (req, res, next) => {
         location: req.body.location || 'TBD',
         duration: req.body.duration || 'TBD',
         description: req.body.description || 'TBD',
-        tenantId: req.user.tenantId,
+        tenantId: req.user?.tenantId || 'default',
         price: Number(req.body.price) || 0
       }
     });
@@ -1477,7 +1477,7 @@ exports.updateTrip = async (req, res, next) => {
   try {
     const { id: oldId } = req.params;
     const { tripCode, tripName, ...otherData } = req.body;
-    const tenantId = req.user.tenantId;
+    const tenantId = req.user?.tenantId || 'default';
 
     // Map tripName to title if provided
     const updateData = { ...otherData };
