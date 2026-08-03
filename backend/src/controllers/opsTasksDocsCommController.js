@@ -270,6 +270,40 @@ exports.createOpsMessage = async (req, res) => {
       }
     });
 
+    // Automatically generate in-app notifications for all staff & admins
+    try {
+      if (prisma.notification) {
+        const staffUsers = await prisma.admin.findMany({
+          where: {
+            tenantId: ctx.tenantId,
+            id: { not: req.user.id }
+          },
+          select: { id: true }
+        });
+
+        if (staffUsers.length > 0) {
+          const channelName = messageType === 'ANNOUNCEMENT' ? 'Broadcast Announcement' : messageType === 'STAFF' ? 'Internal Ops' : 'Group Board';
+          const title = `📢 ${ctx.tripId} (${ctx.departureDate}): New ${channelName}`;
+          const excerpt = content.length > 100 ? content.substring(0, 97) + '...' : content;
+          const actionUrl = `/admin/departure-workspace?tab=communication&departureId=${ctx.tripId}_${ctx.departureDate}`;
+
+          await prisma.notification.createMany({
+            data: staffUsers.map(u => ({
+              tenantId: ctx.tenantId,
+              recipientUserId: u.id,
+              title,
+              message: `${req.user.name || 'Staff'}: ${excerpt}`,
+              priority: messageType === 'ANNOUNCEMENT' ? 'High' : 'Medium',
+              module: 'Operations',
+              actionUrl
+            }))
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.error('Failed to generate notifications for opsMessage:', notifErr);
+    }
+
     return res.status(201).json({ success: true, data: message });
   } catch (err) {
     console.error('createOpsMessage error:', err);
