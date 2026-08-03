@@ -343,16 +343,17 @@ exports.getTrip = async (req, res, next) => {
       include: includeRelations
     });
 
+    // Fallback 1: Search without tenant restriction (handles tenantId mismatch)
     if (!trip) {
       trip = await prisma.trip.findFirst({
         where: {
           OR: [
+            { id },
+            { slug: id },
+            { title: id },
+            { shortName: id },
             { title: { contains: id, mode: 'insensitive' } },
             { slug: { contains: id, mode: 'insensitive' } }
-          ],
-          tenantId
-        },
-        include: includeRelations
       });
     }
     if (!trip && id.includes('-')) {
