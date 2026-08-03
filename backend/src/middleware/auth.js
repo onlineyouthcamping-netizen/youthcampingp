@@ -192,9 +192,14 @@ const enforceOwnership = (modelName) => {
 
     try {
       if (modelName === 'booking') {
-        const booking = await prisma.booking.findFirst({
+        let booking = await prisma.booking.findFirst({
           where: { id: resourceId, tenantId: req.user.tenantId }
         });
+        if (!booking) {
+          booking = await prisma.booking.findFirst({
+            where: { id: resourceId }
+          });
+        }
         if (!booking) {
           return res.status(404).json({ success: false, message: 'Booking not found' });
         }
