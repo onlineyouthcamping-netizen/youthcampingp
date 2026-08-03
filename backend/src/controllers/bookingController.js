@@ -358,7 +358,8 @@ exports.getBookings = async (req, res, next) => {
     if (limit > 100) limit = 100;
     const skip = (page - 1) * limit;
 
-    const where = { tenantId: req.user.tenantId };
+    const userTenant = req.user?.tenantId || 'default';
+    const where = { tenantId: userTenant === 'default' ? 'default' : { in: [userTenant, 'default'] } };
 
     // 2. Map status filters
     if (status && status !== 'all') {
@@ -1428,14 +1429,11 @@ const TRIPS_CACHE_TTL = 5 * 60 * 1000;
 
 exports.getTrips = async (req, res, next) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
-    const cached = tripsCache.get(tenantId);
-    if (cached && Date.now() < cached.expiresAt) {
-      return res.status(200).json({ success: true, data: cached.data });
-    }
+    const userTenant = req.user?.tenantId || 'default';
+    const whereTenant = userTenant === 'default' ? 'default' : { in: [userTenant, 'default'] };
 
     const trips = await prisma.trip.findMany({
-      where: { tenantId },
+      where: { tenantId: whereTenant },
       select: { id: true, title: true, price: true, availableDates: true }
     });
     const formatted = trips.map(t => ({ id: t.id, tripCode: t.id, title: t.title, tripName: t.title, price: t.price, availableDates: t.availableDates }));

@@ -56,14 +56,12 @@ const toPublicRouteSummary = (route) => parseJsonArray(route)
 exports.getTrips = async (req, res, next) => {
   try {
     const tenantId = req.user?.tenantId || 'default';
-    const where = { tenantId };
+    const where = { tenantId: tenantId === 'default' ? 'default' : { in: [tenantId, 'default'] } };
     
     console.log(`🔍 [Trips] Fetching trips for tenant: ${tenantId}, status: ${req.query.status || 'default'}`);
 
     if (req.query.status && req.query.status !== 'all') {
       where.status = req.query.status;
-    } else if (!req.query.status) {
-      where.status = 'published';
     }
 
     const select = req.query.compact === 'true'
@@ -78,13 +76,6 @@ exports.getTrips = async (req, res, next) => {
         { createdAt: 'desc' }
       ]
     });
-
-    // Post-process to move 0s to the end if necessary, or just tell the user to use 1, 2, 3.
-    // Actually, if we want 1 to be FIRST, and 0 to be LAST, we should either:
-    // 1. Change default to 99999
-    // 2. Use a different sorting logic.
-    
-    // I'll change the default to 9999 in the schema and update existing.
 
     console.log(`✅ [Trips] Found ${trips.length} trips`);
 
@@ -107,7 +98,7 @@ exports.getTrips = async (req, res, next) => {
 exports.getCompactTrips = async (req, res, next) => {
   try {
     const tenantId = req.user?.tenantId || 'default';
-    const where = { tenantId };
+    const where = { tenantId: tenantId === 'default' ? 'default' : { in: [tenantId, 'default'] } };
 
     if (req.query.status && req.query.status !== 'all') {
       where.status = req.query.status;
