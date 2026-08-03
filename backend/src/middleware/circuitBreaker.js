@@ -40,13 +40,21 @@ function recordFailure(group) {
 
   // Trip the breaker if threshold exceeded
   if (circuit.failures.length >= FAILURE_THRESHOLD) {
-    circuit.openUntil = now + COOLDOWN_MS;
-    circuit.failures = []; // Reset counter
-    console.warn(`🔴 [CircuitBreaker] "${group}" tripped open for ${COOLDOWN_MS / 1000}s after ${FAILURE_THRESHOLD} failures`);
+    if (process.env.NODE_ENV === 'production') {
+      circuit.openUntil = now + COOLDOWN_MS;
+      circuit.failures = [];
+      console.warn(`🔴 [CircuitBreaker] "${group}" tripped open for ${COOLDOWN_MS / 1000}s after ${FAILURE_THRESHOLD} failures`);
+    } else {
+      console.warn(`⚠️ [CircuitBreaker Dev Notice] "${group}" encountered ${FAILURE_THRESHOLD} failures (Bypassed in local dev)`);
+      circuit.failures = [];
+    }
   }
 }
 
 function isOpen(group) {
+  if (process.env.NODE_ENV !== 'production') {
+    return false;
+  }
   const circuit = getCircuit(group);
   if (circuit.openUntil > Date.now()) {
     return true;

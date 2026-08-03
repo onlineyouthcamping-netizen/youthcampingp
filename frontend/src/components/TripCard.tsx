@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Clock, MapPin } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/api";
+import { formatDuration } from "@/lib/utils";
 
 interface TripCardProps {
   trip: Trip;
@@ -63,8 +64,9 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
 
   // Compact Duration formatting (e.g. "9 D / 8 N")
   const durationText = (() => {
-    if (!trip.duration) return "9 D / 8 N";
-    let text = trip.duration;
+    const raw = formatDuration(trip.duration, "9 D / 8 N");
+    let text = typeof raw === 'string' ? raw : "9 D / 8 N";
+    
     if (!text.includes("Night") && !text.includes("night") && !text.includes("N") && !text.includes("n")) {
       const daysMatch = text.match(/(\d+)\s*Days?/i);
       if (daysMatch) {

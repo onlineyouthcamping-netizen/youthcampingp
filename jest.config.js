@@ -1,7 +1,11 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  testMatch: ['**/tests/unit/**/*.test.ts', '**/tests/api/**/*.test.ts'],
+  testMatch: [
+    '**/tests/unit/**/*.[jt]s?(x)',
+    '**/tests/api/**/*.[jt]s?(x)',
+    '**/backend/tests/**/*.[jt]s?(x)'
+  ],
   verbose: true,
   forceExit: true,
   clearMocks: true,
@@ -11,4 +15,7 @@ module.exports = {
     '^react$': '<rootDir>/node_modules/react',
     '^react-dom$': '<rootDir>/node_modules/react-dom',
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(@exodus|isomorphic-dompurify|jsdom)/)',
+  ],
 };

@@ -6,6 +6,18 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.youthcamping.in',
+      },
+      {
+        protocol: 'https',
         hostname: 'vl-prod-static.b-cdn.net',
       },
       {

@@ -1,4 +1,5 @@
 import { fetchTripBySlug } from "@/lib/api";
+import { formatDuration } from "@/lib/utils";
 import { notFound } from "next/navigation";
 export const revalidate = 30;
 
@@ -30,6 +31,8 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
     { id: "reviews", label: "Reviews" },
     { id: "faqs", label: "FAQs" },
   ];
+
+  const durationStr = formatDuration(trip.duration, "08 N / 09 D");
 
   return (
     <div className="bg-white min-h-screen font-montserrat pb-20 lg:pb-0">
@@ -80,7 +83,7 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
         {/* 3. Quick Info Bar (Full Width) */}
         <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-8 gap-y-3 gap-x-4 py-4 my-4 border-y border-zinc-200/80 w-full relative z-10 bg-white">
           {[
-            { label: "Duration", val: trip.duration || "9 Days / 8 Nights", icon: Clock3 },
+            { label: "Duration", val: durationStr, icon: Clock3 },
             { 
               label: "Difficulty", 
               val: trip.difficulty ? (trip.difficulty.charAt(0).toUpperCase() + trip.difficulty.slice(1)) : "Easy to Moderate", 

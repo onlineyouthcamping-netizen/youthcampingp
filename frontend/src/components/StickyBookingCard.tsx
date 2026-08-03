@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { useTripSelection } from "@/store/trip-selection";
 import { Trip } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 import { useTheme } from "@/components/DynamicThemeProvider";
 
 interface StickyBookingCardProps {
@@ -17,6 +17,7 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   const displayPrice = currentPrice > 0 ? currentPrice : (trip.price || 12999);
+  const durationStr = formatDuration(trip.duration, "9 Days / 8 Nights");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,7 +36,7 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
     const message = encodeURIComponent(
       `Hi! I want to book the "${trip.title}" expedition.\n\n` +
       `📌 Package Details:\n` +
-      `- Duration: ${trip.duration || "9 Days / 8 Nights"}\n` +
+      `- Duration: ${durationStr}\n` +
       `- Departure Date: ${formattedDate}\n` +
       `- Total Price: ₹${displayPrice.toLocaleString()}/-\n\n` +
       `Please assist me with the booking.`
@@ -66,7 +67,7 @@ export default function StickyBookingCard({ trip }: StickyBookingCardProps) {
             CURRENT PACKAGE CONFIGURATION
           </p>
           <p className="text-white font-bold text-base mb-5 font-montserrat">
-            {trip.duration || "9 Days / 8 Nights"}
+            {durationStr}
           </p>
 
           <button 

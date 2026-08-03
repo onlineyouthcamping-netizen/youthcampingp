@@ -62,6 +62,10 @@ router.put('/rates/:rateId', requirePermission('vendors.rate.manage'), updateTri
 // ── NEW: DIRECTORY VENDOR SYSTEM ROUTING ──
 const dirCtrl = require('../controllers/directoryVendorController');
 
+// Analytics & Master Data
+router.get('/directory/analytics', requirePermission('vendors.view'), dirCtrl.getDirectoryAnalytics);
+router.get('/directory/destinations', requirePermission('vendors.view'), dirCtrl.getDirectoryDestinations);
+
 // Search & options
 router.get('/directory/search/by-location', requirePermission('vendors.view'), dirCtrl.searchVendorsByLocation);
 router.get('/directory/trips/:tripId/options', requirePermission('vendors.view'), dirCtrl.getTripVendorOptions);

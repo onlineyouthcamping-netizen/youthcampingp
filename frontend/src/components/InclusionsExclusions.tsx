@@ -5,8 +5,17 @@ import { Check, X, ShieldCheck, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InclusionsExclusionsProps {
-  inclusions?: string[];
-  exclusions?: string[];
+  inclusions?: any[];
+  exclusions?: any[];
+}
+
+function getItemText(item: any): string {
+  if (!item) return "";
+  if (typeof item === "string") return item;
+  if (typeof item === "object") {
+    return item.text || item.name || item.title || item.description || "";
+  }
+  return String(item);
 }
 
 const defaultInclusions = [
@@ -104,7 +113,7 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
               <div key={i} className="py-3 flex items-start gap-3.5 first:pt-0 last:pb-0 group">
                 <Check className="w-5 h-5 text-[#00C853] shrink-0 mt-0.5 stroke-[3.5]" />
                 <span className="text-xs sm:text-sm font-semibold text-[#1B2A4A] font-montserrat leading-snug">
-                  {item}
+                  {getItemText(item)}
                 </span>
               </div>
             ))}
@@ -135,7 +144,7 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
               <div key={i} className="py-3 flex items-start gap-3.5 first:pt-0 last:pb-0 group">
                 <X className="w-5 h-5 text-[#FF2D55] shrink-0 mt-0.5 stroke-[3.5]" />
                 <span className="text-xs sm:text-sm font-semibold text-[#1B2A4A] font-montserrat leading-snug">
-                  {item}
+                  {getItemText(item)}
                 </span>
               </div>
             ))}

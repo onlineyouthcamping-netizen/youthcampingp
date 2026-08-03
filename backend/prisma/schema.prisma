@@ -1190,10 +1190,22 @@ model AccountingAlertDedupe {
 
 enum OpsVendorType {
   HOTEL
+  RESORT
   HOMESTAY
+  HOSTEL
+  GUEST_HOUSE
+  VILLA
   CAMP
+  COTTAGE
+  APARTMENT
+  DORMITORY
+  LUXURY_TENT
   TRANSPORT
+  ACTIVITIES
+  RESTAURANT
   GUIDE
+  CAMPING
+  OTHER
   FOOD
   MEALS
   MISC
@@ -1223,42 +1235,273 @@ enum IncidentSeverity {
 
 // ── VENDOR DIRECTORY ENHANCEMENTS ──
 model OpsVendor {
-  id             String        @id @default(cuid())
-  tenantId       String        @default("default")
-  vendorCode     String?       @unique
-  name           String
-  type           OpsVendorType
-  contactPerson  String?
-  email          String?
-  phone          String?
-  alternatePhone String?
-  state          String?
-  location       String?       // represents city
-  address        String?       @db.Text
-  rating         Float?        @default(5.0)
-  notes          String?       @db.Text
-  isActive       Boolean       @default(true)
-  sourceSheet    String?
-  sourceRow      Int?
-  totalRooms     Int?
-  roomTypes      String?
-  sharingTypes   String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                   String        @id @default(cuid())
+  tenantId             String        @default("default")
+  vendorCode           String?       @unique
+  name                 String
+  type                 OpsVendorType
+  accommodationType    String?       // Hotel, Resort, Homestay, Hostel, etc.
+  isPreferred          Boolean       @default(false)
+  isBlocked            Boolean       @default(false)
+  destinationId        String?
+  
+  // Contact details
+  contactPerson        String?
+  primaryContactName   String?
+  secondaryContactName String?
+  receptionPhone       String?
+  whatsappNumber       String?
+  managerName          String?
+  emergencyPhone       String?
+  email                String?
+  phone                String?
+  alternatePhone       String?
+  website              String?
+  
+  // Address & Location
+  googleMapsUrl        String?
+  latitude             Float?
+  longitude            Float?
+  fullAddress          String?       @db.Text
+  address              String?       @db.Text
+  area                 String?
+  landmark             String?
+  pinCode              String?
+  city                 String?       // location represents city
+  location             String?
+  state                String?
+  country              String?       @default("India")
+  
+  // Financial
+  gstin                String?
+  panNumber            String?
+  bankName             String?
+  accountNumber        String?
+  ifscCode             String?
+  upiId                String?
+  paymentTerms         String?
+  creditDays           Int?          @default(30)
+  preferredPaymentMethod String?
+  
+  // Details & Policies
+  starRating           Int?          @default(3)
+  rating               Float?        @default(5.0)
+  checkInTime          String?       @default("12:00 PM")
+  checkOutTime         String?       @default("11:00 AM")
+  earlyCheckInPolicy   String?       @db.Text
+  lateCheckOutPolicy   String?       @db.Text
+  mealPlans            String?       // EP, CP, MAP, AP
+  amenities            String?       @db.Text // JSON list of amenities
+  images               String?       @db.Text // JSON list of images
+  documents            String?       @db.Text // JSON list of documents
+  notes                String?       @db.Text
+  
+  isActive             Boolean       @default(true)
+  sourceSheet          String?
+  sourceRow            Int?
+  totalRooms           Int?
+  roomTypes            String?
+  sharingTypes         String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
-  hotelBookings      OpsHotelBooking[]
-  transportFleet     OpsTransportFleet[]
-  guidePayments      OpsGuidePayment[]
-  opsActivities      OpsActivity[]                  @relation("OpsActivityVendor")
-  hotelRates         OpsVendorHotelRate[]
-  accommodationRates OpsAccommodationRate[]
-  transportRates     OpsTransportRate[]
-  additionalCharges  OpsVendorAdditionalCharge[]
-  opsAllocations     OpsDepartureVendorAllocation[]
-  tripVendors        OpsTripVendor[]
+  tags                 String?       // JSON list of tags e.g. ["Budget", "Preferred", "Pet Friendly"]
+  performanceScore     Float?        @default(95.0)
+  complaintCount       Int?          @default(0)
+  lateCheckinCount     Int?          @default(0)
+
+  hotelBookings        OpsHotelBooking[]
+  transportFleet       OpsTransportFleet[]
+  guidePayments        OpsGuidePayment[]
+  opsActivities        OpsActivity[]                  @relation("OpsActivityVendor")
+  hotelRates           OpsVendorHotelRate[]
+  accommodationRates   OpsAccommodationRate[]
+  transportRates       OpsTransportRate[]
+  additionalCharges    OpsVendorAdditionalCharge[]
+  opsAllocations       OpsDepartureVendorAllocation[]
+  tripVendors          OpsTripVendor[]
+  vendorRooms          OpsVendorRoom[]
+  seasonalRates        OpsVendorSeasonalRate[]
+  destinations         OpsVendorDestination[]
+  vendorContacts       OpsVendorContact[]
+  contracts            OpsVendorContract[]
+  calendarEntries      OpsVendorCalendar[]
+  ledgerEntries        OpsVendorLedger[]
+  priceHistory         OpsVendorPriceHistory[]
+  timelineEntries      OpsVendorTimeline[]
 
   @@index([tenantId])
-  @@index([type])
+}
+
+model OpsVendorRoom {
+  id                String    @id @default(cuid())
+  tenantId          String    @default("default")
+  vendorId          String
+  roomName          String
+  roomCategory      String?   @default("Standard")
+  capacity          Int       @default(2)
+  baseRate          Float     @default(0)
+  extraMattressRate Float     @default(0)
+  maxAdults         Int       @default(3)
+  maxChildren       Int       @default(2)
+  images            String?   @db.Text
+  notes             String?   @db.Text
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vendorId])
+}
+
+model OpsVendorSeasonalRate {
+  id                String    @id @default(cuid())
+  tenantId          String    @default("default")
+  vendorId          String
+  seasonName        String
+  startDate         DateTime?
+  endDate           DateTime?
+  priority          Int       @default(1)
+  twinRate          Float     @default(0)
+  tripleRate        Float     @default(0)
+  quadRate          Float     @default(0)
+  childRate         Float     @default(0)
+  extraMattressRate Float     @default(0)
+  mealCharge        Float     @default(0)
+  taxIncluded       Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vendorId])
+}
+
+model OpsVendorDestination {
+  id              String   @id @default(cuid())
+  tenantId        String   @default("default")
+  vendorId        String
+  destinationName String
+  state           String?
+  isPrimary       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vendorId])
+}
+
+model OpsVendorContact {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("default")
+  vendorId  String
+  name      String
+  role      String?  // Manager, Reception, Owner, Emergency, Accounts
+  phone     String?
+  whatsapp  String?
+  email     String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vendorId])
+}
+
+model OpsVendorContract {
+  id                   String    @id @default(cuid())
+  tenantId             String    @default("default")
+  vendorId             String
+  title                String
+  agreementType        String?   @default("Annual Contract")
+  startDate            DateTime?
+  expiryDate           DateTime?
+  renewalReminderDate  DateTime?
+  commissionPercent    Float     @default(0)
+  cancellationPolicy   String?   @db.Text
+  fileUrl              String?
+  status               String    @default("ACTIVE") // ACTIVE, EXPIRING_SOON, EXPIRED, TERMINATED
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vendorId])
+}
+
+model OpsVendorCalendar {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("default")
+  vendorId  String
+  date      DateTime @db.Date
+  status    String   @default("AVAILABLE") // AVAILABLE, BLOCKED, MAINTENANCE, FULLY_BOOKED, PEAK
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, date])
+  @@index([tenantId])
+  @@index([vendorId])
+}
+
+model OpsVendorLedger {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("default")
+  vendorId    String
+  entryType   String   // INVOICE, DEBIT, CREDIT, ADVANCE
+  amount      Float    @default(0)
+  balance     Float    @default(0)
+  referenceNo String?
+  entryDate   DateTime @default(now())
+  remarks     String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vendorId])
+}
+
+model OpsVendorPriceHistory {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("default")
+  vendorId    String
+  serviceName String
+  oldRate     Float    @default(0)
+  newRate     Float    @default(0)
+  changedBy   String?
+  reason      String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vendorId])
+}
+
+model OpsVendorTimeline {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("default")
+  vendorId    String
+  eventType   String   // CREATED, CONTRACT_UPLOADED, PRICE_UPDATED, TRIP_ASSIGNED, PAYMENT_MADE, RATING_ADDED, COMPLAINT_LOGGED
+  description String   @db.Text
+  performedBy String?
+  createdAt   DateTime @default(now())
+
+  vendor OpsVendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vendorId])
 }
 
 // ── HOTEL BOOKINGS TRACKER ──
@@ -4045,3 +4288,207 @@ model RoleTemplate {
   featured        Boolean  @default(false)
   createdAt       DateTime @default(now())
 }
+
+// ==========================================
+// YOUTHCAMPING BACKEND API MODELS
+// ==========================================
+
+model ApiTrip {
+  id            String   @id
+  title         String
+  subtitle      String?
+  location      String
+  image         String
+  galleryImages String[] @map("gallery_images")
+  description   String   @db.Text
+  price         Float
+  currency      String   @default("INR")
+  difficulty    String
+  ageGroup      String?  @map("age_group")
+  maxAltitude   String?  @map("max_altitude")
+  durationNights Int     @default(0) @map("duration_nights")
+  durationDays   Int     @default(0) @map("duration_days")
+  slug          String   @unique
+  month         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  details     TripDetail?
+  travelModes TravelMode[]
+  roomSharing RoomSharing[]
+  itinerary   ItineraryItem[]
+  inclusions  Inclusion[]
+  exclusions  Exclusion[]
+  stays       Stay[]
+  highlights  Highlight[]
+  reviews     ReviewItem[]
+  faqs        Faq[]
+
+  @@index([createdAt])
+  @@index([month])
+  @@map("trips")
+}
+
+model TripDetail {
+  id              String   @id @default(cuid())
+  tripId          String   @unique @map("trip_id")
+  nights          Int
+  days            Int
+  month           String?
+  departureDates  Json     @map("departure_dates")
+  departureMonth  String[] @map("departure_month")
+  trip            ApiTrip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("trip_details")
+}
+
+model TravelMode {
+  id          String  @id @default(cuid())
+  tripId      String  @map("trip_id")
+  name        String
+  price       Float   @default(0)
+  included    Boolean @default(false)
+  description String? @db.Text
+  trip        ApiTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("travel_modes")
+}
+
+model RoomSharing {
+  id          String  @id @default(cuid())
+  tripId      String  @map("trip_id")
+  type        String
+  price       Float   @default(0)
+  base        Boolean @default(false)
+  description String? @db.Text
+  trip        ApiTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("room_sharing")
+}
+
+model ItineraryItem {
+  id          String   @id @default(cuid())
+  tripId      String   @map("trip_id")
+  day         Int
+  title       String
+  description String   @db.Text
+  location    String?
+  activities  String[] @default([])
+  trip        ApiTrip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@index([day])
+  @@map("itinerary")
+}
+
+model Inclusion {
+  id     String  @id @default(cuid())
+  tripId String  @map("trip_id")
+  text   String
+  icon   String?
+  trip   ApiTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("inclusions")
+}
+
+model Exclusion {
+  id     String  @id @default(cuid())
+  tripId String  @map("trip_id")
+  text   String
+  icon   String?
+  trip   ApiTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("exclusions")
+}
+
+model Stay {
+  id        String   @id @default(cuid())
+  tripId    String   @map("trip_id")
+  name      String
+  location  String
+  image     String?
+  nights    Int      @default(1)
+  amenities String[] @default([])
+  tags      String[] @default([])
+  trip      ApiTrip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("stays")
+}
+
+model Highlight {
+  id     String  @id @default(cuid())
+  tripId String  @map("trip_id")
+  image  String
+  title  String
+  trip   ApiTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("highlights")
+}
+
+model ReviewItem {
+  id        String   @id @default(cuid())
+  author    String
+  avatar    String?
+  date      String
+  rating    Float    @default(5.0)
+  text      String   @db.Text
+  images    String[] @default([])
+  tripId    String?  @map("trip_id")
+  featured  Boolean  @default(false)
+  tripName  String?  @map("trip_name")
+  tripSlug  String?  @map("trip_slug")
+  createdAt DateTime @default(now()) @map("created_at")
+  trip      ApiTrip? @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@index([featured])
+  @@index([date])
+  @@map("reviews")
+}
+
+model Story {
+  id          String   @id @default(cuid())
+  title       String
+  author      String
+  avatar      String?
+  readTime    Int      @map("read_time")
+  image       String
+  slug        String   @unique
+  excerpt     String   @db.Text
+  publishedAt String   @map("published_at")
+  featured    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([featured])
+  @@index([publishedAt])
+  @@map("stories")
+}
+
+model Destination {
+  id    Int    @id @default(autoincrement())
+  name  String
+  image String
+  order Int    @default(0)
+
+  @@index([order])
+  @@map("destinations")
+}
+
+model Faq {
+  id       String  @id @default(cuid())
+  tripId   String  @map("trip_id")
+  question String
+  answer   String  @db.Text
+  trip     ApiTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("faqs")
+}
+

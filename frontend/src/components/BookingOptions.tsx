@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 
 import { Check, MapPin, ArrowRight, Plane, Train, BedDouble, Calendar, X, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 import { Trip } from "@/types";
 import { normalizeImageUrl } from "@/lib/api";
 import { useTripSelection } from "@/store/trip-selection";
@@ -263,7 +263,7 @@ export default function BookingOptions({
         <div>
           <div className="flex flex-row overflow-x-auto no-scrollbar gap-[16px] pb-3 -mx-1 px-1 snap-x select-none">
             {variants.map((v, i) => {
-              const displayDuration = (v as any).duration || trip.duration;
+              const displayDuration = formatDuration((v as any).duration || trip.duration);
               const imageSrc = normalizeImageUrl(v.image) || "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=800";
               const isSelected = selectedVariant === i;
               

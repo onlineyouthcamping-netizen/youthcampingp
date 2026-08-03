@@ -3,30 +3,150 @@ const pricingEngine = require('../utils/vendorPricingEngine');
 
 // ── 1. MAIN DIRECTORY VENDOR CRUD ──
 
+exports.getDirectoryAnalytics = async (req, res, next) => {
+  try {
+    const tenantId = req.user?.tenantId || 'default';
+
+    // Counts on OpsVendor
+    const totalVendors = await prisma.opsVendor.count({ where: { tenantId } });
+    const activeVendors = await prisma.opsVendor.count({ where: { tenantId, isActive: true } });
+    const gstRegisteredCount = await prisma.opsVendor.count({
+      where: { tenantId, gstin: { not: null, not: "" } }
+    });
+    const preferredCount = await prisma.opsVendor.count({ where: { tenantId, isPreferred: true } });
+
+    // Group by category/type
+    const categoryGroups = await prisma.opsVendor.groupBy({
+      by: ['type'],
+      where: { tenantId },
+      _count: { id: true }
+    });
+
+    const categoryCounts = {};
+    categoryGroups.forEach(g => {
+      categoryCounts[g.type] = g._count.id;
+    });
+
+    // Recent activity log from OpsVendorTimeline
+    const recentActivity = await prisma.opsVendorTimeline.findMany({
+      where: { tenantId },
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: { vendor: { select: { id: true, name: true, type: true } } }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalVendors,
+        activeVendors,
+        gstRegisteredCount,
+        preferredCount,
+        categoryCounts,
+        recentActivity
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getDirectoryDestinations = async (req, res, next) => {
+  try {
+    const tenantId = req.user?.tenantId || 'default';
+    
+    const vendors = await prisma.opsVendor.findMany({
+      where: { tenantId },
+      select: { city: true, state: true, location: true },
+      distinct: ['city']
+    });
+
+    const destinations = vendors
+      .map(v => v.city || v.location)
+      .filter(Boolean)
+      .sort();
+
+    res.json({ success: true, data: Array.from(new Set(destinations)) });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getDirectoryVendors = async (req, res, next) => {
   try {
-    const { type, state, city, isActive } = req.query;
-    const where = {};
-    if (type) where.type = type;
-    if (state) where.state = state;
-    if (city) where.city = city;
-    if (isActive !== undefined) where.isActive = isActive === 'true';
+    const { type, state, city, isActive, search, destination, page = 1, limit = 10 } = req.query;
+    const tenantId = req.user?.tenantId || 'default';
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+    const skip = (pageNum - 1) * limitNum;
 
-    const vendors = await prisma.directoryVendor.findMany({
-      where,
-      include: {
-        contacts: true,
-        contracts: true,
-        roomRates: true,
-        transportRates: true,
-        foodRates: true,
-        guideRates: true,
-        miscCharges: true,
-        tripMappings: true
-      },
-      orderBy: { name: 'asc' }
+    const where = { tenantId };
+
+    if (type && type !== 'ALL') {
+      const parts = type.split(',').map(t => t.trim()).filter(Boolean);
+      if (parts.length > 1) {
+        where.type = { in: parts };
+      } else if (parts.length === 1) {
+        where.type = parts[0];
+      }
+    }
+    if (state && state !== 'ALL') where.state = state;
+    if ((city && city !== 'ALL') || (destination && destination !== 'ALL')) {
+      where.city = city || destination;
+    }
+    if (isActive !== undefined && isActive !== 'ALL') {
+      where.isActive = isActive === 'true';
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { contactPerson: { contains: q, mode: 'insensitive' } },
+        { phone: { contains: q, mode: 'insensitive' } },
+        { alternatePhone: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+        { gstin: { contains: q, mode: 'insensitive' } },
+        { panNumber: { contains: q, mode: 'insensitive' } },
+        { city: { contains: q, mode: 'insensitive' } },
+        { state: { contains: q, mode: 'insensitive' } }
+      ];
+    }
+
+    const [vendors, total] = await Promise.all([
+      prisma.opsVendor.findMany({
+        where,
+        include: {
+          vendorRooms: true,
+          seasonalRates: true,
+          destinations: true,
+          vendorContacts: true,
+          contracts: true,
+          tripVendors: { include: { trip: { select: { id: true, title: true } } } }
+        },
+        skip,
+        take: limitNum,
+        orderBy: { name: 'asc' }
+      }),
+      prisma.opsVendor.count({ where })
+    ]);
+
+    const pages = Math.ceil(total / limitNum) || 1;
+    const startIndex = total === 0 ? 0 : skip + 1;
+    const endIndex = Math.min(skip + limitNum, total);
+
+    res.json({
+      success: true,
+      data: vendors,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        pages,
+        startIndex,
+        endIndex
+      }
     });
-    res.json({ success: true, data: vendors });
   } catch (error) {
     next(error);
   }
@@ -34,17 +154,15 @@ exports.getDirectoryVendors = async (req, res, next) => {
 
 exports.getDirectoryVendor = async (req, res, next) => {
   try {
-    const vendor = await prisma.directoryVendor.findUnique({
+    const vendor = await prisma.opsVendor.findUnique({
       where: { id: req.params.vendorId },
       include: {
-        contacts: true,
+        vendorRooms: true,
+        seasonalRates: true,
+        destinations: true,
+        vendorContacts: true,
         contracts: true,
-        roomRates: true,
-        transportRates: true,
-        foodRates: true,
-        guideRates: true,
-        miscCharges: true,
-        tripMappings: true
+        tripVendors: { include: { trip: { select: { id: true, title: true } } } }
       }
     });
     if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
@@ -57,21 +175,21 @@ exports.getDirectoryVendor = async (req, res, next) => {
 exports.createDirectoryVendor = async (req, res, next) => {
   try {
     const {
-      vendorCode, name, legalName, type, contactPerson, contactNumber,
-      alternateNumber, whatsappNumber, email, gstin, panNumber,
-      state, city, area, address, paymentTerms, creditDays, bankDetails,
+      vendorCode, name, type, accommodationType, contactPerson, phone,
+      alternatePhone, whatsappNumber, email, gstin, panNumber,
+      state, city, area, address, paymentTerms, creditDays, bankName, accountNumber, ifscCode,
       notes, contacts = [], tripId
     } = req.body;
 
-    const vendor = await prisma.directoryVendor.create({
+    const vendor = await prisma.opsVendor.create({
       data: {
         vendorCode: vendorCode || `VND-${Date.now()}`,
         name,
-        legalName,
-        type,
+        type: type || 'HOTEL',
+        accommodationType,
         contactPerson,
-        contactNumber,
-        alternateNumber,
+        phone,
+        alternatePhone,
         whatsappNumber,
         email,
         gstin,
@@ -82,31 +200,24 @@ exports.createDirectoryVendor = async (req, res, next) => {
         address,
         paymentTerms,
         creditDays: creditDays ? parseInt(creditDays) : null,
-        bankDetails: bankDetails || null,
+        bankName,
+        accountNumber,
+        ifscCode,
         notes,
         isActive: true,
-        contacts: {
+        vendorContacts: {
           create: contacts.map(c => ({
-            contactName: c.contactName,
-            designation: c.designation || null,
+            name: c.name || c.contactName,
+            role: c.role || c.designation || 'General Contact',
             phone: c.phone,
+            whatsapp: c.whatsapp || c.phone,
             email: c.email || null,
             isPrimary: c.isPrimary || false
           }))
         }
       },
-      include: { contacts: true }
+      include: { vendorContacts: true }
     });
-
-    if (tripId) {
-      await prisma.directoryTripVendorMapping.create({
-        data: {
-          tripId,
-          vendorId: vendor.id,
-          serviceType: type
-        }
-      });
-    }
 
     res.status(201).json({ success: true, data: vendor });
   } catch (error) {
@@ -117,50 +228,46 @@ exports.createDirectoryVendor = async (req, res, next) => {
 exports.updateDirectoryVendor = async (req, res, next) => {
   try {
     const {
-      name, legalName, type, contactPerson, contactNumber, alternateNumber,
-      whatsappNumber, email, gstin, panNumber, state, city, area, address,
-      paymentTerms, creditDays, bankDetails, notes, isActive, tripId
+      name, type, accommodationType, contactPerson, phone, alternatePhone,
+      whatsappNumber, email, gstin, panNumber, state, city, area, address, fullAddress,
+      paymentTerms, creditDays, bankName, accountNumber, ifscCode, starRating,
+      checkInTime, checkOutTime, mealPlans, amenities, tags, notes, isActive, isPreferred
     } = req.body;
 
-    const vendor = await prisma.directoryVendor.update({
+    const vendor = await prisma.opsVendor.update({
       where: { id: req.params.vendorId },
       data: {
-        name,
-        legalName,
-        type,
-        contactPerson,
-        contactNumber,
-        alternateNumber,
-        whatsappNumber,
-        email,
-        gstin,
-        panNumber,
-        state,
-        city,
-        area,
-        address,
-        paymentTerms,
+        name: name || undefined,
+        type: type || undefined,
+        accommodationType: accommodationType || undefined,
+        contactPerson: contactPerson || undefined,
+        phone: phone || undefined,
+        alternatePhone: alternatePhone || undefined,
+        whatsappNumber: whatsappNumber || undefined,
+        email: email || undefined,
+        gstin: gstin || undefined,
+        panNumber: panNumber || undefined,
+        state: state || undefined,
+        city: city || undefined,
+        area: area || undefined,
+        address: address || fullAddress || undefined,
+        fullAddress: fullAddress || address || undefined,
+        paymentTerms: paymentTerms || undefined,
         creditDays: creditDays ? parseInt(creditDays) : undefined,
-        bankDetails: bankDetails || undefined,
-        notes,
-        isActive: isActive !== undefined ? isActive : undefined
+        bankName: bankName || undefined,
+        accountNumber: accountNumber || undefined,
+        ifscCode: ifscCode || undefined,
+        starRating: starRating ? parseInt(starRating) : undefined,
+        checkInTime: checkInTime || undefined,
+        checkOutTime: checkOutTime || undefined,
+        mealPlans: mealPlans || undefined,
+        amenities: amenities || undefined,
+        tags: tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : undefined,
+        notes: notes || undefined,
+        isActive: isActive !== undefined ? isActive : undefined,
+        isPreferred: isPreferred !== undefined ? isPreferred : undefined
       }
     });
-
-    if (tripId !== undefined) {
-      await prisma.directoryTripVendorMapping.deleteMany({
-        where: { vendorId: req.params.vendorId }
-      });
-      if (tripId) {
-        await prisma.directoryTripVendorMapping.create({
-          data: {
-            tripId,
-            vendorId: req.params.vendorId,
-            serviceType: type || vendor.type || 'HOTEL'
-          }
-        });
-      }
-    }
 
     res.json({ success: true, data: vendor });
   } catch (error) {
@@ -426,7 +533,14 @@ exports.searchVendorsByLocation = async (req, res, next) => {
     const where = { isActive: true };
     if (state) where.state = state;
     if (city) where.city = city;
-    if (type) where.type = type;
+    if (type && type !== 'ALL') {
+      const parts = type.split(',').map(t => t.trim()).filter(Boolean);
+      if (parts.length > 1) {
+        where.type = { in: parts };
+      } else if (parts.length === 1) {
+        where.type = parts[0];
+      }
+    }
 
     const vendors = await prisma.directoryVendor.findMany({
       where,

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import Image from "next/image";
 import { Star, ExternalLink, Camera, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Review } from "@/types";
 import { normalizeImageUrl } from "@/lib/api";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
 
 interface TripReviewsProps {
   reviews?: Review[];
@@ -81,14 +81,14 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
 
     return {
       id: r._id || r.id || `r-${idx}`,
-      name: r.userName || fallback.name,
+      name: r.author || r.userName || fallback.name,
       badge: r.tripType || fallback.badge,
-      tripName: r.tripName || r.city || fallback.tripName,
-      date: r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : fallback.date,
-      avatar: r.userImage || fallback.avatar,
-      comment: r.comment || fallback.comment,
+      tripName: r.tripName || r.trip || r.city || fallback.tripName,
+      date: r.date || (r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : fallback.date),
+      avatar: r.avatar || r.userImage || fallback.avatar,
+      comment: r.text || r.comment || fallback.comment,
       rating: r.rating || 5,
-      photos: coverPhotos,
+      photos: (r.images && r.images.length > 0) ? r.images : coverPhotos,
     };
   }) : MOCK_HOMEPAGE_REVIEWS;
 
@@ -146,12 +146,11 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
               {/* USER HEADER ROW */}
               <div className="flex items-start gap-2.5 mb-2.5">
                 <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden shrink-0 border border-zinc-100 shadow-2xs">
-                  <Image
-                    src={normalizeImageUrl(rev.avatar) || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80"}
+                  <OptimizedImage
+                    src={normalizeImageUrl(rev.avatar)}
+                    fallbackSrc="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80"
                     alt={rev.name}
-                    fill
-                    sizes="40px"
-                    className="object-cover"
+                    className="w-full h-full object-cover"
                   />
                 </div>
 
@@ -206,12 +205,11 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
                   onClick={() => setSelectedPhoto(rev.photos[0])}
                   className="relative aspect-[3/3.8] overflow-hidden bg-zinc-100 cursor-pointer group/img"
                 >
-                  <Image
-                    src={normalizeImageUrl(rev.photos[0]) || "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80"}
+                  <OptimizedImage
+                    src={normalizeImageUrl(rev.photos[0])}
+                    fallbackSrc="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80"
                     alt={`Review photo by ${rev.name}`}
-                    fill
-                    sizes="160px"
-                    className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
                     <Camera className="w-4 h-4" />
@@ -226,12 +224,11 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
                       onClick={() => setSelectedPhoto(imgUrl)}
                       className="relative aspect-[16/8.5] overflow-hidden bg-zinc-100 cursor-pointer group/img flex-1"
                     >
-                      <Image
-                        src={normalizeImageUrl(imgUrl) || "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=600&q=80"}
+                      <OptimizedImage
+                        src={normalizeImageUrl(imgUrl)}
+                        fallbackSrc="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=600&q=80"
                         alt={`Review photo ${pIdx + 2} by ${rev.name}`}
-                        fill
-                        sizes="160px"
-                        className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
                         <Camera className="w-3.5 h-3.5" />
@@ -252,11 +249,11 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
           className="fixed inset-0 z-[10000] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
         >
           <div className="relative max-w-4xl max-h-[85vh] w-full h-full">
-            <Image
-              src={normalizeImageUrl(selectedPhoto) || "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80"}
+            <OptimizedImage
+              src={normalizeImageUrl(selectedPhoto)}
+              fallbackSrc="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80"
               alt="Enlarged review photo"
-              fill
-              className="object-contain"
+              className="w-full h-full object-contain"
             />
             <button
               onClick={() => setSelectedPhoto(null)}
@@ -287,11 +284,11 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
 
             <div className="flex items-center gap-3.5">
               <div className="relative w-14 h-14 rounded-full overflow-hidden shrink-0 border border-zinc-100">
-                <Image
-                  src={normalizeImageUrl(selectedReview.avatar) || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80"}
+                <OptimizedImage
+                  src={normalizeImageUrl(selectedReview.avatar)}
+                  fallbackSrc="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80"
                   alt={selectedReview.name}
-                  fill
-                  className="object-cover"
+                  className="w-full h-full object-cover"
                 />
               </div>
               <div>

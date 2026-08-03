@@ -978,15 +978,42 @@ exports.getTripDepartures = async (req, res, next) => {
     const { id } = req.params;
     const tenantId = req.user?.tenantId || 'default';
 
-    // First find the trip globally to distinguish between non-existence and cross-tenant access
-    const tripGlobal = await prisma.trip.findFirst({
+    // Find trip by ID, slug, title, shortName, or code prefix
+    let tripGlobal = await prisma.trip.findFirst({
       where: {
         OR: [
           { id },
-          { slug: id }
+          { slug: id },
+          { title: id },
+          { shortName: id }
         ]
       }
     });
+
+    if (!tripGlobal) {
+      tripGlobal = await prisma.trip.findFirst({
+        where: {
+          OR: [
+            { title: { contains: id, mode: 'insensitive' } },
+            { slug: { contains: id, mode: 'insensitive' } },
+            { shortName: { contains: id, mode: 'insensitive' } }
+          ]
+        }
+      });
+    }
+
+    if (!tripGlobal && id.includes('-')) {
+      const prefix = id.split('-')[0].toUpperCase();
+      tripGlobal = await prisma.trip.findFirst({
+        where: {
+          OR: [
+            { id: { startsWith: prefix, mode: 'insensitive' } },
+            { slug: { startsWith: prefix.toLowerCase(), mode: 'insensitive' } },
+            { shortName: { startsWith: prefix, mode: 'insensitive' } }
+          ]
+        }
+      });
+    }
 
     if (!tripGlobal) {
       return res.status(404).json({ success: false, message: 'Trip not found' });

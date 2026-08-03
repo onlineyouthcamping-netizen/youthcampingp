@@ -25,7 +25,7 @@ app.use('/api', require('./middleware/metrics'));
 app.use('/api', apiNoStore);
 
 // Health Check (Before all other routes)
-app.use('/api', require('./routes/healthRoutes'));
+app.use('/api', require('../routes/health'));
 
 // 2. Security & Middleware
 app.use(helmet({ 
@@ -70,22 +70,32 @@ app.use('/api/users/login', authLimiter);
 app.use('/api', require('./middleware/requestTimeout'));
 app.use('/api', require('./middleware/circuitBreaker'));
 
+// Custom 7 API Endpoints Middlewares
+app.use('/api', require('../middleware/logging'));
+app.use('/api', require('../middleware/corsHandler'));
+app.use('/api', require('../middleware/rateLimit'));
+
 // 3. Import & Mount Routes
+app.use('/api/health', require('../routes/health'));
+app.use('/api/trips', require('../routes/trips'));
+app.use('/api/destinations', require('../routes/destinations'));
+app.use('/api/stories', require('../routes/stories'));
+app.use('/api/reviews', require('../routes/reviews'));
+app.use('/api/trips', require('../routes/faqs'));
+
 app.use('/api/admin/rbac', require('./routes/rbacRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
-app.use('/api/trips', require('./routes/tripKnowledge'));
-app.use('/api/trips', require('./routes/tripDocuments'));
-app.use('/api/trips', require('./routes/tripVendors'));
-app.use('/api/trips', require('./routes/tripSOPs'));
-app.use('/api/trips', require('./routes/tripRoutes'));
-app.use('/api', require('./routes/departurePricingRoutes'));
+app.use('/api/trips-knowledge', require('./routes/tripKnowledge'));
+app.use('/api/trips-documents', require('./routes/tripDocuments'));
+app.use('/api/trips-vendors', require('./routes/tripVendors'));
+app.use('/api/trips-sops', require('./routes/tripSOPs'));
+app.use('/api/departure-pricing', require('./routes/departurePricingRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/booking-links', require('./routes/bookingLinkRoutes'));
 app.use('/api/inquiries', require('./routes/inquiryRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/vendors', require('./routes/vendorRoutes'));
 app.use('/api/quotations', require('./routes/quotationRoutes'));
-app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/marketing', require('./routes/marketingRoutes'));
 app.use('/api/emails', require('./routes/emailRoutes'));
@@ -133,12 +143,17 @@ app.post('/api/revalidate', (req, res) => {
 });
 
 // 4. Global Error Handler
-const errorHandler = require('./middleware/errorHandler');
+const errorHandler = require('../middleware/errorHandler');
 app.use(errorHandler);
 
 // 5. 404 Handler
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
+  res.status(404).json({
+    status: 'error',
+    message: `Route ${req.originalUrl} not found`,
+    code: 'NOT_FOUND',
+    statusCode: 404
+  });
 });
 
 module.exports = app;

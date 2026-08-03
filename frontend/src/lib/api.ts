@@ -1,7 +1,7 @@
 import { Trip, ItineraryDay } from "@/types";
 import { fetchWithRetry } from "./fetchWithRetry";
 
-const DEFAULT_API = process.env.NODE_ENV !== "production" ? "http://localhost:5001/api" : "https://api.youthcamping.online/api";
+const DEFAULT_API = process.env.NODE_ENV !== "production" ? "http://localhost:3001/api" : "https://api.youthcamping.online/api";
 let apiURL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_API;
 
 if (!apiURL || apiURL.includes('onrender.com')) {
@@ -237,7 +237,7 @@ const MOCK_SLUG_MAP: Record<string, any> = {
 
 export async function fetchTripBySlug(slug: string, init?: PublicRequestInit): Promise<Trip | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/trips/public/slug/${slug}`, init ?? publicRevalidate(60));
+    const res = await fetch(`${API_BASE_URL}/trips/${slug}`, init ?? publicRevalidate(60));
     if (res.ok) {
       const json = await res.json();
       if (json.data) return json.data;

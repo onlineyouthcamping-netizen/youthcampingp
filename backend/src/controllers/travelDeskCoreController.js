@@ -270,6 +270,9 @@ exports.getDepartures = async (req, res, next) => {
       select: { departureDate: true, status: true, numberOfTravelers: true, trainTicketStatus: true }
     });
 
+    const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { maxGroupSize: true } }).catch(() => null);
+    const capacity = trip?.maxGroupSize || 45;
+
     const departuresMap = {};
     bookings.forEach(b => {
       // Validate date strictly as YYYY-MM-DD to avoid timezone bugs
@@ -278,14 +281,17 @@ exports.getDepartures = async (req, res, next) => {
       const dateStr = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
       
       if (!departuresMap[dateStr]) {
-        departuresMap[dateStr] = { departureDate: dateStr, confirmedPassengers: 0, pendingPassengers: 0, bookingsCount: 0 };
+        departuresMap[dateStr] = { departureDate: dateStr, confirmedPassengers: 0, pendingPassengers: 0, bookingsCount: 0, participantCount: 0, bookedPassengers: 0, capacity };
       }
       
       departuresMap[dateStr].bookingsCount += 1;
+      const count = b.numberOfTravelers || 1;
       if (b.status === 'confirmed' || b.status === 'completed') {
-        departuresMap[dateStr].confirmedPassengers += (b.numberOfTravelers || 1);
+        departuresMap[dateStr].confirmedPassengers += count;
+        departuresMap[dateStr].participantCount += count;
+        departuresMap[dateStr].bookedPassengers += count;
       } else {
-        departuresMap[dateStr].pendingPassengers += (b.numberOfTravelers || 1);
+        departuresMap[dateStr].pendingPassengers += count;
       }
     });
 
