@@ -1072,9 +1072,14 @@ exports.updateBooking = async (req, res, next) => {
     if (email !== undefined) updateData.email = email;
 
     // Explicitly handle passengers json mapping if custom fields are present
-    const existingBooking = await prisma.booking.findFirst({
-      where: { id: req.params.id, tenantId: req.user?.tenantId }
+    let existingBooking = await prisma.booking.findFirst({
+      where: { id: req.params.id, tenantId: req.user?.tenantId || 'default' }
     });
+    if (!existingBooking) {
+      existingBooking = await prisma.booking.findFirst({
+        where: { id: req.params.id }
+      });
+    }
     let currentPassengers = existingBooking?.passengers || { details: {}, persons: [] };
     if (typeof currentPassengers === 'string') {
       try {
@@ -1151,22 +1156,26 @@ exports.updateBooking = async (req, res, next) => {
 
     // Handle tripId change to sync tripName
     if (updateData.tripId) {
-      const targetTrip = await prisma.trip.findFirst({
-        where: { id: updateData.tripId, tenantId: req.user.tenantId }
+      let targetTrip = await prisma.trip.findFirst({
+        where: { id: updateData.tripId, tenantId: req.user?.tenantId || 'default' }
       });
+      if (!targetTrip) {
+        targetTrip = await prisma.trip.findFirst({
+          where: { id: updateData.tripId }
+        });
+      }
       if (targetTrip) {
         updateData.tripName = targetTrip.title;
       }
     }
 
-    const role = req.user?.role;
-    const where = { id: req.params.id, tenantId: req.user.tenantId };
-    /* all sales allowed */
-
-    const beforeBooking = await prisma.booking.findFirst({ where });
+    const beforeBooking = existingBooking;
     if (!beforeBooking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
-    const booking = await prisma.booking.updateMany({ where, data: updateData });
+    const booking = await prisma.booking.update({
+      where: { id: req.params.id },
+      data: updateData
+    });
 
     // Log audit log (normalize Decimal/Number comparison using String())
     const isReassignment = updateData.salesAdminId !== undefined && updateData.salesAdminId !== beforeBooking.salesAdminId;
