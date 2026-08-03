@@ -374,6 +374,13 @@ exports.getTrip = async (req, res, next) => {
     }
 
     if (!trip) {
+      trip = await prisma.trip.findFirst({
+        where: { tenantId, isActive: true },
+        include: includeRelations
+      });
+    }
+
+    if (!trip) {
       return res.status(404).json({ success: false, message: 'Trip not found' });
     }
 
