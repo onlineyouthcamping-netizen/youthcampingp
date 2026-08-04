@@ -91,6 +91,7 @@ model Admin {
   requestedTicketApprovals TicketApproval[] @relation("TicketApprovalRequestedBy")
   reviewedTicketApprovals  TicketApproval[] @relation("TicketApprovalReviewedBy")
   opsActivities            OpsActivity[]    @relation("OpsActivityGuide")
+  departureActivitiesGuided DepartureActivity[] @relation("DepartureActivityGuide")
   opsDocuments             OpsDocument[]    @relation("OpsDocUploadedByAdmin")
 
   // Station Payment Collection relations
@@ -353,6 +354,7 @@ model Trip {
   knowledge           TripKnowledge[]
   sops                TripSOP[]
   activityLog         TripActivityLog[]
+  activityTemplates   TripActivityTemplate[]
   departurePriceOverrides TripDeparturePriceOverride[]
 
   @@index([tenantId])
@@ -444,6 +446,7 @@ model Booking {
   opsClientPayments        OpsClientPayment[]
   stationPayments          StationPaymentCollection[]
   attachments              BookingAttachment[]
+  passengerActivityAllocations PassengerActivityAllocation[]
 
   @@index([tenantId])
   @@index([status])
@@ -2947,6 +2950,173 @@ model OpsActivity {
   @@index([tripId, departureDate])
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ENTERPRISE MASTER ACTIVITY DIRECTORY (0-COUPLED)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ActivityCategory {
+  ADVENTURE
+  WATER_SPORTS
+  TREKKING
+  CAMPING
+  SIGHTSEEING
+  CULTURAL
+  OTHER
+}
+
+enum ActivityDifficulty {
+  EASY
+  MODERATE
+  CHALLENGING
+  EXTREME
+}
+
+model ActivityMaster {
+  id                  String             @id @default(cuid())
+  name                String             @unique // e.g. "River Rafting" (Zero duplication)
+  category            ActivityCategory   @default(ADVENTURE)
+  duration            String             @default("2 Hours") // "2 Hours", "Half Day", "Full Day"
+  defaultCapacity     Int                @default(50)        @map("default_capacity")
+  difficulty          ActivityDifficulty @default(MODERATE)
+  minimumAge          Int                @default(16)        @map("minimum_age")
+  medicalRestrictions String?            @db.Text            @map("medical_restrictions")
+  equipmentRequired   String?            @db.Text            @map("equipment_required")
+  insuranceRequired   Boolean            @default(true)      @map("insurance_required")
+  gstPercentage       Float              @default(5.0)       @map("gst_percentage")
+  description         String?            @db.Text
+  photos              String[]           @default([])
+  safetyInstructions  String?            @db.Text            @map("safety_instructions")
+  cancellationPolicy  String?            @db.Text            @map("cancellation_policy")
+  meetingPoint        String?            @map("meeting_point")
+  latitude            Float?
+  longitude           Float?
+  emergencyContact    String?            @map("emergency_contact")
+  status              String             @default("ACTIVE")  // ACTIVE, INACTIVE, SEASONAL_CLOSED
+  createdAt           DateTime           @default(now())     @map("created_at")
+  updatedAt           DateTime           @updatedAt          @map("updated_at")
+
+  contracts           ActivityVendorContract[]
+  tripTemplates       TripActivityTemplate[]
+  departureActivities DepartureActivity[]
+  documents           ActivityDocument[]
+
+  @@index([category, status])
+  @@index([name])
+  @@map("activity_masters")
+}
+
+model ActivityDocument {
+  id          String         @id @default(cuid())
+  activityId  String         @map("activity_id")
+  title       String // e.g. "Safety SOP - River Rafting", "Permit Template"
+  docType     String         @default("SAFETY_SOP") // SAFETY_SOP, EQUIPMENT_CHECKLIST, INSURANCE_POLICY, WAIVER
+  fileUrl     String         @map("file_url")
+  createdAt   DateTime       @default(now())        @map("created_at")
+
+  activity    ActivityMaster @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId, docType])
+  @@map("activity_documents")
+}
+
+model ActivityVendorContract {
+  id              String           @id @default(cuid())
+  activityId      String           @map("activity_id")
+  vendorId        String           @map("vendor_id")
+  validFrom       DateTime         @map("valid_from")
+  validTo         DateTime         @map("valid_to")
+  seasonType      String           @default("REGULAR") // PEAK, REGULAR, OFF_SEASON
+  adultNetCost    Float            @default(0)         @map("adult_net_cost")
+  childNetCost    Float            @default(0)         @map("child_net_cost")
+  minParticipants Int              @default(1)         @map("min_participants")
+  maxParticipants Int              @default(50)        @map("max_participants")
+  paymentTerms    String           @default("NET_30")  @map("payment_terms")
+  terms           String?          @db.Text
+  isPreferred     Boolean          @default(false)     @map("is_preferred")
+  isBlacklisted   Boolean          @default(false)     @map("is_blacklisted")
+  createdAt       DateTime         @default(now())     @map("created_at")
+  updatedAt       DateTime         @updatedAt          @map("updated_at")
+
+  activity        ActivityMaster   @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  vendor          DirectoryVendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  departureRuns   DepartureActivity[]
+
+  @@unique([activityId, vendorId, validFrom, validTo, seasonType])
+  @@index([activityId])
+  @@index([vendorId])
+  @@map("activity_vendor_contracts")
+}
+
+model TripActivityTemplate {
+  id                String         @id @default(cuid())
+  tripId            String         @map("trip_id")
+  dayNumber         Int            @default(1)         @map("day_number")
+  activityId        String         @map("activity_id")
+  isIncluded        Boolean        @default(true)      @map("is_included") // true = base inclusion, false = optional Add-On
+  addonSellingPrice Float          @default(0)         @map("addon_selling_price")
+  order             Int            @default(0)
+  remarks           String?        @db.Text
+  createdAt         DateTime       @default(now())     @map("created_at")
+  updatedAt         DateTime       @updatedAt          @map("updated_at")
+
+  trip              Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  activity          ActivityMaster @relation(fields: [activityId], references: [id], onDelete: Restrict)
+
+  @@unique([tripId, dayNumber, activityId])
+  @@index([tripId, dayNumber])
+  @@map("trip_activity_templates")
+}
+
+model DepartureActivity {
+  id                     String                  @id @default(cuid())
+  tripId                 String                  @map("trip_id")
+  departureDate          DateTime                @db.Date              @map("departure_date")
+  dayNumber              Int                     @default(1)           @map("day_number")
+  activityId             String                  @map("activity_id")
+  activityVendorContractId String?               @map("activity_vendor_contract_id")
+  vendorId               String?                 @map("vendor_id")
+  responsibleGuideId     String?                 @map("responsible_guide_id")
+  scheduledTime          String?                 @default("10:00 AM")  @map("scheduled_time")
+  status                 String                  @default("PLANNED") // PLANNED, CONFIRMED, VOUCHER_SENT, IN_PROGRESS, COMPLETED, RECONCILED
+  agreedNetCost          Float                   @default(0)           @map("agreed_net_cost")
+  actualTotalCost        Float                   @default(0)           @map("actual_total_cost")
+  voucherNumber          String?                 @unique               @map("voucher_number")
+  remarks                String?                 @db.Text
+  createdAt              DateTime                @default(now())       @map("created_at")
+  updatedAt              DateTime                @updatedAt            @map("updated_at")
+
+  activity               ActivityMaster          @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  contract               ActivityVendorContract? @relation(fields: [activityVendorContractId], references: [id], onDelete: SetNull)
+  vendor                 DirectoryVendor?        @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  responsibleGuide       Admin?                  @relation("DepartureActivityGuide", fields: [responsibleGuideId], references: [id], onDelete: SetNull)
+  passengerAllocations   PassengerActivityAllocation[]
+
+  @@index([tripId, departureDate])
+  @@index([activityId])
+  @@map("departure_activities")
+}
+
+model PassengerActivityAllocation {
+  id                  String            @id @default(cuid())
+  departureActivityId String            @map("departure_activity_id")
+  bookingId           String            @map("booking_id")
+  passengerIndex      Int               @default(0)     @map("passenger_index")
+  passengerName       String?           @map("passenger_name")
+  isOpted             Boolean           @default(true)  @map("is_opted")
+  addonAmountCharged  Float             @default(0)     @map("addon_amount_charged")
+  paymentStatus       String            @default("INCLUDED") // INCLUDED, PAID, PENDING
+  waiverSigned        Boolean           @default(false) @map("waiver_signed")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt      @map("updated_at")
+
+  departureActivity   DepartureActivity @relation(fields: [departureActivityId], references: [id], onDelete: Cascade)
+  booking             Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([departureActivityId, bookingId, passengerIndex])
+  @@index([bookingId])
+  @@map("passenger_activity_allocations")
+}
+
 // ── NEW: VENDOR PAYMENTS TRACKER ──
 model OpsVendorPayment {
   id                 String    @id @default(cuid())
@@ -3306,6 +3476,8 @@ model DirectoryVendor {
   payments        DirectoryVendorPayment[]
   contacts        DirectoryVendorContact[]
   contracts       DirectoryVendorContract[]
+  activityContracts ActivityVendorContract[]
+  departureActivities DepartureActivity[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
