@@ -2992,6 +2992,8 @@ model ActivityMaster {
   longitude           Float?
   emergencyContact    String?            @map("emergency_contact")
   status              String             @default("ACTIVE")  // ACTIVE, INACTIVE, SEASONAL_CLOSED
+  pricingTiers        Json?              @map("pricing_tiers") // e.g. {"Basic":2500,"High Fly":4200,"VIP":6500}
+  dynamicRates        Json?              @map("dynamic_rates") // e.g. {"Adult":500,"Child":300,"Guide":0}
   createdAt           DateTime           @default(now())     @map("created_at")
   updatedAt           DateTime           @updatedAt          @map("updated_at")
 
@@ -3077,8 +3079,13 @@ model DepartureActivity {
   vendorId               String?                 @map("vendor_id")
   responsibleGuideId     String?                 @map("responsible_guide_id")
   scheduledTime          String?                 @default("10:00 AM")  @map("scheduled_time")
-  status                 String                  @default("PLANNED") // PLANNED, CONFIRMED, VOUCHER_SENT, IN_PROGRESS, COMPLETED, RECONCILED
+  status                 String                  @default("PLANNED") // DRAFT, PLANNED, VENDOR_REQUESTED, VENDOR_CONFIRMED, PAYMENT_PENDING, VOUCHER_SENT, READY, STARTED, COMPLETED, CANCELLED, RECONCILED
   agreedNetCost          Float                   @default(0)           @map("agreed_net_cost")
+  sellingPrice           Float                   @default(0)           @map("selling_price")
+  maxCapacity            Int                     @default(50)          @map("max_capacity")
+  assignedBus            String?                 @map("assigned_bus")
+  pricingTiers           Json?                   @map("pricing_tiers")
+  dynamicRates           Json?                   @map("dynamic_rates")
   actualTotalCost        Float                   @default(0)           @map("actual_total_cost")
   voucherNumber          String?                 @unique               @map("voucher_number")
   remarks                String?                 @db.Text
@@ -3102,10 +3109,12 @@ model PassengerActivityAllocation {
   bookingId           String            @map("booking_id")
   passengerIndex      Int               @default(0)     @map("passenger_index")
   passengerName       String?           @map("passenger_name")
+  seatNumber          String?           @map("seat_number")
   isOpted             Boolean           @default(true)  @map("is_opted")
   addonAmountCharged  Float             @default(0)     @map("addon_amount_charged")
   paymentStatus       String            @default("INCLUDED") // INCLUDED, PAID, PENDING
   waiverSigned        Boolean           @default(false) @map("waiver_signed")
+  isCompleted         Boolean           @default(false) @map("is_completed")
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt      @map("updated_at")
 

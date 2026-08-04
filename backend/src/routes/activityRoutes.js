@@ -13,8 +13,12 @@ const activityController = require('../controllers/activityMasterController');
 
 router.use(optionalAuthenticate);
 
+// --- 0. Analytics KPI Dashboard ---
+router.get('/analytics/kpis', activityController.getActivityAnalyticsKPIs);
+
 // --- 1. Master Activity Directory (0-Coupled) ---
 router.get('/', activityController.listActivityMasters);
+router.get('/:id/vendors-comparison', activityController.getActivityVendorComparison);
 router.get('/:id', activityController.getActivityMasterById);
 router.post('/', activityController.createActivityMaster);
 router.put('/:id', activityController.updateActivityMaster);
@@ -27,5 +31,6 @@ router.post('/contracts', activityController.createActivityContract);
 router.post('/departures', activityController.createDepartureActivity);
 router.post('/departures/allocate-passenger', activityController.allocatePassengerActivity);
 router.post('/departures/:id/voucher', activityController.generateActivityVoucher);
+router.put('/departures/:id/status', activityController.updateDepartureActivityStatus);
 
 module.exports = router;
