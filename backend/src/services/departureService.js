@@ -169,17 +169,12 @@ async function updateDepartureStatus(tripId, departureDateStr, targetStatus, opt
     await prisma.auditLog.create({
       data: {
         tenantId,
-        actorId: actorId || null,
-        actorRole: "admin",
+        actorUserId: actorId || null,
         action: "UPDATE_DEPARTURE_STATUS",
-        entity: "Departure",
+        entityType: "Departure",
         entityId: updatedDep.id,
-        description: `Changed departure status for ${updatedDep.departureCode} from ${currentDep.status} to ${targetStatus}`,
-        metadata: {
-          previousStatus: currentDep.status,
-          newStatus: targetStatus,
-          notes,
-        },
+        beforeData: { status: currentDep.status },
+        afterData: { status: targetStatus, notes },
       },
     });
   } catch (logErr) {

@@ -216,7 +216,7 @@ exports.calculateReadiness = async (tripId, departureDateStr) => {
       where: { tripId, departureDate: dDate },
     });
     const tripLeaders = await prisma.opsTripLeader.findMany({
-      where: { tripId, departureDate: dDate, isArchived: false },
+      where: { tripId, departureDate: dDate, archivedAt: null },
     });
 
     const hasGuide = guidePayments.length > 0 || tripLeaders.length > 0;
@@ -242,30 +242,30 @@ exports.calculateReadiness = async (tripId, departureDateStr) => {
   try {
     const totalRevenue = activeBookings.reduce((sum, b) => sum + (Number(b.totalAmount) || Number(b.amount) || 0), 0);
     const totalAdvance = activeBookings.reduce((sum, b) => sum + (Number(b.advancePaid) || 0), 0);
-    const totalDue = activeBookings.reduce((sum, b) => sum + (Number(b.remainingAmount) || 0), 0);
 
     const paidRatio = totalRevenue > 0 ? Math.min(totalAdvance / totalRevenue, 1) : 1;
     const finPoints = Math.round(paidRatio * 15);
     score += finPoints;
 
-    if (totalDue > 0) {
-      missingItems.push(`₹${totalDue.toLocaleString("en-IN")} outstanding balance remaining across ${activeBookings.length} booking(s).`);
+    const remainingDue = totalRevenue - totalAdvance;
+    if (remainingDue > 0) {
+      missingItems.push(`₹${remainingDue.toLocaleString("en-IN")} customer balance payment outstanding.`);
     }
 
     breakdown.push({
       category: "Finance",
-      status: totalDue === 0 ? "Ready" : "Action Required",
+      status: remainingDue <= 0 ? "Ready" : "Action Required",
       points: finPoints,
       max: 15,
-      details: `Collected ₹${totalAdvance.toLocaleString("en-IN")} / ₹${totalRevenue.toLocaleString("en-IN")} (Due: ₹${totalDue.toLocaleString("en-IN")})`,
+      details: `₹${totalAdvance.toLocaleString("en-IN")} collected of ₹${totalRevenue.toLocaleString("en-IN")} total revenue`,
     });
   } catch (e) {
     breakdown.push({ category: "Finance", status: "Error", points: 0, max: 15 });
   }
 
-  // 7. OPERATIONAL TASKS & CHECKLIST (10 pts)
+  // 7. OPERATIONAL CHECKLIST TASKS (10 pts)
   try {
-    const checklists = await prisma.opsTripChecklist.findMany({
+    const checklists = await prisma.opsChecklist.findMany({
       where: { tripId, departureDate: dDate },
     });
 
@@ -298,5 +298,77 @@ exports.calculateReadiness = async (tripId, departureDateStr) => {
     status: isReady ? "READY" : "ACTION_REQUIRED",
     missingItems,
     breakdown,
+  };
+};
+
+/**
+ * Gets detailed passenger statistics and raw passenger list for downstream engines (e.g. room allocation).
+ */
+exports.getDeparturePassengerStats = async (tripId, departureDateStr) => {
+  const bookings = await prisma.booking.findMany({
+    where: {
+      tripId,
+      status: { notIn: ["rejected", "cancelled", "failed"] },
+    },
+    include: {
+      opsVehicleAllocations: true,
+      opsRoomAllocations: true,
+      verification: true,
+      trainTickets: true,
+    },
+  });
+
+  const activeBookings = bookings.filter((b) => {
+    if (!b.departureDate) return false;
+    return b.departureDate.toISOString().substring(0, 10) === departureDateStr;
+  });
+
+  const allPassengers = [];
+  activeBookings.forEach((b) => {
+    let paxObj = b.passengers;
+    if (typeof paxObj === "string") {
+      try {
+        paxObj = JSON.parse(paxObj);
+      } catch (e) {
+        paxObj = {};
+      }
+    }
+    const persons = Array.isArray(paxObj?.persons)
+      ? paxObj.persons
+      : Array.isArray(paxObj)
+      ? paxObj
+      : [];
+
+    const roomSharingPref = b.roomSharing || paxObj?.details?.roomType || "Double Sharing";
+
+    if (persons.length === 0) {
+      allPassengers.push({
+        id: `pax_${b.id}_0`,
+        bookingId: b.bookingId || b.id,
+        name: b.fullName || b.name || "Guest",
+        phone: b.mobile || b.phone || "",
+        email: b.email || "",
+        gender: b.gender || "Male",
+        roomSharing: roomSharingPref,
+      });
+    } else {
+      persons.forEach((p, idx) => {
+        allPassengers.push({
+          id: p.id || `pax_${b.id}_${idx}`,
+          bookingId: b.bookingId || b.id,
+          name: p.name || `Traveler ${idx + 1}`,
+          phone: p.phone || (idx === 0 ? b.mobile || b.phone : ""),
+          email: p.email || (idx === 0 ? b.email : ""),
+          gender: p.gender || "Male",
+          roomSharing: p.roomSharing || roomSharingPref,
+        });
+      });
+    }
+  });
+
+  return {
+    totalParticipants: allPassengers.length,
+    activeBookingsCount: activeBookings.length,
+    allPassengers,
   };
 };

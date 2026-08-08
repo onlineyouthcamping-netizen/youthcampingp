@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Admin {
@@ -1529,6 +1530,7 @@ model OpsHotelBooking {
   contactPerson String?
   contactPhone  String?
   notes         String?          @db.Text
+  isLocked      Boolean          @default(false)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
