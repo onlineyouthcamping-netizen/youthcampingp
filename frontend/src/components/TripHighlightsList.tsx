@@ -32,20 +32,32 @@ const defaultSliderPhotos = [
   "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200", // Bike Expedition
   "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200", // Chhitkul
   "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200", // Parvati Valley
-  "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200"  // Golden Temple
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200", // Golden Temple
 ];
 
-export default function TripHighlightsList({ title = "Trip Highlights", items, defaultItems }: TripHighlightsListProps) {
+export default function TripHighlightsList({
+  title = "Trip Highlights",
+  items,
+  defaultItems,
+}: TripHighlightsListProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const rawList = (items && items.length > 0) ? items : (defaultItems && defaultItems.length > 0 ? defaultItems : defaultSliderPhotos);
+  const rawList =
+    items && items.length > 0
+      ? items
+      : defaultItems && defaultItems.length > 0
+        ? defaultItems
+        : defaultSliderPhotos;
 
-  const baseUrls = rawList.map((item) => {
-    if (typeof item === "string") return normalizeImageUrl(item);
-    const rawUrl = item.url || item.image || item.img || item.src || item.path || "";
-    return rawUrl ? normalizeImageUrl(rawUrl) : undefined;
-  }).filter((u): u is string => Boolean(u));
+  const baseUrls = rawList
+    .map((item) => {
+      if (typeof item === "string") return normalizeImageUrl(item);
+      const rawUrl =
+        item.url || item.image || item.img || item.src || item.path || "";
+      return rawUrl ? normalizeImageUrl(rawUrl) : undefined;
+    })
+    .filter((u): u is string => Boolean(u));
 
   const finalUrls = baseUrls.length > 0 ? baseUrls : defaultSliderPhotos;
 
@@ -83,7 +95,8 @@ export default function TripHighlightsList({ title = "Trip Highlights", items, d
       {/* Header Row */}
       <div className="border-b border-zinc-100 pb-2.5">
         <h2 className="text-xl md:text-2xl font-extrabold text-[#0B1528] font-montserrat">
-          Trip <span className="text-[#D4541A] font-caveat italic">Glimpses</span>
+          Trip{" "}
+          <span className="text-[#D4541A] font-caveat italic">Glimpses</span>
         </h2>
         <p className="text-xs text-[#D4541A] font-semibold font-caveat italic mt-0.5">
           Moments that stay with you, memories that last forever.
@@ -94,13 +107,16 @@ export default function TripHighlightsList({ title = "Trip Highlights", items, d
       <div className="w-full overflow-hidden py-1">
         <div className="marquee-track flex gap-3">
           {photoUrls.map((url, i) => (
-            <div 
+            <div
               key={i}
               onClick={() => handlePhotoClick(i)}
               className="shrink-0 w-[140px] sm:w-[170px] md:w-[190px] aspect-[4/3] rounded-[18px] md:rounded-[22px] overflow-hidden bg-zinc-100 shadow-xs border border-zinc-100/90 hover:scale-[1.03] transition-transform duration-300 cursor-pointer group relative"
             >
-              <OptimizedImage 
-                src={normalizeImageUrl(url) || defaultSliderPhotos[i % defaultSliderPhotos.length]} 
+              <OptimizedImage
+                src={
+                  normalizeImageUrl(url) ||
+                  defaultSliderPhotos[i % defaultSliderPhotos.length]
+                }
                 alt={`Trip Glimpse ${i + 1}`}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
@@ -113,12 +129,16 @@ export default function TripHighlightsList({ title = "Trip Highlights", items, d
       {/* Bottom Subtext */}
       <div className="pt-1 flex items-center gap-2 text-xs text-zinc-500 font-montserrat">
         <Camera className="w-3.5 h-3.5 text-[#D4541A] shrink-0" />
-        <span>Tag us <strong className="text-zinc-800">@youthcamping.in</strong> and use <strong className="text-[#D4541A]">#YouthCamping</strong> to get featured!</span>
+        <span>
+          Tag us <strong className="text-zinc-800">@youthcamping.in</strong> and
+          use <strong className="text-[#D4541A]">#YouthCamping</strong> to get
+          featured!
+        </span>
       </div>
 
       {/* Lightbox Modal */}
       {isGalleryOpen && (
-        <PhotoGalleryModal 
+        <PhotoGalleryModal
           images={baseUrls}
           isOpen={isGalleryOpen}
           onClose={() => setIsGalleryOpen(false)}

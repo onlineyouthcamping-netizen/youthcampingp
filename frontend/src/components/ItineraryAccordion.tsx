@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, BedDouble, Utensils, Camera, Check } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  BedDouble,
+  Utensils,
+  Camera,
+  Check,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ItineraryDay } from "@/types";
 import { normalizeImageUrl } from "@/lib/api";
@@ -22,19 +29,22 @@ function renderFormattedText(text: string) {
   });
 }
 
-function getDayFullDate(startDateStr?: string | Date | null, dayIdx: number = 0): string | null {
+function getDayFullDate(
+  startDateStr?: string | Date | null,
+  dayIdx: number = 0,
+): string | null {
   if (!startDateStr) return null;
   try {
     const baseDate = new Date(startDateStr);
     if (isNaN(baseDate.getTime())) return null;
-    
+
     const targetDate = new Date(baseDate);
     targetDate.setDate(targetDate.getDate() + dayIdx);
-    
+
     const dayNum = String(targetDate.getDate()).padStart(2, "0");
     const month = targetDate.toLocaleDateString("en-US", { month: "short" });
     const year = targetDate.getFullYear();
-    
+
     return `${dayNum} ${month} ${year}`;
   } catch (e) {
     return null;
@@ -45,7 +55,8 @@ function getStayAndMeals(day: ItineraryDay, index: number, totalDays: number) {
   let stay = day.stay?.trim();
   let meals = day.meals?.trim();
 
-  const fullText = `${day.title || ""} ${day.description || ""} ${day.location || ""}`.toLowerCase();
+  const fullText =
+    `${day.title || ""} ${day.description || ""} ${day.location || ""}`.toLowerCase();
   const locName = day.location?.trim() || "";
 
   // Smart inference if stay is empty
@@ -60,9 +71,18 @@ function getStayAndMeals(day: ItineraryDay, index: number, totalDays: number) {
       stay = locName ? `${locName} (Resort)` : "3-Star Resort";
     } else if (fullText.includes("hotel")) {
       stay = locName ? `${locName} (Hotel)` : "3-Star Hotel";
-    } else if (fullText.includes("train") || fullText.includes("railway") || fullText.includes("sleeper")) {
+    } else if (
+      fullText.includes("train") ||
+      fullText.includes("railway") ||
+      fullText.includes("sleeper")
+    ) {
       stay = "Overnight Train Journey";
-    } else if (fullText.includes("journey") || fullText.includes("overnight") || fullText.includes("departure") || fullText.includes("drive to")) {
+    } else if (
+      fullText.includes("journey") ||
+      fullText.includes("overnight") ||
+      fullText.includes("departure") ||
+      fullText.includes("drive to")
+    ) {
       stay = locName ? `${locName} (Enroute / Hotel)` : "Overnight Journey";
     } else if (locName) {
       stay = `${locName} (Hotel / Homestay)`;
@@ -120,11 +140,11 @@ export default function ItineraryAccordion({
   const [isAllExpanded, setIsAllExpanded] = useState(false);
 
   const rawList = Array.isArray(itinerary) ? itinerary : [];
-  
+
   const displayItinerary = rawList.map((day, idx) => ({
     ...day,
     originalDay: day.day || idx + 1,
-    displayDay: idx + 1
+    displayDay: idx + 1,
   }));
 
   const toggleDay = (dayNumber: number) => {
@@ -149,7 +169,8 @@ export default function ItineraryAccordion({
       {/* Header Row: Itinerary Overview & Expand All Toggle */}
       <div className="itinerary-header flex items-center justify-between border-b border-zinc-100/90 pb-3 mb-4">
         <h2 className="text-xl md:text-2xl font-extrabold text-[#0B1528] font-montserrat">
-          Itinerary <span className="text-[#D4541A] font-caveat italic">Overview</span>
+          Itinerary{" "}
+          <span className="text-[#D4541A] font-caveat italic">Overview</span>
         </h2>
         <button
           onClick={toggleExpandAll}
@@ -158,7 +179,7 @@ export default function ItineraryAccordion({
           <ChevronDown
             className={cn(
               "w-4 h-4 text-zinc-500 transition-transform duration-200",
-              isAllExpanded ? "rotate-180" : ""
+              isAllExpanded ? "rotate-180" : "",
             )}
           />
           {isAllExpanded ? "Collapse All" : "Expand All"}
@@ -170,11 +191,16 @@ export default function ItineraryAccordion({
         {displayItinerary.map((day, idx) => {
           const isExpanded = openDays.includes(day.displayDay);
           const dayNumStr =
-            day.displayDay < 10 ? `Day 0${day.displayDay}` : `Day ${day.displayDay}`;
+            day.displayDay < 10
+              ? `Day 0${day.displayDay}`
+              : `Day ${day.displayDay}`;
           const calDateFull = getDayFullDate(startDate, idx + skipDays);
 
           return (
-            <div key={day.displayDay} className="day-item group transition-all duration-300">
+            <div
+              key={day.displayDay}
+              className="day-item group transition-all duration-300"
+            >
               {/* CLICKABLE HEADER ROW — Two Separate Boxes Side by Side */}
               <button
                 onClick={() => toggleDay(day.displayDay)}
@@ -193,7 +219,7 @@ export default function ItineraryAccordion({
                   <ChevronDown
                     className={cn(
                       "w-4 h-4 text-[#D4541A] shrink-0 ml-2 transition-transform duration-300",
-                      isExpanded ? "rotate-180" : ""
+                      isExpanded ? "rotate-180" : "",
                     )}
                   />
                 </div>
@@ -211,28 +237,32 @@ export default function ItineraryAccordion({
                     </div>
                   )}
 
-                  {day.description && (() => {
-                    // Split on bullet character, newline, or numbers
-                    const bullets = day.description
-                      .split(/\s*[•·]\s*/)
-                      .map(s => s.trim())
-                      .filter(Boolean);
+                  {day.description &&
+                    (() => {
+                      // Split on bullet character, newline, or numbers
+                      const bullets = day.description
+                        .split(/\s*[•·]\s*/)
+                        .map((s) => s.trim())
+                        .filter(Boolean);
 
-                    return bullets.length > 1 ? (
-                      <ul className="space-y-2.5">
-                        {bullets.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-700 font-montserrat leading-relaxed">
-                            <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                            <span>{renderFormattedText(item)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs sm:text-sm text-zinc-700 font-montserrat leading-relaxed">
-                        {renderFormattedText(day.description)}
-                      </p>
-                    );
-                  })()}
+                      return bullets.length > 1 ? (
+                        <ul className="space-y-2.5">
+                          {bullets.map((item, i) => (
+                            <li
+                              key={i}
+                              className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-700 font-montserrat leading-relaxed"
+                            >
+                              <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                              <span>{renderFormattedText(item)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs sm:text-sm text-zinc-700 font-montserrat leading-relaxed">
+                          {renderFormattedText(day.description)}
+                        </p>
+                      );
+                    })()}
 
                   {day.activities && day.activities.length > 0 && (
                     <div className="space-y-2 pt-1 border-t border-zinc-100">
@@ -241,7 +271,10 @@ export default function ItineraryAccordion({
                       </p>
                       <ul className="space-y-1.5">
                         {day.activities.map((act, ai) => (
-                          <li key={ai} className="flex items-start gap-2 text-xs text-zinc-600 font-montserrat">
+                          <li
+                            key={ai}
+                            className="flex items-start gap-2 text-xs text-zinc-600 font-montserrat"
+                          >
                             <Check className="w-3.5 h-3.5 text-[#F97316] shrink-0 mt-0.5" />
                             <span>{act}</span>
                           </li>
@@ -253,47 +286,104 @@ export default function ItineraryAccordion({
                   {(() => {
                     const rawItems = [
                       ...(Array.isArray(day.photos) ? day.photos : []),
-                      ...(Array.isArray((day as any).images) ? (day as any).images : []),
-                      ...(typeof (day as any).photo === 'string' || typeof (day as any).photo === 'object' ? [(day as any).photo] : []),
-                      ...(typeof (day as any).image === 'string' || typeof (day as any).image === 'object' ? [(day as any).image] : []),
+                      ...(Array.isArray((day as any).images)
+                        ? (day as any).images
+                        : []),
+                      ...(typeof (day as any).photo === "string" ||
+                      typeof (day as any).photo === "object"
+                        ? [(day as any).photo]
+                        : []),
+                      ...(typeof (day as any).image === "string" ||
+                      typeof (day as any).image === "object"
+                        ? [(day as any).image]
+                        : []),
                     ].filter(Boolean);
 
-                    const parsedPhotos = rawItems.map((item: any, idx: number) => {
-                      if (typeof item === 'string') {
-                        const parts = item.split('|');
-                        const url = parts[0];
-                        let caption = parts[1] || '';
-                        let tag: 'included' | 'self-paid' | null = null;
-                        
-                        if (parts[2]) {
-                          caption = parts[1];
-                          const rawTag = parts[2].toLowerCase();
-                          if (rawTag === 'included') tag = 'included';
-                          else if (rawTag === 'self-paid' || rawTag === 'selfpaid') tag = 'self-paid';
-                        } else if (parts[1] === 'included' || parts[1] === 'self-paid') {
-                          caption = '';
-                          tag = parts[1] === 'included' ? 'included' : 'self-paid';
-                        }
+                    const parsedPhotos = rawItems
+                      .map((item: any, idx: number) => {
+                        if (typeof item === "string") {
+                          const parts = item.split("|");
+                          const url = parts[0];
+                          let caption = parts[1] || "";
+                          let tag: "included" | "self-paid" | null = null;
 
-                        return { url: normalizeImageUrl(url), caption, tag };
-                      }
-                      if (item && typeof item === 'object') {
-                        const rawUrl = item.url || item.src || item.path || '';
-                        const cap = item.caption || item.alt || item.title || item.name || item.place || item.activity || '';
-                        
-                        let tag: 'included' | 'self-paid' | null = null;
-                        const status = String(item.inclusion || item.type || item.status || item.tag || item.inclusionStatus || '').toLowerCase();
-                        
-                        if (status.includes('included') || item.included === true || item.isIncluded === true) {
-                          tag = 'included';
-                        } else if (status.includes('self') || status.includes('paid') || status.includes('optional') || item.included === false || item.isIncluded === false) {
-                          tag = 'self-paid';
-                        }
+                          if (parts[2]) {
+                            caption = parts[1];
+                            const rawTag = parts[2].toLowerCase();
+                            if (rawTag === "included") tag = "included";
+                            else if (
+                              rawTag === "self-paid" ||
+                              rawTag === "selfpaid"
+                            )
+                              tag = "self-paid";
+                          } else if (
+                            parts[1] === "included" ||
+                            parts[1] === "self-paid"
+                          ) {
+                            caption = "";
+                            tag =
+                              parts[1] === "included"
+                                ? "included"
+                                : "self-paid";
+                          }
 
-                        return { url: normalizeImageUrl(rawUrl), caption: cap, tag };
-                      }
-                      return null;
-                    }).filter((p): p is { url: string; caption: string; tag: 'included' | 'self-paid' | null } => Boolean(p && p.url));
+                          return { url: normalizeImageUrl(url), caption, tag };
+                        }
+                        if (item && typeof item === "object") {
+                          const rawUrl =
+                            item.url || item.src || item.path || "";
+                          const cap =
+                            item.caption ||
+                            item.alt ||
+                            item.title ||
+                            item.name ||
+                            item.place ||
+                            item.activity ||
+                            "";
+
+                          let tag: "included" | "self-paid" | null = null;
+                          const status = String(
+                            item.inclusion ||
+                              item.type ||
+                              item.status ||
+                              item.tag ||
+                              item.inclusionStatus ||
+                              "",
+                          ).toLowerCase();
+
+                          if (
+                            status.includes("included") ||
+                            item.included === true ||
+                            item.isIncluded === true
+                          ) {
+                            tag = "included";
+                          } else if (
+                            status.includes("self") ||
+                            status.includes("paid") ||
+                            status.includes("optional") ||
+                            item.included === false ||
+                            item.isIncluded === false
+                          ) {
+                            tag = "self-paid";
+                          }
+
+                          return {
+                            url: normalizeImageUrl(rawUrl),
+                            caption: cap,
+                            tag,
+                          };
+                        }
+                        return null;
+                      })
+                      .filter(
+                        (
+                          p,
+                        ): p is {
+                          url: string;
+                          caption: string;
+                          tag: "included" | "self-paid" | null;
+                        } => Boolean(p && p.url),
+                      );
 
                     if (parsedPhotos.length === 0) return null;
 
@@ -325,7 +415,7 @@ export default function ItineraryAccordion({
                               {/* Apple Glass Floating Badge Top-Left */}
                               {photo.tag && (
                                 <div className="absolute top-2 left-2 z-10">
-                                  {photo.tag === 'included' ? (
+                                  {photo.tag === "included" ? (
                                     <span className="backdrop-blur-md bg-black/45 border border-white/20 text-white text-[9px] font-bold px-2.5 py-1 rounded-full shadow-lg tracking-wider uppercase flex items-center gap-1.5">
                                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
                                       Included
@@ -340,13 +430,17 @@ export default function ItineraryAccordion({
                               )}
 
                               {/* Transparent Gradient Caption Overlay */}
-                              {photo.caption && !photo.caption.startsWith('Photo ') && (
-                                <div className="relative z-10 w-full bg-gradient-to-t from-black/85 via-black/30 to-transparent p-2.5 pt-6">
-                                  <p className="text-[11px] font-bold text-white truncate font-montserrat tracking-tight leading-none drop-shadow-sm" title={photo.caption}>
-                                    {photo.caption}
-                                  </p>
-                                </div>
-                              )}
+                              {photo.caption &&
+                                !photo.caption.startsWith("Photo ") && (
+                                  <div className="relative z-10 w-full bg-gradient-to-t from-black/85 via-black/30 to-transparent p-2.5 pt-6">
+                                    <p
+                                      className="text-[11px] font-bold text-white truncate font-montserrat tracking-tight leading-none drop-shadow-sm"
+                                      title={photo.caption}
+                                    >
+                                      {photo.caption}
+                                    </p>
+                                  </div>
+                                )}
                             </div>
                           ))}
                         </div>
@@ -356,7 +450,11 @@ export default function ItineraryAccordion({
 
                   {/* Redesigned Premium Stay & Meals Footer */}
                   {(() => {
-                    const { stay, meals } = getStayAndMeals(day, idx, displayItinerary.length);
+                    const { stay, meals } = getStayAndMeals(
+                      day,
+                      idx,
+                      displayItinerary.length,
+                    );
                     if (!stay && !meals) return null;
 
                     return (

@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 /**
@@ -20,21 +20,29 @@ const mockActivityDocuments = [];
 
 // Helper to test if DB error should trigger local fallback
 const isDbError = (err) => {
-  return err && (
-    err.code === 'P2021' ||
-    err.code === 'P1001' ||
-    err.code === 'P2024' ||
-    err.message?.includes('connect') ||
-    err.message?.includes('Supabase') ||
-    err.message?.includes('database') ||
-    err.message?.includes('table')
+  return (
+    err &&
+    (err.code === "P2021" ||
+      err.code === "P1001" ||
+      err.code === "P2024" ||
+      err.message?.includes("connect") ||
+      err.message?.includes("Supabase") ||
+      err.message?.includes("database") ||
+      err.message?.includes("table"))
   );
 };
 
 // 1. List all Activity Masters with faceted filtering and search
 exports.listActivityMasters = async (req, res) => {
   try {
-    const { category, difficulty, status, search, page = 1, limit = 50 } = req.query;
+    const {
+      category,
+      difficulty,
+      status,
+      search,
+      page = 1,
+      limit = 50,
+    } = req.query;
 
     const where = {};
     if (category) where.category = category.toUpperCase();
@@ -42,9 +50,9 @@ exports.listActivityMasters = async (req, res) => {
     if (status) where.status = status.toUpperCase();
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { meetingPoint: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { meetingPoint: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -55,7 +63,7 @@ exports.listActivityMasters = async (req, res) => {
         where,
         skip,
         take: Number(limit),
-        orderBy: { name: 'asc' },
+        orderBy: { name: "asc" },
         include: {
           _count: {
             select: {
@@ -83,24 +91,34 @@ exports.listActivityMasters = async (req, res) => {
     if (isDbError(error)) {
       const { category, difficulty, status, search } = req.query;
       let filtered = [...mockActivityMasters];
-      if (category) filtered = filtered.filter(a => a.category === category.toUpperCase());
-      if (difficulty) filtered = filtered.filter(a => a.difficulty === difficulty.toUpperCase());
-      if (status) filtered = filtered.filter(a => a.status === status.toUpperCase());
+      if (category)
+        filtered = filtered.filter(
+          (a) => a.category === category.toUpperCase(),
+        );
+      if (difficulty)
+        filtered = filtered.filter(
+          (a) => a.difficulty === difficulty.toUpperCase(),
+        );
+      if (status)
+        filtered = filtered.filter((a) => a.status === status.toUpperCase());
       if (search) {
         const q = search.toLowerCase();
-        filtered = filtered.filter(a =>
-          a.name.toLowerCase().includes(q) ||
-          (a.description && a.description.toLowerCase().includes(q))
+        filtered = filtered.filter(
+          (a) =>
+            a.name.toLowerCase().includes(q) ||
+            (a.description && a.description.toLowerCase().includes(q)),
         );
       }
       return res.status(200).json({
         success: true,
         data: filtered,
-        pagination: { total: filtered.length, page: 1, limit: 50, pages: 1 }
+        pagination: { total: filtered.length, page: 1, limit: 50, pages: 1 },
       });
     }
-    console.error('[ActivityMaster] Error listing activities:', error);
-    return res.status(500).json({ success: false, error: 'Failed to fetch activity masters' });
+    console.error("[ActivityMaster] Error listing activities:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to fetch activity masters" });
   }
 };
 
@@ -125,7 +143,7 @@ exports.getActivityMasterById = async (req, res) => {
               },
             },
           },
-          orderBy: { validFrom: 'desc' },
+          orderBy: { validFrom: "desc" },
         },
         documents: true,
         tripTemplates: {
@@ -143,18 +161,28 @@ exports.getActivityMasterById = async (req, res) => {
     });
 
     if (!activity) {
-      return res.status(404).json({ success: false, error: 'Activity Master not found' });
+      return res
+        .status(404)
+        .json({ success: false, error: "Activity Master not found" });
     }
 
     return res.status(200).json({ success: true, data: activity });
   } catch (error) {
     if (isDbError(error)) {
-      const activity = mockActivityMasters.find(a => a.id === req.params.id);
-      if (!activity) return res.status(404).json({ success: false, error: 'Activity Master not found' });
+      const activity = mockActivityMasters.find((a) => a.id === req.params.id);
+      if (!activity)
+        return res
+          .status(404)
+          .json({ success: false, error: "Activity Master not found" });
       return res.status(200).json({ success: true, data: activity });
     }
-    console.error('[ActivityMaster] Error fetching activity profile:', error);
-    return res.status(500).json({ success: false, error: 'Failed to fetch activity master details' });
+    console.error("[ActivityMaster] Error fetching activity profile:", error);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        error: "Failed to fetch activity master details",
+      });
   }
 };
 
@@ -163,10 +191,10 @@ exports.createActivityMaster = async (req, res) => {
   try {
     const {
       name,
-      category = 'ADVENTURE',
-      duration = '2 Hours',
+      category = "ADVENTURE",
+      duration = "2 Hours",
       defaultCapacity = 50,
-      difficulty = 'MODERATE',
+      difficulty = "MODERATE",
       minimumAge = 16,
       medicalRestrictions,
       equipmentRequired,
@@ -180,17 +208,19 @@ exports.createActivityMaster = async (req, res) => {
       latitude,
       longitude,
       emergencyContact,
-      status = 'ACTIVE',
+      status = "ACTIVE",
       vendorId, // MUST BE IGNORED to enforce 0-coupled master architecture
     } = req.body;
 
     if (!name || !name.trim()) {
-      return res.status(400).json({ success: false, error: 'Activity name is required' });
+      return res
+        .status(400)
+        .json({ success: false, error: "Activity name is required" });
     }
 
     // Check Zero Duplication in memory first
     const existingMock = mockActivityMasters.find(
-      a => a.name.toLowerCase() === name.trim().toLowerCase()
+      (a) => a.name.toLowerCase() === name.trim().toLowerCase(),
     );
     if (existingMock) {
       return res.status(409).json({
@@ -228,11 +258,11 @@ exports.createActivityMaster = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Activity Master created successfully (0-coupled from vendor)',
+      message: "Activity Master created successfully (0-coupled from vendor)",
       data: created,
     });
   } catch (error) {
-    if (error && error.code === 'P2002') {
+    if (error && error.code === "P2002") {
       return res.status(409).json({
         success: false,
         error: `An Activity Master with this name already exists. Do not duplicate.`,
@@ -242,10 +272,10 @@ exports.createActivityMaster = async (req, res) => {
     if (isDbError(error)) {
       const {
         name,
-        category = 'ADVENTURE',
-        duration = '2 Hours',
+        category = "ADVENTURE",
+        duration = "2 Hours",
         defaultCapacity = 50,
-        difficulty = 'MODERATE',
+        difficulty = "MODERATE",
         minimumAge = 16,
         medicalRestrictions,
         equipmentRequired,
@@ -259,7 +289,7 @@ exports.createActivityMaster = async (req, res) => {
         latitude,
         longitude,
         emergencyContact,
-        status = 'ACTIVE',
+        status = "ACTIVE",
       } = req.body;
 
       const newMock = {
@@ -290,13 +320,15 @@ exports.createActivityMaster = async (req, res) => {
       mockActivityMasters.push(newMock);
       return res.status(201).json({
         success: true,
-        message: 'Activity Master created successfully (0-coupled from vendor)',
+        message: "Activity Master created successfully (0-coupled from vendor)",
         data: newMock,
       });
     }
 
-    console.error('[ActivityMaster] Error creating activity master:', error);
-    return res.status(500).json({ success: false, error: 'Failed to create activity master' });
+    console.error("[ActivityMaster] Error creating activity master:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to create activity master" });
   }
 };
 
@@ -315,23 +347,28 @@ exports.updateActivityMaster = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Activity Master updated successfully',
+      message: "Activity Master updated successfully",
       data: updated,
     });
   } catch (error) {
     if (isDbError(error)) {
-      const idx = mockActivityMasters.findIndex(a => a.id === req.params.id);
-      if (idx === -1) return res.status(404).json({ success: false, error: 'Activity Master not found' });
+      const idx = mockActivityMasters.findIndex((a) => a.id === req.params.id);
+      if (idx === -1)
+        return res
+          .status(404)
+          .json({ success: false, error: "Activity Master not found" });
       mockActivityMasters[idx] = { ...mockActivityMasters[idx], ...req.body };
       delete mockActivityMasters[idx].vendorId;
       return res.status(200).json({
         success: true,
-        message: 'Activity Master updated successfully',
+        message: "Activity Master updated successfully",
         data: mockActivityMasters[idx],
       });
     }
-    console.error('[ActivityMaster] Error updating activity master:', error);
-    return res.status(500).json({ success: false, error: 'Failed to update activity master' });
+    console.error("[ActivityMaster] Error updating activity master:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to update activity master" });
   }
 };
 
@@ -339,10 +376,12 @@ exports.updateActivityMaster = async (req, res) => {
 exports.addActivityDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, docType = 'SAFETY_SOP', fileUrl } = req.body;
+    const { title, docType = "SAFETY_SOP", fileUrl } = req.body;
 
     if (!title || !fileUrl) {
-      return res.status(400).json({ success: false, error: 'title and fileUrl are required' });
+      return res
+        .status(400)
+        .json({ success: false, error: "title and fileUrl are required" });
     }
 
     const doc = await prisma.activityDocument.create({
@@ -356,7 +395,7 @@ exports.addActivityDocument = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Activity Document attached successfully',
+      message: "Activity Document attached successfully",
       data: doc,
     });
   } catch (error) {
@@ -365,19 +404,21 @@ exports.addActivityDocument = async (req, res) => {
         id: `DOC-${Date.now()}`,
         activityId: req.params.id,
         title: req.body.title,
-        docType: (req.body.docType || 'SAFETY_SOP').toUpperCase(),
+        docType: (req.body.docType || "SAFETY_SOP").toUpperCase(),
         fileUrl: req.body.fileUrl,
-        createdAt: new Date()
+        createdAt: new Date(),
       };
       mockActivityDocuments.push(doc);
       return res.status(201).json({
         success: true,
-        message: 'Activity Document attached successfully',
+        message: "Activity Document attached successfully",
         data: doc,
       });
     }
-    console.error('[ActivityMaster] Error adding activity document:', error);
-    return res.status(500).json({ success: false, error: 'Failed to add activity document' });
+    console.error("[ActivityMaster] Error adding activity document:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to add activity document" });
   }
 };
 
@@ -389,12 +430,12 @@ exports.createActivityContract = async (req, res) => {
       vendorId,
       validFrom,
       validTo,
-      seasonType = 'REGULAR',
+      seasonType = "REGULAR",
       adultNetCost = 0,
       childNetCost = 0,
       minParticipants = 1,
       maxParticipants = 50,
-      paymentTerms = 'NET_30',
+      paymentTerms = "NET_30",
       terms,
       isPreferred = false,
     } = req.body;
@@ -402,7 +443,7 @@ exports.createActivityContract = async (req, res) => {
     if (!activityId || !vendorId || !validFrom || !validTo) {
       return res.status(400).json({
         success: false,
-        error: 'activityId, vendorId, validFrom, and validTo are required',
+        error: "activityId, vendorId, validFrom, and validTo are required",
       });
     }
 
@@ -436,7 +477,7 @@ exports.createActivityContract = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Activity Vendor Contract created successfully',
+      message: "Activity Vendor Contract created successfully",
       data: contract,
     });
   } catch (error) {
@@ -447,28 +488,32 @@ exports.createActivityContract = async (req, res) => {
         vendorId: req.body.vendorId,
         validFrom: new Date(req.body.validFrom),
         validTo: new Date(req.body.validTo),
-        seasonType: (req.body.seasonType || 'REGULAR').toUpperCase(),
+        seasonType: (req.body.seasonType || "REGULAR").toUpperCase(),
         adultNetCost: Number(req.body.adultNetCost) || 0,
         childNetCost: Number(req.body.childNetCost) || 0,
         minParticipants: Number(req.body.minParticipants) || 1,
         maxParticipants: Number(req.body.maxParticipants) || 50,
-        paymentTerms: req.body.paymentTerms || 'NET_30',
-        terms: req.body.terms || '',
+        paymentTerms: req.body.paymentTerms || "NET_30",
+        terms: req.body.terms || "",
         isPreferred: Boolean(req.body.isPreferred),
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       mockActivityContracts.push(newContract);
       return res.status(201).json({
         success: true,
-        message: 'Activity Vendor Contract created successfully',
+        message: "Activity Vendor Contract created successfully",
         data: newContract,
       });
     }
-    console.error('[ActivityMaster] Error creating activity vendor contract:', error);
+    console.error(
+      "[ActivityMaster] Error creating activity vendor contract:",
+      error,
+    );
     return res.status(500).json({
       success: false,
-      error: 'Failed to create activity vendor contract (ensure dates & season type are unique per vendor)',
+      error:
+        "Failed to create activity vendor contract (ensure dates & season type are unique per vendor)",
     });
   }
 };
@@ -484,7 +529,7 @@ exports.createDepartureActivity = async (req, res) => {
       activityVendorContractId,
       vendorId,
       responsibleGuideId,
-      scheduledTime = '10:00 AM',
+      scheduledTime = "10:00 AM",
       agreedNetCost = 0,
       remarks,
     } = req.body;
@@ -492,7 +537,7 @@ exports.createDepartureActivity = async (req, res) => {
     if (!tripId || !departureDate || !activityId) {
       return res.status(400).json({
         success: false,
-        error: 'tripId, departureDate, and activityId are required',
+        error: "tripId, departureDate, and activityId are required",
       });
     }
 
@@ -507,7 +552,7 @@ exports.createDepartureActivity = async (req, res) => {
         responsibleGuideId: responsibleGuideId || null,
         scheduledTime,
         agreedNetCost: Number(agreedNetCost),
-        status: 'PLANNED',
+        status: "PLANNED",
         remarks,
       },
       include: {
@@ -520,7 +565,7 @@ exports.createDepartureActivity = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Departure Activity assigned successfully',
+      message: "Departure Activity assigned successfully",
       data: departureActivity,
     });
   } catch (error) {
@@ -534,22 +579,24 @@ exports.createDepartureActivity = async (req, res) => {
         activityVendorContractId: req.body.activityVendorContractId || null,
         vendorId: req.body.vendorId || null,
         responsibleGuideId: req.body.responsibleGuideId || null,
-        scheduledTime: req.body.scheduledTime || '10:00 AM',
+        scheduledTime: req.body.scheduledTime || "10:00 AM",
         agreedNetCost: Number(req.body.agreedNetCost) || 0,
-        status: 'PLANNED',
-        remarks: req.body.remarks || '',
+        status: "PLANNED",
+        remarks: req.body.remarks || "",
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       mockDepartureActivities.push(newDepActivity);
       return res.status(201).json({
         success: true,
-        message: 'Departure Activity assigned successfully',
+        message: "Departure Activity assigned successfully",
         data: newDepActivity,
       });
     }
-    console.error('[ActivityMaster] Error creating departure activity:', error);
-    return res.status(500).json({ success: false, error: 'Failed to assign departure activity' });
+    console.error("[ActivityMaster] Error creating departure activity:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to assign departure activity" });
   }
 };
 
@@ -563,14 +610,14 @@ exports.allocatePassengerActivity = async (req, res) => {
       passengerName,
       isOpted = true,
       addonAmountCharged = 0,
-      paymentStatus = 'INCLUDED',
+      paymentStatus = "INCLUDED",
       waiverSigned = false,
     } = req.body;
 
     if (!departureActivityId || !bookingId) {
       return res.status(400).json({
         success: false,
-        error: 'departureActivityId and bookingId are required',
+        error: "departureActivityId and bookingId are required",
       });
     }
 
@@ -579,7 +626,8 @@ exports.allocatePassengerActivity = async (req, res) => {
         departureActivityId,
         bookingId,
         passengerIndex: Number(passengerIndex),
-        passengerName: passengerName || `Passenger #${Number(passengerIndex) + 1}`,
+        passengerName:
+          passengerName || `Passenger #${Number(passengerIndex) + 1}`,
         isOpted: Boolean(isOpted),
         addonAmountCharged: Number(addonAmountCharged),
         paymentStatus,
@@ -591,7 +639,7 @@ exports.allocatePassengerActivity = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Passenger allocated to activity successfully',
+      message: "Passenger allocated to activity successfully",
       data: allocation,
     });
   } catch (error) {
@@ -601,23 +649,31 @@ exports.allocatePassengerActivity = async (req, res) => {
         departureActivityId: req.body.departureActivityId,
         bookingId: req.body.bookingId,
         passengerIndex: Number(req.body.passengerIndex) || 0,
-        passengerName: req.body.passengerName || `Passenger #${(Number(req.body.passengerIndex) || 0) + 1}`,
-        isOpted: req.body.isOpted !== undefined ? Boolean(req.body.isOpted) : true,
+        passengerName:
+          req.body.passengerName ||
+          `Passenger #${(Number(req.body.passengerIndex) || 0) + 1}`,
+        isOpted:
+          req.body.isOpted !== undefined ? Boolean(req.body.isOpted) : true,
         addonAmountCharged: Number(req.body.addonAmountCharged) || 0,
-        paymentStatus: req.body.paymentStatus || 'INCLUDED',
+        paymentStatus: req.body.paymentStatus || "INCLUDED",
         waiverSigned: Boolean(req.body.waiverSigned),
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       mockPassengerAllocations.push(newAllocation);
       return res.status(201).json({
         success: true,
-        message: 'Passenger allocated to activity successfully',
+        message: "Passenger allocated to activity successfully",
         data: newAllocation,
       });
     }
-    console.error('[ActivityMaster] Error allocating passenger:', error);
-    return res.status(500).json({ success: false, error: 'Failed to allocate passenger to activity' });
+    console.error("[ActivityMaster] Error allocating passenger:", error);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        error: "Failed to allocate passenger to activity",
+      });
   }
 };
 
@@ -636,7 +692,9 @@ exports.generateActivityVoucher = async (req, res) => {
     });
 
     if (!depActivity) {
-      return res.status(404).json({ success: false, error: 'Departure Activity not found' });
+      return res
+        .status(404)
+        .json({ success: false, error: "Departure Activity not found" });
     }
 
     const voucherNumber = `YC-ACT-${Date.now().toString().slice(-6)}-${depActivity.activity.name.slice(0, 3).toUpperCase()}`;
@@ -645,13 +703,13 @@ exports.generateActivityVoucher = async (req, res) => {
       where: { id },
       data: {
         voucherNumber,
-        status: 'VOUCHER_SENT',
+        status: "VOUCHER_SENT",
       },
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Activity Voucher generated successfully',
+      message: "Activity Voucher generated successfully",
       data: {
         voucherNumber,
         status: updated.status,
@@ -662,29 +720,38 @@ exports.generateActivityVoucher = async (req, res) => {
     });
   } catch (error) {
     if (isDbError(error)) {
-      const depActivity = mockDepartureActivities.find(d => d.id === req.params.id);
-      if (!depActivity) return res.status(404).json({ success: false, error: 'Departure Activity not found' });
+      const depActivity = mockDepartureActivities.find(
+        (d) => d.id === req.params.id,
+      );
+      if (!depActivity)
+        return res
+          .status(404)
+          .json({ success: false, error: "Departure Activity not found" });
 
-      const master = mockActivityMasters.find(m => m.id === depActivity.activityId) || { name: 'RFT', meetingPoint: 'Rishikesh' };
-      const voucherNumber = `YC-ACT-${Date.now().toString().slice(-6)}-${(master.name || 'ACT').slice(0, 3).toUpperCase()}`;
+      const master = mockActivityMasters.find(
+        (m) => m.id === depActivity.activityId,
+      ) || { name: "RFT", meetingPoint: "Rishikesh" };
+      const voucherNumber = `YC-ACT-${Date.now().toString().slice(-6)}-${(master.name || "ACT").slice(0, 3).toUpperCase()}`;
 
       depActivity.voucherNumber = voucherNumber;
-      depActivity.status = 'VOUCHER_SENT';
+      depActivity.status = "VOUCHER_SENT";
 
       return res.status(200).json({
         success: true,
-        message: 'Activity Voucher generated successfully',
+        message: "Activity Voucher generated successfully",
         data: {
           voucherNumber,
           status: depActivity.status,
           activityName: master.name,
           meetingPoint: master.meetingPoint,
-          passengerCount: 1
-        }
+          passengerCount: 1,
+        },
       });
     }
-    console.error('[ActivityMaster] Error generating voucher:', error);
-    return res.status(500).json({ success: false, error: 'Failed to generate activity voucher' });
+    console.error("[ActivityMaster] Error generating voucher:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to generate activity voucher" });
   }
 };
 
@@ -710,14 +777,14 @@ exports.getActivityVendorComparison = async (req, res) => {
         },
       },
       orderBy: {
-        adultNetCost: 'asc',
+        adultNetCost: "asc",
       },
     });
 
-    const comparisonList = contracts.map(c => ({
+    const comparisonList = contracts.map((c) => ({
       contractId: c.id,
       vendorId: c.vendorId,
-      vendorName: c.vendor?.name || 'Contracted Vendor',
+      vendorName: c.vendor?.name || "Contracted Vendor",
       rating: c.vendor?.rating || 4.5,
       netCost: c.adultNetCost,
       childNetCost: c.childNetCost,
@@ -738,40 +805,40 @@ exports.getActivityVendorComparison = async (req, res) => {
       // Return rich enterprise comparison table matching user specification
       const fallbackComparison = [
         {
-          contractId: 'CTR-ABC-01',
-          vendorId: 'VND-ABC',
-          vendorName: 'ABC Adventures',
+          contractId: "CTR-ABC-01",
+          vendorId: "VND-ABC",
+          vendorName: "ABC Adventures",
           rating: 4.2,
           netCost: 700,
           childNetCost: 500,
-          seasonType: 'PEAK',
-          validMonths: 'April-August',
+          seasonType: "PEAK",
+          validMonths: "April-August",
           capacityPerDay: 80,
           commissionPercent: 10,
           isPreferred: true,
         },
         {
-          contractId: 'CTR-XYZ-01',
-          vendorId: 'VND-XYZ',
-          vendorName: 'XYZ Adventure',
+          contractId: "CTR-XYZ-01",
+          vendorId: "VND-XYZ",
+          vendorName: "XYZ Adventure",
           rating: 4.8,
           netCost: 650,
           childNetCost: 450,
-          seasonType: 'OFF_SEASON',
-          validMonths: 'September-March',
+          seasonType: "OFF_SEASON",
+          validMonths: "September-March",
           capacityPerDay: 60,
           commissionPercent: 12,
           isPreferred: false,
         },
         {
-          contractId: 'CTR-MTN-01',
-          vendorId: 'VND-MTN',
-          vendorName: 'Mountain Adventure',
+          contractId: "CTR-MTN-01",
+          vendorId: "VND-MTN",
+          vendorName: "Mountain Adventure",
           rating: 4.0,
           netCost: 680,
           childNetCost: 480,
-          seasonType: 'REGULAR',
-          validMonths: 'All Year',
+          seasonType: "REGULAR",
+          validMonths: "All Year",
           capacityPerDay: 50,
           commissionPercent: 10,
           isPreferred: false,
@@ -782,8 +849,10 @@ exports.getActivityVendorComparison = async (req, res) => {
         data: fallbackComparison,
       });
     }
-    console.error('[ActivityMaster] Error fetching vendor comparison:', error);
-    return res.status(500).json({ success: false, error: 'Failed to load vendor comparison' });
+    console.error("[ActivityMaster] Error fetching vendor comparison:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to load vendor comparison" });
   }
 };
 
@@ -792,7 +861,7 @@ exports.getActivityAnalyticsKPIs = async (req, res) => {
   try {
     const totalCount = await prisma.departureActivity.count();
     const pendingVendors = await prisma.departureActivity.count({
-      where: { status: 'VENDOR_REQUESTED' },
+      where: { status: "VENDOR_REQUESTED" },
     });
     const passengersCount = await prisma.passengerActivityAllocation.count({
       where: { isOpted: true },
@@ -823,8 +892,10 @@ exports.getActivityAnalyticsKPIs = async (req, res) => {
         },
       });
     }
-    console.error('[ActivityMaster] Error fetching KPI statistics:', error);
-    return res.status(500).json({ success: false, error: 'Failed to fetch analytics KPIs' });
+    console.error("[ActivityMaster] Error fetching KPI statistics:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to fetch analytics KPIs" });
   }
 };
 
@@ -832,36 +903,46 @@ exports.getActivityAnalyticsKPIs = async (req, res) => {
 exports.updateDepartureActivityStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, remarks, sellingPrice, agreedNetCost, assignedBus, responsibleGuideId } = req.body;
+    const {
+      status,
+      remarks,
+      sellingPrice,
+      agreedNetCost,
+      assignedBus,
+      responsibleGuideId,
+    } = req.body;
 
     const validStages = [
-      'DRAFT',
-      'PLANNED',
-      'VENDOR_REQUESTED',
-      'VENDOR_CONFIRMED',
-      'PAYMENT_PENDING',
-      'VOUCHER_SENT',
-      'READY',
-      'STARTED',
-      'COMPLETED',
-      'CANCELLED',
-      'RECONCILED',
+      "DRAFT",
+      "PLANNED",
+      "VENDOR_REQUESTED",
+      "VENDOR_CONFIRMED",
+      "PAYMENT_PENDING",
+      "VOUCHER_SENT",
+      "READY",
+      "STARTED",
+      "COMPLETED",
+      "CANCELLED",
+      "RECONCILED",
     ];
 
     if (status && !validStages.includes(status.toUpperCase())) {
       return res.status(400).json({
         success: false,
-        error: `Invalid status stage. Must be one of: ${validStages.join(', ')}`,
+        error: `Invalid status stage. Must be one of: ${validStages.join(", ")}`,
       });
     }
 
     const updateData = {};
     if (status) updateData.status = status.toUpperCase();
     if (remarks !== undefined) updateData.remarks = remarks;
-    if (sellingPrice !== undefined) updateData.sellingPrice = Number(sellingPrice);
-    if (agreedNetCost !== undefined) updateData.agreedNetCost = Number(agreedNetCost);
+    if (sellingPrice !== undefined)
+      updateData.sellingPrice = Number(sellingPrice);
+    if (agreedNetCost !== undefined)
+      updateData.agreedNetCost = Number(agreedNetCost);
     if (assignedBus !== undefined) updateData.assignedBus = assignedBus;
-    if (responsibleGuideId !== undefined) updateData.responsibleGuideId = responsibleGuideId;
+    if (responsibleGuideId !== undefined)
+      updateData.responsibleGuideId = responsibleGuideId;
 
     const updated = await prisma.departureActivity.update({
       where: { id },
@@ -875,12 +956,16 @@ exports.updateDepartureActivityStatus = async (req, res) => {
     });
   } catch (error) {
     if (isDbError(error)) {
-      const idx = mockDepartureActivities.findIndex(d => d.id === req.params.id);
+      const idx = mockDepartureActivities.findIndex(
+        (d) => d.id === req.params.id,
+      );
       if (idx !== -1) {
         mockDepartureActivities[idx] = {
           ...mockDepartureActivities[idx],
           ...req.body,
-          status: req.body.status ? req.body.status.toUpperCase() : mockDepartureActivities[idx].status,
+          status: req.body.status
+            ? req.body.status.toUpperCase()
+            : mockDepartureActivities[idx].status,
         };
         return res.status(200).json({
           success: true,
@@ -890,8 +975,8 @@ exports.updateDepartureActivityStatus = async (req, res) => {
       }
       const fallbackUpdated = {
         id: req.params.id,
-        status: req.body.status ? req.body.status.toUpperCase() : 'PLANNED',
-        remarks: req.body.remarks || '',
+        status: req.body.status ? req.body.status.toUpperCase() : "PLANNED",
+        remarks: req.body.remarks || "",
         updatedAt: new Date(),
       };
       return res.status(200).json({
@@ -900,8 +985,15 @@ exports.updateDepartureActivityStatus = async (req, res) => {
         data: fallbackUpdated,
       });
     }
-    console.error('[ActivityMaster] Error updating departure activity status:', error);
-    return res.status(500).json({ success: false, error: 'Failed to update departure activity status' });
+    console.error(
+      "[ActivityMaster] Error updating departure activity status:",
+      error,
+    );
+    return res
+      .status(500)
+      .json({
+        success: false,
+        error: "Failed to update departure activity status",
+      });
   }
 };
-

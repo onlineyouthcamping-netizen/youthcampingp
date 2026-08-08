@@ -13,7 +13,11 @@ interface ReviewModalProps {
   review: Review | null;
 }
 
-export default function ReviewModal({ isOpen, onClose, review }: ReviewModalProps) {
+export default function ReviewModal({
+  isOpen,
+  onClose,
+  review,
+}: ReviewModalProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -35,14 +39,16 @@ export default function ReviewModal({ isOpen, onClose, review }: ReviewModalProp
 
   if (!review) return null;
 
-  const initials = review.userName ? review.userName.charAt(0).toUpperCase() : "U";
+  const initials = review.userName
+    ? review.userName.charAt(0).toUpperCase()
+    : "U";
 
   return (
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           {/* Backdrop */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -58,7 +64,7 @@ export default function ReviewModal({ isOpen, onClose, review }: ReviewModalProp
             className="relative w-full max-w-[420px] bg-white rounded-[32px] p-6 shadow-2xl overflow-hidden flex flex-col z-10"
           >
             {/* Close Button */}
-            <button 
+            <button
               onClick={onClose}
               className="absolute top-6 right-6 z-50 text-zinc-950 hover:text-black hover:scale-110 transition-all"
               aria-label="Close modal"
@@ -70,12 +76,14 @@ export default function ReviewModal({ isOpen, onClose, review }: ReviewModalProp
             <div className="flex items-center gap-3 pr-8">
               <div className="w-14 h-14 rounded-full overflow-hidden bg-zinc-100 flex-shrink-0 flex items-center justify-center text-navy font-bold text-xl border-2 border-white shadow-md">
                 {review.userImage ? (
-                  <OptimizedImage 
-                    src={normalizeImageUrl(review.userImage)} 
-                    alt={review.userName} 
-                    className="w-full h-full object-cover" 
+                  <OptimizedImage
+                    src={normalizeImageUrl(review.userImage)}
+                    alt={review.userName}
+                    className="w-full h-full object-cover"
                   />
-                ) : initials}
+                ) : (
+                  initials
+                )}
               </div>
               <div className="text-left">
                 <h3 className="font-extrabold text-navy text-[17px] leading-tight capitalize">
@@ -90,9 +98,9 @@ export default function ReviewModal({ isOpen, onClose, review }: ReviewModalProp
             {/* 5 Gold Rating Stars */}
             <div className="flex gap-0.5 mt-4 mb-3 justify-start">
               {[...Array(5)].map((_, i) => (
-                <Star 
-                  key={i} 
-                  className={`w-4 h-4 ${i < (review.rating || 5) ? "fill-[#fbbf24] text-[#fbbf24]" : "text-zinc-200 fill-zinc-200"}`} 
+                <Star
+                  key={i}
+                  className={`w-4 h-4 ${i < (review.rating || 5) ? "fill-[#fbbf24] text-[#fbbf24]" : "text-zinc-200 fill-zinc-200"}`}
                 />
               ))}
             </div>

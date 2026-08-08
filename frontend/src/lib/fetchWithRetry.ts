@@ -7,7 +7,7 @@ export async function fetchWithRetry(
   url: string,
   options?: RequestInit,
   maxRetries = 3,
-  baseDelayMs = 500
+  baseDelayMs = 500,
 ): Promise<Response | null> {
   let attempt = 0;
 
@@ -20,7 +20,7 @@ export async function fetchWithRetry(
         attempt++;
         const delay = baseDelayMs * Math.pow(2, attempt - 1);
         console.warn(
-          `[fetchWithRetry] Received HTTP ${response.status} for ${url}. Retrying in ${delay}ms (Attempt ${attempt}/${maxRetries})...`
+          `[fetchWithRetry] Received HTTP ${response.status} for ${url}. Retrying in ${delay}ms (Attempt ${attempt}/${maxRetries})...`,
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
@@ -30,12 +30,15 @@ export async function fetchWithRetry(
     } catch (error) {
       attempt++;
       if (attempt >= maxRetries) {
-        console.error(`[fetchWithRetry] Network request failed permanently for ${url}:`, error);
+        console.error(
+          `[fetchWithRetry] Network request failed permanently for ${url}:`,
+          error,
+        );
         return null;
       }
       const delay = baseDelayMs * Math.pow(2, attempt - 1);
       console.warn(
-        `[fetchWithRetry] Network error for ${url}. Retrying in ${delay}ms (Attempt ${attempt}/${maxRetries})...`
+        `[fetchWithRetry] Network error for ${url}. Retrying in ${delay}ms (Attempt ${attempt}/${maxRetries})...`,
       );
       await new Promise((resolve) => setTimeout(resolve, resolveDelay(delay)));
     }

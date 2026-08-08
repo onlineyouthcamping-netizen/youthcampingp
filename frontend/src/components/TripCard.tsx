@@ -16,7 +16,12 @@ interface TripCardProps {
   activeMonth?: string;
 }
 
-export default function TripCard({ trip, index = 0, className, onClick }: TripCardProps) {
+export default function TripCard({
+  trip,
+  index = 0,
+  className,
+  onClick,
+}: TripCardProps) {
   const [currentImgIdx, setCurrentImgIdx] = useState(0);
 
   const price = Number(trip.price || 12999);
@@ -65,9 +70,14 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
   // Compact Duration formatting (e.g. "9 D / 8 N")
   const durationText = (() => {
     const raw = formatDuration(trip.duration, "9 D / 8 N");
-    let text = typeof raw === 'string' ? raw : "9 D / 8 N";
-    
-    if (!text.includes("Night") && !text.includes("night") && !text.includes("N") && !text.includes("n")) {
+    let text = typeof raw === "string" ? raw : "9 D / 8 N";
+
+    if (
+      !text.includes("Night") &&
+      !text.includes("night") &&
+      !text.includes("N") &&
+      !text.includes("n")
+    ) {
       const daysMatch = text.match(/(\d+)\s*Days?/i);
       if (daysMatch) {
         const days = parseInt(daysMatch[1], 10);
@@ -90,14 +100,25 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
     let raw = "";
     if (trip.departureCity) {
       raw = trip.departureCity;
-    } else if (trip.variants && trip.variants.length > 0 && trip.variants[0].location) {
+    } else if (
+      trip.variants &&
+      trip.variants.length > 0 &&
+      trip.variants[0].location
+    ) {
       raw = trip.variants[0].location;
     } else {
       const titleLower = (trip.title || "").toLowerCase();
       const locLower = (trip.location || "").toLowerCase();
-      if (locLower.includes("ladakh") || titleLower.includes("ladakh") || titleLower.includes("spiti")) {
+      if (
+        locLower.includes("ladakh") ||
+        titleLower.includes("ladakh") ||
+        titleLower.includes("spiti")
+      ) {
         raw = "Delhi";
-      } else if (locLower.includes("uttarakhand") || titleLower.includes("kedarkantha")) {
+      } else if (
+        locLower.includes("uttarakhand") ||
+        titleLower.includes("kedarkantha")
+      ) {
         raw = "Dehradun";
       } else if (locLower.includes("kerala")) {
         raw = "Cochin";
@@ -107,7 +128,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
     }
 
     // Strip " to X", " To X", parenthetical details, and secondary cities
-    let clean = raw
+    const clean = raw
       .replace(/\s+to\s+.*$/i, "")
       .replace(/\s*\(.*?\)/g, "")
       .split("/")[0]
@@ -121,33 +142,47 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
   const title = trip.title || "Manali Kasol Amritsar Backpacking Trip";
 
   const splitTripTitle = (fullTitle: string) => {
-    const keywords = ["Backpacking Trip", "Road Trip", "Group Trip", "Backpacking", "Roadtrip", "Trek", "Expedition", "Tour", "Trip"];
+    const keywords = [
+      "Backpacking Trip",
+      "Road Trip",
+      "Group Trip",
+      "Backpacking",
+      "Roadtrip",
+      "Trek",
+      "Expedition",
+      "Tour",
+      "Trip",
+    ];
     for (const kw of keywords) {
       const idx = fullTitle.toLowerCase().lastIndexOf(kw.toLowerCase());
       if (idx > 0) {
         return {
           main: fullTitle.substring(0, idx).trim(),
-          sub: fullTitle.substring(idx).trim()
+          sub: fullTitle.substring(idx).trim(),
         };
       }
     }
     const words = fullTitle.split(" ");
     if (words.length > 1) {
-      return { main: words.slice(0, -1).join(" "), sub: words[words.length - 1] };
+      return {
+        main: words.slice(0, -1).join(" "),
+        sub: words[words.length - 1],
+      };
     }
     return { main: fullTitle, sub: "" };
   };
 
   const { main: mainTitle, sub: subTitle } = splitTripTitle(title);
-  const tagline = (trip.description || "Get ready for an unforgettable...").replace(/<[^>]*>/g, '').trim();
+  const tagline = (trip.description || "Get ready for an unforgettable...")
+    .replace(/<[^>]*>/g, "")
+    .trim();
 
   return (
-    <Link 
+    <Link
       href={`/trips/${trip.slug}`}
       onClick={onClick}
       className={`trip-card group relative flex flex-col w-full hover:-translate-y-1.5 transition-all duration-300 block text-inherit no-underline cursor-pointer ${className || ""}`}
     >
-
       {/* TOP FLOATING PHOTO CONTAINER WITH RICH DROP SHADOW */}
       <div
         className="relative z-20 w-full rounded-[26px] overflow-hidden bg-zinc-100 shadow-[0_16px_36px_rgba(0,0,0,0.22)] group-hover:shadow-[0_20px_44px_rgba(0,0,0,0.28)] transition-shadow duration-300"
@@ -158,24 +193,24 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
           const isActive = imgIdx === activePhotoIndex;
           // Each photo gets a unique zoom direction for cinematic variety
           const kenBurnsVariants = [
-            'origin-top-left scale-100',      // zoom from top-left
-            'origin-bottom-right scale-100',   // zoom from bottom-right
-            'origin-center scale-100',         // zoom from center
-            'origin-top-right scale-100',      // zoom from top-right
-            'origin-bottom-left scale-100',    // zoom from bottom-left
-            'origin-top scale-100',            // zoom from top
-            'origin-bottom scale-100',         // zoom from bottom
-            'origin-left scale-100',           // zoom from left
+            "origin-top-left scale-100", // zoom from top-left
+            "origin-bottom-right scale-100", // zoom from bottom-right
+            "origin-center scale-100", // zoom from center
+            "origin-top-right scale-100", // zoom from top-right
+            "origin-bottom-left scale-100", // zoom from bottom-left
+            "origin-top scale-100", // zoom from top
+            "origin-bottom scale-100", // zoom from bottom
+            "origin-left scale-100", // zoom from left
           ];
           const kenBurnsActive = [
-            'origin-top-left scale-[1.12]',
-            'origin-bottom-right scale-[1.12]',
-            'origin-center scale-[1.08]',
-            'origin-top-right scale-[1.12]',
-            'origin-bottom-left scale-[1.12]',
-            'origin-top scale-[1.10]',
-            'origin-bottom scale-[1.10]',
-            'origin-left scale-[1.10]',
+            "origin-top-left scale-[1.12]",
+            "origin-bottom-right scale-[1.12]",
+            "origin-center scale-[1.08]",
+            "origin-top-right scale-[1.12]",
+            "origin-bottom-left scale-[1.12]",
+            "origin-top scale-[1.10]",
+            "origin-bottom scale-[1.10]",
+            "origin-left scale-[1.10]",
           ];
           const variantIdx = imgIdx % kenBurnsVariants.length;
 
@@ -183,7 +218,7 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
             <div
               key={imgIdx}
               className={`absolute inset-0 transition-opacity duration-[400ms] ease-in-out ${
-                isActive ? 'opacity-100 z-[1]' : 'opacity-0 z-0'
+                isActive ? "opacity-100 z-[1]" : "opacity-0 z-0"
               }`}
             >
               <Image
@@ -191,7 +226,9 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
                 alt={title}
                 fill
                 className={`object-cover transition-transform duration-[3000ms] ease-out will-change-transform ${
-                  isActive ? kenBurnsActive[variantIdx] : kenBurnsVariants[variantIdx]
+                  isActive
+                    ? kenBurnsActive[variantIdx]
+                    : kenBurnsVariants[variantIdx]
                 }`}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 priority={imgIdx === 0}
@@ -247,9 +284,9 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
 
           {/* TITLE — MONTSERRAT EXTRA BOLD (800) + CAVEAT ORANGE HANDWRITTEN SUBTITLE */}
           <div className="min-h-[50px] flex flex-col justify-center mb-1">
-            <h3 
+            <h3
               className="trip-card-title font-montserrat text-[17px] sm:text-[18px] leading-[1.25] font-black group-hover:text-[#0B1528] transition-colors"
-              style={{ fontWeight: 800, color: '#0B1528' }}
+              style={{ fontWeight: 800, color: "#0B1528" }}
             >
               {mainTitle}
             </h3>
@@ -269,16 +306,16 @@ export default function TripCard({ trip, index = 0, className, onClick }: TripCa
         <div className="mt-auto">
           {/* PRICE ROW — MONTSERRAT BOLD 700, 16-18PX, #D4541A */}
           <div className="flex items-baseline gap-1.5 mb-2.5">
-            <span className="font-montserrat text-[#D4541A] font-normal text-xs sm:text-sm">From</span>
+            <span className="font-montserrat text-[#D4541A] font-normal text-xs sm:text-sm">
+              From
+            </span>
             <span className="font-montserrat text-[#D4541A] font-bold text-[16px] sm:text-[18px] leading-none">
               ₹{price.toLocaleString("en-IN")}
             </span>
           </div>
 
           {/* VIEW TRIP LINK */}
-          <div
-            className="inline-flex items-center gap-1.5 font-montserrat font-bold text-xs sm:text-[14px] text-[#0B1528] group-hover:text-[#D4541A] transition-colors"
-          >
+          <div className="inline-flex items-center gap-1.5 font-montserrat font-bold text-xs sm:text-[14px] text-[#0B1528] group-hover:text-[#D4541A] transition-colors">
             <span>View Trip</span>
             <span className="text-[#D4541A] font-bold text-sm group-hover:translate-x-1 transition-transform">
               →

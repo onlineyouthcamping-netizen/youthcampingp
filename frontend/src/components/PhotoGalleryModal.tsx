@@ -26,7 +26,7 @@ export default function PhotoGalleryModal({
   tripTitle,
   heroImage,
   images,
-  itinerary
+  itinerary,
 }: PhotoGalleryModalProps) {
   const [activeTab, setActiveTab] = useState<string>("Trip");
   const [errorImages, setErrorImages] = useState<Record<string, boolean>>({});
@@ -44,29 +44,34 @@ export default function PhotoGalleryModal({
 
   if (!isOpen) return null;
 
-  const tripPhotos = [heroImage, ...(images || [])].filter((p): p is string => Boolean(p));
-  
+  const tripPhotos = [heroImage, ...(images || [])].filter((p): p is string =>
+    Boolean(p),
+  );
+
   const parsePhotoObj = (raw: string) => {
-    const parts = (raw || '').split('|');
-    return { url: parts[0], caption: parts.slice(1).join('|').trim() };
+    const parts = (raw || "").split("|");
+    return { url: parts[0], caption: parts.slice(1).join("|").trim() };
   };
 
   const tabs = [
     { id: "Trip", label: "Trip", photos: tripPhotos.map(parsePhotoObj) },
-    ...(itinerary || []).map(day => ({
-      id: `Day ${day.day}`,
-      label: `Day ${day.day}`,
-      photos: (day.photos || []).map(parsePhotoObj)
-    })).filter(tab => tab.photos.length > 0)
+    ...(itinerary || [])
+      .map((day) => ({
+        id: `Day ${day.day}`,
+        label: `Day ${day.day}`,
+        photos: (day.photos || []).map(parsePhotoObj),
+      }))
+      .filter((tab) => tab.photos.length > 0),
   ];
 
-  const currentPhotos = tabs.find(t => t.id === activeTab)?.photos || [];
+  const currentPhotos = tabs.find((t) => t.id === activeTab)?.photos || [];
 
   const handleImageError = (photoUrl: string) => {
-    setErrorImages(prev => ({ ...prev, [photoUrl]: true }));
+    setErrorImages((prev) => ({ ...prev, [photoUrl]: true }));
   };
 
-  const FALLBACK = "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=2070";
+  const FALLBACK =
+    "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=2070";
 
   return (
     <AnimatePresence>
@@ -79,7 +84,7 @@ export default function PhotoGalleryModal({
       >
         {/* Minimal Header */}
         <header className="flex items-center gap-3 px-4 sm:px-6 py-3.5 border-b border-zinc-100 bg-white sticky top-0 z-10">
-          <button 
+          <button
             onClick={onClose}
             className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors cursor-pointer shrink-0"
           >
@@ -90,7 +95,8 @@ export default function PhotoGalleryModal({
               {tripTitle}
             </h2>
             <p className="text-[11px] text-zinc-400 font-medium font-montserrat">
-              {currentPhotos.length} photo{currentPhotos.length !== 1 ? 's' : ''}
+              {currentPhotos.length} photo
+              {currentPhotos.length !== 1 ? "s" : ""}
             </p>
           </div>
           <button
@@ -109,9 +115,9 @@ export default function PhotoGalleryModal({
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "px-4 py-1.5 rounded-full font-semibold text-[13px] whitespace-nowrap transition-all cursor-pointer font-montserrat",
-                activeTab === tab.id 
-                  ? "bg-[#0B1528] text-white shadow-sm" 
-                  : "bg-white text-zinc-500 border border-zinc-200/80 hover:border-zinc-300 hover:text-zinc-700"
+                activeTab === tab.id
+                  ? "bg-[#0B1528] text-white shadow-sm"
+                  : "bg-white text-zinc-500 border border-zinc-200/80 hover:border-zinc-300 hover:text-zinc-700",
               )}
             >
               {tab.label}
@@ -132,7 +138,11 @@ export default function PhotoGalleryModal({
                   className="relative mb-2.5 rounded-xl overflow-hidden bg-zinc-100 group break-inside-avoid"
                 >
                   <OptimizedImage
-                    src={errorImages[photo.url] ? FALLBACK : (normalizeImageUrl(photo.url) || FALLBACK)}
+                    src={
+                      errorImages[photo.url]
+                        ? FALLBACK
+                        : normalizeImageUrl(photo.url) || FALLBACK
+                    }
                     alt={photo.caption || `Photo ${i + 1}`}
                     className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     width={600}
@@ -140,7 +150,9 @@ export default function PhotoGalleryModal({
                   />
                   {photo.caption && (
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 pt-4">
-                      <p className="text-[11px] font-bold text-white truncate font-montserrat">{photo.caption}</p>
+                      <p className="text-[11px] font-bold text-white truncate font-montserrat">
+                        {photo.caption}
+                      </p>
                     </div>
                   )}
                 </motion.div>
@@ -151,7 +163,9 @@ export default function PhotoGalleryModal({
           {currentPhotos.length === 0 && (
             <div className="flex flex-col items-center justify-center h-48 text-zinc-400">
               <Camera className="w-8 h-8 mb-2" />
-              <p className="text-sm font-medium font-montserrat">No photos available</p>
+              <p className="text-sm font-medium font-montserrat">
+                No photos available
+              </p>
             </div>
           )}
         </main>

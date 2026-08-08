@@ -1,8 +1,8 @@
-const { prisma } = require('../lib/prisma');
+const { prisma } = require("../lib/prisma");
 
 /**
  * Log a sensitive administrative action.
- * 
+ *
  * @param {Object} params
  * @param {string} params.tenantId
  * @param {string} params.actorUserId
@@ -14,14 +14,14 @@ const { prisma } = require('../lib/prisma');
  * @param {string} [params.ipAddress]
  */
 async function logAction({
-  tenantId = 'default',
+  tenantId = "default",
   actorUserId,
   action,
   entityType,
   entityId,
   beforeData = null,
   afterData = null,
-  ipAddress = null
+  ipAddress = null,
 }) {
   try {
     // Redact sensitive details (passwords, hashes, secrets, reset tokens)
@@ -37,12 +37,12 @@ async function logAction({
         entityId,
         beforeData: cleanBefore,
         afterData: cleanAfter,
-        ipAddress
-      }
+        ipAddress,
+      },
     });
     return log;
   } catch (error) {
-    console.error('⚠️ [AuditLog] Error recording log:', error.message);
+    console.error("⚠️ [AuditLog] Error recording log:", error.message);
   }
 }
 
@@ -50,7 +50,7 @@ async function logAction({
  * Recursively redacts sensitive keys from audit log objects.
  */
 function redactSensitive(data) {
-  if (!data || typeof data !== 'object') {
+  if (!data || typeof data !== "object") {
     return data;
   }
 
@@ -59,36 +59,36 @@ function redactSensitive(data) {
   }
 
   const keysToRedact = [
-    'password',
-    'passwordHash',
-    'password_hash',
-    'token',
-    'jwt',
-    'otp',
-    'resettoken',
-    'reset_token',
-    'secret',
-    'apikey',
-    'api_key',
-    'key',
-    'authorization',
-    'signature',
-    'tokenhash',
-    'bankaccount',
-    'accountnumber',
-    'cardnumber',
-    'cvv',
-    'routingnumber',
-    'upi',
-    'cloudinarysecret'
+    "password",
+    "passwordHash",
+    "password_hash",
+    "token",
+    "jwt",
+    "otp",
+    "resettoken",
+    "reset_token",
+    "secret",
+    "apikey",
+    "api_key",
+    "key",
+    "authorization",
+    "signature",
+    "tokenhash",
+    "bankaccount",
+    "accountnumber",
+    "cardnumber",
+    "cvv",
+    "routingnumber",
+    "upi",
+    "cloudinarysecret",
   ];
 
   const result = {};
   for (const [key, value] of Object.entries(data)) {
     const lowerKey = key.toLowerCase();
-    if (keysToRedact.some(k => lowerKey.includes(k))) {
-      result[key] = '[REDACTED]';
-    } else if (typeof value === 'object') {
+    if (keysToRedact.some((k) => lowerKey.includes(k))) {
+      result[key] = "[REDACTED]";
+    } else if (typeof value === "object") {
       result[key] = redactSensitive(value);
     } else {
       result[key] = value;
@@ -99,5 +99,5 @@ function redactSensitive(data) {
 
 module.exports = {
   logAction,
-  redactSensitive
+  redactSensitive,
 };

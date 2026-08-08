@@ -20,41 +20,55 @@ export default function TripDetailView({ trip }: TripDetailViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: "instant" });
   }, [trip.id]);
 
   return (
     <div className="lg:col-span-8 space-y-7 md:space-y-8">
       <div id="about" className="scroll-mt-[140px] md:scroll-mt-[160px]">
-        <AboutTrip 
-          description={trip.description || ""} 
+        <AboutTrip
+          description={trip.description || ""}
           customAboutTrip={(trip as any).customSections?.aboutTrip}
         />
       </div>
-      
+
       <div id="itinerary" className="scroll-mt-[140px] md:scroll-mt-[160px]">
-        <TripBookingSection 
-          trip={trip} 
+        <TripBookingSection
+          trip={trip}
           onDateSelect={(date) => setSelectedDate(date)}
         />
       </div>
 
       <div id="inclusions" className="scroll-mt-[140px] md:scroll-mt-[160px]">
-        <InclusionsExclusions 
+        <InclusionsExclusions
           inclusions={trip.inclusions || []}
           exclusions={trip.exclusions || []}
         />
       </div>
 
       <div id="highlights" className="scroll-mt-[140px] md:scroll-mt-[160px]">
-        <TripHighlightsList items={(trip.highlights && Array.isArray(trip.highlights) && trip.highlights.length > 0) ? trip.highlights : ((trip.gallery && Array.isArray(trip.gallery) && trip.gallery.length > 0) ? trip.gallery : (trip.images || []))} />
+        <TripHighlightsList
+          items={
+            trip.highlights &&
+            Array.isArray(trip.highlights) &&
+            trip.highlights.length > 0
+              ? trip.highlights
+              : trip.gallery &&
+                  Array.isArray(trip.gallery) &&
+                  trip.gallery.length > 0
+                ? trip.gallery
+                : trip.images || []
+          }
+        />
       </div>
 
-      {trip.accommodations && Array.isArray(trip.accommodations) && trip.accommodations.length > 0 && (
-        <div id="stay" className="scroll-mt-[140px] md:scroll-mt-[160px]">
-          <StaySection accommodations={trip.accommodations} />
-        </div>
-      )}
+      {trip.accommodations &&
+        Array.isArray(trip.accommodations) &&
+        trip.accommodations.length > 0 && (
+          <div id="stay" className="scroll-mt-[140px] md:scroll-mt-[160px]">
+            <StaySection accommodations={trip.accommodations} />
+          </div>
+        )}
 
       <div id="reviews" className="scroll-mt-[140px] md:scroll-mt-[160px]">
         <TripReviews reviews={trip.reviews || []} />

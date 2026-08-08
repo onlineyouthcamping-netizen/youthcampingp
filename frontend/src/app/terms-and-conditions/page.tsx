@@ -1,11 +1,19 @@
 import React from "react";
 import { Metadata } from "next";
 import Link from "next/link";
-import { FileText, Shield, AlertTriangle, Phone, Mail, CheckCircle2 } from "lucide-react";
+import {
+  FileText,
+  Shield,
+  AlertTriangle,
+  Phone,
+  Mail,
+  CheckCircle2,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Terms and Conditions | YouthCamping OS",
-  description: "Terms and conditions for YouthCamping adventure and leisure trips.",
+  description:
+    "Terms and conditions for YouthCamping adventure and leisure trips.",
 };
 
 export default function TermsAndConditionsPage() {
@@ -22,7 +30,8 @@ export default function TermsAndConditionsPage() {
           </h1>
           <div className="w-16 h-1.5 bg-[#D4541A] rounded-full mx-auto my-3" />
           <p className="text-xs sm:text-sm text-zinc-300 font-semibold max-w-xl mx-auto leading-relaxed">
-            Please read these terms carefully before booking any adventure expedition with YouthCamping.
+            Please read these terms carefully before booking any adventure
+            expedition with YouthCamping.
           </p>
         </div>
       </section>
@@ -30,7 +39,6 @@ export default function TermsAndConditionsPage() {
       {/* Main Content Document Container */}
       <div className="max-w-4xl mx-auto px-5 sm:px-8 py-12">
         <div className="bg-white border border-zinc-200/90 rounded-[28px] p-6 sm:p-10 shadow-2xs space-y-10">
-          
           {/* Section 1: Declaration & Risk Acceptance */}
           <section className="space-y-3 border-b border-zinc-100 pb-8">
             <div className="flex items-center gap-2.5">
@@ -43,10 +51,16 @@ export default function TermsAndConditionsPage() {
             </div>
             <div className="space-y-3 text-xs sm:text-sm text-zinc-600 font-semibold leading-relaxed pl-9">
               <p>
-                By booking a trip with YouthCamping, you declare that you are participating in this adventure & leisure trip on your own free will and at your own risk. Remote mountain exploration carries inherent terrain and climate risks.
+                By booking a trip with YouthCamping, you declare that you are
+                participating in this adventure & leisure trip on your own free
+                will and at your own risk. Remote mountain exploration carries
+                inherent terrain and climate risks.
               </p>
               <p>
-                YouthCamping, its trip captains, and affiliated partners shall not be held liable for personal injury, illness, or loss/damage to personal baggage resulting from participant negligence or unapproved hazardous activities.
+                YouthCamping, its trip captains, and affiliated partners shall
+                not be held liable for personal injury, illness, or loss/damage
+                to personal baggage resulting from participant negligence or
+                unapproved hazardous activities.
               </p>
             </div>
           </section>
@@ -63,7 +77,9 @@ export default function TermsAndConditionsPage() {
             </div>
             <div className="space-y-3 text-xs sm:text-sm text-zinc-600 font-semibold leading-relaxed pl-9">
               <p>
-                A minimum deposit is required at time of booking to reserve seats. Full remaining balance must be cleared at least 7 days prior to departure date.
+                A minimum deposit is required at time of booking to reserve
+                seats. Full remaining balance must be cleared at least 7 days
+                prior to departure date.
               </p>
             </div>
           </section>
@@ -80,7 +96,10 @@ export default function TermsAndConditionsPage() {
             </div>
             <div className="space-y-3 text-xs sm:text-sm text-zinc-600 font-semibold leading-relaxed pl-9">
               <p>
-                Participants are expected to respect local mountain cultures, environmental guidelines, and fellow group travelers. The decision of the assigned trip captain is final in all matters of group safety.
+                Participants are expected to respect local mountain cultures,
+                environmental guidelines, and fellow group travelers. The
+                decision of the assigned trip captain is final in all matters of
+                group safety.
               </p>
             </div>
           </section>

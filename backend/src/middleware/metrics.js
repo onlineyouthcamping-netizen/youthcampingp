@@ -1,4 +1,4 @@
-const { requestStorage } = require('../lib/prisma');
+const { requestStorage } = require("../lib/prisma");
 
 /**
  * Performance metrics middleware for logging request timing and size.
@@ -17,27 +17,32 @@ module.exports = (req, res, next) => {
     const dbDur = req._timings?.db || 0;
     const handlerDur = Math.max(0, appDur - authDur - dbDur);
 
-    if (process.env.ENABLE_PERFORMANCE_METRICS === 'true') {
-      res.setHeader('Server-Timing', `auth;dur=${authDur}, db;dur=${dbDur}, handler;dur=${handlerDur}, app;dur=${appDur}`);
+    if (process.env.ENABLE_PERFORMANCE_METRICS === "true") {
+      res.setHeader(
+        "Server-Timing",
+        `auth;dur=${authDur}, db;dur=${dbDur}, handler;dur=${handlerDur}, app;dur=${appDur}`,
+      );
     } else {
-      res.setHeader('Server-Timing', `app;dur=${appDur}`);
+      res.setHeader("Server-Timing", `app;dur=${appDur}`);
     }
     return originalWriteHead.apply(this, args);
   };
 
-  res.on('finish', () => {
-    if (process.env.ENABLE_PERFORMANCE_METRICS === 'true') {
+  res.on("finish", () => {
+    if (process.env.ENABLE_PERFORMANCE_METRICS === "true") {
       const duration = Date.now() - start;
-      const contentLength = res.get('Content-Length') || 0;
-      let routePattern = 'unknown';
+      const contentLength = res.get("Content-Length") || 0;
+      let routePattern = "unknown";
       if (req.route) {
-        routePattern = req.baseUrl ? `${req.baseUrl}${req.route.path}` : req.route.path;
+        routePattern = req.baseUrl
+          ? `${req.baseUrl}${req.route.path}`
+          : req.route.path;
       } else {
-        routePattern = req.baseUrl || '/api/unmatched';
+        routePattern = req.baseUrl || "/api/unmatched";
       }
-      
+
       const logMsg = `[METRICS] Method: ${req.method}, Path: ${routePattern}, Status: ${res.statusCode}, Duration: ${duration}ms, Size: ${contentLength} bytes`;
-      
+
       if (duration > 1000) {
         console.warn(`[SLOW REQUEST] ${logMsg}`);
       } else {
@@ -46,7 +51,7 @@ module.exports = (req, res, next) => {
     }
   });
 
-  if (requestStorage && typeof requestStorage.run === 'function') {
+  if (requestStorage && typeof requestStorage.run === "function") {
     requestStorage.run(req._timings, () => {
       next();
     });

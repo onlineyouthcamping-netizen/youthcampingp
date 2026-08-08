@@ -1,4 +1,4 @@
-const { prisma } = require('../lib/prisma');
+const { prisma } = require("../lib/prisma");
 
 /**
  * Get the last-expanded sidebar module state for the user
@@ -8,16 +8,16 @@ exports.getNavState = async (req, res, next) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     const state = await prisma.userNavState.findUnique({
-      where: { userId }
+      where: { userId },
     });
 
     res.json({
       success: true,
-      data: state ? state.expandedModule : null
+      data: state ? state.expandedModule : null,
     });
   } catch (error) {
     next(error);
@@ -34,18 +34,18 @@ exports.saveNavState = async (req, res, next) => {
     const { expandedModule } = req.body;
 
     if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     const state = await prisma.userNavState.upsert({
       where: { userId },
       update: { expandedModule },
-      create: { userId, expandedModule }
+      create: { userId, expandedModule },
     });
 
     res.json({
       success: true,
-      data: state.expandedModule
+      data: state.expandedModule,
     });
   } catch (error) {
     next(error);
@@ -62,38 +62,86 @@ exports.getSections = async (req, res, next) => {
 
     // Get count of published/approved items for each category
     const counts = await prisma.knowledgeItem.groupBy({
-      by: ['category'],
+      by: ["category"],
       where: {
         tripId,
-        status: { in: ['APPROVED', 'PUBLISHED'] }
+        status: { in: ["APPROVED", "PUBLISHED"] },
       },
       _count: {
-        _all: true
-      }
+        _all: true,
+      },
     });
 
     // Build map
     const countsMap = {};
-    counts.forEach(c => {
+    counts.forEach((c) => {
       countsMap[c.category.toLowerCase().replace(/\s/g, "")] = c._count._all;
     });
 
     const sectionsMeta = [
-      { tabKey: "Overview", title: "Trip Overview", description: "Key highlights, route, best time, difficulty & more" },
-      { tabKey: "Sales Guide", title: "Sales Guide", description: "How to sell, USPs, objections & answers" },
-      { tabKey: "Customer FAQs", title: "Customer FAQs", description: "All customer questions & answers" },
-      { tabKey: "Inclusions & Exclusions", title: "Inclusions & Exclusions", description: "What's included / not included" },
-      { tabKey: "Ticketing SOPs", title: "Ticketing Info", description: "Train, flight, bus, cab SOPs & rules" },
-      { tabKey: "Visa & Entry", title: "Visa & Entry", description: "Visa process, docs, requirements" },
-      { tabKey: "Destination Guide", title: "Destination Guide", description: "Weather, food, culture, local info" },
-      { tabKey: "Packing Guide", title: "Packing Guide", description: "What to carry, checklist, tips" },
-      { tabKey: "Operational SOPs", title: "SOPs & Processes", description: "Operational SOPs & workflows" },
-      { tabKey: "Emergency Center", title: "Emergency Center", description: "What to do in emergencies" },
-      { tabKey: "Pricing & Policies", title: "Pricing & Policy", description: "Price sheet, cancellation, refund" },
-      { tabKey: "Past Learnings", title: "Past Learnings", description: "Lessons, feedback & improvements" }
+      {
+        tabKey: "Overview",
+        title: "Trip Overview",
+        description: "Key highlights, route, best time, difficulty & more",
+      },
+      {
+        tabKey: "Sales Guide",
+        title: "Sales Guide",
+        description: "How to sell, USPs, objections & answers",
+      },
+      {
+        tabKey: "Customer FAQs",
+        title: "Customer FAQs",
+        description: "All customer questions & answers",
+      },
+      {
+        tabKey: "Inclusions & Exclusions",
+        title: "Inclusions & Exclusions",
+        description: "What's included / not included",
+      },
+      {
+        tabKey: "Ticketing SOPs",
+        title: "Ticketing Info",
+        description: "Train, flight, bus, cab SOPs & rules",
+      },
+      {
+        tabKey: "Visa & Entry",
+        title: "Visa & Entry",
+        description: "Visa process, docs, requirements",
+      },
+      {
+        tabKey: "Destination Guide",
+        title: "Destination Guide",
+        description: "Weather, food, culture, local info",
+      },
+      {
+        tabKey: "Packing Guide",
+        title: "Packing Guide",
+        description: "What to carry, checklist, tips",
+      },
+      {
+        tabKey: "Operational SOPs",
+        title: "SOPs & Processes",
+        description: "Operational SOPs & workflows",
+      },
+      {
+        tabKey: "Emergency Center",
+        title: "Emergency Center",
+        description: "What to do in emergencies",
+      },
+      {
+        tabKey: "Pricing & Policies",
+        title: "Pricing & Policy",
+        description: "Price sheet, cancellation, refund",
+      },
+      {
+        tabKey: "Past Learnings",
+        title: "Past Learnings",
+        description: "Lessons, feedback & improvements",
+      },
     ];
 
-    const data = sectionsMeta.map(meta => {
+    const data = sectionsMeta.map((meta) => {
       const cleanKey = meta.tabKey.toLowerCase().replace(/\s/g, "");
       return {
         id: cleanKey,
@@ -101,13 +149,13 @@ exports.getSections = async (req, res, next) => {
         tabKey: meta.tabKey,
         title: meta.title,
         description: meta.description,
-        itemCount: countsMap[cleanKey] || 0
+        itemCount: countsMap[cleanKey] || 0,
       };
     });
 
     res.json({
       success: true,
-      data
+      data,
     });
   } catch (error) {
     next(error);
@@ -123,13 +171,13 @@ exports.getNotices = async (req, res, next) => {
     const { tripId } = req.params;
     const notices = await prisma.tripNotice.findMany({
       where: { tripId },
-      orderBy: { createdAt: 'desc' },
-      take: 2 // get most recent 1-2 notices
+      orderBy: { createdAt: "desc" },
+      take: 2, // get most recent 1-2 notices
     });
 
     res.json({
       success: true,
-      data: notices
+      data: notices,
     });
   } catch (error) {
     next(error);
@@ -143,47 +191,50 @@ exports.getNotices = async (req, res, next) => {
 exports.searchKnowledge = async (req, res, next) => {
   try {
     const { q } = req.query;
-    if (!q || typeof q !== 'string') {
-      return res.json({ success: true, data: { trips: [], sections: [], notices: [], vendors: [] } });
+    if (!q || typeof q !== "string") {
+      return res.json({
+        success: true,
+        data: { trips: [], sections: [], notices: [], vendors: [] },
+      });
     }
 
     const [trips, sections, notices, vendors] = await Promise.all([
       prisma.trip.findMany({
         where: {
           OR: [
-            { title: { contains: q, mode: 'insensitive' } },
-            { location: { contains: q, mode: 'insensitive' } }
-          ]
+            { title: { contains: q, mode: "insensitive" } },
+            { location: { contains: q, mode: "insensitive" } },
+          ],
         },
-        take: 5
+        take: 5,
       }),
       prisma.knowledgeSection.findMany({
         where: {
           OR: [
-            { title: { contains: q, mode: 'insensitive' } },
-            { description: { contains: q, mode: 'insensitive' } }
-          ]
+            { title: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
+          ],
         },
-        take: 5
+        take: 5,
       }),
       prisma.tripNotice.findMany({
         where: {
           OR: [
-            { title: { contains: q, mode: 'insensitive' } },
-            { body: { contains: q, mode: 'insensitive' } }
-          ]
+            { title: { contains: q, mode: "insensitive" } },
+            { body: { contains: q, mode: "insensitive" } },
+          ],
         },
-        take: 5
+        take: 5,
       }),
       prisma.vendor.findMany({
         where: {
           OR: [
-            { name: { contains: q, mode: 'insensitive' } },
-            { type: { contains: q, mode: 'insensitive' } }
-          ]
+            { name: { contains: q, mode: "insensitive" } },
+            { type: { contains: q, mode: "insensitive" } },
+          ],
         },
-        take: 5
-      })
+        take: 5,
+      }),
     ]);
 
     res.json({
@@ -192,8 +243,8 @@ exports.searchKnowledge = async (req, res, next) => {
         trips,
         sections,
         notices,
-        vendors
-      }
+        vendors,
+      },
     });
   } catch (error) {
     next(error);
@@ -207,26 +258,32 @@ exports.searchKnowledge = async (req, res, next) => {
 exports.upsertSection = async (req, res, next) => {
   try {
     const { tripId, tabKey, title, description, itemCount } = req.body;
-    
+
     const existing = await prisma.knowledgeSection.findFirst({
-      where: { tripId, tabKey }
+      where: { tripId, tabKey },
     });
 
     let section;
     if (existing) {
       section = await prisma.knowledgeSection.update({
         where: { id: existing.id },
-        data: { title, description, itemCount: Number(itemCount) }
+        data: { title, description, itemCount: Number(itemCount) },
       });
     } else {
       section = await prisma.knowledgeSection.create({
-        data: { tripId, tabKey, title, description, itemCount: Number(itemCount) }
+        data: {
+          tripId,
+          tabKey,
+          title,
+          description,
+          itemCount: Number(itemCount),
+        },
       });
     }
 
     res.json({
       success: true,
-      data: section
+      data: section,
     });
   } catch (error) {
     next(error);
@@ -240,17 +297,16 @@ exports.upsertSection = async (req, res, next) => {
 exports.createNotice = async (req, res, next) => {
   try {
     const { tripId, title, body } = req.body;
-    
+
     const notice = await prisma.tripNotice.create({
-      data: { tripId, title, body }
+      data: { tripId, title, body },
     });
 
     res.json({
       success: true,
-      data: notice
+      data: notice,
     });
   } catch (error) {
     next(error);
   }
 };
-

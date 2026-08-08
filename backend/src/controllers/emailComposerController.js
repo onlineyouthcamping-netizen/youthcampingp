@@ -1,8 +1,8 @@
-const { prisma } = require('../lib/prisma');
-const SibApiV3Sdk = require('sib-api-v3-sdk');
+const { prisma } = require("../lib/prisma");
+const SibApiV3Sdk = require("sib-api-v3-sdk");
 
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
-const apiKey = defaultClient.authentications['api-key'];
+const apiKey = defaultClient.authentications["api-key"];
 apiKey.apiKey = process.env.BREVO_API_KEY;
 
 const emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
@@ -11,7 +11,7 @@ const emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 function resolveMergeTags(text, data) {
   if (!text) return "";
   return text.replace(/\{\{([a-zA-Z0-9._]+)\}\}/g, (match, tag) => {
-    const parts = tag.split('.');
+    const parts = tag.split(".");
     let current = data;
     for (const part of parts) {
       if (current === null || current === undefined) return "";
@@ -25,22 +25,41 @@ function resolveMergeTags(text, data) {
 function getCalendarDateParts(dateStr) {
   if (!dateStr) return { dayName: "TBD", dateNum: "--", monthName: "TBD" };
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return { dayName: "TBD", dateNum: "--", monthName: "TBD" };
-  
+  if (isNaN(d.getTime()))
+    return { dayName: "TBD", dateNum: "--", monthName: "TBD" };
+
   const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-  
+  const months = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+  ];
+
   return {
     dayName: days[d.getDay()],
-    dateNum: String(d.getDate()).padStart(2, '0'),
-    monthName: months[d.getMonth()]
+    dateNum: String(d.getDate()).padStart(2, "0"),
+    monthName: months[d.getMonth()],
   };
 }
 
 // Branded email wrapper
-function wrapInBrandedLayout(htmlContent, subject, contextType = '', contextData = {}) {
+function wrapInBrandedLayout(
+  htmlContent,
+  subject,
+  contextType = "",
+  contextData = {},
+) {
   // If it's not a booking, return a clean generic branded wrapper
-  if (contextType !== 'booking' || !contextData.booking) {
+  if (contextType !== "booking" || !contextData.booking) {
     return `
 <!DOCTYPE html>
 <html>
@@ -461,41 +480,45 @@ function wrapInBrandedLayout(htmlContent, subject, contextType = '', contextData
 // Fetch context data for merge tags
 async function getContextData(contextType, contextId, tenantId) {
   let data = {};
-  if (contextType === 'booking') {
+  if (contextType === "booking") {
     const booking = await prisma.booking.findFirst({
       where: { id: contextId, tenantId },
-      include: { tripRef: true, salesAdmin: true }
+      include: { tripRef: true, salesAdmin: true },
     });
     if (booking) {
       data = {
         recipient: {
           full_name: booking.fullName,
-          first_name: booking.fullName ? booking.fullName.split(' ')[0] : "",
-          email: booking.email || ""
+          first_name: booking.fullName ? booking.fullName.split(" ")[0] : "",
+          email: booking.email || "",
         },
         booking: {
           reference: booking.bookingId || booking.id,
-          created_at: booking.createdAt ? booking.createdAt.toLocaleDateString() : "",
+          created_at: booking.createdAt
+            ? booking.createdAt.toLocaleDateString()
+            : "",
           status: booking.status,
           total_amount: booking.totalAmount,
           paid_amount: booking.advancePaid,
-          remaining_balance: booking.remainingAmount
+          remaining_balance: booking.remainingAmount,
         },
         trip: {
           name: booking.tripName || booking.tripRef?.tripName || "",
-          start_date: booking.departureDate ? booking.departureDate.toLocaleDateString() : "",
+          start_date: booking.departureDate
+            ? booking.departureDate.toLocaleDateString()
+            : "",
           end_date: "",
           duration: booking.tripRef?.duration || "",
-          pickup_city: booking.pickupCity || ""
+          pickup_city: booking.pickupCity || "",
         },
         salesperson: {
           name: booking.salesAdmin?.name || "Support Team",
-          phone: ""
-        }
+          phone: "",
+        },
       };
 
       const ticket = await prisma.trainTicket.findFirst({
-        where: { bookingId: booking.bookingId }
+        where: { bookingId: booking.bookingId },
       });
       if (ticket) {
         data.train = {
@@ -505,69 +528,80 @@ async function getContextData(contextType, contextId, tenantId) {
           coach: ticket.coach || "",
           seat: ticket.seatNumber || "",
           boarding_station: ticket.sourceStation || "",
-          departure_time: ticket.journeyDate ? ticket.journeyDate.toLocaleDateString() + ' ' + ticket.journeyDate.toLocaleTimeString() : "",
+          departure_time: ticket.journeyDate
+            ? ticket.journeyDate.toLocaleDateString() +
+              " " +
+              ticket.journeyDate.toLocaleTimeString()
+            : "",
           arrival_station: ticket.destinationStation || "",
-          ticket_status: ticket.ticketStatus
+          ticket_status: ticket.ticketStatus,
         };
       }
     }
-  } else if (contextType === 'inquiry') {
+  } else if (contextType === "inquiry") {
     const inquiry = await prisma.inquiry.findFirst({
       where: { id: contextId, tenantId },
-      include: { salesAdmin: true }
+      include: { salesAdmin: true },
     });
     if (inquiry) {
       data = {
         recipient: {
           full_name: inquiry.name || "",
-          first_name: inquiry.name ? inquiry.name.split(' ')[0] : "",
-          email: inquiry.email || ""
+          first_name: inquiry.name ? inquiry.name.split(" ")[0] : "",
+          email: inquiry.email || "",
         },
         booking: {
           reference: inquiry.id,
-          status: inquiry.status
+          status: inquiry.status,
         },
         trip: {
           name: inquiry.tripTitle || "",
-          pickup_city: ""
+          pickup_city: "",
         },
         salesperson: {
-          name: inquiry.salesAdmin?.name || "Support Team"
-        }
+          name: inquiry.salesAdmin?.name || "Support Team",
+        },
       };
     }
-  } else if (contextType === 'ticket') {
+  } else if (contextType === "ticket") {
     const ticket = await prisma.trainTicket.findFirst({
       where: { id: contextId, tenantId },
       include: {
         booking: {
-          include: { tripRef: true, salesAdmin: true }
-        }
-      }
+          include: { tripRef: true, salesAdmin: true },
+        },
+      },
     });
     if (ticket) {
       data = {
         recipient: {
           full_name: ticket.travelerName || ticket.booking?.fullName || "",
-          first_name: ticket.travelerName ? ticket.travelerName.split(' ')[0] : "",
-          email: ticket.booking?.email || ""
+          first_name: ticket.travelerName
+            ? ticket.travelerName.split(" ")[0]
+            : "",
+          email: ticket.booking?.email || "",
         },
         booking: {
           reference: ticket.booking?.bookingId || ticket.bookingId,
-          created_at: ticket.booking?.createdAt ? ticket.booking.createdAt.toLocaleDateString() : "",
+          created_at: ticket.booking?.createdAt
+            ? ticket.booking.createdAt.toLocaleDateString()
+            : "",
           status: ticket.booking?.status || "",
           total_amount: ticket.booking?.totalAmount || 0,
           paid_amount: ticket.booking?.advancePaid || 0,
-          remaining_balance: ticket.booking?.remainingAmount || 0
+          remaining_balance: ticket.booking?.remainingAmount || 0,
         },
         trip: {
-          name: ticket.booking?.tripName || ticket.booking?.tripRef?.tripName || "",
-          start_date: ticket.booking?.departureDate ? ticket.booking.departureDate.toLocaleDateString() : "",
+          name:
+            ticket.booking?.tripName || ticket.booking?.tripRef?.tripName || "",
+          start_date: ticket.booking?.departureDate
+            ? ticket.booking.departureDate.toLocaleDateString()
+            : "",
           duration: ticket.booking?.tripRef?.duration || "",
-          pickup_city: ticket.booking?.pickupCity || ""
+          pickup_city: ticket.booking?.pickupCity || "",
         },
         salesperson: {
-          name: ticket.booking?.salesAdmin?.name || "Support Team"
+          name: ticket.booking?.salesAdmin?.name || "Support Team",
         },
         train: {
           name: ticket.trainName || "",
@@ -576,10 +610,14 @@ async function getContextData(contextType, contextId, tenantId) {
           coach: ticket.coach || "",
           seat: ticket.seatNumber || "",
           boarding_station: ticket.sourceStation || "",
-          departure_time: ticket.journeyDate ? ticket.journeyDate.toLocaleDateString() + ' ' + ticket.journeyDate.toLocaleTimeString() : "",
+          departure_time: ticket.journeyDate
+            ? ticket.journeyDate.toLocaleDateString() +
+              " " +
+              ticket.journeyDate.toLocaleTimeString()
+            : "",
           arrival_station: ticket.destinationStation || "",
-          ticket_status: ticket.ticketStatus
-        }
+          ticket_status: ticket.ticketStatus,
+        },
       };
     }
   }
@@ -588,7 +626,7 @@ async function getContextData(contextType, contextId, tenantId) {
 
 exports.sendCustomEmail = async (req, res, next) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user.tenantId || "default";
     const {
       contextType,
       contextId,
@@ -599,26 +637,42 @@ exports.sendCustomEmail = async (req, res, next) => {
       subject: reqSubject,
       body: reqBody,
       templateId,
-      isTest
+      isTest,
     } = req.body;
 
-    const testMode = isTest === 'true' || isTest === true;
+    const testMode = isTest === "true" || isTest === true;
 
     if (!contextType || !contextId || !to || !reqSubject || !reqBody) {
-      return res.status(400).json({ success: false, message: 'Missing required parameters' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required parameters" });
     }
 
     // Role-scoping validation
-    if (req.user.role === 'sales') {
-      if (contextType === 'booking') {
-        const check = await prisma.booking.findFirst({ where: { id: contextId, tenantId } });
+    if (req.user.role === "sales") {
+      if (contextType === "booking") {
+        const check = await prisma.booking.findFirst({
+          where: { id: contextId, tenantId },
+        });
         if (check && check.salesAdminId !== req.user.id) {
-          return res.status(403).json({ success: false, message: 'Forbidden: Scoped ownership violation' });
+          return res
+            .status(403)
+            .json({
+              success: false,
+              message: "Forbidden: Scoped ownership violation",
+            });
         }
-      } else if (contextType === 'inquiry') {
-        const check = await prisma.inquiry.findFirst({ where: { id: contextId, tenantId } });
+      } else if (contextType === "inquiry") {
+        const check = await prisma.inquiry.findFirst({
+          where: { id: contextId, tenantId },
+        });
         if (check && check.salesAdminId !== req.user.id) {
-          return res.status(403).json({ success: false, message: 'Forbidden: Scoped ownership violation' });
+          return res
+            .status(403)
+            .json({
+              success: false,
+              message: "Forbidden: Scoped ownership violation",
+            });
         }
       }
     }
@@ -637,16 +691,26 @@ exports.sendCustomEmail = async (req, res, next) => {
       totalSize += file.size;
     }
     if (totalSize > 25 * 1024 * 1024) {
-      return res.status(400).json({ success: false, message: 'Combined attachments size exceeds 25MB' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Combined attachments size exceeds 25MB",
+        });
     }
 
     // Prepare SMTP details
     const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
     sendSmtpEmail.subject = finalSubject;
-    sendSmtpEmail.htmlContent = wrapInBrandedLayout(finalBody, finalSubject, contextType, contextData);
+    sendSmtpEmail.htmlContent = wrapInBrandedLayout(
+      finalBody,
+      finalSubject,
+      contextType,
+      contextData,
+    );
     sendSmtpEmail.sender = {
       name: "Youth Camping",
-      email: process.env.EMAIL_FROM || "parthyouthcamping@gmail.com"
+      email: process.env.EMAIL_FROM || "parthyouthcamping@gmail.com",
     };
 
     // To recipient
@@ -654,17 +718,30 @@ exports.sendCustomEmail = async (req, res, next) => {
 
     // Cc list
     if (cc && !testMode) {
-      sendSmtpEmail.cc = cc.split(',').map(e => ({ email: e.trim() })).filter(e => e.email);
+      sendSmtpEmail.cc = cc
+        .split(",")
+        .map((e) => ({ email: e.trim() }))
+        .filter((e) => e.email);
     }
 
     // Bcc list (incorporate company internal BCC env)
     const bccList = [];
     if (bcc && !testMode) {
-      bccList.push(...bcc.split(',').map(e => ({ email: e.trim() })).filter(e => e.email));
+      bccList.push(
+        ...bcc
+          .split(",")
+          .map((e) => ({ email: e.trim() }))
+          .filter((e) => e.email),
+      );
     }
-    const bccEnv = (process.env.INTERNAL_EMAIL_BCC || '').trim();
+    const bccEnv = (process.env.INTERNAL_EMAIL_BCC || "").trim();
     if (bccEnv) {
-      bccList.push(...bccEnv.split(',').map(e => ({ email: e.trim() })).filter(e => e.email));
+      bccList.push(
+        ...bccEnv
+          .split(",")
+          .map((e) => ({ email: e.trim() }))
+          .filter((e) => e.email),
+      );
     }
     if (bccList.length > 0) {
       sendSmtpEmail.bcc = bccList;
@@ -676,20 +753,20 @@ exports.sendCustomEmail = async (req, res, next) => {
 
     // Map attachments
     if (files.length > 0) {
-      sendSmtpEmail.attachment = files.map(file => ({
-        content: file.buffer.toString('base64'),
-        name: file.originalname
+      sendSmtpEmail.attachment = files.map((file) => ({
+        content: file.buffer.toString("base64"),
+        name: file.originalname,
       }));
     }
 
-    let status = 'SENT';
+    let status = "SENT";
     let errorMsg = null;
 
     try {
       await emailApi.sendTransacEmail(sendSmtpEmail);
     } catch (sendErr) {
       console.error("🔥 Brevo SMTP failure:", sendErr);
-      status = 'FAILED';
+      status = "FAILED";
       errorMsg = sendErr.message || String(sendErr);
     }
 
@@ -702,28 +779,30 @@ exports.sendCustomEmail = async (req, res, next) => {
       subject: finalSubject,
       body: finalBody,
       templateId: templateId || null,
-      attachments: files.map(f => ({ name: f.originalname, size: f.size })),
+      attachments: files.map((f) => ({ name: f.originalname, size: f.size })),
       status,
       error: errorMsg,
       isTest: testMode,
-      senderId: req.user.id
+      senderId: req.user.id,
     };
 
-    if (contextType === 'booking') {
+    if (contextType === "booking") {
       logData.bookingId = contextId;
-    } else if (contextType === 'inquiry') {
+    } else if (contextType === "inquiry") {
       logData.inquiryId = contextId;
-    } else if (contextType === 'ticket') {
+    } else if (contextType === "ticket") {
       logData.trainTicketId = contextId;
     }
 
     await prisma.emailLog.create({ data: logData });
 
-    if (status === 'FAILED') {
-      return res.status(500).json({ success: false, message: `Failed to send email: ${errorMsg}` });
+    if (status === "FAILED") {
+      return res
+        .status(500)
+        .json({ success: false, message: `Failed to send email: ${errorMsg}` });
     }
 
-    res.json({ success: true, message: 'Email sent successfully!' });
+    res.json({ success: true, message: "Email sent successfully!" });
   } catch (err) {
     next(err);
   }
@@ -731,17 +810,29 @@ exports.sendCustomEmail = async (req, res, next) => {
 
 exports.sendBulkEmails = async (req, res, next) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user.tenantId || "default";
     const {
       contextType,
       selectedIds,
       subject: reqSubject,
       body: reqBody,
-      templateId
+      templateId,
     } = req.body;
 
-    if (!contextType || !selectedIds || !Array.isArray(selectedIds) || selectedIds.length === 0 || !reqSubject || !reqBody) {
-      return res.status(400).json({ success: false, message: 'Missing required parameters for bulk send' });
+    if (
+      !contextType ||
+      !selectedIds ||
+      !Array.isArray(selectedIds) ||
+      selectedIds.length === 0 ||
+      !reqSubject ||
+      !reqBody
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Missing required parameters for bulk send",
+        });
     }
 
     let sent = 0;
@@ -752,56 +843,76 @@ exports.sendBulkEmails = async (req, res, next) => {
     for (const contextId of selectedIds) {
       try {
         let recipientEmail = "";
-        
+
         // Scope & target email resolution
-        if (contextType === 'booking') {
+        if (contextType === "booking") {
           const booking = await prisma.booking.findFirst({
-            where: { id: contextId, tenantId }
+            where: { id: contextId, tenantId },
           });
-          if (!booking || (req.user.role === 'sales' && booking.salesAdminId !== req.user.id)) {
+          if (
+            !booking ||
+            (req.user.role === "sales" && booking.salesAdminId !== req.user.id)
+          ) {
             skipped++;
             continue;
           }
           recipientEmail = booking.email;
-        } else if (contextType === 'inquiry') {
+        } else if (contextType === "inquiry") {
           const inquiry = await prisma.inquiry.findFirst({
-            where: { id: contextId, tenantId }
+            where: { id: contextId, tenantId },
           });
-          if (!inquiry || (req.user.role === 'sales' && inquiry.salesAdminId !== req.user.id)) {
+          if (
+            !inquiry ||
+            (req.user.role === "sales" && inquiry.salesAdminId !== req.user.id)
+          ) {
             skipped++;
             continue;
           }
           recipientEmail = inquiry.email;
         }
 
-        if (!recipientEmail || !recipientEmail.includes('@')) {
+        if (!recipientEmail || !recipientEmail.includes("@")) {
           skipped++;
           continue;
         }
 
-        const contextData = await getContextData(contextType, contextId, tenantId);
+        const contextData = await getContextData(
+          contextType,
+          contextId,
+          tenantId,
+        );
         const finalSubject = resolveMergeTags(reqSubject, contextData);
         const finalBody = resolveMergeTags(reqBody, contextData);
 
         const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
         sendSmtpEmail.subject = finalSubject;
-        sendSmtpEmail.htmlContent = wrapInBrandedLayout(finalBody, finalSubject, contextType, contextData);
+        sendSmtpEmail.htmlContent = wrapInBrandedLayout(
+          finalBody,
+          finalSubject,
+          contextType,
+          contextData,
+        );
         sendSmtpEmail.sender = {
           name: "Youth Camping",
-          email: process.env.EMAIL_FROM || "parthyouthcamping@gmail.com"
+          email: process.env.EMAIL_FROM || "parthyouthcamping@gmail.com",
         };
         sendSmtpEmail.to = [{ email: recipientEmail.trim() }];
 
         const bccList = [];
-        const bccEnv = (process.env.INTERNAL_EMAIL_BCC || '').trim();
+        const bccEnv = (process.env.INTERNAL_EMAIL_BCC || "").trim();
         if (bccEnv) {
-          bccList.push(...bccEnv.split(',').map(e => ({ email: e.trim() })).filter(e => e.email));
+          bccList.push(
+            ...bccEnv
+              .split(",")
+              .map((e) => ({ email: e.trim() }))
+              .filter((e) => e.email),
+          );
         }
         if (bccList.length > 0) {
           sendSmtpEmail.bcc = bccList;
         }
 
-        let status = 'SENT';
+        let status = "SENT";
         let errorMsg = null;
 
         try {
@@ -809,7 +920,7 @@ exports.sendBulkEmails = async (req, res, next) => {
           sent++;
         } catch (sendErr) {
           failed++;
-          status = 'FAILED';
+          status = "FAILED";
           errorMsg = sendErr.message || String(sendErr);
         }
 
@@ -825,19 +936,22 @@ exports.sendBulkEmails = async (req, res, next) => {
           status,
           error: errorMsg,
           isTest: false,
-          senderId: req.user.id
+          senderId: req.user.id,
         };
 
-        if (contextType === 'booking') {
+        if (contextType === "booking") {
           logData.bookingId = contextId;
-        } else if (contextType === 'inquiry') {
+        } else if (contextType === "inquiry") {
           logData.inquiryId = contextId;
         }
 
         await prisma.emailLog.create({ data: logData });
-
       } catch (loopErr) {
-        console.error("🔥 Bulk loop failure for contextId:", contextId, loopErr);
+        console.error(
+          "🔥 Bulk loop failure for contextId:",
+          contextId,
+          loopErr,
+        );
         failed++;
       }
     }
@@ -848,10 +962,9 @@ exports.sendBulkEmails = async (req, res, next) => {
         total: selectedIds.length,
         sent,
         failed,
-        skipped
-      }
+        skipped,
+      },
     });
-
   } catch (err) {
     next(err);
   }

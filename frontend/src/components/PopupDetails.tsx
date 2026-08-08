@@ -1,7 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { X, ArrowRight, ShieldCheck, FileText, Backpack, ShoppingBag, Info, CheckCircle, MessageSquare } from "lucide-react";
+import {
+  X,
+  ArrowRight,
+  ShieldCheck,
+  FileText,
+  Backpack,
+  ShoppingBag,
+  Info,
+  CheckCircle,
+  MessageSquare,
+} from "lucide-react";
 import { parseTripDate } from "@/lib/parseTripDate";
 
 interface Section {
@@ -13,48 +23,54 @@ interface Section {
 }
 
 const SECTIONS: Section[] = [
-  { 
-    id: "cancellation", 
-    label: "Cancellation Policy", 
+  {
+    id: "cancellation",
+    label: "Cancellation Policy",
     type: "list",
     content: [
       { label: "Before more than 40 days of Departure", val: "10% deduction" },
       { label: "Before 21 to 40 days of Departure", val: "25% deduction" },
       { label: "Before 11 to 20 days of Departure", val: "40% deduction" },
       { label: "Before 2 to 10 days of Departure", val: "60% deduction" },
-      { label: "In the last 48 hours of Departure", val: "90% deduction" }
+      { label: "In the last 48 hours of Departure", val: "90% deduction" },
     ],
-    note: "Cancellation would be granted by the Senior Registration Manager on receiving cancellation requests through the website."
+    note: "Cancellation would be granted by the Senior Registration Manager on receiving cancellation requests through the website.",
   },
-  { 
-    id: "inclusions", 
-    label: "Inclusion & Exclusion", 
+  {
+    id: "inclusions",
+    label: "Inclusion & Exclusion",
     type: "simple",
-    content: ["Check the detailed section on the main page for a full breakdown of what's covered and what's not."]
+    content: [
+      "Check the detailed section on the main page for a full breakdown of what's covered and what's not.",
+    ],
   },
-  { 
-    id: "terms", 
-    label: "Terms & Conditions", 
+  {
+    id: "terms",
+    label: "Terms & Conditions",
     type: "simple",
     content: [
       "The itinerary is subject to change due to weather or unforeseen conditions.",
       "All travellers must carry a valid ID proof.",
       "The decision of the trip captain will be final in case of any disputes.",
-      "YouthCamping is not responsible for any personal loss or damage."
-    ]
+      "YouthCamping is not responsible for any personal loss or damage.",
+    ],
   },
-  { 
-    id: "carry", 
-    label: "Things to Carry", 
+  {
+    id: "carry",
+    label: "Things to Carry",
     type: "categorical",
     content: [
       {
         category: "Mandatory Requirements",
         items: [
-          { text: "Medical Certificate", link: "#", linkText: "(Click here for Download)" },
+          {
+            text: "Medical Certificate",
+            link: "#",
+            linkText: "(Click here for Download)",
+          },
           { text: "Original ID Proof with 2 Xerox Copy" },
-          { text: "Screenshot of Fees Receipt" }
-        ]
+          { text: "Screenshot of Fees Receipt" },
+        ],
       },
       {
         category: "Trekking Gears (Available on Rent/Sale)",
@@ -68,8 +84,8 @@ const SECTIONS: Section[] = [
           { text: "Thermal Inner Wear" },
           { text: "Snow Proof Hand Gloves" },
           { text: "Thick Woolen Socks" },
-          { text: "Woolen Cap" }
-        ]
+          { text: "Woolen Cap" },
+        ],
       },
       {
         category: "Clothes",
@@ -77,8 +93,8 @@ const SECTIONS: Section[] = [
           { text: "Full Sleeve T-Shirts" },
           { text: "Normal Jacket/Fleece" },
           { text: "Trek Pants (Quick Dry would be Better)" },
-          { text: "Face Mask/Buff" }
-        ]
+          { text: "Face Mask/Buff" },
+        ],
       },
       {
         category: "Personal Items",
@@ -94,11 +110,11 @@ const SECTIONS: Section[] = [
           { text: "Lunch Box, Mug & Spoon" },
           { text: "Sunscreen (SPF 40+)" },
           { text: "Camera & Power Banks" },
-          { text: "Personal Medication if any" }
-        ]
-      }
-    ]
-  }
+          { text: "Personal Medication if any" },
+        ],
+      },
+    ],
+  },
 ];
 
 interface PopupDetailsProps {
@@ -114,26 +130,32 @@ interface PopupDetailsProps {
   };
 }
 
-export default function PopupDetails({ details, startDate }: PopupDetailsProps) {
+export default function PopupDetails({
+  details,
+  startDate,
+}: PopupDetailsProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  
+
   const formatDate = (days: number) => {
     if (!startDate) return null;
     const d = parseTripDate(startDate);
     if (!d) return null;
     d.setDate(d.getDate() - days);
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
   };
 
   // Merge dynamic data if available
   let activeSections = [...SECTIONS];
 
   if (details) {
-    activeSections = activeSections.map(sec => {
+    activeSections = activeSections.map((sec) => {
       let content = sec.content;
-      if (sec.id === "cancellation" && details.cancellation?.length > 0) content = details.cancellation;
-      if (sec.id === "terms" && details.terms?.length > 0) content = details.terms;
-      if (sec.id === "carry" && details.carry?.length > 0) content = details.carry;
+      if (sec.id === "cancellation" && details.cancellation?.length > 0)
+        content = details.cancellation;
+      if (sec.id === "terms" && details.terms?.length > 0)
+        content = details.terms;
+      if (sec.id === "carry" && details.carry?.length > 0)
+        content = details.carry;
 
       // Dynamic date formatting for cancellation policy
       if (sec.id === "cancellation" && startDate) {
@@ -167,13 +189,23 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
           category: cat.category,
           items: (cat.items || []).map((i: any) => {
             const rawPrice = (i.price || "").toString().trim().toLowerCase();
-            const isFree = !rawPrice || rawPrice === "free" || rawPrice === "0" || rawPrice === "₹0" || rawPrice === "₹free" || rawPrice === "free / complimentary";
+            const isFree =
+              !rawPrice ||
+              rawPrice === "free" ||
+              rawPrice === "0" ||
+              rawPrice === "₹0" ||
+              rawPrice === "₹free" ||
+              rawPrice === "free / complimentary";
             return {
               text: i.item,
-              price: isFree ? null : (i.price.startsWith("₹") ? i.price : `₹${i.price}`)
+              price: isFree
+                ? null
+                : i.price.startsWith("₹")
+                  ? i.price
+                  : `₹${i.price}`,
             };
-          })
-        }))
+          }),
+        })),
       });
     }
 
@@ -183,10 +215,10 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
         id: "etiquette",
         label: "Local Etiquette",
         type: "categorical",
-        content: details.etiquette.map(e => ({
+        content: details.etiquette.map((e) => ({
           category: e.title,
-          items: [{ text: e.desc }]
-        }))
+          items: [{ text: e.desc }],
+        })),
       });
     }
 
@@ -196,25 +228,32 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
         id: `custom-${idx}`,
         label: cp.label,
         type: (cp.type || "simple") as any,
-        content: cp.content
+        content: cp.content,
       }));
       activeSections = [...activeSections, ...customs];
     }
   }
 
-  const activeSection = activeSections.find(s => s.id === activeId);
+  const activeSection = activeSections.find((s) => s.id === activeId);
 
   return (
     <section className="mb-0 scroll-mt-[140px]" id="policies">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {activeSections.map((sec) => {
-          const Icon = sec.id === "cancellation" ? ShieldCheck 
-                    : sec.id === "terms" ? FileText
-                    : sec.id === "carry" ? Backpack
-                    : sec.id === "gears" ? ShoppingBag
-                    : sec.id === "etiquette" ? Info
-                    : sec.id === "inclusions" ? CheckCircle
-                    : MessageSquare;
+          const Icon =
+            sec.id === "cancellation"
+              ? ShieldCheck
+              : sec.id === "terms"
+                ? FileText
+                : sec.id === "carry"
+                  ? Backpack
+                  : sec.id === "gears"
+                    ? ShoppingBag
+                    : sec.id === "etiquette"
+                      ? Info
+                      : sec.id === "inclusions"
+                        ? CheckCircle
+                        : MessageSquare;
 
           return (
             <button
@@ -240,11 +279,11 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
       </div>
 
       {activeId && (
-        <div 
+        <div
           onClick={() => setActiveId(null)}
           className="fixed inset-0 z-[100000] flex items-center justify-center p-3.5 sm:p-6 pt-[84px] sm:pt-6 pb-4 sm:pb-6 bg-[#0B1528]/85 backdrop-blur-md transition-all duration-300 overflow-hidden"
         >
-          <div 
+          <div
             onClick={(e) => e.stopPropagation()}
             className="bg-white w-full max-w-xl rounded-[28px] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)] relative flex flex-col max-h-[calc(100vh-104px)] sm:max-h-[86vh]"
           >
@@ -253,7 +292,7 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
               <h2 className="text-lg font-bold text-[#1E293B] font-montserrat">
                 {activeSection?.label}
               </h2>
-              <button 
+              <button
                 onClick={() => setActiveId(null)}
                 className="text-zinc-400 hover:text-zinc-700 transition-colors p-1 rounded-full hover:bg-zinc-100 cursor-pointer"
               >
@@ -263,7 +302,6 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
 
             {/* Modal Content */}
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5 bg-white">
-
               {/* CATEGORICAL type (Things to Carry / Gears) */}
               {activeSection?.type === "categorical" && (
                 <div className="space-y-5">
@@ -284,8 +322,12 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
                                 key={i}
                                 className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-600 font-montserrat leading-relaxed"
                               >
-                                <span className="font-semibold text-zinc-400 min-w-[20px]">{i + 1}.</span>
-                                <span className="text-zinc-700 font-medium">{text}</span>
+                                <span className="font-semibold text-zinc-400 min-w-[20px]">
+                                  {i + 1}.
+                                </span>
+                                <span className="text-zinc-700 font-medium">
+                                  {text}
+                                </span>
                               </li>
                             );
                           })}
@@ -303,14 +345,23 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-zinc-50 border-b border-zinc-200">
-                          <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider text-zinc-600 font-montserrat">Item</th>
-                          <th className="text-right px-5 py-3 text-xs font-bold uppercase tracking-wider text-zinc-600 font-montserrat">Price</th>
+                          <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider text-zinc-600 font-montserrat">
+                            Item
+                          </th>
+                          <th className="text-right px-5 py-3 text-xs font-bold uppercase tracking-wider text-zinc-600 font-montserrat">
+                            Price
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-100">
                         {activeSection.content.map((row: any, i: number) => (
-                          <tr key={i} className="hover:bg-zinc-50/50 transition-colors">
-                            <td className="px-5 py-3 font-medium text-[#1E293B] text-xs font-montserrat">{row.item}</td>
+                          <tr
+                            key={i}
+                            className="hover:bg-zinc-50/50 transition-colors"
+                          >
+                            <td className="px-5 py-3 font-medium text-[#1E293B] text-xs font-montserrat">
+                              {row.item}
+                            </td>
                             <td className="px-5 py-3 text-right">
                               <span className="font-bold text-xs text-[#F97316] bg-orange-50 border border-orange-100 px-2.5 py-1 rounded-full font-montserrat">
                                 {row.price}
@@ -324,7 +375,9 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
                   {activeSection.note && (
                     <div className="flex items-start gap-3 p-3.5 bg-orange-50/60 rounded-xl border border-orange-100">
                       <Info className="w-4 h-4 text-[#F97316] shrink-0 mt-0.5" />
-                      <p className="text-xs text-zinc-600 font-medium font-montserrat leading-relaxed">{activeSection.note}</p>
+                      <p className="text-xs text-zinc-600 font-medium font-montserrat leading-relaxed">
+                        {activeSection.note}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -334,8 +387,13 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
               {activeSection?.type === "list" && (
                 <div className="space-y-2.5">
                   {activeSection.content.map((item: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between gap-4 bg-zinc-50/60 border border-zinc-200/70 rounded-xl px-4 py-3 hover:border-orange-200 transition-all">
-                      <span className="text-xs sm:text-sm font-medium text-zinc-700 font-montserrat leading-snug flex-1">{item.label}</span>
+                    <div
+                      key={i}
+                      className="flex items-center justify-between gap-4 bg-zinc-50/60 border border-zinc-200/70 rounded-xl px-4 py-3 hover:border-orange-200 transition-all"
+                    >
+                      <span className="text-xs sm:text-sm font-medium text-zinc-700 font-montserrat leading-snug flex-1">
+                        {item.label}
+                      </span>
                       <span className="font-bold text-xs text-[#F97316] bg-orange-50 border border-orange-100 px-3 py-1 rounded-full font-montserrat shrink-0 whitespace-nowrap">
                         {item.val}
                       </span>
@@ -344,7 +402,9 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
                   {activeSection.note && (
                     <div className="flex items-start gap-3 p-3.5 bg-amber-50/60 rounded-xl border border-amber-100 mt-3">
                       <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <p className="text-xs text-zinc-600 font-medium font-montserrat leading-relaxed">{activeSection.note}</p>
+                      <p className="text-xs text-zinc-600 font-medium font-montserrat leading-relaxed">
+                        {activeSection.note}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -354,19 +414,20 @@ export default function PopupDetails({ details, startDate }: PopupDetailsProps) 
               {activeSection?.type === "simple" && (
                 <div className="space-y-3">
                   {activeSection.content.map((item: any, i: number) => (
-                    <div key={i} className="flex items-start gap-3 text-xs sm:text-sm text-zinc-700 font-montserrat leading-relaxed">
+                    <div
+                      key={i}
+                      className="flex items-start gap-3 text-xs sm:text-sm text-zinc-700 font-montserrat leading-relaxed"
+                    >
                       <CheckCircle className="w-4.5 h-4.5 text-zinc-500 shrink-0 mt-0.5 stroke-[1.5]" />
                       <p className="font-medium text-zinc-700">{item}</p>
                     </div>
                   ))}
                 </div>
               )}
-
             </div>
           </div>
         </div>
       )}
     </section>
-
   );
 }

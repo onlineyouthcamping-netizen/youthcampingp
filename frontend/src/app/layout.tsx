@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { Metadata, Viewport } from "next";
 
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
@@ -16,13 +16,23 @@ import ScrollToTop from "@/components/ScrollToTop";
 const Footer = dynamic(() => import("@/components/Footer"), {
   loading: () => null,
 });
-const FloatingWhatsApp = dynamic(() => import("@/components/FloatingWhatsApp"), {
-  loading: () => null,
-});
+const FloatingWhatsApp = dynamic(
+  () => import("@/components/FloatingWhatsApp"),
+  {
+    loading: () => null,
+  },
+);
 import { DynamicThemeProvider } from "@/components/DynamicThemeProvider";
-import { fetchPublicSettings, fetchWebsiteSettings, fetchTheme } from "@/lib/api";
+import {
+  fetchPublicSettings,
+  fetchWebsiteSettings,
+  fetchTheme,
+} from "@/lib/api";
 
-const settleWithin = async <T,>(promise: Promise<T>, milliseconds: number): Promise<T | null> => {
+const settleWithin = async <T,>(
+  promise: Promise<T>,
+  milliseconds: number,
+): Promise<T | null> => {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
@@ -63,7 +73,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "YouthCamping — Adventure Tours for Young India",
-    description: "Book Himachal Pradesh, Ladakh, Kashmir, Kerala group tours. Best adventure trips for young adults from Gujarat.",
+    description:
+      "Book Himachal Pradesh, Ladakh, Kashmir, Kerala group tours. Best adventure trips for young adults from Gujarat.",
     metadataBase: new URL("https://youthcamping.in"),
     verification: {
       google: "Hy949F--o_wnmU-WH5arwK1zE038hpIyxYIauQQv-FA",
@@ -71,18 +82,20 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: canonicalUrl,
     },
-    robots: isStaging ? {
-      index: false,
-      follow: false,
-      nocache: true,
-      googleBot: {
-        index: false,
-        follow: false,
-      }
-    } : {
-      index: true,
-      follow: true,
-    },
+    robots: isStaging
+      ? {
+          index: false,
+          follow: false,
+          nocache: true,
+          googleBot: {
+            index: false,
+            follow: false,
+          },
+        }
+      : {
+          index: true,
+          follow: true,
+        },
     icons: {
       icon: "/favicon.ico",
     },
@@ -91,16 +104,22 @@ export async function generateMetadata(): Promise<Metadata> {
       description: "Book group adventure tours across India.",
       url: canonicalUrl,
       siteName: "YouthCamping",
-      images: [{ url: "https://youthcamping.in/og-image.jpg", width: 1200, height: 630 }],
+      images: [
+        {
+          url: "https://youthcamping.in/og-image.jpg",
+          width: 1200,
+          height: 630,
+        },
+      ],
       locale: "en_IN",
-      type: "website"
+      type: "website",
     },
     twitter: {
       card: "summary_large_image",
       title: "YouthCamping — Adventure Tours for Young India",
       description: "Book group adventure tours across India.",
-      images: ["https://youthcamping.in/og-image.jpg"]
-    }
+      images: ["https://youthcamping.in/og-image.jpg"],
+    },
   };
 }
 
@@ -117,11 +136,19 @@ export default async function RootLayout({
     settleWithin(fetchWebsiteSettings(), 1500),
     settleWithin(fetchTheme(), 1500),
   ]);
-  if (siteConfigResults[0].status === 'fulfilled') settings = siteConfigResults[0].value || {};
-  else console.error("Layout settings fetch error:", siteConfigResults[0].reason);
-  if (siteConfigResults[1].status === 'fulfilled') websiteSettings = siteConfigResults[1].value || {};
-  else console.error("Layout websiteSettings fetch error:", siteConfigResults[1].reason);
-  if (siteConfigResults[2].status === 'fulfilled') theme = siteConfigResults[2].value;
+  if (siteConfigResults[0].status === "fulfilled")
+    settings = siteConfigResults[0].value || {};
+  else
+    console.error("Layout settings fetch error:", siteConfigResults[0].reason);
+  if (siteConfigResults[1].status === "fulfilled")
+    websiteSettings = siteConfigResults[1].value || {};
+  else
+    console.error(
+      "Layout websiteSettings fetch error:",
+      siteConfigResults[1].reason,
+    );
+  if (siteConfigResults[2].status === "fulfilled")
+    theme = siteConfigResults[2].value;
   else console.error("Layout theme fetch error:", siteConfigResults[2].reason);
 
   // Merge key-value websiteSettings into settings
@@ -135,21 +162,29 @@ export default async function RootLayout({
   };
 
   return (
-    <html lang="en" className={`${montserrat.variable} ${playfair.variable} ${caveat.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${montserrat.variable} ${playfair.variable} ${caveat.variable} h-full antialiased`}
+    >
       <body className="min-h-full w-full flex flex-col font-montserrat relative">
-        <DynamicThemeProvider initialTheme={theme} initialSettings={mergedSettings}>
+        <DynamicThemeProvider
+          initialTheme={theme}
+          initialSettings={mergedSettings}
+        >
           <Suspense fallback={null}>
             <ScrollToTop />
           </Suspense>
-          <Navbar 
-            logoUrl={mergedSettings?.navbar?.logoUrl} 
-            navLinks={mergedSettings?.navbar?.links} 
+          <Navbar
+            logoUrl={mergedSettings?.navbar?.logoUrl}
+            navLinks={mergedSettings?.navbar?.links}
           />
           <main className="flex-grow w-full min-w-0">{children}</main>
-          <Footer 
-            logoUrl={mergedSettings?.navbar?.logoUrl || mergedSettings?.footer?.logoUrl} 
-            address={mergedSettings?.footer?.address} 
-            phone={mergedSettings?.footer?.phone} 
+          <Footer
+            logoUrl={
+              mergedSettings?.navbar?.logoUrl || mergedSettings?.footer?.logoUrl
+            }
+            address={mergedSettings?.footer?.address}
+            phone={mergedSettings?.footer?.phone}
           />
           <FloatingWhatsApp settings={mergedSettings} />
         </DynamicThemeProvider>
@@ -157,4 +192,3 @@ export default async function RootLayout({
     </html>
   );
 }
-

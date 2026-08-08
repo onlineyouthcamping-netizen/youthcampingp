@@ -22,36 +22,44 @@ const MOCK_STORIES: BlogCardItem[] = [
     id: "b1",
     title: "The Winter Beauty of Kashmir",
     slug: "winter-beauty-of-kashmir",
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+    image:
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
     authorName: "Aditi Raval",
-    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
+    authorAvatar:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
     readTime: "7 min read",
   },
   {
     id: "b2",
     title: "8-Day Dubai Adventure: A Journey of Thrills & Luxury",
     slug: "dubai-adventure",
-    image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80",
+    image:
+      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80",
     authorName: "Harsh Patel",
-    authorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+    authorAvatar:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
     readTime: "6 min read",
   },
   {
     id: "b3",
     title: "Winter Spiti Valley Experience",
     slug: "winter-spiti-valley-experience",
-    image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80",
+    image:
+      "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80",
     authorName: "Avdhesh Patel",
-    authorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
+    authorAvatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
     readTime: "5 min read",
   },
   {
     id: "b4",
     title: "Bhrigu Lake Trek – High Altitude Serenity",
     slug: "bhrigu-lake-trek",
-    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80",
+    image:
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80",
     authorName: "Priya Shah",
-    authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
+    authorAvatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
     readTime: "8 min read",
   },
 ];
@@ -67,31 +75,52 @@ export default function BlogSection({
   title,
   subtitle,
 }: BlogSectionProps) {
-  const displayTitle = (!title || title === "New journal" || title === "Journal" || title === "Blogs") ? "Stories" : title;
+  const displayTitle =
+    !title ||
+    title === "New journal" ||
+    title === "Journal" ||
+    title === "Blogs"
+      ? "Stories"
+      : title;
   const displaySubtitle = subtitle || "From The Road";
 
-  const displayStories: BlogCardItem[] = (blogs && blogs.length > 0)
-    ? blogs.map((b: any, idx: number) => {
-        const mock = MOCK_STORIES[idx % MOCK_STORIES.length];
-        const rawAuthor = b.author || mock.authorName;
-        const cleanAuthor = rawAuthor.replace(/^by\s+/i, "");
-        return {
-          id: b._id || b.id || `b-${idx}`,
-          title: b.title || mock.title,
-          slug: b.slug || mock.slug,
-          image: (b.image && b.image.trim() !== "") ? b.image : mock.image,
-          authorName: cleanAuthor,
-          authorAvatar: (b.authorImage && b.authorImage.trim() !== "") ? b.authorImage : mock.authorAvatar,
-          readTime: b.readTime || mock.readTime,
-        };
-      })
-    : MOCK_STORIES;
+  const apiMappedStories: BlogCardItem[] =
+    blogs && blogs.length > 0
+      ? blogs.map((b: any, idx: number) => {
+          const mock = MOCK_STORIES[idx % MOCK_STORIES.length];
+          const rawAuthor = b.author || mock.authorName;
+          const cleanAuthor = rawAuthor.replace(/^by\s+/i, "");
+          return {
+            id: b._id || b.id || `b-${idx}`,
+            title: b.title || mock.title,
+            slug: b.slug || mock.slug,
+            image: b.image && b.image.trim() !== "" ? b.image : mock.image,
+            authorName: cleanAuthor,
+            authorAvatar:
+              b.authorImage && b.authorImage.trim() !== ""
+                ? b.authorImage
+                : mock.authorAvatar,
+            readTime: b.readTime || mock.readTime,
+          };
+        })
+      : [];
+
+  const displayStories: BlogCardItem[] =
+    apiMappedStories.length >= 4
+      ? apiMappedStories
+      : [...apiMappedStories, ...MOCK_STORIES.slice(apiMappedStories.length)];
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const nudge = (dir: "l" | "r") => {
     if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: dir === "l" ? -320 : 320, behavior: "smooth" });
+      const cardEl = scrollRef.current.firstElementChild as HTMLElement | null;
+      const cardWidth = cardEl ? cardEl.offsetWidth : 320;
+      const scrollAmount = cardWidth + 24;
+      scrollRef.current.scrollBy({
+        left: dir === "l" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
     }
   };
 
@@ -100,7 +129,6 @@ export default function BlogSection({
       {/* Two-tone background transition: top half white, bottom half grey (#E2E7ED) */}
       <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-[#E2E7ED] z-0" />
       <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
-        
         {/* HEADER ROW WITH SLIDER CONTROLS */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-10 gap-3">
           <div className="flex items-center justify-between w-full sm:w-auto overflow-hidden">
@@ -122,7 +150,7 @@ export default function BlogSection({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden sm:flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => nudge("l")}
                 aria-label="Previous stories"
@@ -165,7 +193,11 @@ export default function BlogSection({
             >
               {/* TOP PHOTO CONTAINER */}
               <div className="relative w-full aspect-[16/10.5] bg-zinc-100 overflow-hidden">
-                <Link href={`/blogs/${story.slug}`} className="absolute inset-0 z-10" aria-label={story.title} />
+                <Link
+                  href={`/blogs/${story.slug}`}
+                  className="absolute inset-0 z-10"
+                  aria-label={story.title}
+                />
                 <Image
                   src={story.image}
                   alt={story.title}
@@ -197,15 +229,16 @@ export default function BlogSection({
                   {/* TITLE & FOOTER META */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <h3 className="text-[#1B2A4A] font-montserrat font-bold text-xs sm:text-sm leading-snug line-clamp-2 mb-1.5 group-hover:text-[#D4541A] transition-colors">
-                      <Link href={`/blogs/${story.slug}`}>
-                        {story.title}
-                      </Link>
+                      <Link href={`/blogs/${story.slug}`}>{story.title}</Link>
                     </h3>
 
                     {/* AUTHOR NAME & READING TIME ROW */}
                     <div className="flex items-center justify-between font-montserrat text-[11px] text-[#999999] gap-1.5 pt-1 border-t border-zinc-100">
                       <span className="truncate">
-                        by <span className="text-[#666666] font-medium">{story.authorName}</span>
+                        by{" "}
+                        <span className="text-[#666666] font-medium">
+                          {story.authorName}
+                        </span>
                       </span>
                       <span className="shrink-0 text-zinc-400 font-normal text-[10px]">
                         {story.readTime}
@@ -217,7 +250,6 @@ export default function BlogSection({
             </motion.div>
           ))}
         </div>
-
       </div>
     </section>
   );

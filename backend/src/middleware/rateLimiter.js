@@ -31,7 +31,8 @@ exports.passwordChangeLimiter = (req, res, next) => {
   if (record.count >= 3) {
     return res.status(429).json({
       success: false,
-      message: 'Too many password change attempts. Maximum 3 attempts per 24 hours allowed.'
+      message:
+        "Too many password change attempts. Maximum 3 attempts per 24 hours allowed.",
     });
   }
 
@@ -58,7 +59,8 @@ exports.apiKeyGenerationLimiter = (req, res, next) => {
   if (record.count >= 5) {
     return res.status(429).json({
       success: false,
-      message: 'Too many API key generation requests. Maximum 5 keys per 24 hours allowed.'
+      message:
+        "Too many API key generation requests. Maximum 5 keys per 24 hours allowed.",
     });
   }
 

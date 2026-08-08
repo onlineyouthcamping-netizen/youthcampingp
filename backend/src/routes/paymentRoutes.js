@@ -1,6 +1,6 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authenticate, requirePermission } = require('../middleware/auth');
+const { authenticate, requirePermission } = require("../middleware/auth");
 const {
   getClientPayments,
   addClientPayment,
@@ -10,24 +10,48 @@ const {
   updateVendorPayment,
   deleteVendorPayment,
   getPaymentsDashboardStats,
-  getBookingPayments
-} = require('../controllers/paymentController');
+  getBookingPayments,
+} = require("../controllers/paymentController");
 
 router.use(authenticate);
 
 // Client Receivables Routes
-router.get('/client/:tripId', requirePermission('ops.view'), getClientPayments);
-router.post('/client/add/:bookingId', requirePermission('ops.manage'), addClientPayment);
-router.patch('/client/verify/:id', requirePermission('ops.manage'), verifyClientPayment);
-router.get('/booking/:bookingId', getBookingPayments);
+router.get("/client/:tripId", requirePermission("ops.view"), getClientPayments);
+router.post(
+  "/client/add/:bookingId",
+  requirePermission("ops.manage"),
+  addClientPayment,
+);
+router.patch(
+  "/client/verify/:id",
+  requirePermission("ops.manage"),
+  verifyClientPayment,
+);
+router.get("/booking/:bookingId", getBookingPayments);
 
 // Vendor Payables Routes
-router.get('/vendor/:tripId', requirePermission('ops.view'), getVendorPayments);
-router.post('/vendor/:tripId', requirePermission('ops.manage'), createVendorPayment);
-router.put('/vendor/:tripId/:id', requirePermission('ops.manage'), updateVendorPayment);
-router.delete('/vendor/:id', requirePermission('ops.manage'), deleteVendorPayment);
+router.get("/vendor/:tripId", requirePermission("ops.view"), getVendorPayments);
+router.post(
+  "/vendor/:tripId",
+  requirePermission("ops.manage"),
+  createVendorPayment,
+);
+router.put(
+  "/vendor/:tripId/:id",
+  requirePermission("ops.manage"),
+  updateVendorPayment,
+);
+router.delete(
+  "/vendor/:id",
+  requirePermission("ops.manage"),
+  deleteVendorPayment,
+);
 
 // Financial Dashboard stats
-router.get('/dashboard/:tripId', requirePermission('ops.view'), getPaymentsDashboardStats);
+router.get(
+  "/dashboard/:tripId",
+  requirePermission("ops.view"),
+  getPaymentsDashboardStats,
+);
 
 module.exports = router;

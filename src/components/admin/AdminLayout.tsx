@@ -106,7 +106,7 @@ const sidebarModules: SidebarModule[] = [
     hasSubItems: true,
     subItems: [
       { title: "Inquiries", url: "/admin/inquiries" },
-      { title: "Package Builder", url: "/admin/package-builder" },
+
       { title: "Quotations", url: "/admin/quotations" },
       { title: "Booking Links", url: "/admin/booking-forms", isNew: true },
       { title: "Bookings", url: "/admin/bookings" }
@@ -363,7 +363,7 @@ function AdminSidebar() {
                 if (!isFounder) return false;
               }
               if (admin?.role === 'sales') {
-                const salesAllowedUrls = ["/admin/bookings", "/admin/booking-forms", "/admin/inquiries", "/admin/quotations", "/admin/package-builder", "/admin/master-database", "/admin/approvals-hub", "/admin/ticket-approvals"];
+                const salesAllowedUrls = ["/admin/bookings", "/admin/booking-forms", "/admin/inquiries", "/admin/quotations", "/admin/master-database", "/admin/approvals-hub", "/admin/ticket-approvals"];
                 return salesAllowedUrls.includes(urlPath);
               }
               if (admin?.role === 'guide') {

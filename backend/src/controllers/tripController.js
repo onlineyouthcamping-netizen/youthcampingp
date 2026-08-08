@@ -1,12 +1,15 @@
-const { prisma } = require('../lib/prisma');
+const { prisma } = require("../lib/prisma");
 
 const setPublicCache = (res, seconds) => {
-  res.set('Cache-Control', `public, max-age=${seconds}, stale-while-revalidate=${seconds}`);
+  res.set(
+    "Cache-Control",
+    `public, max-age=${seconds}, stale-while-revalidate=${seconds}`,
+  );
 };
 
 const toPublicDates = (availableDates) => {
   let dates = availableDates;
-  if (typeof dates === 'string') {
+  if (typeof dates === "string") {
     try {
       dates = JSON.parse(dates);
     } catch (_error) {
@@ -18,8 +21,9 @@ const toPublicDates = (availableDates) => {
 
   return dates
     .map((entry) => {
-      if (typeof entry === 'string') return { date: entry };
-      if (entry && typeof entry === 'object' && entry.date) return { date: entry.date };
+      if (typeof entry === "string") return { date: entry };
+      if (entry && typeof entry === "object" && entry.date)
+        return { date: entry.date };
       return null;
     })
     .filter(Boolean);
@@ -27,7 +31,7 @@ const toPublicDates = (availableDates) => {
 
 const parseJsonArray = (value) => {
   if (Array.isArray(value)) return value;
-  if (typeof value !== 'string') return [];
+  if (typeof value !== "string") return [];
 
   try {
     const parsed = JSON.parse(value);
@@ -39,14 +43,16 @@ const parseJsonArray = (value) => {
 
 const toPublicVariantSummary = (variants) => parseJsonArray(variants);
 
-const toPublicRouteSummary = (route) => parseJsonArray(route)
-  .slice(0, 2)
-  .map((stop) => {
-    if (typeof stop === 'string') return stop;
-    if (stop && typeof stop === 'object' && stop.label) return { label: stop.label };
-    return null;
-  })
-  .filter(Boolean);
+const toPublicRouteSummary = (route) =>
+  parseJsonArray(route)
+    .slice(0, 2)
+    .map((stop) => {
+      if (typeof stop === "string") return stop;
+      if (stop && typeof stop === "object" && stop.label)
+        return { label: stop.label };
+      return null;
+    })
+    .filter(Boolean);
 
 /**
  * @desc    Get all trips (Scoped by tenantId)
@@ -55,26 +61,35 @@ const toPublicRouteSummary = (route) => parseJsonArray(route)
  */
 exports.getTrips = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || 'default';
-    const where = { tenantId: tenantId === 'default' ? 'default' : { in: [tenantId, 'default'] } };
-    
-    console.log(`🔍 [Trips] Fetching trips for tenant: ${tenantId}, status: ${req.query.status || 'default'}`);
+    const tenantId = req.user?.tenantId || "default";
+    const where = {
+      tenantId:
+        tenantId === "default" ? "default" : { in: [tenantId, "default"] },
+    };
 
-    if (req.query.status && req.query.status !== 'all') {
+    console.log(
+      `🔍 [Trips] Fetching trips for tenant: ${tenantId}, status: ${req.query.status || "default"}`,
+    );
+
+    if (req.query.status && req.query.status !== "all") {
       where.status = req.query.status;
     }
 
-    const select = req.query.compact === 'true'
-      ? { id: true, title: true, shortName: true, status: true, availableDates: true }
-      : undefined;
+    const select =
+      req.query.compact === "true"
+        ? {
+            id: true,
+            title: true,
+            shortName: true,
+            status: true,
+            availableDates: true,
+          }
+        : undefined;
 
     const trips = await prisma.trip.findMany({
       where,
       select,
-      orderBy: [
-        { order: 'asc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
     });
 
     console.log(`✅ [Trips] Found ${trips.length} trips`);
@@ -82,7 +97,7 @@ exports.getTrips = async (req, res, next) => {
     res.json({
       success: true,
       count: trips.length,
-      data: trips
+      data: trips,
     });
   } catch (error) {
     console.error("🔥 [Trips Fetch Error]:", error);
@@ -97,10 +112,13 @@ exports.getTrips = async (req, res, next) => {
  */
 exports.getCompactTrips = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || 'default';
-    const where = { tenantId: tenantId === 'default' ? 'default' : { in: [tenantId, 'default'] } };
+    const tenantId = req.user?.tenantId || "default";
+    const where = {
+      tenantId:
+        tenantId === "default" ? "default" : { in: [tenantId, "default"] },
+    };
 
-    if (req.query.status && req.query.status !== 'all') {
+    if (req.query.status && req.query.status !== "all") {
       where.status = req.query.status;
     }
 
@@ -115,18 +133,15 @@ exports.getCompactTrips = async (req, res, next) => {
         status: true,
         travelOptions: true,
         roomOptions: true,
-        pickupCities: true
+        pickupCities: true,
       },
-      orderBy: [
-        { order: 'asc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
     });
 
     res.json({
       success: true,
       count: trips.length,
-      data: trips
+      data: trips,
     });
   } catch (error) {
     console.error("🔥 [Compact Trips Fetch Error]:", error);
@@ -146,7 +161,7 @@ exports.getPublicTripCards = async (req, res, next) => {
       ? Math.max(1, Math.min(requestedLimit, 100))
       : undefined;
     const trips = await prisma.trip.findMany({
-      where: { tenantId: 'default', status: 'published' },
+      where: { tenantId: "default", status: "published" },
       select: {
         id: true,
         title: true,
@@ -163,10 +178,7 @@ exports.getPublicTripCards = async (req, res, next) => {
         variants: true,
         route: true,
       },
-      orderBy: [
-        { order: 'asc' },
-        { createdAt: 'desc' }
-      ],
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
       take,
     });
 
@@ -194,8 +206,8 @@ exports.getPublicTripDetail = async (req, res, next) => {
     const trip = await prisma.trip.findFirst({
       where: {
         slug: req.params.slug,
-        tenantId: 'default',
-        status: 'published',
+        tenantId: "default",
+        status: "published",
       },
       select: {
         id: true,
@@ -241,14 +253,16 @@ exports.getPublicTripDetail = async (req, res, next) => {
         gstPercentage: true,
         reels: true,
         departurePriceOverrides: {
-          where: { isActive: true }
+          where: { isActive: true },
         },
         tripReviews: true,
       },
     });
 
     if (!trip) {
-      return res.status(404).json({ success: false, message: 'Trip not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
     }
 
     const reviewWhereOr = [{ tripId: trip.id }];
@@ -257,7 +271,7 @@ exports.getPublicTripDetail = async (req, res, next) => {
 
     const reviews = await prisma.review.findMany({
       where: {
-        tenantId: 'default',
+        tenantId: "default",
         isActive: true,
         OR: reviewWhereOr,
       },
@@ -276,7 +290,7 @@ exports.getPublicTripDetail = async (req, res, next) => {
         photos: true,
         createdAt: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     const data = {
@@ -300,38 +314,33 @@ exports.getPublicTripDetail = async (req, res, next) => {
 exports.getTrip = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     const includeRelations = {
       itineraries: {
         include: {
-          days: true
-        }
+          days: true,
+        },
       },
       tripDocuments: true,
       tripSops: {
         include: {
-          items: true
-        }
+          items: true,
+        },
       },
       tripGalleries: true,
       tripNotes: true,
       departurePriceOverrides: {
-        where: { isActive: true }
-      }
+        where: { isActive: true },
+      },
     };
 
     let trip = await prisma.trip.findFirst({
       where: {
-        OR: [
-          { id },
-          { slug: id },
-          { title: id },
-          { shortName: id }
-        ],
-        tenantId
+        OR: [{ id }, { slug: id }, { title: id }, { shortName: id }],
+        tenantId,
       },
-      include: includeRelations
+      include: includeRelations,
     });
 
     // Fallback 1: Search without tenant restriction (handles tenantId mismatch)
@@ -343,46 +352,46 @@ exports.getTrip = async (req, res, next) => {
             { slug: id },
             { title: id },
             { shortName: id },
-            { title: { contains: id, mode: 'insensitive' } },
-            { slug: { contains: id, mode: 'insensitive' } }
-          ]
+            { title: { contains: id, mode: "insensitive" } },
+            { slug: { contains: id, mode: "insensitive" } },
+          ],
         },
-        include: includeRelations
+        include: includeRelations,
       });
     }
-    if (!trip && id.includes('-')) {
-      const parts = id.split('-');
+    if (!trip && id.includes("-")) {
+      const parts = id.split("-");
       const prefix = parts[0].toUpperCase();
       trip = await prisma.trip.findFirst({
         where: {
           tenantId,
           OR: [
-            { id: { startsWith: prefix, mode: 'insensitive' } },
-            { id: { startsWith: prefix + '-', mode: 'insensitive' } },
-            { slug: { startsWith: prefix.toLowerCase(), mode: 'insensitive' } },
-            { shortName: { startsWith: prefix, mode: 'insensitive' } }
+            { id: { startsWith: prefix, mode: "insensitive" } },
+            { id: { startsWith: prefix + "-", mode: "insensitive" } },
+            { slug: { startsWith: prefix.toLowerCase(), mode: "insensitive" } },
+            { shortName: { startsWith: prefix, mode: "insensitive" } },
           ],
-          tenantId
+          tenantId,
         },
-        include: includeRelations
+        include: includeRelations,
       });
     }
 
     if (!trip) {
       trip = await prisma.trip.findFirst({
         where: { tenantId, isActive: true },
-        include: includeRelations
+        include: includeRelations,
       });
     }
 
     if (!trip) {
-      return res.status(404).json({ success: false, message: 'Trip not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
     }
 
     // Build conditional query to fetch reviews dynamically linked to this trip
-    const reviewWhereOr = [
-      { tripId: trip.id }
-    ];
+    const reviewWhereOr = [{ tripId: trip.id }];
     if (trip.title) {
       reviewWhereOr.push({ tripName: trip.title });
     }
@@ -394,16 +403,16 @@ exports.getTrip = async (req, res, next) => {
       where: {
         tenantId,
         isActive: true,
-        OR: reviewWhereOr
+        OR: reviewWhereOr,
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: "desc",
+      },
     });
 
     const tripWithReviews = {
       ...trip,
-      reviews: reviews || []
+      reviews: reviews || [],
     };
 
     res.json({ success: true, data: tripWithReviews });
@@ -424,56 +433,56 @@ exports.getTrip = async (req, res, next) => {
  */
 const sanitizeTripData = (data) => {
   if (!data) return {};
-  
+
   // Whitelist of valid scalar fields on the Trip model in DB
   const validFields = new Set([
-    'title',
-    'shortName',
-    'slug',
-    'location',
-    'price',
-    'duration',
-    'description',
-    'category',
-    'isActive',
-    'status',
-    'heroImage',
-    'images',
-    'itinerary',
-    'availableDates',
-    'variants',
-    'travelOptions',
-    'roomOptions',
-    'seo',
-    'highlights',
-    'inclusions',
-    'exclusions',
-    'faqs',
-    'addons',
-    'maxGroupSize',
-    'difficulty',
-    'departureCity',
-    'pickupCities',
-    'ageLimit',
-    'bookingUrl',
-    'customSections',
-    'attractions',
-    'activities',
-    'accommodations',
-    'popupDetails',
-    'route',
-    'ageGroup',
-    'maxAltitude',
-    'tripType',
-    'startEnd',
-    'pickupMode',
-    'stickyCardPrice',
-    'stickyCardLabel',
-    'gstPercentage',
-    'reels',
-    'tripReviews',
-    'itineraryVersions',
-    'order'
+    "title",
+    "shortName",
+    "slug",
+    "location",
+    "price",
+    "duration",
+    "description",
+    "category",
+    "isActive",
+    "status",
+    "heroImage",
+    "images",
+    "itinerary",
+    "availableDates",
+    "variants",
+    "travelOptions",
+    "roomOptions",
+    "seo",
+    "highlights",
+    "inclusions",
+    "exclusions",
+    "faqs",
+    "addons",
+    "maxGroupSize",
+    "difficulty",
+    "departureCity",
+    "pickupCities",
+    "ageLimit",
+    "bookingUrl",
+    "customSections",
+    "attractions",
+    "activities",
+    "accommodations",
+    "popupDetails",
+    "route",
+    "ageGroup",
+    "maxAltitude",
+    "tripType",
+    "startEnd",
+    "pickupMode",
+    "stickyCardPrice",
+    "stickyCardLabel",
+    "gstPercentage",
+    "reels",
+    "tripReviews",
+    "itineraryVersions",
+    "order",
   ]);
 
   const sanitized = {};
@@ -496,10 +505,17 @@ exports.createTrip = async (req, res, next) => {
     }
 
     // Support manual ID (Trip Code) with duplicate check
-    const customId = (req.body.id || req.body.tripCode || req.body.shortName || "").trim();
+    const customId = (
+      req.body.id ||
+      req.body.tripCode ||
+      req.body.shortName ||
+      ""
+    ).trim();
     if (customId) {
-      const formattedId = customId.toUpperCase().replace(/\s+/g, '-');
-      const existingTrip = await prisma.trip.findFirst({ where: { id: formattedId, tenantId } });
+      const formattedId = customId.toUpperCase().replace(/\s+/g, "-");
+      const existingTrip = await prisma.trip.findFirst({
+        where: { id: formattedId, tenantId },
+      });
       if (existingTrip) {
         tripData.id = `${formattedId}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
       } else {
@@ -513,8 +529,8 @@ exports.createTrip = async (req, res, next) => {
     if (!tripData.slug && tripData.title) {
       const baseSlug = tripData.title
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)+/g, '');
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "");
       const uniqueSuffix = Math.floor(1000 + Math.random() * 9000);
       tripData.slug = `${baseSlug}-${uniqueSuffix}`;
     } else if (!tripData.slug) {
@@ -523,7 +539,9 @@ exports.createTrip = async (req, res, next) => {
 
     // Ensure required schema field 'description' is present
     if (!tripData.description) {
-      tripData.description = tripData.overview || `${tripData.title || 'Trip'} expedition in ${tripData.location || 'destination'}.`;
+      tripData.description =
+        tripData.overview ||
+        `${tripData.title || "Trip"} expedition in ${tripData.location || "destination"}.`;
     }
 
     // Default required numeric/string fields
@@ -535,22 +553,27 @@ exports.createTrip = async (req, res, next) => {
         tenantId,
         price: Number(tripData.price) || 0,
         stickyCardPrice: Number(tripData.stickyCardPrice) || null,
-      }
+      },
     });
 
-    if (req.body.departurePriceOverrides && Array.isArray(req.body.departurePriceOverrides)) {
-      const activeOverrides = req.body.departurePriceOverrides.filter(o => o.departureDate && o.overrideType && o.amount !== undefined);
+    if (
+      req.body.departurePriceOverrides &&
+      Array.isArray(req.body.departurePriceOverrides)
+    ) {
+      const activeOverrides = req.body.departurePriceOverrides.filter(
+        (o) => o.departureDate && o.overrideType && o.amount !== undefined,
+      );
       if (activeOverrides.length > 0) {
         await prisma.tripDeparturePriceOverride.createMany({
-          data: activeOverrides.map(o => ({
+          data: activeOverrides.map((o) => ({
             tripId: trip.id,
             departureDate: o.departureDate,
             overrideType: o.overrideType,
             amount: Number(o.amount) || 0,
-            reason: o.reason || '',
+            reason: o.reason || "",
             isActive: o.isActive !== undefined ? o.isActive : true,
-            createdBy: req.user?.id
-          }))
+            createdBy: req.user?.id,
+          })),
         });
       }
     }
@@ -572,12 +595,17 @@ exports.updateTrip = async (req, res, next) => {
     const { id: oldId } = req.params;
     const tenantId = req.user.tenantId;
     const updateData = sanitizeTripData(req.body);
-    
+
     if (req.body.reviews) {
       updateData.tripReviews = req.body.reviews;
     }
 
-    const newId = (req.body.id || req.body.tripCode || req.body.shortName || oldId).toUpperCase();
+    const newId = (
+      req.body.id ||
+      req.body.tripCode ||
+      req.body.shortName ||
+      oldId
+    ).toUpperCase();
     const tripName = updateData.title || req.body.tripName;
 
     delete updateData.id;
@@ -585,15 +613,22 @@ exports.updateTrip = async (req, res, next) => {
     delete updateData.tripCode;
     delete updateData.departurePriceOverrides; // Handled manually below
 
-    if (updateData.price !== undefined) updateData.price = Number(updateData.price) || 0;
-    if (updateData.stickyCardPrice !== undefined) updateData.stickyCardPrice = Number(updateData.stickyCardPrice) || null;
+    if (updateData.price !== undefined)
+      updateData.price = Number(updateData.price) || 0;
+    if (updateData.stickyCardPrice !== undefined)
+      updateData.stickyCardPrice = Number(updateData.stickyCardPrice) || null;
 
     if (newId !== oldId) {
       // Wrap ID migration in a transaction to prevent race conditions
       await prisma.$transaction(async (tx) => {
         // 1. Check if new ID already exists (inside transaction for atomicity)
-        const exists = await tx.trip.findFirst({ where: { id: newId, tenantId } });
-        if (exists) throw Object.assign(new Error(`Trip Code ${newId} already exists`), { statusCode: 400 });
+        const exists = await tx.trip.findFirst({
+          where: { id: newId, tenantId },
+        });
+        if (exists)
+          throw Object.assign(new Error(`Trip Code ${newId} already exists`), {
+            statusCode: 400,
+          });
 
         // 2. Update the ID using Raw SQL (triggers onUpdate: Cascade in DB)
         await tx.$executeRaw`UPDATE "Trip" SET id = ${newId} WHERE id = ${oldId} AND "tenantId" = ${tenantId}`;
@@ -601,11 +636,11 @@ exports.updateTrip = async (req, res, next) => {
         // 3. Manually update non-relational records
         await tx.inquiry.updateMany({
           where: { tripId: oldId, tenantId },
-          data: { tripId: newId }
+          data: { tripId: newId },
         });
         await tx.review.updateMany({
           where: { tripId: oldId, tenantId },
-          data: { tripId: newId }
+          data: { tripId: newId },
         });
       });
 
@@ -614,7 +649,7 @@ exports.updateTrip = async (req, res, next) => {
 
     // Fetch current trip to perform version history logic
     const currentTrip = await prisma.trip.findUnique({
-      where: { id: newId }
+      where: { id: newId },
     });
 
     if (currentTrip && updateData.itinerary !== undefined) {
@@ -623,9 +658,10 @@ exports.updateTrip = async (req, res, next) => {
       if (oldItinStr !== newItinStr) {
         let versions = [];
         if (currentTrip.itineraryVersions) {
-          versions = typeof currentTrip.itineraryVersions === 'string'
-            ? JSON.parse(currentTrip.itineraryVersions)
-            : currentTrip.itineraryVersions;
+          versions =
+            typeof currentTrip.itineraryVersions === "string"
+              ? JSON.parse(currentTrip.itineraryVersions)
+              : currentTrip.itineraryVersions;
           if (!Array.isArray(versions)) {
             versions = [];
           }
@@ -634,36 +670,45 @@ exports.updateTrip = async (req, res, next) => {
         const versionEntry = {
           version: newVersionNum,
           updatedAt: new Date(),
-          updatedBy: req.user ? (req.user.name || req.user.email) : "System",
-          itinerary: currentTrip.itinerary || []
+          updatedBy: req.user ? req.user.name || req.user.email : "System",
+          itinerary: currentTrip.itinerary || [],
         };
         versions.push(versionEntry);
         updateData.itineraryVersions = versions;
-        console.log(`Saved itinerary version ${newVersionNum} for Trip ${newId}`);
+        console.log(
+          `Saved itinerary version ${newVersionNum} for Trip ${newId}`,
+        );
       }
     }
 
     // 4. Update the rest of the data (id is unique PK, no tenantId needed in where)
     const trip = await prisma.trip.update({
       where: { id: newId },
-      data: updateData
+      data: updateData,
     });
 
     // 5. Sync Departure Price Overrides
-    if (req.body.departurePriceOverrides && Array.isArray(req.body.departurePriceOverrides)) {
-      await prisma.tripDeparturePriceOverride.deleteMany({ where: { tripId: newId } });
-      const activeOverrides = req.body.departurePriceOverrides.filter(o => o.departureDate && o.overrideType && o.amount !== undefined);
+    if (
+      req.body.departurePriceOverrides &&
+      Array.isArray(req.body.departurePriceOverrides)
+    ) {
+      await prisma.tripDeparturePriceOverride.deleteMany({
+        where: { tripId: newId },
+      });
+      const activeOverrides = req.body.departurePriceOverrides.filter(
+        (o) => o.departureDate && o.overrideType && o.amount !== undefined,
+      );
       if (activeOverrides.length > 0) {
         await prisma.tripDeparturePriceOverride.createMany({
-          data: activeOverrides.map(o => ({
+          data: activeOverrides.map((o) => ({
             tripId: newId,
             departureDate: o.departureDate,
             overrideType: o.overrideType,
             amount: Number(o.amount) || 0,
-            reason: o.reason || '',
+            reason: o.reason || "",
             isActive: o.isActive !== undefined ? o.isActive : true,
-            createdBy: req.user?.id
-          }))
+            createdBy: req.user?.id,
+          })),
         });
       }
     }
@@ -671,15 +716,15 @@ exports.updateTrip = async (req, res, next) => {
     if (tripName) {
       await prisma.booking.updateMany({
         where: { tripId: newId, tenantId },
-        data: { tripName }
+        data: { tripName },
       });
       await prisma.inquiry.updateMany({
         where: { tripId: newId, tenantId },
-        data: { tripTitle: tripName }
+        data: { tripTitle: tripName },
       });
     }
 
-    res.json({ success: true, message: 'Trip updated successfully' });
+    res.json({ success: true, message: "Trip updated successfully" });
   } catch (error) {
     next(error);
   }
@@ -693,47 +738,74 @@ exports.updateTrip = async (req, res, next) => {
 exports.deleteTrip = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user.tenantId || "default";
 
     // Check if trip exists
     const trip = await prisma.trip.findFirst({
-      where: { id, tenantId }
+      where: { id, tenantId },
     });
 
     if (!trip) {
-      return res.status(404).json({ success: false, message: 'Trip not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
     }
 
     // Check for active bookings tied to this trip
     const activeBookingCount = await prisma.booking.count({
-      where: { tripId: id, status: { notIn: ['cancelled', 'rejected'] } }
+      where: { tripId: id, status: { notIn: ["cancelled", "rejected"] } },
     });
 
     if (activeBookingCount > 0) {
       // Soft-archive trip status if active bookings exist
       await prisma.trip.update({
         where: { id },
-        data: { status: 'archived' }
+        data: { status: "archived" },
       });
       return res.json({
         success: true,
-        message: `Trip has ${activeBookingCount} active bookings and has been archived.`
+        message: `Trip has ${activeBookingCount} active bookings and has been archived.`,
       });
     }
 
     // Clean up related operations and auxiliary models that restrict deletion
     const modelsToClean = [
-      'inquiry', 'review', 'booking', 'opsSeatConfig', 'opsItinerary', 
-      'opsAttraction', 'opsPackingItem', 'opsInclusionExclusion', 'opsFaq', 
-      'opsTripChecklist', 'opsIncidentLog', 'opsHotelBooking', 'opsTransportFleet', 
-      'opsGuidePayment', 'opsMiscExpense', 'opsTripExpense', 'opsTripLeader', 
-      'tripAssignment', 'tripVendor', 'opsRoomInventory', 'opsAllocationRun', 
-      'opsVehicleAllocation', 'opsRoomAllocation', 'opsDayItinerary', 'opsActivity', 
-      'opsVendorPayment', 'opsDocument', 'opsMessage', 'tripDocument'
+      "inquiry",
+      "review",
+      "booking",
+      "opsSeatConfig",
+      "opsItinerary",
+      "opsAttraction",
+      "opsPackingItem",
+      "opsInclusionExclusion",
+      "opsFaq",
+      "opsTripChecklist",
+      "opsIncidentLog",
+      "opsHotelBooking",
+      "opsTransportFleet",
+      "opsGuidePayment",
+      "opsMiscExpense",
+      "opsTripExpense",
+      "opsTripLeader",
+      "tripAssignment",
+      "tripVendor",
+      "opsRoomInventory",
+      "opsAllocationRun",
+      "opsVehicleAllocation",
+      "opsRoomAllocation",
+      "opsDayItinerary",
+      "opsActivity",
+      "opsVendorPayment",
+      "opsDocument",
+      "opsMessage",
+      "tripDocument",
     ];
 
     for (const modelName of modelsToClean) {
-      if (prisma[modelName] && typeof prisma[modelName].deleteMany === 'function') {
+      if (
+        prisma[modelName] &&
+        typeof prisma[modelName].deleteMany === "function"
+      ) {
         try {
           await prisma[modelName].deleteMany({ where: { tripId: id } });
         } catch (e) {
@@ -748,14 +820,14 @@ exports.deleteTrip = async (req, res, next) => {
     } catch (dbError) {
       await prisma.trip.update({
         where: { id },
-        data: { status: 'archived' }
+        data: { status: "archived" },
       });
     }
 
-    res.json({ success: true, message: 'Trip removed successfully' });
+    res.json({ success: true, message: "Trip removed successfully" });
   } catch (error) {
-    console.error('deleteTrip error:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete trip' });
+    console.error("deleteTrip error:", error);
+    res.status(500).json({ success: false, message: "Failed to delete trip" });
   }
 };
 /**
@@ -775,7 +847,7 @@ exports.getTripBySlug = async (req, res, next) => {
 exports.getPublicTripLookup = async (req, res, next) => {
   try {
     const { identifier } = req.params;
-    const tenantId = 'default';
+    const tenantId = "default";
 
     let trip = await prisma.trip.findFirst({
       where: {
@@ -783,9 +855,9 @@ exports.getPublicTripLookup = async (req, res, next) => {
           { id: identifier },
           { slug: identifier },
           { shortName: identifier },
-          { title: identifier }
+          { title: identifier },
         ],
-        tenantId
+        tenantId,
       },
       select: {
         id: true,
@@ -822,19 +894,19 @@ exports.getPublicTripLookup = async (req, res, next) => {
         ageGroup: true,
         gstPercentage: true,
         departurePriceOverrides: {
-          where: { isActive: true }
-        }
-      }
+          where: { isActive: true },
+        },
+      },
     });
 
     if (!trip) {
       trip = await prisma.trip.findFirst({
         where: {
           OR: [
-            { title: { contains: identifier, mode: 'insensitive' } },
-            { slug: { contains: identifier, mode: 'insensitive' } }
+            { title: { contains: identifier, mode: "insensitive" } },
+            { slug: { contains: identifier, mode: "insensitive" } },
           ],
-          tenantId
+          tenantId,
         },
         select: {
           id: true,
@@ -871,14 +943,16 @@ exports.getPublicTripLookup = async (req, res, next) => {
           ageGroup: true,
           gstPercentage: true,
           departurePriceOverrides: {
-            where: { isActive: true }
-          }
-        }
+            where: { isActive: true },
+          },
+        },
       });
     }
 
     if (!trip) {
-      return res.status(404).json({ success: false, message: 'Trip not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
     }
 
     // Fetch reviews
@@ -890,7 +964,7 @@ exports.getPublicTripLookup = async (req, res, next) => {
       where: {
         tenantId,
         isActive: true,
-        OR: reviewWhereOr
+        OR: reviewWhereOr,
       },
       select: {
         id: true,
@@ -900,7 +974,7 @@ exports.getPublicTripLookup = async (req, res, next) => {
         tripName: true,
         createdAt: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     setPublicCache(res, 60);
@@ -909,8 +983,8 @@ exports.getPublicTripLookup = async (req, res, next) => {
       data: {
         ...trip,
         availableDates: toPublicDates(trip.availableDates),
-        reviews
-      }
+        reviews,
+      },
     });
   } catch (error) {
     next(error);
@@ -926,18 +1000,18 @@ exports.shuffleTrips = async (req, res, next) => {
   try {
     const tenantId = req.user.tenantId;
     const trips = await prisma.trip.findMany({ where: { tenantId } });
-    
+
     // Generate random order for each trip
     const updates = trips.map((trip, index) => {
       return prisma.trip.update({
         where: { id: trip.id },
-        data: { order: Math.floor(Math.random() * 1000000) }
+        data: { order: Math.floor(Math.random() * 1000000) },
       });
     });
 
     await prisma.$transaction(updates);
 
-    res.json({ success: true, message: 'Trips shuffled successfully' });
+    res.json({ success: true, message: "Trips shuffled successfully" });
   } catch (error) {
     next(error);
   }
@@ -951,18 +1025,21 @@ exports.shuffleTrips = async (req, res, next) => {
 exports.bulkUpdateTripOrder = async (req, res, next) => {
   try {
     const { orderMap } = req.body;
-    if (!orderMap) return res.status(400).json({ success: false, message: 'orderMap is required' });
+    if (!orderMap)
+      return res
+        .status(400)
+        .json({ success: false, message: "orderMap is required" });
 
     const updates = Object.entries(orderMap).map(([id, order]) => {
       return prisma.trip.update({
         where: { id },
-        data: { order: Number(order) }
+        data: { order: Number(order) },
       });
     });
 
     await prisma.$transaction(updates);
 
-    res.json({ success: true, message: 'Trips order updated successfully' });
+    res.json({ success: true, message: "Trips order updated successfully" });
   } catch (error) {
     next(error);
   }
@@ -972,61 +1049,66 @@ exports.bulkUpdateTripOrder = async (req, res, next) => {
  * @desc    Seed Live Data Stub
  */
 exports.seedLiveData = async (req, res) => {
-  res.json({ success: true, message: 'Seeding logic disabled in production/dev' });
+  res.json({
+    success: true,
+    message: "Seeding logic disabled in production/dev",
+  });
 };
 
 exports.getTripDepartures = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     // Find trip by ID, slug, title, shortName, or code prefix
     let tripGlobal = await prisma.trip.findFirst({
       where: {
-        OR: [
-          { id },
-          { slug: id },
-          { title: id },
-          { shortName: id }
-        ]
-      }
+        OR: [{ id }, { slug: id }, { title: id }, { shortName: id }],
+      },
     });
 
     if (!tripGlobal) {
       tripGlobal = await prisma.trip.findFirst({
         where: {
           OR: [
-            { title: { contains: id, mode: 'insensitive' } },
-            { slug: { contains: id, mode: 'insensitive' } },
-            { shortName: { contains: id, mode: 'insensitive' } }
-          ]
-        }
+            { title: { contains: id, mode: "insensitive" } },
+            { slug: { contains: id, mode: "insensitive" } },
+            { shortName: { contains: id, mode: "insensitive" } },
+          ],
+        },
       });
     }
 
-    if (!tripGlobal && id.includes('-')) {
-      const prefix = id.split('-')[0].toUpperCase();
+    if (!tripGlobal && id.includes("-")) {
+      const prefix = id.split("-")[0].toUpperCase();
       tripGlobal = await prisma.trip.findFirst({
         where: {
           OR: [
-            { id: { startsWith: prefix, mode: 'insensitive' } },
-            { slug: { startsWith: prefix.toLowerCase(), mode: 'insensitive' } },
-            { shortName: { startsWith: prefix, mode: 'insensitive' } }
-          ]
-        }
+            { id: { startsWith: prefix, mode: "insensitive" } },
+            { slug: { startsWith: prefix.toLowerCase(), mode: "insensitive" } },
+            { shortName: { startsWith: prefix, mode: "insensitive" } },
+          ],
+        },
       });
     }
 
     if (!tripGlobal) {
-      return res.status(404).json({ success: false, message: 'Trip not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
     }
 
     if (tripGlobal.tenantId !== tenantId) {
-      return res.status(403).json({ success: false, message: 'Access denied: unauthorized tenant' });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Access denied: unauthorized tenant",
+        });
     }
 
     let dates = tripGlobal.availableDates;
-    if (typeof dates === 'string') {
+    if (typeof dates === "string") {
       try {
         dates = JSON.parse(dates);
       } catch (_) {
@@ -1035,11 +1117,13 @@ exports.getTripDepartures = async (req, res, next) => {
     }
     if (!Array.isArray(dates)) dates = [];
 
-    const dateStrings = dates.map(d => {
-      if (typeof d === 'string') return d;
-      if (d && typeof d === 'object' && d.date) return d.date;
-      return null;
-    }).filter(Boolean);
+    const dateStrings = dates
+      .map((d) => {
+        if (typeof d === "string") return d;
+        if (d && typeof d === "object" && d.date) return d.date;
+        return null;
+      })
+      .filter(Boolean);
 
     res.json({ success: true, data: dateStrings });
   } catch (error) {

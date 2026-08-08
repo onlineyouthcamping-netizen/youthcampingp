@@ -140,6 +140,8 @@ export const updateBooking = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { totalAmount, paymentStatus, travelers } = req.body;
 
+    console.log(travelers)
+
     const booking = await prisma.booking.update({
       where: { id: id as string },
       data: {

@@ -1,10 +1,10 @@
 "use client";
 
-import { 
-  Users, 
-  ShieldCheck, 
-  Calendar, 
-  Trophy, 
+import {
+  Users,
+  ShieldCheck,
+  Calendar,
+  Trophy,
   LucideIcon,
   CheckCircle2,
   Heart,
@@ -12,7 +12,7 @@ import {
   Star,
   Zap,
   Map,
-  Camera
+  Camera,
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -39,7 +39,7 @@ const ICON_MAP: Record<string, any> = {
   Map: Map,
   map: Map,
   Camera: Camera,
-  camera: Camera
+  camera: Camera,
 };
 
 interface Stat {
@@ -54,9 +54,7 @@ interface SocialProofBarProps {
 
 const defaultStats: any[] = [];
 
-export default function SocialProofBar({ 
-  stats, 
-}: SocialProofBarProps) {
+export default function SocialProofBar({ stats }: SocialProofBarProps) {
   const displayStats = stats;
   if (!displayStats || displayStats.length === 0) return null;
   const prefersReducedMotion = useReducedMotion();
@@ -70,7 +68,7 @@ export default function SocialProofBar({
           {displayStats.map((stat: any, i: number) => {
             const Icon = ICON_MAP[stat.icon] || Users;
             const textContent = stat.text || stat.label || "";
-            
+
             return (
               <motion.div
                 key={i}

@@ -1,36 +1,51 @@
-const crypto = require('crypto');
-const { prisma } = require('../lib/prisma');
+const crypto = require("crypto");
+const { prisma } = require("../lib/prisma");
 
-const sha256 = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
+const sha256 = (value) =>
+  crypto.createHash("sha256").update(String(value)).digest("hex");
 
 const generateToken = () => {
   // 12 random bytes -> 16 URL safe base64 characters (e.g. Vc9Gx4Nq7Kt2Pm8R)
-  const token = crypto.randomBytes(12).toString('base64url');
+  const token = crypto.randomBytes(12).toString("base64url");
   return { token, tokenPrefix: token.slice(0, 4) };
 };
 
 const getBaseUrl = () => {
-  const url = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'https://youthcamping.online';
-  return url.replace(/\/$/, '');
+  const url =
+    process.env.FRONTEND_URL ||
+    process.env.CLIENT_URL ||
+    "https://youthcamping.online";
+  return url.replace(/\/$/, "");
 };
 
-const getSigningSecret = () => process.env.BOOKING_LINK_SECRET || process.env.JWT_SECRET || 'dev-booking-link-secret';
+const getSigningSecret = () =>
+  process.env.BOOKING_LINK_SECRET ||
+  process.env.JWT_SECRET ||
+  "dev-booking-link-secret";
 
 const createSignedPayload = (payload) => {
-  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = crypto.createHmac('sha256', getSigningSecret()).update(encoded).digest('hex');
+  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", getSigningSecret())
+    .update(encoded)
+    .digest("hex");
   return { payload: encoded, signature };
 };
 
 const verifySignedPayload = (encodedPayload, signature) => {
   if (!encodedPayload || !signature) return null;
-  const expected = crypto.createHmac('sha256', getSigningSecret()).update(String(encodedPayload)).digest('hex');
+  const expected = crypto
+    .createHmac("sha256", getSigningSecret())
+    .update(String(encodedPayload))
+    .digest("hex");
   const actual = Buffer.from(String(signature));
   const expectedBuffer = Buffer.from(expected);
   if (actual.length !== expectedBuffer.length) return null;
   try {
     if (crypto.timingSafeEqual(actual, expectedBuffer)) {
-      const decoded = Buffer.from(String(encodedPayload), 'base64url').toString('utf8');
+      const decoded = Buffer.from(String(encodedPayload), "base64url").toString(
+        "utf8",
+      );
       return JSON.parse(decoded);
     }
   } catch {
@@ -40,7 +55,10 @@ const verifySignedPayload = (encodedPayload, signature) => {
 };
 
 const getIpHash = (req) => {
-  const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || req.ip || '';
+  const ip =
+    req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
+    req.ip ||
+    "";
   return ip ? sha256(ip) : null;
 };
 
@@ -67,23 +85,30 @@ exports.createBookingLink = async (req, res, next) => {
       salesAdminId,
     } = req.body;
 
-    if (!tripId || !departureDate || !paymentMode || pickupCity === undefined || pickupCity === null) {
+    if (
+      !tripId ||
+      !departureDate ||
+      !paymentMode ||
+      pickupCity === undefined ||
+      pickupCity === null
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Required fields: tripId, departureDate, paymentMode, pickupCity',
+        message:
+          "Required fields: tripId, departureDate, paymentMode, pickupCity",
       });
     }
 
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     const trip = await prisma.trip.findFirst({
       where: {
         OR: [
           { id: String(tripId) },
           { slug: String(tripId) },
-          { title: String(tripId) }
+          { title: String(tripId) },
         ],
-        tenantId
+        tenantId,
       },
       select: { id: true, title: true },
     });
@@ -96,26 +121,35 @@ exports.createBookingLink = async (req, res, next) => {
 
     const parsedDepartureDate = departureDate ? new Date(departureDate) : null;
     if (!parsedDepartureDate || isNaN(parsedDepartureDate.getTime())) {
-      return res.status(400).json({ success: false, message: 'Invalid departureDate' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid departureDate" });
     }
 
     const parsedExpiresAt = expiresAt ? new Date(expiresAt) : null;
-    const finalExpiresAt = parsedExpiresAt && !isNaN(parsedExpiresAt.getTime())
-      ? parsedExpiresAt
-      : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const finalExpiresAt =
+      parsedExpiresAt && !isNaN(parsedExpiresAt.getTime())
+        ? parsedExpiresAt
+        : new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     let finalAdminId = null;
     if (req.user?.id) {
       const adminExists = await prisma.admin.findUnique({
-        where: { id: req.user.id }
+        where: { id: req.user.id },
       });
       if (adminExists) {
         finalAdminId = req.user.id;
       }
     }
 
-    if (req.user?.role && ['admin', 'superadmin'].includes(req.user.role) && salesAdminId) {
-      const selectedSalesAdmin = await prisma.admin.findUnique({ where: { id: salesAdminId } });
+    if (
+      req.user?.role &&
+      ["admin", "superadmin"].includes(req.user.role) &&
+      salesAdminId
+    ) {
+      const selectedSalesAdmin = await prisma.admin.findUnique({
+        where: { id: salesAdminId },
+      });
       if (selectedSalesAdmin) {
         finalAdminId = selectedSalesAdmin.id;
       }
@@ -128,14 +162,20 @@ exports.createBookingLink = async (req, res, next) => {
       departureDate: parsedDepartureDate.toISOString(),
       pickupCity: String(pickupCity),
       paymentMode: String(paymentMode),
-      customAmount: customAmount !== undefined && customAmount !== null ? Number(customAmount) : null,
+      customAmount:
+        customAmount !== undefined && customAmount !== null
+          ? Number(customAmount)
+          : null,
       customTime: customTime || null,
       headerTitle: headerTitle || null,
       headerSubtitle: headerSubtitle || null,
       customerName: customerName || null,
       customerPhone: customerPhone || null,
       customerEmail: customerEmail || null,
-      travelerCount: travelerCount !== undefined && travelerCount !== null ? Number(travelerCount) : null,
+      travelerCount:
+        travelerCount !== undefined && travelerCount !== null
+          ? Number(travelerCount)
+          : null,
       internalNote: internalNote || null,
       salesAdminId: finalAdminId,
       expiresAt: finalExpiresAt.toISOString(),
@@ -150,17 +190,23 @@ exports.createBookingLink = async (req, res, next) => {
         departureDate: parsedDepartureDate,
         pickupCity: String(pickupCity),
         paymentMode: String(paymentMode),
-        customAmount: customAmount !== undefined && customAmount !== null ? Number(customAmount) : null,
+        customAmount:
+          customAmount !== undefined && customAmount !== null
+            ? Number(customAmount)
+            : null,
         customTime: customTime || null,
         headerTitle: headerTitle || null,
         headerSubtitle: headerSubtitle || null,
         customerName: customerName || null,
         customerPhone: customerPhone || null,
         customerEmail: customerEmail || null,
-        travelerCount: travelerCount !== undefined && travelerCount !== null ? Number(travelerCount) : null,
+        travelerCount:
+          travelerCount !== undefined && travelerCount !== null
+            ? Number(travelerCount)
+            : null,
         internalNote: internalNote || null,
         expiresAt: finalExpiresAt,
-        status: 'active',
+        status: "active",
         tokenHash,
         tokenPrefix,
         shareUrl: `${getBaseUrl()}/b/${token}`,
@@ -184,17 +230,11 @@ exports.createBookingLink = async (req, res, next) => {
 // ────────────────────────────────────────────
 exports.getBookingLinks = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
     const role = req.user?.role;
     const requesterAdminId = req.user?.id;
 
-    const {
-      salesAdminId,
-      tripId,
-      status,
-      from,
-      to,
-    } = req.query;
+    const { salesAdminId, tripId, status, from, to } = req.query;
 
     const where = { tenantId };
 
@@ -210,19 +250,22 @@ exports.getBookingLinks = async (req, res, next) => {
     }
 
     // Role-based constraint (full enforcement comes in later access-control hardening task)
-    if (role === 'sales') {
+    if (role === "sales") {
       where.createdByAdminId = requesterAdminId;
     } else if (salesAdminId) {
       where.createdByAdminId = String(salesAdminId);
     }
 
     const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 25));
+    const limit = Math.min(
+      100,
+      Math.max(1, Number.parseInt(req.query.limit, 10) || 25),
+    );
     const [totalCount, links] = await Promise.all([
       prisma.bookingLink.count({ where }),
       prisma.bookingLink.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
         select: {
@@ -245,20 +288,25 @@ exports.getBookingLinks = async (req, res, next) => {
           completedCount: true,
           createdAt: true,
         },
-      })
+      }),
     ]);
 
     // Populate live trip titles to guarantee details match live trips
-    const tripIds = Array.from(new Set(links.map(l => l.tripId).filter(Boolean)));
-    const liveTrips = tripIds.length > 0 ? await prisma.trip.findMany({
-      where: { id: { in: tripIds } },
-      select: { id: true, title: true }
-    }) : [];
-    const tripMap = new Map(liveTrips.map(t => [t.id, t.title]));
+    const tripIds = Array.from(
+      new Set(links.map((l) => l.tripId).filter(Boolean)),
+    );
+    const liveTrips =
+      tripIds.length > 0
+        ? await prisma.trip.findMany({
+            where: { id: { in: tripIds } },
+            select: { id: true, title: true },
+          })
+        : [];
+    const tripMap = new Map(liveTrips.map((t) => [t.id, t.title]));
 
-    const formattedLinks = links.map(l => ({
+    const formattedLinks = links.map((l) => ({
       ...l,
-      tripName: tripMap.get(l.tripId) || l.tripName || 'Custom Trip'
+      tripName: tripMap.get(l.tripId) || l.tripName || "Custom Trip",
     }));
 
     res.json({
@@ -269,8 +317,8 @@ exports.getBookingLinks = async (req, res, next) => {
         page,
         limit,
         totalCount,
-        totalPages: Math.max(1, Math.ceil(totalCount / limit))
-      }
+        totalPages: Math.max(1, Math.ceil(totalCount / limit)),
+      },
     });
   } catch (error) {
     next(error);
@@ -282,7 +330,7 @@ exports.getBookingLinks = async (req, res, next) => {
 // ────────────────────────────────────────────
 exports.revokeBookingLink = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
     const { id } = req.params;
     const role = req.user?.role;
     const requesterAdminId = req.user?.id;
@@ -290,16 +338,28 @@ exports.revokeBookingLink = async (req, res, next) => {
     const link = await prisma.bookingLink.findFirst({
       where: { id, tenantId },
     });
-    if (!link) return res.status(404).json({ success: false, message: 'Booking link not found' });
+    if (!link)
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking link not found" });
 
     // Sales can only revoke links they created
-    if (role === 'sales' && requesterAdminId && link.createdByAdminId !== requesterAdminId) {
-      return res.status(403).json({ success: false, message: 'Forbidden: cannot revoke this booking link' });
+    if (
+      role === "sales" &&
+      requesterAdminId &&
+      link.createdByAdminId !== requesterAdminId
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Forbidden: cannot revoke this booking link",
+        });
     }
 
     const updated = await prisma.bookingLink.update({
       where: { id },
-      data: { status: 'revoked', revokedAt: new Date() },
+      data: { status: "revoked", revokedAt: new Date() },
     });
 
     res.json({ success: true, data: updated });
@@ -314,60 +374,79 @@ exports.revokeBookingLink = async (req, res, next) => {
 exports.resolveBookingLink = async (req, res, next) => {
   try {
     const token = req.query.token;
-    if (!token) return res.status(400).json({ success: false, message: 'token is required' });
+    if (!token)
+      return res
+        .status(400)
+        .json({ success: false, message: "token is required" });
 
     const tokenHash = sha256(String(token));
     const link = await prisma.bookingLink.findFirst({ where: { tokenHash } });
 
     if (!link) {
-      return res.status(404).json({ success: false, message: 'Invalid booking link' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Invalid booking link" });
     }
 
     const now = new Date();
     const signedMetadata = verifySignedPayload(req.query.p, req.query.s);
 
-    if (link.status === 'revoked') {
+    if (link.status === "revoked") {
       await prisma.bookingLinkEvent.create({
         data: {
           tenantId: link.tenantId,
           bookingLinkId: link.id,
-          type: 'revoked_access',
+          type: "revoked_access",
           ipHash: getIpHash(req),
-          userAgent: req.headers['user-agent']?.toString(),
+          userAgent: req.headers["user-agent"]?.toString(),
         },
       });
-      return res.status(410).json({ success: false, message: 'This booking link has been deactivated' });
+      return res
+        .status(410)
+        .json({
+          success: false,
+          message: "This booking link has been deactivated",
+        });
     }
 
-    if (link.status === 'used') {
-      return res.status(410).json({ success: false, message: 'This booking link has already been used' });
+    if (link.status === "used") {
+      return res
+        .status(410)
+        .json({
+          success: false,
+          message: "This booking link has already been used",
+        });
     }
 
     if (link.expiresAt && link.expiresAt.getTime() < now.getTime()) {
       await prisma.bookingLink.update({
         where: { id: link.id },
-        data: { status: 'expired' },
+        data: { status: "expired" },
       });
 
       await prisma.bookingLinkEvent.create({
         data: {
           tenantId: link.tenantId,
           bookingLinkId: link.id,
-          type: 'expired_access',
+          type: "expired_access",
           ipHash: getIpHash(req),
-          userAgent: req.headers['user-agent']?.toString(),
+          userAgent: req.headers["user-agent"]?.toString(),
         },
       });
 
-      return res.status(410).json({ success: false, message: 'This booking link has expired' });
+      return res
+        .status(410)
+        .json({ success: false, message: "This booking link has expired" });
     }
 
-    if (link.status !== 'active') {
-      return res.status(410).json({ success: false, message: 'This booking link is not active' });
+    if (link.status !== "active") {
+      return res
+        .status(410)
+        .json({ success: false, message: "This booking link is not active" });
     }
 
     const ipHash = getIpHash(req);
-    const userAgent = req.headers['user-agent']?.toString();
+    const userAgent = req.headers["user-agent"]?.toString();
 
     // Update open counters + emit event
     const openedAt = new Date();
@@ -385,7 +464,7 @@ exports.resolveBookingLink = async (req, res, next) => {
         data: {
           tenantId: link.tenantId,
           bookingLinkId: link.id,
-          type: 'opened',
+          type: "opened",
           ipHash,
           userAgent,
         },
@@ -394,8 +473,15 @@ exports.resolveBookingLink = async (req, res, next) => {
 
     // Fetch live trip title to guarantee exact detail matching
     const liveTrip = await prisma.trip.findFirst({
-      where: { OR: [{ id: link.tripId }, { slug: link.tripId }, { title: link.tripId }, { shortName: link.tripId }] },
-      select: { id: true, title: true }
+      where: {
+        OR: [
+          { id: link.tripId },
+          { slug: link.tripId },
+          { title: link.tripId },
+          { shortName: link.tripId },
+        ],
+      },
+      select: { id: true, title: true },
     });
 
     // Return immutable snapshot used for prefill with live matched trip details
@@ -406,8 +492,10 @@ exports.resolveBookingLink = async (req, res, next) => {
         salesAdminId: link.createdByAdminId,
         tokenPrefix: link.tokenPrefix,
         tripId: liveTrip ? liveTrip.id : link.tripId,
-        tripName: liveTrip ? liveTrip.title : (link.tripName || 'Custom Trip'),
-        departureDate: link.departureDate ? link.departureDate.toISOString() : null,
+        tripName: liveTrip ? liveTrip.title : link.tripName || "Custom Trip",
+        departureDate: link.departureDate
+          ? link.departureDate.toISOString()
+          : null,
         pickupCity: link.pickupCity,
         paymentMode: link.paymentMode,
         customAmount: link.customAmount,
@@ -416,9 +504,14 @@ exports.resolveBookingLink = async (req, res, next) => {
         headerSubtitle: link.headerSubtitle,
         expiresAt: link.expiresAt ? link.expiresAt.toISOString() : null,
         customerName: link.customerName || signedMetadata?.customerName || null,
-        customerPhone: link.customerPhone || signedMetadata?.customerPhone || null,
-        customerEmail: link.customerEmail || signedMetadata?.customerEmail || null,
-        travelerCount: link.travelerCount !== undefined && link.travelerCount !== null ? link.travelerCount : (signedMetadata?.travelerCount || null),
+        customerPhone:
+          link.customerPhone || signedMetadata?.customerPhone || null,
+        customerEmail:
+          link.customerEmail || signedMetadata?.customerEmail || null,
+        travelerCount:
+          link.travelerCount !== undefined && link.travelerCount !== null
+            ? link.travelerCount
+            : signedMetadata?.travelerCount || null,
         internalNote: link.internalNote || signedMetadata?.internalNote || null,
         status: link.status,
       },
@@ -435,15 +528,19 @@ exports.verifySignedPayload = verifySignedPayload;
 
 exports.getBookingLinksAnalytics = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
     const role = req.user?.role;
     const requesterAdminId = req.user?.id;
 
     const { from, to, salesAdminId } = req.query;
 
-    const where = { tenantId, status: { in: ['active', 'expired', 'revoked'] } };
-    if (role === 'sales') where.createdByAdminId = requesterAdminId;
-    if (role !== 'sales' && salesAdminId) where.createdByAdminId = String(salesAdminId);
+    const where = {
+      tenantId,
+      status: { in: ["active", "expired", "revoked"] },
+    };
+    if (role === "sales") where.createdByAdminId = requesterAdminId;
+    if (role !== "sales" && salesAdminId)
+      where.createdByAdminId = String(salesAdminId);
 
     // Range on createdAt
     if (from || to) {
@@ -456,7 +553,12 @@ exports.getBookingLinksAnalytics = async (req, res, next) => {
     // Fetch links + aggregate revenue from bookings
     const links = await prisma.bookingLink.findMany({
       where,
-      select: { id: true, createdAt: true, openedCount: true, completedCount: true },
+      select: {
+        id: true,
+        createdAt: true,
+        openedCount: true,
+        completedCount: true,
+      },
     });
 
     const linkIds = links.map((l) => l.id);
@@ -478,8 +580,14 @@ exports.getBookingLinksAnalytics = async (req, res, next) => {
     });
 
     const linksGenerated = links.length;
-    const opened = links.reduce((acc, l) => acc + (l.openedCount > 0 ? 1 : 0), 0);
-    const completedBookings = links.reduce((acc, l) => acc + (l.completedCount || 0), 0);
+    const opened = links.reduce(
+      (acc, l) => acc + (l.openedCount > 0 ? 1 : 0),
+      0,
+    );
+    const completedBookings = links.reduce(
+      (acc, l) => acc + (l.completedCount || 0),
+      0,
+    );
 
     res.json({
       success: true,
@@ -494,4 +602,3 @@ exports.getBookingLinksAnalytics = async (req, res, next) => {
     next(error);
   }
 };
-

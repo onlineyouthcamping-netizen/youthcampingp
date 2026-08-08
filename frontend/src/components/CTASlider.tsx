@@ -43,20 +43,26 @@ export default function CTASlider({
       if (norm && !list.includes(norm)) list.unshift(norm);
     }
     if (list.length === 0) {
-      list.push("https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1600&q=85");
-      list.push("https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=1600&q=85");
+      list.push(
+        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1600&q=85",
+      );
+      list.push(
+        "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=1600&q=85",
+      );
     }
     return list;
   })();
 
   const currentMedia = items[activeIdx % items.length];
-  const isVideo = (url: string) => url && (/\.(mp4|webm|mov|ogg)$/i.test(url) || url.includes('/video/'));
+  const isVideo = (url: string) =>
+    url && (/\.(mp4|webm|mov|ogg)$/i.test(url) || url.includes("/video/"));
   const isYouTube = (url: string) => url && /youtube\.com|youtu\.be/.test(url);
   const getYouTubeId = (url: string) => {
     if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+    const regExp =
+      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
     const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+    return match && match[2].length === 11 ? match[2] : null;
   };
 
   // Cycle media if multiple slides exist
@@ -84,7 +90,7 @@ export default function CTASlider({
 
         <div
           ref={containerRef}
-          className={`relative w-full max-w-[1280px] h-[200px] sm:h-[280px] md:h-[360px] lg:h-[400px] overflow-hidden bg-zinc-900 mx-auto shadow-lg border border-slate-100 ${borderRadius === 'rounded-[24px]' ? 'rounded-[28px] md:rounded-[36px]' : borderRadius}`}
+          className={`relative w-full max-w-[1280px] h-[200px] sm:h-[280px] md:h-[360px] lg:h-[400px] overflow-hidden bg-zinc-900 mx-auto shadow-lg border border-slate-100 ${borderRadius === "rounded-[24px]" ? "rounded-[28px] md:rounded-[36px]" : borderRadius}`}
         >
           <AnimatePresence mode="popLayout">
             <motion.div

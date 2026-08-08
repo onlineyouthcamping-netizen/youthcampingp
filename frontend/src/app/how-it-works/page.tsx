@@ -1,38 +1,51 @@
 import React from "react";
 import { Metadata } from "next";
 import Link from "next/link";
-import { Compass, Calendar, CheckCircle2, MapPin, ArrowRight, ShieldCheck, PhoneCall } from "lucide-react";
+import {
+  Compass,
+  Calendar,
+  CheckCircle2,
+  MapPin,
+  ArrowRight,
+  ShieldCheck,
+  PhoneCall,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "How It Works | YouthCamping OS",
-  description: "Learn how to book, customize, and embark on your YouthCamping expedition in 4 easy steps.",
+  description:
+    "Learn how to book, customize, and embark on your YouthCamping expedition in 4 easy steps.",
 };
 
 const steps = [
   {
     step: "01",
     title: "Explore & Select Destination",
-    description: "Browse our curated expeditions across Spiti, Ladakh, Kasol, Kerala, and international circuits. Filter by starting stations (Ex-Delhi, Ex-Ahmedabad, Ex-Chandigarh, Ex-Mumbai).",
-    icon: Compass
+    description:
+      "Browse our curated expeditions across Spiti, Ladakh, Kasol, Kerala, and international circuits. Filter by starting stations (Ex-Delhi, Ex-Ahmedabad, Ex-Chandigarh, Ex-Mumbai).",
+    icon: Compass,
   },
   {
     step: "02",
     title: "Customize & Reserve Seat",
-    description: "Select your preferred departure dates, room sharing preferences (Quad / Triple / Twin), and optional add-ons. Reserve your seat with an advance booking amount.",
-    icon: Calendar
+    description:
+      "Select your preferred departure dates, room sharing preferences (Quad / Triple / Twin), and optional add-ons. Reserve your seat with an advance booking amount.",
+    icon: Calendar,
   },
   {
     step: "03",
     title: "Receive Confirmation & Vouchers",
-    description: "Get instant confirmation receipts, IRCTC train ticket updates, pre-trip packing checklists, and join your batch's WhatsApp coordination group.",
-    icon: CheckCircle2
+    description:
+      "Get instant confirmation receipts, IRCTC train ticket updates, pre-trip packing checklists, and join your batch's WhatsApp coordination group.",
+    icon: CheckCircle2,
   },
   {
     step: "04",
     title: "Embark On The Expedition",
-    description: "Meet your certified trip captain at the designated starting station, check into cozy homestays, and create unforgettable memories with fellow travelers!",
-    icon: MapPin
-  }
+    description:
+      "Meet your certified trip captain at the designated starting station, check into cozy homestays, and create unforgettable memories with fellow travelers!",
+    icon: MapPin,
+  },
 ];
 
 export default function HowItWorksPage() {
@@ -49,7 +62,8 @@ export default function HowItWorksPage() {
           </h1>
           <div className="w-16 h-1.5 bg-[#D4541A] rounded-full mx-auto my-3" />
           <p className="text-xs sm:text-sm text-zinc-300 font-semibold max-w-xl mx-auto leading-relaxed">
-            From picking your destination to landing at the campsite — here is your 4-step journey.
+            From picking your destination to landing at the campsite — here is
+            your 4-step journey.
           </p>
         </div>
       </section>
@@ -58,8 +72,8 @@ export default function HowItWorksPage() {
       <div className="max-w-7xl mx-auto px-5 sm:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {steps.map((s, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className="bg-white border border-zinc-200/90 rounded-[28px] p-6 shadow-2xs hover:border-[#D4541A] transition-all group flex flex-col justify-between"
             >
               <div>
@@ -84,10 +98,12 @@ export default function HowItWorksPage() {
         {/* CTA Banner */}
         <div className="mt-16 bg-[#F8F9FA] border border-zinc-200/90 rounded-[32px] p-8 sm:p-12 text-center max-w-4xl mx-auto space-y-4">
           <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] font-montserrat uppercase tracking-tight">
-            Ready To Start Your <span className="text-[#D4541A]">Adventure?</span>
+            Ready To Start Your{" "}
+            <span className="text-[#D4541A]">Adventure?</span>
           </h2>
           <p className="text-xs sm:text-sm text-zinc-600 font-semibold max-w-lg mx-auto">
-            Check out our upcoming weekend getaways and mountain expeditions with guaranteed departures.
+            Check out our upcoming weekend getaways and mountain expeditions
+            with guaranteed departures.
           </p>
           <div className="pt-2">
             <Link

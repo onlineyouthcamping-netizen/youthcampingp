@@ -1,5 +1,5 @@
-const { prisma } = require('../lib/prisma');
-const { logAction } = require('../utils/auditLogger');
+const { prisma } = require("../lib/prisma");
+const { logAction } = require("../utils/auditLogger");
 
 /**
  * @desc    Submit inquiry (Public / Link attribution)
@@ -8,30 +8,30 @@ const { logAction } = require('../utils/auditLogger');
  */
 exports.createInquiry = async (req, res, next) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] || 'default';
+    const tenantId = req.headers["x-tenant-id"] || "default";
     const { phone, tripId, sourceBookingLinkId } = req.body;
-    
+
     // Check for duplicates in the last 48 hours
     const duplicate = await prisma.inquiry.findFirst({
       where: {
         phone,
         tripId,
         tenantId,
-        createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) }
-      }
+        createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
+      },
     });
 
     // Resolve salesAdminId attribution
     let salesAdminId = null;
     if (sourceBookingLinkId) {
       const link = await prisma.bookingLink.findUnique({
-        where: { id: sourceBookingLinkId }
+        where: { id: sourceBookingLinkId },
       });
       if (link) {
         salesAdminId = link.createdByAdminId;
       }
     } else if (req.user) {
-      if (req.user.role === 'sales') {
+      if (req.user.role === "sales") {
         salesAdminId = req.user.id;
       } else if (req.body.salesAdminId) {
         salesAdminId = req.body.salesAdminId;
@@ -48,29 +48,31 @@ exports.createInquiry = async (req, res, next) => {
         tripTitle: req.body.tripTitle,
         date: req.body.date,
         source: req.body.source,
-        adminNotes: `Source: ${req.body.source || 'Unknown'}`,
+        adminNotes: `Source: ${req.body.source || "Unknown"}`,
         tenantId,
         salesAdminId,
-        count: req.body.count ? parseInt(req.body.count) : undefined
-      }
+        count: req.body.count ? parseInt(req.body.count) : undefined,
+      },
     });
 
-    const { publishEvent } = require('../utils/eventBus');
-    await publishEvent('inquiry.created', {
-      entityType: 'Inquiry',
+    const { publishEvent } = require("../utils/eventBus");
+    await publishEvent("inquiry.created", {
+      entityType: "Inquiry",
       entityId: inquiry.id,
-      actorUserId: salesAdminId || 'system',
-      actorName: req.body.name || 'System',
+      actorUserId: salesAdminId || "system",
+      actorName: req.body.name || "System",
       title: `New Inquiry Created`,
       description: `Inquiry for trip ${req.body.tripTitle || req.body.tripId}`,
-      moduleName: 'Sales',
-      priority: 'Medium',
+      moduleName: "Sales",
+      priority: "Medium",
       actionUrl: `/admin/inquiries`,
       notify: true,
-      assigneeId: salesAdminId
+      assigneeId: salesAdminId,
     });
 
-    res.status(201).json({ success: true, data: inquiry, isDuplicate: !!duplicate });
+    res
+      .status(201)
+      .json({ success: true, data: inquiry, isDuplicate: !!duplicate });
   } catch (error) {
     next(error);
   }
@@ -98,26 +100,26 @@ exports.getInquiries = async (req, res, next) => {
 
     // 2. Map status filters
     if (status) {
-      if (status === 'all') {
-        where.status = { in: ['new', 'contacted', 'read'] };
-      } else if (status === 'new') {
-        where.status = { in: ['new', 'read'] };
+      if (status === "all") {
+        where.status = { in: ["new", "contacted", "read"] };
+      } else if (status === "new") {
+        where.status = { in: ["new", "read"] };
       } else {
         where.status = status;
       }
     }
 
     // Apply sales constraint
-    if (req.user?.role === 'sales') {
+    if (req.user?.role === "sales") {
       where.salesAdminId = req.user.id;
     }
 
     // Search query map
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { tripTitle: { contains: search, mode: 'insensitive' } }
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { tripTitle: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -128,17 +130,17 @@ exports.getInquiries = async (req, res, next) => {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' }
-      })
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
 
     const totalPages = Math.ceil(totalCount / limit);
     const hasNextPage = page < totalPages;
     const hasPreviousPage = page > 1;
 
-    const mappedInquiries = inquiries.map(inq => ({
+    const mappedInquiries = inquiries.map((inq) => ({
       ...inq,
-      read: inq.status !== 'new'
+      read: inq.status !== "new",
     }));
 
     res.json({
@@ -151,8 +153,8 @@ exports.getInquiries = async (req, res, next) => {
         totalCount,
         totalPages,
         hasNextPage,
-        hasPreviousPage
-      }
+        hasPreviousPage,
+      },
     });
   } catch (error) {
     next(error);
@@ -171,44 +173,46 @@ exports.updateInquiryStatus = async (req, res, next) => {
     const { status, adminNotes } = req.body;
 
     const where = { id, tenantId };
-    if (req.user?.role === 'sales') {
+    if (req.user?.role === "sales") {
       where.salesAdminId = req.user.id;
     }
 
     const beforeInquiry = await prisma.inquiry.findFirst({ where });
     if (!beforeInquiry) {
-      return res.status(404).json({ success: false, message: 'Inquiry not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Inquiry not found" });
     }
 
     await prisma.inquiry.updateMany({
       where,
-      data: { status, adminNotes }
+      data: { status, adminNotes },
     });
 
     const afterInquiry = await prisma.inquiry.findFirst({ where });
-    
+
     if (status !== beforeInquiry.status) {
-      const { publishEvent } = require('../utils/eventBus');
-      await publishEvent('inquiry.status_updated', {
-        entityType: 'Inquiry',
+      const { publishEvent } = require("../utils/eventBus");
+      await publishEvent("inquiry.status_updated", {
+        entityType: "Inquiry",
         entityId: id,
         actorUserId: req.user.id,
-        actorName: req.user.name || 'Admin',
+        actorName: req.user.name || "Admin",
         title: `Inquiry status changed to ${status}`,
         description: `Previous status: ${beforeInquiry.status}`,
-        moduleName: 'Sales',
-        priority: 'Low',
+        moduleName: "Sales",
+        priority: "Low",
         actionUrl: `/admin/inquiries/${id}`,
         notify: false,
         audit: {
-          action: 'STATUS_UPDATE',
+          action: "STATUS_UPDATE",
           beforeData: { status: beforeInquiry.status },
-          afterData: { status: afterInquiry.status }
-        }
+          afterData: { status: afterInquiry.status },
+        },
       });
     }
 
-    res.json({ success: true, message: 'Inquiry updated' });
+    res.json({ success: true, message: "Inquiry updated" });
   } catch (error) {
     next(error);
   }
@@ -221,16 +225,19 @@ exports.updateInquiryStatus = async (req, res, next) => {
 exports.getInquiry = async (req, res, next) => {
   try {
     const where = { id: req.params.id, tenantId: req.user.tenantId };
-    if (req.user?.role === 'sales') {
+    if (req.user?.role === "sales") {
       where.salesAdminId = req.user.id;
     }
 
     const inquiry = await prisma.inquiry.findFirst({ where });
-    if (!inquiry) return res.status(404).json({ success: false, message: 'Inquiry not found' });
-    
+    if (!inquiry)
+      return res
+        .status(404)
+        .json({ success: false, message: "Inquiry not found" });
+
     const mappedInquiry = {
       ...inquiry,
-      read: inquiry.status !== 'new'
+      read: inquiry.status !== "new",
     };
 
     res.json({ success: true, data: mappedInquiry });
@@ -246,15 +253,18 @@ exports.getInquiry = async (req, res, next) => {
 exports.deleteInquiry = async (req, res, next) => {
   try {
     const where = { id: req.params.id, tenantId: req.user.tenantId };
-    if (req.user?.role === 'sales') {
+    if (req.user?.role === "sales") {
       where.salesAdminId = req.user.id;
     }
 
     const inquiry = await prisma.inquiry.findFirst({ where });
-    if (!inquiry) return res.status(404).json({ success: false, message: 'Inquiry not found' });
+    if (!inquiry)
+      return res
+        .status(404)
+        .json({ success: false, message: "Inquiry not found" });
 
     await prisma.inquiry.deleteMany({ where });
-    res.json({ success: true, message: 'Inquiry deleted' });
+    res.json({ success: true, message: "Inquiry deleted" });
   } catch (error) {
     next(error);
   }

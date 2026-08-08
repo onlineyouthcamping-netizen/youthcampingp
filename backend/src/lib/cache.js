@@ -8,58 +8,84 @@ let isConnected = false;
 if (process.env.REDIS_URL) {
   try {
     // Dynamic import to avoid crash if ioredis package is not installed
-    const Redis = require('ioredis');
+    const Redis = require("ioredis");
     redisClient = new Redis(process.env.REDIS_URL, {
       maxRetriesPerRequest: 1,
       enableOfflineQueue: false,
       connectTimeout: 1000, // Quick fail
     });
-    
-    redisClient.on('connect', () => {
+
+    redisClient.on("connect", () => {
       isConnected = true;
-      console.log('✅ Redis cache connected');
+      console.log("✅ Redis cache connected");
     });
-    
-    redisClient.on('error', (err) => {
+
+    redisClient.on("error", (err) => {
       isConnected = false;
-      console.warn('⚠️ Redis cache offline:', err.message);
+      console.warn("⚠️ Redis cache offline:", err.message);
     });
   } catch (err) {
-    console.warn('⚠️ ioredis package not found or failed to initialize. Cache disabled.');
+    console.warn(
+      "⚠️ ioredis package not found or failed to initialize. Cache disabled.",
+    );
   }
 }
 
+const inMemoryCache = new Map();
+
+// Periodic cleanup of expired keys every 60s
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of inMemoryCache.entries()) {
+    if (entry.expiresAt <= now) {
+      inMemoryCache.delete(key);
+    }
+  }
+}, 60000).unref();
+
 module.exports = {
   get: async (key) => {
-    if (!isConnected || !redisClient) return null;
-    try {
-      return await redisClient.get(key);
-    } catch (err) {
-      console.warn('Cache read failed (fail-open):', err.message);
+    if (isConnected && redisClient) {
+      try {
+        return await redisClient.get(key);
+      } catch (err) {
+        console.warn("Cache read failed (fail-open):", err.message);
+      }
+    }
+    const entry = inMemoryCache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      inMemoryCache.delete(key);
       return null;
     }
+    return entry.value;
   },
 
   set: async (key, value, ttlSeconds = 60) => {
-    if (!isConnected || !redisClient) return false;
-    try {
-      const stringVal = typeof value === 'string' ? value : JSON.stringify(value);
-      await redisClient.set(key, stringVal, 'EX', ttlSeconds);
-      return true;
-    } catch (err) {
-      console.warn('Cache write failed (fail-open):', err.message);
-      return false;
+    const stringVal =
+      typeof value === "string" ? value : JSON.stringify(value);
+    if (isConnected && redisClient) {
+      try {
+        await redisClient.set(key, stringVal, "EX", ttlSeconds);
+        return true;
+      } catch (err) {
+        console.warn("Cache write failed (fail-open):", err.message);
+      }
     }
+    inMemoryCache.set(key, {
+      value: stringVal,
+      expiresAt: Date.now() + ttlSeconds * 1000,
+    });
+    return true;
   },
 
   del: async (key) => {
-    if (!isConnected || !redisClient) return false;
-    try {
-      await redisClient.del(key);
-      return true;
-    } catch (err) {
-      console.warn('Cache delete failed (fail-open):', err.message);
-      return false;
+    if (isConnected && redisClient) {
+      try {
+        await redisClient.del(key);
+      } catch (err) {}
     }
-  }
+    inMemoryCache.delete(key);
+    return true;
+  },
 };

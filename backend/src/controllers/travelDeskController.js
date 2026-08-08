@@ -1,20 +1,22 @@
-const { prisma } = require('../lib/prisma');
-const { extractTextPageByPage } = require('../utils/documentParser');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const cloudinary = require('cloudinary').v2;
-const { createAuditLog } = require('./travelDeskCoreController');
+const { prisma } = require("../lib/prisma");
+const { extractTextPageByPage } = require("../utils/documentParser");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const cloudinary = require("cloudinary").v2;
+const { createAuditLog } = require("./travelDeskCoreController");
 
-const uploadToCloudinary = (fileBuffer, folder, resourceType = 'auto') => {
+const uploadToCloudinary = (fileBuffer, folder, resourceType = "auto") => {
   return new Promise((resolve, reject) => {
     if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
-      return reject(new Error('Cloudinary configuration is missing on the backend.'));
+      return reject(
+        new Error("Cloudinary configuration is missing on the backend."),
+      );
     }
     const uploadStream = cloudinary.uploader.upload_stream(
       { folder, resource_type: resourceType },
       (error, result) => {
         if (error) return reject(error);
         resolve(result);
-      }
+      },
     );
     uploadStream.end(fileBuffer);
   });
@@ -28,15 +30,17 @@ exports.getTicketing = async (req, res, next) => {
       prisma.ticketingSop.findMany({
         where: { tripId },
         include: { items: true, _count: { select: { items: true } } },
-        orderBy: { category: 'asc' }
+        orderBy: { category: "asc" },
       }),
       prisma.ticketingLink.findMany({
         where: { tripId },
-        orderBy: { createdAt: 'asc' }
-      })
+        orderBy: { createdAt: "asc" },
+      }),
     ]);
     res.json({ success: true, data: { sops, links } });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.createTicketingSop = async (req, res, next) => {
@@ -48,21 +52,28 @@ exports.createTicketingSop = async (req, res, next) => {
         category,
         title,
         description,
-        items: items ? {
-          create: items.map(item => ({ title: item.title, content: item.content }))
-        } : undefined
+        items: items
+          ? {
+              create: items.map((item) => ({
+                title: item.title,
+                content: item.content,
+              })),
+            }
+          : undefined,
       },
-      include: { items: true }
+      include: { items: true },
     });
     res.json({ success: true, data: sop });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.updateTicketingSop = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { category, title, description, items } = req.body;
-    
+
     // Simple sync items: delete existing, insert new
     if (items) {
       await prisma.ticketingSopItem.deleteMany({ where: { sopId: id } });
@@ -74,38 +85,59 @@ exports.updateTicketingSop = async (req, res, next) => {
         category,
         title,
         description,
-        items: items ? {
-          create: items.map(item => ({ title: item.title, content: item.content }))
-        } : undefined
+        items: items
+          ? {
+              create: items.map((item) => ({
+                title: item.title,
+                content: item.content,
+              })),
+            }
+          : undefined,
       },
-      include: { items: true }
+      include: { items: true },
     });
     res.json({ success: true, data: sop });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.deleteTicketingSop = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.ticketingSop.delete({ where: { id } });
-    res.json({ success: true, message: 'Ticketing SOP deleted successfully' });
-  } catch (e) { next(e); }
+    res.json({ success: true, message: "Ticketing SOP deleted successfully" });
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.createTicketingLink = async (req, res, next) => {
   try {
     const { tripId, label, val, icon, linkUrl } = req.body;
     const link = await prisma.ticketingLink.create({
-      data: { tripId, label, val, icon, linkUrl }
+      data: { tripId, label, val, icon, linkUrl },
     });
 
-    const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+    const workspace = await prisma.travelDeskWorkspace.findUnique({
+      where: { tripId },
+    });
     if (workspace && req.user) {
-      await createAuditLog(workspace.id, 'TICKETING_LINK', link.id, 'CREATE', null, { label }, req.user.id);
+      await createAuditLog(
+        workspace.id,
+        "TICKETING_LINK",
+        link.id,
+        "CREATE",
+        null,
+        { label },
+        req.user.id,
+      );
     }
 
     res.json({ success: true, data: link });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.updateTicketingLink = async (req, res, next) => {
@@ -114,20 +146,26 @@ exports.updateTicketingLink = async (req, res, next) => {
     const { label, val, icon, linkUrl } = req.body;
     const link = await prisma.ticketingLink.update({
       where: { id },
-      data: { label, val, icon, linkUrl }
+      data: { label, val, icon, linkUrl },
     });
     res.json({ success: true, data: link });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.deleteTicketingLink = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.ticketingLink.delete({ where: { id } });
-    res.json({ success: true, message: 'Ticketing Quick Link deleted successfully' });
-  } catch (e) { next(e); }
+    res.json({
+      success: true,
+      message: "Ticketing Quick Link deleted successfully",
+    });
+  } catch (e) {
+    next(e);
+  }
 };
-
 
 // ── TAB 3: ITINERARY (Variants, Days, Route Maps, Inclusions, Exclusions, Notes) ──
 exports.getItineraries = async (req, res, next) => {
@@ -136,27 +174,39 @@ exports.getItineraries = async (req, res, next) => {
     const itineraries = await prisma.itinerary.findMany({
       where: { tripId },
       include: {
-        days: { orderBy: { dayNumber: 'asc' } },
+        days: { orderBy: { dayNumber: "asc" } },
         routeMaps: true,
         inclusions: true,
         exclusions: true,
-        notes: true
+        notes: true,
       },
-      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
     });
     res.json({ success: true, data: itineraries });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.createItinerary = async (req, res, next) => {
   try {
-    const { tripId, name, isDefault, version, days, routeMaps, inclusions, exclusions, notes } = req.body;
-    
+    const {
+      tripId,
+      name,
+      isDefault,
+      version,
+      days,
+      routeMaps,
+      inclusions,
+      exclusions,
+      notes,
+    } = req.body;
+
     if (isDefault) {
       // Set all other itineraries for this trip to not default
       await prisma.itinerary.updateMany({
         where: { tripId },
-        data: { isDefault: false }
+        data: { isDefault: false },
       });
     }
 
@@ -170,24 +220,36 @@ exports.createItinerary = async (req, res, next) => {
         routeMaps: routeMaps ? { create: routeMaps } : undefined,
         inclusions: inclusions ? { create: inclusions } : undefined,
         exclusions: exclusions ? { create: exclusions } : undefined,
-        notes: notes ? { create: notes } : undefined
+        notes: notes ? { create: notes } : undefined,
       },
       include: {
-        days: { orderBy: { dayNumber: 'asc' } },
+        days: { orderBy: { dayNumber: "asc" } },
         routeMaps: true,
         inclusions: true,
         exclusions: true,
-        notes: true
-      }
+        notes: true,
+      },
     });
 
-    const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+    const workspace = await prisma.travelDeskWorkspace.findUnique({
+      where: { tripId },
+    });
     if (workspace && req.user) {
-      await createAuditLog(workspace.id, 'ITINERARY', itinerary.id, 'CREATE', null, { name }, req.user.id);
+      await createAuditLog(
+        workspace.id,
+        "ITINERARY",
+        itinerary.id,
+        "CREATE",
+        null,
+        { name },
+        req.user.id,
+      );
     }
 
     res.json({ success: true, data: itinerary });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.duplicateItinerary = async (req, res, next) => {
@@ -200,14 +262,19 @@ exports.duplicateItinerary = async (req, res, next) => {
         routeMaps: true,
         inclusions: true,
         exclusions: true,
-        notes: true
-      }
+        notes: true,
+      },
     });
 
-    if (!orig) return res.status(404).json({ success: false, message: 'Original itinerary not found' });
+    if (!orig)
+      return res
+        .status(404)
+        .json({ success: false, message: "Original itinerary not found" });
 
     // Check version count to increment
-    const count = await prisma.itinerary.count({ where: { tripId: orig.tripId, name: orig.name } });
+    const count = await prisma.itinerary.count({
+      where: { tripId: orig.tripId, name: orig.name },
+    });
 
     const duplicated = await prisma.itinerary.create({
       data: {
@@ -216,64 +283,78 @@ exports.duplicateItinerary = async (req, res, next) => {
         isDefault: false,
         version: count + 1,
         days: {
-          create: orig.days.map(d => ({
+          create: orig.days.map((d) => ({
             dayNumber: d.dayNumber,
             dayDate: d.dayDate,
             plan: d.plan,
             stay: d.stay,
             meals: d.meals,
             transport: d.transport,
-            distance: d.distance
-          }))
+            distance: d.distance,
+          })),
         },
         routeMaps: {
-          create: orig.routeMaps.map(rm => ({
+          create: orig.routeMaps.map((rm) => ({
             mapUrl: rm.mapUrl,
-            description: rm.description
-          }))
+            description: rm.description,
+          })),
         },
         inclusions: {
-          create: orig.inclusions.map(inc => ({
-            text: inc.text
-          }))
+          create: orig.inclusions.map((inc) => ({
+            text: inc.text,
+          })),
         },
         exclusions: {
-          create: orig.exclusions.map(exc => ({
-            text: exc.text
-          }))
+          create: orig.exclusions.map((exc) => ({
+            text: exc.text,
+          })),
         },
         notes: {
-          create: orig.notes.map(n => ({
+          create: orig.notes.map((n) => ({
             title: n.title,
-            body: n.body
-          }))
-        }
+            body: n.body,
+          })),
+        },
       },
       include: {
-        days: { orderBy: { dayNumber: 'asc' } },
+        days: { orderBy: { dayNumber: "asc" } },
         routeMaps: true,
         inclusions: true,
         exclusions: true,
-        notes: true
-      }
+        notes: true,
+      },
     });
 
     res.json({ success: true, data: duplicated });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.updateItinerary = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, isDefault, version, days, routeMaps, inclusions, exclusions, notes } = req.body;
+    const {
+      name,
+      isDefault,
+      version,
+      days,
+      routeMaps,
+      inclusions,
+      exclusions,
+      notes,
+    } = req.body;
 
     const current = await prisma.itinerary.findUnique({ where: { id } });
-    if (!current) return res.status(404).json({ success: false, message: 'Itinerary not found' });
+    if (!current)
+      return res
+        .status(404)
+        .json({ success: false, message: "Itinerary not found" });
 
     if (isDefault && !current.isDefault) {
       await prisma.itinerary.updateMany({
         where: { tripId: current.tripId },
-        data: { isDefault: false }
+        data: { isDefault: false },
       });
     }
 
@@ -285,10 +366,14 @@ exports.updateItinerary = async (req, res, next) => {
       await prisma.itineraryRouteMap.deleteMany({ where: { itineraryId: id } });
     }
     if (inclusions) {
-      await prisma.itineraryInclusion.deleteMany({ where: { itineraryId: id } });
+      await prisma.itineraryInclusion.deleteMany({
+        where: { itineraryId: id },
+      });
     }
     if (exclusions) {
-      await prisma.itineraryExclusion.deleteMany({ where: { itineraryId: id } });
+      await prisma.itineraryExclusion.deleteMany({
+        where: { itineraryId: id },
+      });
     }
     if (notes) {
       await prisma.itineraryNote.deleteMany({ where: { itineraryId: id } });
@@ -304,49 +389,57 @@ exports.updateItinerary = async (req, res, next) => {
         routeMaps: routeMaps ? { create: routeMaps } : undefined,
         inclusions: inclusions ? { create: inclusions } : undefined,
         exclusions: exclusions ? { create: exclusions } : undefined,
-        notes: notes ? { create: notes } : undefined
+        notes: notes ? { create: notes } : undefined,
       },
       include: {
-        days: { orderBy: { dayNumber: 'asc' } },
+        days: { orderBy: { dayNumber: "asc" } },
         routeMaps: true,
         inclusions: true,
         exclusions: true,
-        notes: true
-      }
+        notes: true,
+      },
     });
 
     res.json({ success: true, data: updated });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.deleteItinerary = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.itinerary.delete({ where: { id } });
-    res.json({ success: true, message: 'Itinerary deleted successfully' });
-  } catch (e) { next(e); }
+    res.json({ success: true, message: "Itinerary deleted successfully" });
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.setDefaultItinerary = async (req, res, next) => {
   try {
     const { id } = req.params;
     const it = await prisma.itinerary.findUnique({ where: { id } });
-    if (!it) return res.status(404).json({ success: false, message: 'Itinerary not found' });
+    if (!it)
+      return res
+        .status(404)
+        .json({ success: false, message: "Itinerary not found" });
 
     await prisma.itinerary.updateMany({
       where: { tripId: it.tripId },
-      data: { isDefault: false }
+      data: { isDefault: false },
     });
 
     const updated = await prisma.itinerary.update({
       where: { id },
-      data: { isDefault: true }
+      data: { isDefault: true },
     });
 
     res.json({ success: true, data: updated });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
-
 
 // ── TAB 4: TRIP SOPs ──
 exports.getSops = async (req, res, next) => {
@@ -355,10 +448,12 @@ exports.getSops = async (req, res, next) => {
     const sops = await prisma.tripSop.findMany({
       where: { tripId },
       include: { items: true, _count: { select: { items: true } } },
-      orderBy: { category: 'asc' }
+      orderBy: { category: "asc" },
     });
     res.json({ success: true, data: sops });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.createSop = async (req, res, next) => {
@@ -371,20 +466,37 @@ exports.createSop = async (req, res, next) => {
         description,
         category,
         icon,
-        items: items ? {
-          create: items.map(item => ({ title: item.title, content: item.content }))
-        } : undefined
+        items: items
+          ? {
+              create: items.map((item) => ({
+                title: item.title,
+                content: item.content,
+              })),
+            }
+          : undefined,
       },
-      include: { items: true }
+      include: { items: true },
     });
 
-    const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+    const workspace = await prisma.travelDeskWorkspace.findUnique({
+      where: { tripId },
+    });
     if (workspace && req.user) {
-      await createAuditLog(workspace.id, 'TRIP_SOP', sop.id, 'CREATE', null, { title }, req.user.id);
+      await createAuditLog(
+        workspace.id,
+        "TRIP_SOP",
+        sop.id,
+        "CREATE",
+        null,
+        { title },
+        req.user.id,
+      );
     }
 
     res.json({ success: true, data: sop });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.updateSop = async (req, res, next) => {
@@ -403,33 +515,41 @@ exports.updateSop = async (req, res, next) => {
         description,
         category,
         icon,
-        items: items ? {
-          create: items.map(item => ({ title: item.title, content: item.content }))
-        } : undefined
+        items: items
+          ? {
+              create: items.map((item) => ({
+                title: item.title,
+                content: item.content,
+              })),
+            }
+          : undefined,
       },
-      include: { items: true }
+      include: { items: true },
     });
     res.json({ success: true, data: sop });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.deleteSop = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.tripSop.delete({ where: { id } });
-    res.json({ success: true, message: 'SOP deleted successfully' });
-  } catch (e) { next(e); }
+    res.json({ success: true, message: "SOP deleted successfully" });
+  } catch (e) {
+    next(e);
+  }
 };
-
 
 // Helper to format bytes
 function formatBytes(bytes, decimals = 2) {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 
 // ── TAB 5: DOCUMENTS ──
@@ -438,17 +558,19 @@ exports.getDocuments = async (req, res, next) => {
     const { tripId } = req.params;
     const docs = await prisma.tripDocument.findMany({
       where: { tripId },
-      orderBy: [{ version: 'desc' }, { dateAdded: 'desc' }]
+      orderBy: [{ version: "desc" }, { dateAdded: "desc" }],
     });
 
     // Compute category summary counts
     const summary = {};
-    docs.forEach(d => {
+    docs.forEach((d) => {
       summary[d.category] = (summary[d.category] || 0) + 1;
     });
 
     res.json({ success: true, data: docs, summary });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.uploadDocuments = async (req, res, next) => {
@@ -456,7 +578,9 @@ exports.uploadDocuments = async (req, res, next) => {
     const { tripId, category, visibility, validFrom, validUntil } = req.body;
     const files = req.files || (req.file ? [req.file] : []);
     if (files.length === 0) {
-      return res.status(400).json({ success: false, message: 'No files uploaded' });
+      return res
+        .status(400)
+        .json({ success: false, message: "No files uploaded" });
     }
 
     const uploadedDocs = [];
@@ -464,64 +588,137 @@ exports.uploadDocuments = async (req, res, next) => {
     for (const file of files) {
       // 10 MB limit for documents
       if (file.size > 10 * 1024 * 1024) {
-        return res.status(400).json({ success: false, message: `File ${file.originalname} exceeds the 10MB limit.` });
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: `File ${file.originalname} exceeds the 10MB limit.`,
+          });
       }
 
       const fileName = file.originalname;
-      const title = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-      
+      const title =
+        fileName.substring(0, fileName.lastIndexOf(".")) || fileName;
+
       let uploadResult;
       try {
-        uploadResult = await uploadToCloudinary(file.buffer, `travel-desk/${tripId}/documents`, 'raw');
+        uploadResult = await uploadToCloudinary(
+          file.buffer,
+          `travel-desk/${tripId}/documents`,
+          "raw",
+        );
       } catch (err) {
-        return res.status(500).json({ success: false, message: 'Cloudinary upload failed: ' + err.message });
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Cloudinary upload failed: " + err.message,
+          });
       }
 
       try {
         // Determine version: if a doc with same name & tripId exists, increment version
         const existingDocs = await prisma.tripDocument.findMany({
-          where: { tripId, name: fileName }
+          where: { tripId, name: fileName },
         });
-        const nextVersion = existingDocs.length > 0 ? Math.max(...existingDocs.map(d => d.version)) + 1 : 1;
+        const nextVersion =
+          existingDocs.length > 0
+            ? Math.max(...existingDocs.map((d) => d.version)) + 1
+            : 1;
 
         // Create doc in DRAFT status
         const doc = await prisma.tripDocument.create({
           data: {
             tripId,
             name: fileName,
-            category: category || 'Trip Documents',
-            fileType: file.mimetype || 'application/octet-stream',
+            category: category || "Trip Documents",
+            fileType: file.mimetype || "application/octet-stream",
             size: formatBytes(file.size),
-            addedBy: req.user.role || 'admin',
+            addedBy: req.user.role || "admin",
             fileUrl: uploadResult.secure_url,
             title: title,
             version: nextVersion,
-            visibility: visibility || 'internal',
+            visibility: visibility || "internal",
             validFrom: validFrom ? new Date(validFrom) : null,
             validUntil: validUntil ? new Date(validUntil) : null,
-            status: 'DRAFT',
-            uploadedBy: req.user.id || 'system'
-          }
+            status: "DRAFT",
+            uploadedBy: req.user.id || "system",
+          },
         });
 
         // Extract page-by-page content if it's a PDF
-        if (file.mimetype === 'application/pdf') {
+        if (file.mimetype === "application/pdf") {
           try {
-            const pages = await extractTextPageByPage(file.buffer, file.mimetype, fileName);
+            const pages = await extractTextPageByPage(
+              file.buffer,
+              file.mimetype,
+              fileName,
+            );
             for (const p of pages) {
-              let targetCategory = 'Trip Overview';
+              let targetCategory = "Trip Overview";
               const txt = p.text.toLowerCase();
-              if (txt.includes('faq') || txt.includes('question') || txt.includes('answer')) targetCategory = 'Customer FAQs';
-              else if (txt.includes('sales') || txt.includes('pitch') || txt.includes('usp')) targetCategory = 'Sales Guide';
-              else if (txt.includes('include') || txt.includes('exclude')) targetCategory = 'Inclusions & Exclusions';
-              else if (txt.includes('ticket') || txt.includes('train') || txt.includes('flight')) targetCategory = 'Ticketing Info';
-              else if (txt.includes('visa') || txt.includes('entry') || txt.includes('passport')) targetCategory = 'Visa & Entry';
-              else if (txt.includes('weather') || txt.includes('food') || txt.includes('culture')) targetCategory = 'Destination Guide';
-              else if (txt.includes('pack') || txt.includes('clothes') || txt.includes('carry')) targetCategory = 'Packing Guide';
-              else if (txt.includes('sop') || txt.includes('process') || txt.includes('workflow')) targetCategory = 'SOPs & Processes';
-              else if (txt.includes('emergency') || txt.includes('hospital') || txt.includes('rescue')) targetCategory = 'Emergency Center';
-              else if (txt.includes('price') || txt.includes('policy') || txt.includes('refund')) targetCategory = 'Pricing & Policy';
-              else if (txt.includes('learning') || txt.includes('feedback') || txt.includes('past')) targetCategory = 'Past Learnings';
+              if (
+                txt.includes("faq") ||
+                txt.includes("question") ||
+                txt.includes("answer")
+              )
+                targetCategory = "Customer FAQs";
+              else if (
+                txt.includes("sales") ||
+                txt.includes("pitch") ||
+                txt.includes("usp")
+              )
+                targetCategory = "Sales Guide";
+              else if (txt.includes("include") || txt.includes("exclude"))
+                targetCategory = "Inclusions & Exclusions";
+              else if (
+                txt.includes("ticket") ||
+                txt.includes("train") ||
+                txt.includes("flight")
+              )
+                targetCategory = "Ticketing Info";
+              else if (
+                txt.includes("visa") ||
+                txt.includes("entry") ||
+                txt.includes("passport")
+              )
+                targetCategory = "Visa & Entry";
+              else if (
+                txt.includes("weather") ||
+                txt.includes("food") ||
+                txt.includes("culture")
+              )
+                targetCategory = "Destination Guide";
+              else if (
+                txt.includes("pack") ||
+                txt.includes("clothes") ||
+                txt.includes("carry")
+              )
+                targetCategory = "Packing Guide";
+              else if (
+                txt.includes("sop") ||
+                txt.includes("process") ||
+                txt.includes("workflow")
+              )
+                targetCategory = "SOPs & Processes";
+              else if (
+                txt.includes("emergency") ||
+                txt.includes("hospital") ||
+                txt.includes("rescue")
+              )
+                targetCategory = "Emergency Center";
+              else if (
+                txt.includes("price") ||
+                txt.includes("policy") ||
+                txt.includes("refund")
+              )
+                targetCategory = "Pricing & Policy";
+              else if (
+                txt.includes("learning") ||
+                txt.includes("feedback") ||
+                txt.includes("past")
+              )
+                targetCategory = "Past Learnings";
 
               await prisma.knowledgeItem.create({
                 data: {
@@ -530,52 +727,85 @@ exports.uploadDocuments = async (req, res, next) => {
                   sourceDocName: fileName,
                   pageNumber: p.pageNumber,
                   title: `${title} - Page ${p.pageNumber}`,
-                  content: p.text || 'Empty page content',
+                  content: p.text || "Empty page content",
                   category: targetCategory,
                   version: nextVersion,
-                  status: 'DRAFT'
-                }
+                  status: "DRAFT",
+                },
               });
             }
           } catch (pdfErr) {
-            console.error('PDF extraction failed:', pdfErr);
+            console.error("PDF extraction failed:", pdfErr);
             // Non-fatal, continue.
           }
         }
 
         // Trigger audit log for Document Upload
-        const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+        const workspace = await prisma.travelDeskWorkspace.findUnique({
+          where: { tripId },
+        });
         if (workspace && req.user) {
-          await createAuditLog(workspace.id, 'DOCUMENT', doc.id, 'UPLOAD', null, { title, version: nextVersion, fileName }, req.user.id);
+          await createAuditLog(
+            workspace.id,
+            "DOCUMENT",
+            doc.id,
+            "UPLOAD",
+            null,
+            { title, version: nextVersion, fileName },
+            req.user.id,
+          );
         }
 
         uploadedDocs.push(doc);
       } catch (dbErr) {
         // Rollback Cloudinary upload if DB fails
         if (uploadResult.public_id) {
-          await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: 'raw' });
+          await cloudinary.uploader.destroy(uploadResult.public_id, {
+            resource_type: "raw",
+          });
         }
-        return res.status(500).json({ success: false, message: 'Database transaction failed, file rolled back. ' + dbErr.message });
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message:
+              "Database transaction failed, file rolled back. " + dbErr.message,
+          });
       }
     }
 
     res.json({ success: true, data: uploadedDocs });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.reviewDocument = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status, approvalDetails } = req.body; // DRAFT, UNDER_REVIEW, APPROVED, PUBLISHED, ARCHIVED
-    
+
     const doc = await prisma.tripDocument.findUnique({ where: { id } });
-    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+    if (!doc)
+      return res
+        .status(404)
+        .json({ success: false, message: "Document not found" });
 
     // Role checks
     const userRole = req.user.role;
-    if (status === 'PUBLISHED' || status === 'APPROVED' || status === 'ARCHIVED') {
-      if (userRole !== 'superadmin' && userRole !== 'admin') {
-        return res.status(403).json({ success: false, message: 'Insufficient permission to approve/publish/archive documents' });
+    if (
+      status === "PUBLISHED" ||
+      status === "APPROVED" ||
+      status === "ARCHIVED"
+    ) {
+      if (userRole !== "superadmin" && userRole !== "admin") {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message:
+              "Insufficient permission to approve/publish/archive documents",
+          });
       }
     }
 
@@ -584,56 +814,66 @@ exports.reviewDocument = async (req, res, next) => {
       where: { id },
       data: {
         status,
-        approvalDetails: approvalDetails || undefined
-      }
+        approvalDetails: approvalDetails || undefined,
+      },
     });
 
     // Cascade status to knowledge items
     await prisma.knowledgeItem.updateMany({
       where: { documentId: id },
       data: {
-        status: status === 'PUBLISHED' ? 'PUBLISHED' : (status === 'APPROVED' ? 'APPROVED' : 'DRAFT')
-      }
+        status:
+          status === "PUBLISHED"
+            ? "PUBLISHED"
+            : status === "APPROVED"
+              ? "APPROVED"
+              : "DRAFT",
+      },
     });
 
     // If publishing, archive older versions of same document title
-    if (status === 'PUBLISHED') {
+    if (status === "PUBLISHED") {
       const olderVersions = await prisma.tripDocument.findMany({
         where: {
           tripId: doc.tripId,
           name: doc.name,
           version: { lt: doc.version },
-          status: 'PUBLISHED'
-        }
+          status: "PUBLISHED",
+        },
       });
 
       for (const oldDoc of olderVersions) {
         await prisma.tripDocument.update({
           where: { id: oldDoc.id },
-          data: { status: 'ARCHIVED' }
+          data: { status: "ARCHIVED" },
         });
         await prisma.knowledgeItem.updateMany({
           where: { documentId: oldDoc.id },
-          data: { status: 'ARCHIVED' }
+          data: { status: "ARCHIVED" },
         });
       }
     }
 
     res.json({ success: true, data: updatedDoc });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.deleteDocument = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (req.user.role !== 'superadmin' && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Only admins can delete documents' });
+    if (req.user.role !== "superadmin" && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Only admins can delete documents" });
     }
     await prisma.tripDocument.delete({ where: { id } });
-    res.json({ success: true, message: 'Document deleted successfully' });
-  } catch (e) { next(e); }
+    res.json({ success: true, message: "Document deleted successfully" });
+  } catch (e) {
+    next(e);
+  }
 };
-
 
 // ── TAB 7: GALLERY ──
 exports.getGallery = async (req, res, next) => {
@@ -641,10 +881,12 @@ exports.getGallery = async (req, res, next) => {
     const { tripId } = req.params;
     const images = await prisma.tripGallery.findMany({
       where: { tripId },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: "asc" },
     });
     res.json({ success: true, data: images });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.createGalleryItem = async (req, res, next) => {
@@ -657,62 +899,105 @@ exports.createGalleryItem = async (req, res, next) => {
       for (const file of files) {
         // 5 MB limit for gallery images
         if (file.size > 5 * 1024 * 1024) {
-          return res.status(400).json({ success: false, message: `Image ${file.originalname} exceeds the 5MB limit.` });
+          return res
+            .status(400)
+            .json({
+              success: false,
+              message: `Image ${file.originalname} exceeds the 5MB limit.`,
+            });
         }
 
         let uploadResult;
         try {
-          uploadResult = await uploadToCloudinary(file.buffer, `travel-desk/${tripId}/gallery`, 'image');
+          uploadResult = await uploadToCloudinary(
+            file.buffer,
+            `travel-desk/${tripId}/gallery`,
+            "image",
+          );
         } catch (err) {
-          return res.status(500).json({ success: false, message: 'Cloudinary upload failed: ' + err.message });
+          return res
+            .status(500)
+            .json({
+              success: false,
+              message: "Cloudinary upload failed: " + err.message,
+            });
         }
 
         try {
           const item = await prisma.tripGallery.create({
-            data: { 
-              tripId, 
-              title: title || file.originalname, 
+            data: {
+              tripId,
+              title: title || file.originalname,
               imageUrl: uploadResult.secure_url,
-              category: category || 'General'
-            }
+              category: category || "General",
+            },
           });
 
           // Trigger audit log for Gallery Upload
-          const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
+          const workspace = await prisma.travelDeskWorkspace.findUnique({
+            where: { tripId },
+          });
           if (workspace && req.user) {
-            await createAuditLog(workspace.id, 'GALLERY_ASSET', item.id, 'UPLOAD', null, { title: item.title }, req.user.id);
+            await createAuditLog(
+              workspace.id,
+              "GALLERY_ASSET",
+              item.id,
+              "UPLOAD",
+              null,
+              { title: item.title },
+              req.user.id,
+            );
           }
 
           uploadedItems.push(item);
         } catch (dbErr) {
           // Rollback Cloudinary upload if DB fails
           if (uploadResult.public_id) {
-            await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: 'image' });
+            await cloudinary.uploader.destroy(uploadResult.public_id, {
+              resource_type: "image",
+            });
           }
-          return res.status(500).json({ success: false, message: 'Database transaction failed, image rolled back. ' + dbErr.message });
+          return res
+            .status(500)
+            .json({
+              success: false,
+              message:
+                "Database transaction failed, image rolled back. " +
+                dbErr.message,
+            });
         }
       }
       return res.json({ success: true, data: uploadedItems });
     } else if (req.body.imageUrl) {
       // Allow passing external URLs directly
       const item = await prisma.tripGallery.create({
-        data: { tripId, title, imageUrl: req.body.imageUrl, category: category || 'General' }
+        data: {
+          tripId,
+          title,
+          imageUrl: req.body.imageUrl,
+          category: category || "General",
+        },
       });
       return res.json({ success: true, data: [item] });
     } else {
-      return res.status(400).json({ success: false, message: 'No image file or URL provided' });
+      return res
+        .status(400)
+        .json({ success: false, message: "No image file or URL provided" });
     }
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.deleteGalleryItem = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.tripGallery.delete({ where: { id } });
-    res.json({ success: true, message: 'Gallery item deleted successfully' });
-  } catch (e) { next(e); }
+    res.json({ success: true, message: "Gallery item deleted successfully" });
+  } catch (e) {
+    next(e);
+  }
 };
-
 
 // ── TAB 8: NOTES & UPDATES ──
 exports.getNotes = async (req, res, next) => {
@@ -720,22 +1005,28 @@ exports.getNotes = async (req, res, next) => {
     const { tripId } = req.params;
     const notes = await prisma.tripNote.findMany({
       where: { tripId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
     const summary = {};
-    notes.forEach(n => { summary[n.category] = (summary[n.category] || 0) + 1; });
+    notes.forEach((n) => {
+      summary[n.category] = (summary[n.category] || 0) + 1;
+    });
     res.json({ success: true, data: notes, summary });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.createNote = async (req, res, next) => {
   try {
     const { tripId, title, content, category, linkUrl } = req.body;
     const note = await prisma.tripNote.create({
-      data: { tripId, title, content, category, linkUrl }
+      data: { tripId, title, content, category, linkUrl },
     });
     res.json({ success: true, data: note });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.updateNote = async (req, res, next) => {
@@ -744,20 +1035,23 @@ exports.updateNote = async (req, res, next) => {
     const { title, content, category, linkUrl } = req.body;
     const note = await prisma.tripNote.update({
       where: { id },
-      data: { title, content, category, linkUrl }
+      data: { title, content, category, linkUrl },
     });
     res.json({ success: true, data: note });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.deleteNote = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.tripNote.delete({ where: { id } });
-    res.json({ success: true, message: 'Note deleted successfully' });
-  } catch (e) { next(e); }
+    res.json({ success: true, message: "Note deleted successfully" });
+  } catch (e) {
+    next(e);
+  }
 };
-
 
 // ── KNOWLEDGE ITEMS ──
 exports.getKnowledgeItems = async (req, res, next) => {
@@ -770,25 +1064,27 @@ exports.getKnowledgeItems = async (req, res, next) => {
     if (status) {
       where.status = status;
     } else {
-      if (req.user.role === 'sales') {
-        where.status = { in: ['APPROVED', 'PUBLISHED'] };
+      if (req.user.role === "sales") {
+        where.status = { in: ["APPROVED", "PUBLISHED"] };
       }
     }
 
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } }
+        { title: { contains: search, mode: "insensitive" } },
+        { content: { contains: search, mode: "insensitive" } },
       ];
     }
 
     const items = await prisma.knowledgeItem.findMany({
       where,
-      orderBy: { pageNumber: 'asc' }
+      orderBy: { pageNumber: "asc" },
     });
 
     res.json({ success: true, data: items });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.updateKnowledgeItem = async (req, res, next) => {
@@ -796,53 +1092,66 @@ exports.updateKnowledgeItem = async (req, res, next) => {
     const { id } = req.params;
     const { title, content, category, status } = req.body;
 
-    if (req.user.role === 'sales') {
-      return res.status(403).json({ success: false, message: 'Salespeople have read-only access to knowledge content' });
+    if (req.user.role === "sales") {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Salespeople have read-only access to knowledge content",
+        });
     }
 
     const updated = await prisma.knowledgeItem.update({
       where: { id },
-      data: { title, content, category, status }
+      data: { title, content, category, status },
     });
 
     res.json({ success: true, data: updated });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
-
 
 // ── TRAVEL AI ──
 exports.travelAiChat = async (req, res, next) => {
   try {
     const { tripId, message } = req.body;
-    if (!message) return res.status(400).json({ success: false, message: 'Message is required' });
+    if (!message)
+      return res
+        .status(400)
+        .json({ success: false, message: "Message is required" });
 
     // Fetch approved/published knowledge items for this trip
     const items = await prisma.knowledgeItem.findMany({
       where: {
         tripId,
-        status: { in: ['APPROVED', 'PUBLISHED'] }
-      }
+        status: { in: ["APPROVED", "PUBLISHED"] },
+      },
     });
 
     if (items.length === 0) {
       return res.json({
         success: true,
-        answer: "I couldn't find any approved knowledge documents for this trip yet. Would you like to escalate this question to Senior Sales, Product, Operations or Ticketing?",
-        answerUnavailable: true
+        answer:
+          "I couldn't find any approved knowledge documents for this trip yet. Would you like to escalate this question to Senior Sales, Product, Operations or Ticketing?",
+        answerUnavailable: true,
       });
     }
 
     // Format context
-    let contextText = '';
-    items.forEach(item => {
+    let contextText = "";
+    items.forEach((item) => {
       contextText += `Document: ${item.sourceDocName}, Page: ${item.pageNumber}\nCategory: ${item.category}\nContent:\n${item.content}\n==================\n`;
     });
 
     const key = process.env.GEMINI_API_KEY;
-    if (!key) return res.status(500).json({ success: false, message: 'GEMINI_API_KEY not configured' });
+    if (!key)
+      return res
+        .status(500)
+        .json({ success: false, message: "GEMINI_API_KEY not configured" });
 
     const genAI = new GoogleGenerativeAI(key);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const systemPrompt = `You are Travel AI, an internal assistant for our travel guides and sales team.
 Answer the user's question using ONLY the provided knowledge items context.
@@ -856,21 +1165,25 @@ Context:
 ${contextText}
 `;
 
-    const result = await model.generateContent(`${systemPrompt}\nUser Question: ${message}`);
+    const result = await model.generateContent(
+      `${systemPrompt}\nUser Question: ${message}`,
+    );
     const text = result.response.text().trim();
 
-    if (text.includes('ANSWER_UNAVAILABLE')) {
+    if (text.includes("ANSWER_UNAVAILABLE")) {
       return res.json({
         success: true,
-        answer: "I couldn't find details in the approved documents for this trip. You can escalate this question using the button below.",
-        answerUnavailable: true
+        answer:
+          "I couldn't find details in the approved documents for this trip. You can escalate this question using the button below.",
+        answerUnavailable: true,
       });
     }
 
     res.json({ success: true, answer: text });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
-
 
 // ── ESCALATED QUESTIONS ──
 exports.getEscalatedQuestions = async (req, res, next) => {
@@ -878,10 +1191,12 @@ exports.getEscalatedQuestions = async (req, res, next) => {
     const { tripId } = req.params;
     const questions = await prisma.travelQuestion.findMany({
       where: { tripId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
     res.json({ success: true, data: questions });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.createEscalatedQuestion = async (req, res, next) => {
@@ -891,14 +1206,16 @@ exports.createEscalatedQuestion = async (req, res, next) => {
       data: {
         tripId,
         question,
-        escalatedTo: escalatedTo || 'Product',
-        createdBy: req.user.role || 'sales',
+        escalatedTo: escalatedTo || "Product",
+        createdBy: req.user.role || "sales",
         createdById: req.user.id,
-        status: 'OPEN'
-      }
+        status: "OPEN",
+      },
     });
     res.json({ success: true, data: newQ });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.answerEscalatedQuestion = async (req, res, next) => {
@@ -906,12 +1223,20 @@ exports.answerEscalatedQuestion = async (req, res, next) => {
     const { id } = req.params;
     const { answer, status } = req.body; // ANSWERED, PUBLISHED_AS_FAQ, CLOSED, KNOWLEDGE_UPDATE_REQUIRED
 
-    if (req.user.role === 'sales') {
-      return res.status(403).json({ success: false, message: 'Salespeople cannot answer escalated questions' });
+    if (req.user.role === "sales") {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Salespeople cannot answer escalated questions",
+        });
     }
 
     const currentQ = await prisma.travelQuestion.findUnique({ where: { id } });
-    if (!currentQ) return res.status(404).json({ success: false, message: 'Question not found' });
+    if (!currentQ)
+      return res
+        .status(404)
+        .json({ success: false, message: "Question not found" });
 
     const updated = await prisma.travelQuestion.update({
       where: { id },
@@ -919,53 +1244,56 @@ exports.answerEscalatedQuestion = async (req, res, next) => {
         answer,
         status,
         assignedToId: req.user.id,
-        assignedToName: req.user.role || 'admin'
-      }
+        assignedToName: req.user.role || "admin",
+      },
     });
 
-    if (status === 'PUBLISHED_AS_FAQ') {
+    if (status === "PUBLISHED_AS_FAQ") {
       await prisma.knowledgeItem.create({
         data: {
           tripId: currentQ.tripId,
-          sourceDocName: 'Escalated Questions FAQ',
+          sourceDocName: "Escalated Questions FAQ",
           pageNumber: 1,
           title: `FAQ: ${currentQ.question.substring(0, 45)}...`,
           content: `Question: ${currentQ.question}\nAnswer: ${answer}`,
-          category: 'Customer FAQs',
-          status: 'PUBLISHED'
-        }
+          category: "Customer FAQs",
+          status: "PUBLISHED",
+        },
       });
     }
 
     res.json({ success: true, data: updated });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
-
 
 // ── TRIP NOTICES & UPDATES ACKS ──
 exports.acknowledgeNotice = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const userName = req.user.role || 'sales';
+    const userName = req.user.role || "sales";
 
     const ack = await prisma.tripNoticeAck.upsert({
       where: {
         noticeId_userId: {
           noticeId: id,
-          userId
-        }
+          userId,
+        },
       },
       update: {},
       create: {
         noticeId: id,
         userId,
-        userName
-      }
+        userName,
+      },
     });
 
     res.json({ success: true, data: ack });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.getNoticeAcks = async (req, res, next) => {
@@ -973,76 +1301,93 @@ exports.getNoticeAcks = async (req, res, next) => {
     const { id } = req.params;
     const acks = await prisma.tripNoticeAck.findMany({
       where: { noticeId: id },
-      orderBy: { ackedAt: 'desc' }
+      orderBy: { ackedAt: "desc" },
     });
     res.json({ success: true, data: acks });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
-
 
 // ── INQUIRY, QUOTATION, BOOKING CREATIONS ──
 exports.createSalesRecord = async (req, res, next) => {
   try {
-    const { type, tripId, departureDate, joiningCity, price, passengerName, passengerPhone, passengerEmail } = req.body;
+    const {
+      type,
+      tripId,
+      departureDate,
+      joiningCity,
+      price,
+      passengerName,
+      passengerPhone,
+      passengerEmail,
+    } = req.body;
     const salesAdminId = req.user.id;
 
     const trip = await prisma.trip.findUnique({ where: { id: tripId } });
-    if (!trip) return res.status(404).json({ success: false, message: 'Trip not found' });
+    if (!trip)
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
 
     let record;
-    if (type === 'inquiry') {
+    if (type === "inquiry") {
       record = await prisma.inquiry.create({
         data: {
           name: passengerName,
-          phone: passengerPhone || '0000000000',
+          phone: passengerPhone || "0000000000",
           email: passengerEmail,
           tripId: tripId,
           tripTitle: trip.title,
-          status: 'new',
+          status: "new",
           salesAdminId,
-          adminNotes: `Created via Travel Desk. Preferred departure: ${departureDate || 'N/A'}`
-        }
+          adminNotes: `Created via Travel Desk. Preferred departure: ${departureDate || "N/A"}`,
+        },
       });
-    } else if (type === 'quotation') {
+    } else if (type === "quotation") {
       record = await prisma.quotation.create({
         data: {
           title: `Quote for ${passengerName} - ${trip.title}`,
           clientName: passengerName,
           totalAmount: parseFloat(price) || trip.price,
-          status: 'draft',
+          status: "draft",
           salesAdminId,
           data: {
             tripId,
             joiningCity,
-            departureDate
-          }
-        }
+            departureDate,
+          },
+        },
       });
-    } else if (type === 'booking') {
+    } else if (type === "booking") {
       const bookingId = `BK-${Date.now().toString().slice(-6)}`;
       record = await prisma.booking.create({
         data: {
           bookingId,
           tripId,
           tripName: trip.title,
-          status: 'pending',
+          status: "pending",
           name: passengerName,
-          phone: passengerPhone || '0000000000',
+          phone: passengerPhone || "0000000000",
           email: passengerEmail,
           amount: parseFloat(price) || trip.price,
           totalAmount: parseFloat(price) || trip.price,
           remainingAmount: parseFloat(price) || trip.price,
           salesAdminId,
           departureDate: departureDate ? new Date(departureDate) : null,
-          pickupCity: joiningCity
-        }
+          pickupCity: joiningCity,
+        },
       });
     } else {
-      return res.status(400).json({ success: false, message: 'Invalid sales record type' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid sales record type" });
     }
 
     res.json({ success: true, data: record });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.bulkCreateTrips = async (req, res, next) => {
@@ -1053,12 +1398,15 @@ exports.bulkCreateTrips = async (req, res, next) => {
       "Kashmir",
       "Kerala",
       "Spiti Valley Summer",
-      "Winter Spiti"
+      "Winter Spiti",
     ];
 
     const results = [];
     for (const title of list) {
-      const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const slug = title
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
       const trip = await prisma.trip.upsert({
         where: { slug },
         update: {
@@ -1068,7 +1416,7 @@ exports.bulkCreateTrips = async (req, res, next) => {
           description: `${title} travel program and details.`,
           location: title,
           status: "published",
-          isActive: true
+          isActive: true,
         },
         create: {
           title,
@@ -1078,8 +1426,8 @@ exports.bulkCreateTrips = async (req, res, next) => {
           description: `${title} travel program and details.`,
           location: title,
           status: "published",
-          isActive: true
-        }
+          isActive: true,
+        },
       });
       results.push(trip);
     }
@@ -1094,37 +1442,66 @@ exports.bulkCreateTrips = async (req, res, next) => {
 exports.getActivityLog = async (req, res, next) => {
   try {
     const { tripId } = req.params;
-    const workspace = await prisma.travelDeskWorkspace.findUnique({ where: { tripId } });
-    if (!workspace) return res.status(404).json({ success: false, message: 'Workspace not found' });
+    const workspace = await prisma.travelDeskWorkspace.findUnique({
+      where: { tripId },
+    });
+    if (!workspace)
+      return res
+        .status(404)
+        .json({ success: false, message: "Workspace not found" });
 
     const logs = await prisma.travelDeskAuditLog.findMany({
       where: { workspaceId: workspace.id },
-      orderBy: { createdAt: 'desc' },
-      take: 50
+      orderBy: { createdAt: "desc" },
+      take: 50,
     });
 
     res.json({ success: true, data: logs });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.updateDocumentMetadata = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, name, visibility, status, description, category, sortOrder } = req.body;
+    const {
+      title,
+      name,
+      visibility,
+      status,
+      description,
+      category,
+      sortOrder,
+    } = req.body;
 
     const doc = await prisma.tripDocument.findUnique({ where: { id } });
-    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+    if (!doc)
+      return res
+        .status(404)
+        .json({ success: false, message: "Document not found" });
 
-    if (req.user.role !== 'superadmin' && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Only admins can modify document metadata' });
+    if (req.user.role !== "superadmin" && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Only admins can modify document metadata",
+        });
     }
 
-    let updatedDetails = typeof doc.approvalDetails === 'object' && doc.approvalDetails !== null ? doc.approvalDetails : {};
+    let updatedDetails =
+      typeof doc.approvalDetails === "object" && doc.approvalDetails !== null
+        ? doc.approvalDetails
+        : {};
     if (description !== undefined) {
       updatedDetails = { ...updatedDetails, description };
     }
     if (sortOrder !== undefined) {
-      updatedDetails = { ...updatedDetails, sortOrder: parseInt(sortOrder) || 0 };
+      updatedDetails = {
+        ...updatedDetails,
+        sortOrder: parseInt(sortOrder) || 0,
+      };
     }
 
     const updatedDoc = await prisma.tripDocument.update({
@@ -1135,12 +1512,14 @@ exports.updateDocumentMetadata = async (req, res, next) => {
         visibility: visibility !== undefined ? visibility : doc.visibility,
         status: status !== undefined ? status : doc.status,
         category: category !== undefined ? category : doc.category,
-        approvalDetails: updatedDetails
-      }
+        approvalDetails: updatedDetails,
+      },
     });
 
     res.json({ success: true, data: updatedDoc });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 };
 
 exports.viewDocumentInline = async (req, res, next) => {
@@ -1148,17 +1527,20 @@ exports.viewDocumentInline = async (req, res, next) => {
     const { id } = req.params;
     const doc = await prisma.tripDocument.findUnique({ where: { id } });
     if (!doc || !doc.fileUrl) {
-      return res.status(404).json({ success: false, message: 'Document not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Document not found" });
     }
 
-    const axios = require('axios');
-    const response = await axios.get(doc.fileUrl, { responseType: 'arraybuffer' });
+    const axios = require("axios");
+    const response = await axios.get(doc.fileUrl, {
+      responseType: "arraybuffer",
+    });
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline; filename="' + doc.name + '"');
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'inline; filename="' + doc.name + '"');
     res.send(Buffer.from(response.data));
   } catch (e) {
     next(e);
   }
 };
-

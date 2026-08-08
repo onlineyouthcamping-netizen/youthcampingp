@@ -97,6 +97,8 @@ export interface Trip {
     reason?: string;
   }[];
   status: "draft" | "published";
+  order?: number;
+  shortName?: string;
   maxGroupSize?: number;
   difficulty?: "easy" | "moderate" | "hard";
   departureCity?: string;
@@ -172,14 +174,17 @@ export interface Booking {
   paidAmount: number;
   status: "pending" | "confirmed" | "cancelled" | "completed";
   paymentStatus: "unpaid" | "partial" | "paid";
-  notes           ?: string;
-  adminNotes      ?: string;
-  trainTickets    ?: TrainTicket[];
+  notes?: string;
+  adminNotes?: string;
+  trainTickets?: TrainTicket[];
   createdAt: string;
   updatedAt: string;
 }
 
-export type BookingFormData = Omit<Booking, "id" | "createdAt" | "updatedAt" | "tripTitle">;
+export type BookingFormData = Omit<
+  Booking,
+  "id" | "createdAt" | "updatedAt" | "tripTitle"
+>;
 
 export interface Inquiry {
   id: string;
@@ -191,7 +196,7 @@ export interface Inquiry {
   date?: string;
   count?: number;
   read: boolean;
-  status: 'new' | 'contacted' | 'converted' | 'closed';
+  status: "new" | "contacted" | "converted" | "closed";
   isDuplicate?: boolean;
   convertedAmount?: number;
   adminNotes?: string;
@@ -350,8 +355,8 @@ export interface Flight {
 export interface Quotation {
   id: string;
   slug: string;
-  status: 'draft' | 'published';
-  
+  status: "draft" | "published";
+
   // Customer Info
   customerName: string;
   customerPhone: string;
@@ -391,7 +396,7 @@ export interface Quotation {
   expiresAt?: string;
   expiryTime?: string;
   expired?: boolean;
-  
+
   // Legacy support for Expert (can be moved to global settings later)
   expert: {
     name: string;
@@ -412,7 +417,7 @@ export interface Quotation {
 
   createdAt: string;
   updatedAt: string;
-  
+
   // Optional/Legacy fields from previous versions
   experiencePhotos?: string[];
   sightseeingCount?: number;

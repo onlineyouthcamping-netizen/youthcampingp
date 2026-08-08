@@ -51,7 +51,7 @@ describe('Unit Tests: Env Loader & Safety Guard', () => {
 
   it('Test 2: Development mode with a fake Supabase/external DATABASE_URL exits before startup', () => {
     process.env.NODE_ENV = 'development';
-    process.env.DATABASE_URL = 'postgresql://postgres:password@db.myncdgifgxsworewkukj.supabase.co:5432/postgres';
+    process.env.DATABASE_URL = 'postgresql://postgres:password@db.fake-host-for-testing.local:5432/postgres';
     mockExistsSync.mockImplementation((path) => {
       if (typeof path === 'string' && path.endsWith('.env.local')) {
         return true;

@@ -17,11 +17,11 @@ export default function PhotoGrid({
   subtitle = "The Reality Check",
   images = [],
   backgroundColor = "#ffffff",
-  padding = "80px"
+  padding = "80px",
 }: PhotoGridProps) {
   if (!images || images.length === 0) return null;
   return (
-    <section 
+    <section
       style={{ backgroundColor, paddingTop: padding, paddingBottom: padding }}
       className="px-6"
     >
@@ -58,9 +58,9 @@ export default function PhotoGrid({
               transition={{ delay: index * 0.1 }}
               className="relative aspect-[4/5] rounded-[32px] overflow-hidden group shadow-xl"
             >
-              <OptimizedImage 
-                src={normalizeImageUrl(image.url) || ""} 
-                alt={image.alt} 
+              <OptimizedImage
+                src={normalizeImageUrl(image.url) || ""}
+                alt={image.alt}
                 cloudinaryWidth={800}
                 bunnyVariant="x540gt"
                 sizes="(max-width: 768px) calc(100vw - 48px), 33vw"
@@ -75,7 +75,9 @@ export default function PhotoGrid({
           ))}
           {images.length === 0 && (
             <div className="col-span-full py-20 text-center border-4 border-dashed border-charcoal/10 rounded-[40px]">
-              <p className="text-charcoal/30 font-bold capitalize tracking-widest">No photos added to this grid yet.</p>
+              <p className="text-charcoal/30 font-bold capitalize tracking-widest">
+                No photos added to this grid yet.
+              </p>
             </div>
           )}
         </div>

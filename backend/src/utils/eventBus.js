@@ -1,10 +1,18 @@
-const { prisma } = require('../lib/prisma');
-const { logAction } = require('./auditLogger');
+const { prisma } = require("../lib/prisma");
+const { logAction } = require("./auditLogger");
 
 /**
  * Resolves recipients for a notification based on the module and roles.
  */
-async function resolveRecipients(tenantId, moduleName, entityType, entityId, explicitRoles = [], explicitUsers = [], assigneeId = null) {
+async function resolveRecipients(
+  tenantId,
+  moduleName,
+  entityType,
+  entityId,
+  explicitRoles = [],
+  explicitUsers = [],
+  assigneeId = null,
+) {
   try {
     const recipients = new Set(explicitUsers);
 
@@ -14,32 +22,32 @@ async function resolveRecipients(tenantId, moduleName, entityType, entityId, exp
     }
 
     // Admins and Superadmins always receive notifications for critical things, or we can filter based on module
-    let targetRoles = ['superadmin'];
-    
+    let targetRoles = ["superadmin"];
+
     switch (moduleName.toLowerCase()) {
-      case 'sales':
-      case 'bookings':
-      case 'inquiries':
-      case 'quotations':
-        targetRoles.push('sales_manager', 'admin');
+      case "sales":
+      case "bookings":
+      case "inquiries":
+      case "quotations":
+        targetRoles.push("sales_manager", "admin");
         break;
-      case 'finance':
-      case 'accounting':
-      case 'payments':
-        targetRoles.push('finance', 'finance_manager', 'admin');
+      case "finance":
+      case "accounting":
+      case "payments":
+        targetRoles.push("finance", "finance_manager", "admin");
         break;
-      case 'operations':
-      case 'ops':
-      case 'trips':
-      case 'departures':
-        targetRoles.push('operations', 'ops_manager', 'admin');
+      case "operations":
+      case "ops":
+      case "trips":
+      case "departures":
+        targetRoles.push("operations", "ops_manager", "admin");
         break;
-      case 'marketing':
-        targetRoles.push('marketing', 'admin');
+      case "marketing":
+        targetRoles.push("marketing", "admin");
         break;
-      case 'hr':
-      case 'people':
-        targetRoles.push('hr', 'admin');
+      case "hr":
+      case "people":
+        targetRoles.push("hr", "admin");
         break;
     }
 
@@ -53,16 +61,16 @@ async function resolveRecipients(tenantId, moduleName, entityType, entityId, exp
       where: {
         tenantId,
         isActive: true, // Only notify active users
-        role: { in: targetRoles }
+        role: { in: targetRoles },
       },
-      select: { id: true }
+      select: { id: true },
     });
 
-    users.forEach(u => recipients.add(u.id));
+    users.forEach((u) => recipients.add(u.id));
 
     return Array.from(recipients);
   } catch (error) {
-    console.error('Error resolving recipients:', error);
+    console.error("Error resolving recipients:", error);
     return explicitUsers; // Fallback
   }
 }
@@ -73,7 +81,7 @@ async function resolveRecipients(tenantId, moduleName, entityType, entityId, exp
  */
 async function publishEvent(eventType, context) {
   const {
-    tenantId = 'default',
+    tenantId = "default",
     actorUserId,
     actorName,
     entityType,
@@ -83,12 +91,12 @@ async function publishEvent(eventType, context) {
     metadata,
     audit,
     notify = false,
-    moduleName = 'System',
-    priority = 'Low',
+    moduleName = "System",
+    priority = "Low",
     actionUrl = null,
     notifyRoles = [],
     notifyUsers = [],
-    assigneeId = null
+    assigneeId = null,
   } = context;
 
   try {
@@ -102,7 +110,7 @@ async function publishEvent(eventType, context) {
         entityType,
         entityId,
         beforeData: audit.beforeData,
-        afterData: audit.afterData
+        afterData: audit.afterData,
       });
     }
 
@@ -121,18 +129,26 @@ async function publishEvent(eventType, context) {
           metadata: metadata || null,
           relatedId: context.relatedId || null,
           relatedType: context.relatedType || null,
-        }
+        },
       });
     }
 
     // 3. Notifications
     if (notify) {
-      const recipientIds = await resolveRecipients(tenantId, moduleName, entityType, entityId, notifyRoles, notifyUsers, assigneeId);
-      
+      const recipientIds = await resolveRecipients(
+        tenantId,
+        moduleName,
+        entityType,
+        entityId,
+        notifyRoles,
+        notifyUsers,
+        assigneeId,
+      );
+
       if (recipientIds.length > 0) {
         // Prevent duplicate exact notifications in a short timeframe (debounce)
         const recentTime = new Date(Date.now() - 5 * 60 * 1000); // 5 mins
-        
+
         for (const rId of recipientIds) {
           // Don't notify the actor of their own actions
           if (rId === actorUserId) continue;
@@ -142,8 +158,8 @@ async function publishEvent(eventType, context) {
             where: {
               recipientUserId: rId,
               title,
-              createdAt: { gt: recentTime }
-            }
+              createdAt: { gt: recentTime },
+            },
           });
 
           if (!existing) {
@@ -155,18 +171,21 @@ async function publishEvent(eventType, context) {
                 message: description,
                 priority,
                 module: moduleName,
-                actionUrl
-              }
+                actionUrl,
+              },
             });
           }
         }
       }
     }
   } catch (error) {
-    console.error(`⚠️ [EventBus] Error publishing event ${eventType}:`, error.message);
+    console.error(
+      `⚠️ [EventBus] Error publishing event ${eventType}:`,
+      error.message,
+    );
   }
 }
 
 module.exports = {
-  publishEvent
+  publishEvent,
 };

@@ -1,14 +1,14 @@
-const { prisma } = require('../lib/prisma');
+const { prisma } = require("../lib/prisma");
 const bookingCountCache = new Map();
-const { syncBookingToSheets } = require('../utils/googleSheetsSync');
-const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
-const { generateBookingId } = require('../utils/bookingIdGenerator');
-const { logAction } = require('../utils/auditLogger');
-const { logBookingActivity } = require('../utils/bookingActivityLogger');
-const { verifySignedPayload } = require('./bookingLinkController');
-const cache = require('../lib/cache');
-const { hasPermission } = require('../config/permissions');
+const { syncBookingToSheets } = require("../utils/googleSheetsSync");
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
+const { generateBookingId } = require("../utils/bookingIdGenerator");
+const { logAction } = require("../utils/auditLogger");
+const { logBookingActivity } = require("../utils/bookingActivityLogger");
+const { verifySignedPayload } = require("./bookingLinkController");
+const cache = require("../lib/cache");
+const { hasPermission } = require("../config/permissions");
 
 // Helper to safely parse dates and avoid crashes with "Invalid Date"
 const safeParseDate = (dateVal) => {
@@ -18,7 +18,7 @@ const safeParseDate = (dateVal) => {
 };
 
 // Safe monetary amount validation — rejects NaN, Infinity, negative, and non-finite values
-function validateAmount(value, label = 'amount') {
+function validateAmount(value, label = "amount") {
   if (value === undefined || value === null) {
     const err = new Error(`${label} is required`);
     err.statusCode = 400;
@@ -26,7 +26,9 @@ function validateAmount(value, label = 'amount') {
   }
   const num = Number(value);
   if (!Number.isFinite(num) || num < 0) {
-    const err = new Error(`Invalid ${label}: must be a non-negative finite number`);
+    const err = new Error(
+      `Invalid ${label}: must be a non-negative finite number`,
+    );
     err.statusCode = 400;
     throw err;
   }
@@ -34,17 +36,20 @@ function validateAmount(value, label = 'amount') {
 }
 
 const sha256 = (value) =>
-  crypto.createHash('sha256').update(String(value)).digest('hex');
+  crypto.createHash("sha256").update(String(value)).digest("hex");
 
 const getIpHash = (req) => {
-  const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || req.ip || '';
+  const ip =
+    req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
+    req.ip ||
+    "";
   return ip ? sha256(ip) : null;
 };
 
 const parseJsonArray = (val) => {
   if (!val) return [];
   if (Array.isArray(val)) return val;
-  if (typeof val === 'string') {
+  if (typeof val === "string") {
     try {
       const parsed = JSON.parse(val);
       return Array.isArray(parsed) ? parsed : [];
@@ -56,28 +61,28 @@ const parseJsonArray = (val) => {
 };
 
 const formatDateStr = (dateVal) => {
-  if (!dateVal) return '';
+  if (!dateVal) return "";
   const d = new Date(dateVal);
-  if (isNaN(d.getTime())) return '';
-  return d.toISOString().split('T')[0];
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().split("T")[0];
 };
 
 async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
   // 1. Verify trip status (for public users)
   if (!isAdmin) {
-    if (trip.status !== 'published' || trip.isActive === false) {
-      throw new Error('This trip is currently unavailable for booking');
+    if (trip.status !== "published" || trip.isActive === false) {
+      throw new Error("This trip is currently unavailable for booking");
     }
   }
 
   // 2. Verify departureDate
   if (!body.departureDate && !body.travelDate) {
-    throw new Error('Departure date is required');
+    throw new Error("Departure date is required");
   }
   const rawDate = body.departureDate || body.travelDate;
   const targetDateStr = formatDateStr(rawDate);
   if (!targetDateStr) {
-    throw new Error('Invalid departure date format');
+    throw new Error("Invalid departure date format");
   }
 
   // Check if date is in the past
@@ -86,7 +91,7 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (depDate < today) {
-      throw new Error('Departure date cannot be in the past');
+      throw new Error("Departure date cannot be in the past");
     }
   }
 
@@ -94,7 +99,7 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
   const availableDates = parseJsonArray(trip.availableDates);
   let dateEntry = null;
   for (const entry of availableDates) {
-    const entryDateStr = typeof entry === 'string' ? entry : entry?.date;
+    const entryDateStr = typeof entry === "string" ? entry : entry?.date;
     if (formatDateStr(entryDateStr) === targetDateStr) {
       dateEntry = entry;
       break;
@@ -102,12 +107,19 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
   }
 
   if (!dateEntry) {
-    throw new Error('Selected departure date is not available for this trip');
+    throw new Error("Selected departure date is not available for this trip");
   }
 
   // Check capacity rules if available
-  const numberOfTravelers = (body.passengers && Array.isArray(body.passengers)) ? body.passengers.length : 1;
-  if (dateEntry && typeof dateEntry === 'object' && dateEntry.capacity !== undefined) {
+  const numberOfTravelers =
+    body.passengers && Array.isArray(body.passengers)
+      ? body.passengers.length
+      : 1;
+  if (
+    dateEntry &&
+    typeof dateEntry === "object" &&
+    dateEntry.capacity !== undefined
+  ) {
     const capacity = Number(dateEntry.capacity) || 0;
 
     // Count existing bookings for this departure date
@@ -121,50 +133,74 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
         tripId: trip.id,
         departureDate: {
           gte: gteDate,
-          lte: lteDate
+          lte: lteDate,
         },
-        status: { notIn: ['cancelled', 'rejected'] }
+        status: { notIn: ["cancelled", "rejected"] },
       },
       _sum: {
-        numberOfTravelers: true
-      }
+        numberOfTravelers: true,
+      },
     });
 
     const totalBooked = bookedCount._sum.numberOfTravelers || 0;
     if (totalBooked + numberOfTravelers > capacity) {
-      throw new Error(`This departure is fully booked. Only ${Math.max(0, capacity - totalBooked)} spots remaining.`);
+      throw new Error(
+        `This departure is fully booked. Only ${Math.max(0, capacity - totalBooked)} spots remaining.`,
+      );
     }
   }
 
   // 3. Resolve joining city / variant flexibly
-  const rawPickupCity = String(body.pickupCity || 'Delhi').trim();
+  const rawPickupCity = String(body.pickupCity || "Delhi").trim();
   const normalizedTarget = rawPickupCity.toLowerCase();
   let selectedCityObj = null;
 
   // Search variants
   const variants = parseJsonArray(trip.variants);
-  const vMatch = variants.find(v => {
-    const loc = String(v.location || v.cityName || v.name || v.variantName || v.city || '').trim().toLowerCase();
-    return loc === normalizedTarget || (loc.length > 0 && (loc.includes(normalizedTarget) || normalizedTarget.includes(loc)));
+  const vMatch = variants.find((v) => {
+    const loc = String(
+      v.location || v.cityName || v.name || v.variantName || v.city || "",
+    )
+      .trim()
+      .toLowerCase();
+    return (
+      loc === normalizedTarget ||
+      (loc.length > 0 &&
+        (loc.includes(normalizedTarget) || normalizedTarget.includes(loc)))
+    );
   });
 
   if (vMatch) {
-    const locName = vMatch.location || vMatch.cityName || vMatch.name || vMatch.variantName || rawPickupCity;
-    const variantPrice = Math.round(Number(vMatch.discountedPrice) || Number(vMatch.originalPrice) || 0);
+    const locName =
+      vMatch.location ||
+      vMatch.cityName ||
+      vMatch.name ||
+      vMatch.variantName ||
+      rawPickupCity;
+    const variantPrice = Math.round(
+      Number(vMatch.discountedPrice) || Number(vMatch.originalPrice) || 0,
+    );
     selectedCityObj = {
       cityName: locName,
-      price: variantPrice > 0 ? variantPrice : Math.round(Number(trip.price) || 0),
+      price:
+        variantPrice > 0 ? variantPrice : Math.round(Number(trip.price) || 0),
       skipDays: Number(vMatch.skipDays) || 0,
-      excludeTravel: vMatch.excludeTravel === true
+      excludeTravel: vMatch.excludeTravel === true,
     };
   }
 
   // Search pickupCities
   if (!selectedCityObj) {
     const pickupCities = parseJsonArray(trip.pickupCities);
-    const cMatch = pickupCities.find(c => {
-      const loc = String(c.cityName || c.location || c.name || '').trim().toLowerCase();
-      return loc === normalizedTarget || (loc.length > 0 && (loc.includes(normalizedTarget) || normalizedTarget.includes(loc)));
+    const cMatch = pickupCities.find((c) => {
+      const loc = String(c.cityName || c.location || c.name || "")
+        .trim()
+        .toLowerCase();
+      return (
+        loc === normalizedTarget ||
+        (loc.length > 0 &&
+          (loc.includes(normalizedTarget) || normalizedTarget.includes(loc)))
+      );
     });
 
     if (cMatch) {
@@ -173,7 +209,7 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
         cityName: cMatch.cityName || cMatch.location || rawPickupCity,
         price: Math.round(Math.max(0, (Number(trip.price) || 0) - deduction)),
         skipDays: Number(cMatch.skipDays) || 0,
-        excludeTravel: false
+        excludeTravel: false,
       };
     }
   }
@@ -184,7 +220,7 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
       cityName: rawPickupCity,
       price: Math.round(Number(trip.price) || 0),
       skipDays: 0,
-      excludeTravel: false
+      excludeTravel: false,
     };
   }
 
@@ -193,35 +229,81 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     where: {
       tripId_departureDate: {
         tripId: trip.id,
-        departureDate: targetDateStr
-      }
-    }
+        departureDate: targetDateStr,
+      },
+    },
   });
 
   if (override && override.isActive) {
-    if (override.overrideType === 'FIXED_PRICE') {
+    if (override.overrideType === "FIXED_PRICE") {
       selectedCityObj.price = override.amount;
-    } else if (override.overrideType === 'EXTRA_CHARGE') {
+    } else if (override.overrideType === "EXTRA_CHARGE") {
       selectedCityObj.price += override.amount;
     }
   }
 
   // 4. Calculate prices
   let originalTotalBase = 0;
-  const passengers = (body.passengers && Array.isArray(body.passengers) && body.passengers.length > 0)
-    ? body.passengers
-    : [{ name: body.name || body.fullName || 'Lead', trainOption: body.trainClass || 'Sleeper', roomSharing: body.roomType || 'Triple Sharing' }];
+  const passengers =
+    body.passengers &&
+    Array.isArray(body.passengers) &&
+    body.passengers.length > 0
+      ? body.passengers
+      : [
+          {
+            name: body.name || body.fullName || "Lead",
+            trainOption: body.trainClass || "Sleeper",
+            roomSharing: body.roomType || "Triple Sharing",
+          },
+        ];
   const bookingItemsSnapshot = [];
   passengers.forEach((p, index) => {
     let travelerPrice = selectedCityObj.price;
+
+    // Helper functions to match options robustly
+    const matchTrainClass = (label, train) => {
+      if (!label || !train) return false;
+      label = label.toLowerCase().trim();
+      train = train.toLowerCase().trim();
+      if (label === train) return true;
+      if (
+        train.includes("3ac") ||
+        train.includes("3-tier") ||
+        train.includes("3c")
+      ) {
+        if (train.includes("non ac") || train.includes("non-ac")) return false;
+        return label.includes("3ac") || label.includes("3-tier");
+      }
+      if (train.includes("sleeper")) return label.includes("sleeper");
+      return false;
+    };
+
+    const matchRoomType = (label, room) => {
+      if (!label || !room) return false;
+      label = label.toLowerCase().trim();
+      room = room.toLowerCase().trim();
+      if (label === room) return true;
+      if (label.includes(room) || room.includes(label)) return true;
+      if (room.includes("double") || room.includes("couple"))
+        return label.includes("double") || label.includes("couple");
+      if (room.includes("triple")) return label.includes("triple");
+      if (room.includes("quad")) return label.includes("quad");
+      return false;
+    };
 
     // Train option adjustment
     let trainDelta = 0;
     let trainLabel = p.trainOption;
     if (selectedCityObj.excludeTravel !== true) {
-      const trainOptions = (trip.travelOptions && Array.isArray(trip.travelOptions) && trip.travelOptions.length > 0)
-        ? trip.travelOptions : [];
-      const tOpt = trainOptions.find(opt => opt.label === p.trainOption);
+      const trainOptions =
+        trip.travelOptions &&
+        Array.isArray(trip.travelOptions) &&
+        trip.travelOptions.length > 0
+          ? trip.travelOptions
+          : [];
+      const tOpt = trainOptions.find((opt) =>
+        matchTrainClass(opt.label, p.trainOption),
+      );
       if (tOpt) {
         trainDelta = Math.round(Number(tOpt.priceDelta) || 0);
         trainLabel = tOpt.label;
@@ -232,9 +314,15 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     // Room sharing option adjustment
     let roomDelta = 0;
     let roomLabel = p.roomSharing;
-    const roomOptions = (trip.roomOptions && Array.isArray(trip.roomOptions) && trip.roomOptions.length > 0)
-      ? trip.roomOptions : [];
-    const rOpt = roomOptions.find(opt => opt.label === p.roomSharing);
+    const roomOptions =
+      trip.roomOptions &&
+      Array.isArray(trip.roomOptions) &&
+      trip.roomOptions.length > 0
+        ? trip.roomOptions
+        : [];
+    const rOpt = roomOptions.find((opt) =>
+      matchRoomType(opt.label, p.roomSharing),
+    );
     if (rOpt) {
       roomDelta = Math.round(Number(rOpt.priceDelta) || 0);
       roomLabel = rOpt.label;
@@ -242,26 +330,29 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     travelerPrice += roomDelta;
 
     // Generate snapshot item rows for this passenger
-    const pName = p.name || (index === 0 && (body.name || body.fullName)) || 'Lead';
-    const routeStr = selectedCityObj.cityName ? ` (${selectedCityObj.cityName}→Himachal)` : '';
+    const pName =
+      p.name || (index === 0 && (body.name || body.fullName)) || "Lead";
+    const routeStr = selectedCityObj.cityName
+      ? ` (${selectedCityObj.cityName}→Himachal)`
+      : "";
     bookingItemsSnapshot.push({
       id: `transport-${p.id || index}-${index}`,
       personId: p.id || `p-${index}`,
-      category: 'transport',
+      category: "transport",
       variantName: trainLabel,
       name: `Transport - ${trainLabel}${routeStr} [${pName}]`,
       rate: selectedCityObj.price + trainDelta,
-      qty: 1
+      qty: 1,
     });
 
     bookingItemsSnapshot.push({
       id: `accom-${p.id || index}-${index}`,
       personId: p.id || `p-${index}`,
-      category: 'accommodation',
+      category: "accommodation",
       variantName: roomLabel,
       name: `Accommodation - Room ${index + 1}: ${roomLabel} [${pName}]`,
       rate: roomDelta,
-      qty: 1
+      qty: 1,
     });
 
     originalTotalBase += Math.round(travelerPrice);
@@ -285,11 +376,14 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     if (body.sourceBookingLinkToken) {
       const tokenHash = sha256(String(body.sourceBookingLinkToken));
       sourceLink = await tx.bookingLink.findFirst({
-        where: { tokenHash, tenantId: trip.tenantId || 'default' }
+        where: { tokenHash, tenantId: trip.tenantId || "default" },
       });
     } else {
       sourceLink = await tx.bookingLink.findFirst({
-        where: { id: body.sourceBookingLinkId, tenantId: trip.tenantId || 'default' }
+        where: {
+          id: body.sourceBookingLinkId,
+          tenantId: trip.tenantId || "default",
+        },
       });
     }
     if (sourceLink && sourceLink.customAmount) {
@@ -297,8 +391,8 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     }
   }
 
-  const paymentMode = body.paymentMode || 'Partial Payment';
-  if (paymentMode === 'Full Payment') {
+  const paymentMode = body.paymentMode || "Partial Payment";
+  if (paymentMode === "Full Payment") {
     gstAmount = Math.round(fullPackageGst);
     depositGst = Math.round(fullPackageGst);
     finalTotal = Math.round(fullPackageTotal);
@@ -306,7 +400,10 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     remainingBalance = 0;
   } else {
     // Partial Payment
-    const depositPerPax = customDepositPerPax && customDepositPerPax > 0 ? customDepositPerPax : 2000;
+    const depositPerPax =
+      customDepositPerPax && customDepositPerPax > 0
+        ? customDepositPerPax
+        : 2000;
     const partialBaseAmount = Math.round(depositPerPax * numberOfTravelers);
     depositGst = Math.round(partialBaseAmount * gstRate);
     gstAmount = Math.round(fullPackageGst);
@@ -317,7 +414,7 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
 
   // paymentStatus resolution:
   // If not admin, we force paymentStatus to 'Pending' (never allow Paid or Partial directly without admin verification)
-  let paymentStatus = 'Pending';
+  let paymentStatus = "Pending";
   if (isAdmin && body.paymentStatus) {
     paymentStatus = body.paymentStatus;
   }
@@ -337,7 +434,7 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     pickupCity: selectedCityObj.cityName,
     skipDays: selectedCityObj.skipDays,
     adjustedPrice: Math.round(selectedCityObj.price),
-    bookingItems: bookingItemsSnapshot
+    bookingItems: bookingItemsSnapshot,
   };
 }
 
@@ -348,7 +445,19 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
 exports.getBookings = async (req, res, next) => {
   const start = Date.now();
   try {
-    const { status, tripId, paymentStatus, payment_status, search, salesAdminId, balanceOnly, bookingStart, bookingEnd, depStart, depEnd } = req.query;
+    const {
+      status,
+      tripId,
+      paymentStatus,
+      payment_status,
+      search,
+      salesAdminId,
+      balanceOnly,
+      bookingStart,
+      bookingEnd,
+      depStart,
+      depEnd,
+    } = req.query;
 
     // 1. Pagination parameters parse
     let page = parseInt(req.query.page, 10);
@@ -358,30 +467,35 @@ exports.getBookings = async (req, res, next) => {
     if (limit > 100) limit = 100;
     const skip = (page - 1) * limit;
 
-    const userTenant = req.user?.tenantId || 'default';
-    const where = { tenantId: userTenant === 'default' ? 'default' : { in: [userTenant, 'default'] } };
+    const userTenant = req.user?.tenantId || "default";
+    const where = {
+      tenantId:
+        userTenant === "default" ? "default" : { in: [userTenant, "default"] },
+    };
 
     // 2. Map status filters
-    if (status && status !== 'all') {
-      if (status === 'confirmed') {
-        where.status = 'confirmed';
-      } else if (status === 'pending') {
-        where.status = { not: 'confirmed' };
+    if (status && status !== "all") {
+      if (status === "confirmed") {
+        where.status = "confirmed";
+      } else if (status === "pending") {
+        where.status = { not: "confirmed" };
       } else {
         where.status = status;
       }
     }
 
-    if (tripId && tripId !== 'all') where.tripId = tripId;
-    if (paymentStatus && paymentStatus !== 'all') where.paymentStatus = paymentStatus;
-    if (payment_status && payment_status !== 'all') where.payment_status = payment_status;
+    if (tripId && tripId !== "all") where.tripId = tripId;
+    if (paymentStatus && paymentStatus !== "all")
+      where.paymentStatus = paymentStatus;
+    if (payment_status && payment_status !== "all")
+      where.payment_status = payment_status;
 
-    if (balanceOnly === 'true' || balanceOnly === true) {
+    if (balanceOnly === "true" || balanceOnly === true) {
       where.remainingAmount = { gt: 0 };
     }
 
     const authCheckTime = Date.now();
-    if (salesAdminId && salesAdminId !== 'all') {
+    if (salesAdminId && salesAdminId !== "all") {
       where.salesAdminId = salesAdminId;
     }
     const authDuration = Date.now() - authCheckTime;
@@ -389,12 +503,12 @@ exports.getBookings = async (req, res, next) => {
     // Search query map
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { fullName: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
+        { fullName: { contains: search, mode: "insensitive" } },
         { phone: { contains: search } },
         { mobile: { contains: search } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { bookingId: { contains: search, mode: 'insensitive' } }
+        { email: { contains: search, mode: "insensitive" } },
+        { bookingId: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -427,8 +541,11 @@ exports.getBookings = async (req, res, next) => {
     if (cachedCount && Date.now() < cachedCount.expiresAt) {
       totalPromise = Promise.resolve(cachedCount.count);
     } else {
-      totalPromise = prisma.booking.count({ where }).then(c => {
-        bookingCountCache.set(cacheKey, { count: c, expiresAt: Date.now() + 30000 });
+      totalPromise = prisma.booking.count({ where }).then((c) => {
+        bookingCountCache.set(cacheKey, {
+          count: c,
+          expiresAt: Date.now() + 30000,
+        });
         return c;
       });
     }
@@ -467,13 +584,15 @@ exports.getBookings = async (req, res, next) => {
             select: {
               id: true,
               name: true,
-              email: true
-            }
+              email: true,
+            },
           },
           baseAmount: true,
           gstAmount: true,
           sourceMeta: true,
-          passengers: true, trainTicketStatus: true, trainTicketRequired: true,
+          passengers: true,
+          trainTicketStatus: true,
+          trainTicketRequired: true,
           sourceBookingLink: {
             select: {
               id: true,
@@ -486,8 +605,8 @@ exports.getBookings = async (req, res, next) => {
         },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' }
-      })
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
     const queryDuration = Date.now() - queryStart;
 
@@ -505,18 +624,22 @@ exports.getBookings = async (req, res, next) => {
         totalCount,
         totalPages,
         hasNextPage,
-        hasPreviousPage
-      }
+        hasPreviousPage,
+      },
     };
 
-    if (process.env.ENABLE_PERFORMANCE_METRICS === 'true') {
+    if (process.env.ENABLE_PERFORMANCE_METRICS === "true") {
       const duration = Date.now() - start;
       const payloadBytes = Buffer.byteLength(JSON.stringify(resBody));
-      console.log(`[METRICS] getBookings - Total: ${duration}ms, Auth: ${authDuration}ms, Query: ${queryDuration}ms, Rows: ${bookings.length}, Payload: ${payloadBytes} bytes`);
+      console.log(
+        `[METRICS] getBookings - Total: ${duration}ms, Auth: ${authDuration}ms, Query: ${queryDuration}ms, Rows: ${bookings.length}, Payload: ${payloadBytes} bytes`,
+      );
     }
 
     res.status(200).json(resBody);
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 // Alias for bookingRoutes.js
@@ -525,10 +648,13 @@ exports.getAllBookings = exports.getBookings;
 exports.getBookingById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     let booking = await prisma.booking.findFirst({
-      where: { id, tenantId },
+      where: {
+        OR: [{ id }, { bookingId: id }],
+        tenantId,
+      },
       include: {
         sourceBookingLink: {
           select: {
@@ -540,12 +666,14 @@ exports.getBookingById = async (req, res, next) => {
           },
         },
         documents: true,
-      }
+      },
     });
 
     if (!booking) {
       booking = await prisma.booking.findFirst({
-        where: { id },
+        where: {
+          OR: [{ id }, { bookingId: id }],
+        },
         include: {
           sourceBookingLink: {
             select: {
@@ -557,27 +685,31 @@ exports.getBookingById = async (req, res, next) => {
             },
           },
           documents: true,
-        }
+        },
       });
     }
 
     if (!booking) {
       console.warn(`⚠️ [getBookingById] Booking ${id} not found`);
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
     let extra = {};
     let persons = [];
     if (booking.passengers) {
       let parsed = booking.passengers;
-      if (typeof booking.passengers === 'string') {
+      if (typeof booking.passengers === "string") {
         try {
           parsed = JSON.parse(booking.passengers);
         } catch (e) {
           console.error("Failed to parse passengers JSON:", e);
         }
       }
-      if (parsed && typeof parsed === 'object') {
+      if (Array.isArray(parsed)) {
+        persons = parsed;
+      } else if (parsed && typeof parsed === "object") {
         extra = parsed.details || {};
         persons = parsed.persons || [];
       }
@@ -586,18 +718,22 @@ exports.getBookingById = async (req, res, next) => {
     // Connected ecosystem operational summary lookup
     let opsSummary = null;
     try {
-      const authScope = req.user?.role === 'sales' ? `sales-${req.user.id}` : (req.user?.role || 'admin');
+      const authScope =
+        req.user?.role === "sales"
+          ? `sales-${req.user.id}`
+          : req.user?.role || "admin";
       opsSummary = await buildBookingOpsSummary(booking, tenantId, authScope);
     } catch (opsErr) {
       console.error("Failed to build opsSummary:", opsErr);
     }
 
-    const mappedBooking = { 
-      ...booking, 
-      ...extra, 
-      ticketStatus: booking.trainTicketStatus || extra.ticketStatus || "NOT BOOKED",
-      passengers: persons, 
-      opsSummary 
+    const mappedBooking = {
+      ...booking,
+      ...extra,
+      ticketStatus:
+        booking.trainTicketStatus || extra.ticketStatus || "NOT BOOKED",
+      passengers: persons,
+      opsSummary,
     };
 
     res.json({ success: true, data: mappedBooking });
@@ -607,7 +743,7 @@ exports.getBookingById = async (req, res, next) => {
   }
 };
 
-async function buildBookingOpsSummary(booking, tenantId, authScope = 'admin') {
+async function buildBookingOpsSummary(booking, tenantId, authScope = "admin") {
   try {
     const bookingId = booking.bookingId;
     const cacheKey = `admin:summary:booking:${tenantId}:${bookingId}:${authScope}`;
@@ -621,90 +757,122 @@ async function buildBookingOpsSummary(booking, tenantId, authScope = 'admin') {
     const tripId = booking.tripId;
     const departureDate = booking.departureDate;
 
-    const [ticketReq, accountingTotals, seatConfig, roomAllocCount, vehicleAllocCount, completedChecklistCount] = await Promise.all([
+    const [
+      ticketReq,
+      accountingTotals,
+      seatConfig,
+      roomAllocCount,
+      vehicleAllocCount,
+      completedChecklistCount,
+    ] = await Promise.all([
       prisma.trainTicketRequest.findFirst({
         where: { tenantId, bookingId },
-        select: { status: true, _count: { select: { travellers: true } } }
+        select: { status: true, _count: { select: { travellers: true } } },
       }),
       prisma.accountingEntry.groupBy({
-        by: ['status'],
+        by: ["status"],
         where: { tenantId, bookingId },
-        _sum: { amount: true }
+        _sum: { amount: true },
       }),
       tripId && departureDate
         ? prisma.opsSeatConfig.findFirst({
             where: { tenantId, tripId, departureDate },
-            select: { blockedSeats: true }
+            select: { blockedSeats: true },
           })
         : null,
       tripId && departureDate
-        ? prisma.opsRoomAllocation.count({ where: { tripId, departureDate, bookingId } })
+        ? prisma.opsRoomAllocation.count({
+            where: { tripId, departureDate, bookingId },
+          })
         : 0,
       tripId && departureDate
-        ? prisma.opsVehicleAllocation.count({ where: { tripId, departureDate, bookingId } })
+        ? prisma.opsVehicleAllocation.count({
+            where: { tripId, departureDate, bookingId },
+          })
         : 0,
       tripId && departureDate
-        ? prisma.opsTripChecklist.count({ where: { tenantId, tripId, departureDate, isCompleted: true } })
-        : 0
+        ? prisma.opsTripChecklist.count({
+            where: { tenantId, tripId, departureDate, isCompleted: true },
+          })
+        : 0,
     ]);
 
     const ticketSummary = {
-      status: ticketReq ? ticketReq.status : 'NOT_CREATED',
+      status: ticketReq ? ticketReq.status : "NOT_CREATED",
       totalTravelers: ticketReq?._count.travellers || 0,
-      approved: ticketReq && ticketReq.status === 'APPROVED' ? 1 : 0,
-      pending: ticketReq && (ticketReq.status === 'PENDING_VERIFICATION' || ticketReq.status === 'DRAFT') ? 1 : 0,
-      cancelled: ticketReq && ticketReq.status === 'CANCELLED' ? 1 : 0
+      approved: ticketReq && ticketReq.status === "APPROVED" ? 1 : 0,
+      pending:
+        ticketReq &&
+        (ticketReq.status === "PENDING_VERIFICATION" ||
+          ticketReq.status === "DRAFT")
+          ? 1
+          : 0,
+      cancelled: ticketReq && ticketReq.status === "CANCELLED" ? 1 : 0,
     };
 
     const accountingByStatus = Object.fromEntries(
-      accountingTotals.map((row) => [row.status, row._sum.amount || 0])
+      accountingTotals.map((row) => [row.status, row._sum.amount || 0]),
     );
     const approvedCollection = accountingByStatus.APPROVED || 0;
     const pendingCollection = accountingByStatus.PENDING || 0;
     const bookingTotal = booking.totalAmount || 0;
     const remainingAmount = Math.max(0, bookingTotal - approvedCollection);
-    const derivedCollectionStatus = approvedCollection >= bookingTotal ? 'Paid' : approvedCollection > 0 ? 'Partially Paid' : 'Pending';
+    const derivedCollectionStatus =
+      approvedCollection >= bookingTotal
+        ? "Paid"
+        : approvedCollection > 0
+          ? "Partially Paid"
+          : "Pending";
 
     const accountingSummary = {
       bookingTotal,
       approvedCollection,
       pendingCollection,
       remainingAmount,
-      derivedCollectionStatus
+      derivedCollectionStatus,
     };
 
     // 3. Operations Summary
     const opsSummaryData = {
-      departureWorkspaceState: departureDate ? 'ACTIVE' : 'NO_DATE',
-      seatState: seatConfig ? (seatConfig.blockedSeats > 0 ? 'BLOCKED' : 'CONFIGURED') : 'AVAILABLE',
-      roomAllocationState: roomAllocCount > 0 ? 'ALLOCATED' : 'UNASSIGNED',
-      vehicleAllocationState: vehicleAllocCount > 0 ? 'ALLOCATED' : 'UNASSIGNED',
-      sopCompletedCount: completedChecklistCount
+      departureWorkspaceState: departureDate ? "ACTIVE" : "NO_DATE",
+      seatState: seatConfig
+        ? seatConfig.blockedSeats > 0
+          ? "BLOCKED"
+          : "CONFIGURED"
+        : "AVAILABLE",
+      roomAllocationState: roomAllocCount > 0 ? "ALLOCATED" : "UNASSIGNED",
+      vehicleAllocationState:
+        vehicleAllocCount > 0 ? "ALLOCATED" : "UNASSIGNED",
+      sopCompletedCount: completedChecklistCount,
     };
 
     let alertCount = ticketSummary.pending > 0 ? 1 : 0;
     if (remainingAmount > 0) {
       const now = new Date();
       if (departureDate) {
-        const diffDays = Math.ceil((new Date(departureDate) - now) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.ceil(
+          (new Date(departureDate) - now) / (1000 * 60 * 60 * 24),
+        );
         if (diffDays <= 7) alertCount += 1;
       }
     }
 
     const result = {
-      bookingLinkSource: booking.sourceBookingLink ? booking.sourceBookingLink.tokenPrefix : 'Direct / Manual',
-      salespersonOwner: booking.salesAdminId || 'Unassigned',
+      bookingLinkSource: booking.sourceBookingLink
+        ? booking.sourceBookingLink.tokenPrefix
+        : "Direct / Manual",
+      salespersonOwner: booking.salesAdminId || "Unassigned",
       travelerCount: booking.numberOfTravelers || 1,
       ticketSummary,
       accountingSummary,
       operationsSummary: opsSummaryData,
-      alertCount
+      alertCount,
     };
 
     await cache.set(cacheKey, result, 15); // Cache for 15s
     return result;
   } catch (err) {
-    console.error('buildBookingOpsSummary error:', err);
+    console.error("buildBookingOpsSummary error:", err);
     return null;
   }
 }
@@ -713,9 +881,9 @@ const parseCookies = (req) => {
   const list = {};
   const rc = req.headers.cookie;
   if (rc) {
-    rc.split(';').forEach(cookie => {
-      const parts = cookie.split('=');
-      list[parts.shift().trim()] = decodeURIComponent(parts.join('='));
+    rc.split(";").forEach((cookie) => {
+      const parts = cookie.split("=");
+      list[parts.shift().trim()] = decodeURIComponent(parts.join("="));
     });
   }
   return list;
@@ -730,12 +898,12 @@ exports.getBookingPublic = async (req, res, next) => {
     // Check admin auth from Authorization header
     if (req.headers.authorization) {
       try {
-        const authHeader = req.headers.authorization || '';
-        if (authHeader.startsWith('Bearer ')) {
-          const token = authHeader.slice('Bearer '.length).trim();
+        const authHeader = req.headers.authorization || "";
+        if (authHeader.startsWith("Bearer ")) {
+          const token = authHeader.slice("Bearer ".length).trim();
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
           const admin = await prisma.admin.findUnique({
-            where: { id: decoded.id }
+            where: { id: decoded.id },
           });
           if (admin && admin.isActive) {
             isAuthorized = true;
@@ -764,21 +932,25 @@ exports.getBookingPublic = async (req, res, next) => {
 
     // Fetch booking
     let booking = await prisma.booking.findFirst({
-      where: { bookingId: String(bookingId) }
+      where: { bookingId: String(bookingId) },
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
     // Map co-travelers to safe list (only name, gender, age)
     let persons = [];
-    if (booking.passengers && typeof booking.passengers === 'object') {
-      const rawPersons = Array.isArray(booking.passengers) ? booking.passengers : (booking.passengers.persons || []);
-      persons = rawPersons.map(p => ({
+    if (booking.passengers && typeof booking.passengers === "object") {
+      const rawPersons = Array.isArray(booking.passengers)
+        ? booking.passengers
+        : booking.passengers.persons || [];
+      persons = rawPersons.map((p) => ({
         name: p.name,
         gender: p.gender,
-        age: p.age ? Number(p.age) : null
+        age: p.age ? Number(p.age) : null,
       }));
     }
 
@@ -794,7 +966,7 @@ exports.getBookingPublic = async (req, res, next) => {
       age: booking.age,
       departureDate: booking.departureDate,
       pickupCity: booking.pickupCity,
-      passengers: persons
+      passengers: persons,
     };
 
     res.json({ success: true, data: publicData });
@@ -806,22 +978,43 @@ exports.getBookingPublic = async (req, res, next) => {
 exports.createBooking = async (req, res, next) => {
   try {
     const {
-      name, fullName, phone, mobile, tripId: inputTripId, status, paymentMode, notes, email, departureDate,
-      pickupCity, skipDays, adjustedPrice, joiningDate,
-      sourceBookingLinkId, sourceBookingLinkToken, sourceBookingLinkPayload, sourceBookingLinkSignature
+      name,
+      fullName,
+      phone,
+      mobile,
+      tripId: inputTripId,
+      status,
+      paymentMode,
+      notes,
+      email,
+      departureDate,
+      pickupCity,
+      skipDays,
+      adjustedPrice,
+      joiningDate,
+      sourceBookingLinkId,
+      sourceBookingLinkToken,
+      sourceBookingLinkPayload,
+      sourceBookingLinkSignature,
     } = req.body;
     const targetName = name || fullName;
     const targetPhone = phone || mobile;
 
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     if (!targetName || !targetPhone || !inputTripId) {
-      return res.status(400).json({ success: false, message: 'Required fields missing: Name, Phone, and Trip are mandatory' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Required fields missing: Name, Phone, and Trip are mandatory",
+        });
     }
 
     let tripId = inputTripId;
     let targetTrip = await prisma.trip.findFirst({
-      where: { id: tripId, tenantId }
+      where: { id: tripId, tenantId },
     });
 
     if (!targetTrip) {
@@ -831,24 +1024,37 @@ exports.createBooking = async (req, res, next) => {
           OR: [
             { slug: inputTripId },
             { title: inputTripId },
-            ...(req.body.tripName ? [{ title: req.body.tripName }, { slug: req.body.tripName }] : [])
+            ...(req.body.tripName
+              ? [{ title: req.body.tripName }, { slug: req.body.tripName }]
+              : []),
           ],
-          tenantId
-        }
+          tenantId,
+        },
       });
       if (targetTrip) {
         tripId = targetTrip.id;
       } else {
-        return res.status(400).json({ success: false, message: 'Selected Trip is invalid or no longer exists in the system' });
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "Selected Trip is invalid or no longer exists in the system",
+          });
       }
     }
 
-    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'superadmin');
+    const isAdmin =
+      req.user && (req.user.role === "admin" || req.user.role === "superadmin");
 
     // Optional link attribution + expiry enforcement
     let sourceLink = null;
     let linkMetadata = null;
-    if (sourceBookingLinkId || sourceBookingLinkToken || sourceBookingLinkPayload) {
+    if (
+      sourceBookingLinkId ||
+      sourceBookingLinkToken ||
+      sourceBookingLinkPayload
+    ) {
       if (sourceBookingLinkToken) {
         const tokenHash = sha256(String(sourceBookingLinkToken));
         sourceLink = await prisma.bookingLink.findFirst({
@@ -861,33 +1067,64 @@ exports.createBooking = async (req, res, next) => {
       }
 
       if (sourceBookingLinkPayload && sourceBookingLinkSignature) {
-        linkMetadata = verifySignedPayload(sourceBookingLinkPayload, sourceBookingLinkSignature);
+        linkMetadata = verifySignedPayload(
+          sourceBookingLinkPayload,
+          sourceBookingLinkSignature,
+        );
       }
 
       if (!sourceLink) {
-        return res.status(410).json({ success: false, message: 'Booking link is invalid or no longer available' });
+        return res
+          .status(410)
+          .json({
+            success: false,
+            message: "Booking link is invalid or no longer available",
+          });
       }
 
       const now = Date.now();
-      if (sourceLink.status === 'used' || sourceLink.completedCount > 0) {
-        return res.status(410).json({ success: false, message: 'This booking link has already been used' });
+      if (sourceLink.status === "used" || sourceLink.completedCount > 0) {
+        return res
+          .status(410)
+          .json({
+            success: false,
+            message: "This booking link has already been used",
+          });
       }
 
-      if (sourceLink.status === 'deactivated' || sourceLink.status === 'revoked') {
-        return res.status(410).json({ success: false, message: 'This booking link has been deactivated' });
+      if (
+        sourceLink.status === "deactivated" ||
+        sourceLink.status === "revoked"
+      ) {
+        return res
+          .status(410)
+          .json({
+            success: false,
+            message: "This booking link has been deactivated",
+          });
       }
 
-      if (sourceLink.status !== 'active' || (sourceLink.expiresAt && sourceLink.expiresAt.getTime() < now)) {
+      if (
+        sourceLink.status !== "active" ||
+        (sourceLink.expiresAt && sourceLink.expiresAt.getTime() < now)
+      ) {
         await prisma.bookingLink.update({
           where: { id: sourceLink.id },
-          data: { status: 'expired' },
+          data: { status: "expired" },
         });
-        return res.status(410).json({ success: false, message: 'Booking link has expired' });
+        return res
+          .status(410)
+          .json({ success: false, message: "Booking link has expired" });
       }
 
       // Basic integrity check (link trip should match the booking trip)
       if (String(sourceLink.tripId) !== String(tripId)) {
-        return res.status(400).json({ success: false, message: 'Trip mismatch for this booking link' });
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Trip mismatch for this booking link",
+          });
       }
     }
 
@@ -905,14 +1142,25 @@ exports.createBooking = async (req, res, next) => {
           } else {
             // Validate manual ID format
             if (!/^BK-[0-9A-Z]{12}$/.test(req.body.bookingId)) {
-              return res.status(400).json({ success: false, message: 'Invalid manual booking ID format. Must match /^BK-[0-9A-Z]{12}$/' });
+              return res
+                .status(400)
+                .json({
+                  success: false,
+                  message:
+                    "Invalid manual booking ID format. Must match /^BK-[0-9A-Z]{12}$/",
+                });
             }
             // Check for duplicates in database before insertion
             const existing = await prisma.booking.findUnique({
-              where: { bookingId: req.body.bookingId }
+              where: { bookingId: req.body.bookingId },
             });
             if (existing) {
-              return res.status(400).json({ success: false, message: 'Manual booking ID already exists in the system' });
+              return res
+                .status(400)
+                .json({
+                  success: false,
+                  message: "Manual booking ID already exists in the system",
+                });
             }
             currentBookingId = req.body.bookingId;
           }
@@ -922,30 +1170,38 @@ exports.createBooking = async (req, res, next) => {
 
         booking = await prisma.$transaction(async (tx) => {
           // Recompute and check capacity inside transaction context
-          const calculations = await verifyAndCalculateBooking(targetTrip, req.body, isAdmin, tx);
+          const calculations = await verifyAndCalculateBooking(
+            targetTrip,
+            req.body,
+            isAdmin,
+            tx,
+          );
 
           const linkedName = linkMetadata?.customerName || targetName;
           const linkedPhone = linkMetadata?.customerPhone || targetPhone;
           const linkedEmail = linkMetadata?.customerEmail || email || null;
-          const linkedTravelerCount = linkMetadata?.travelerCount || req.body.passengers?.length || 1;
+          const linkedTravelerCount =
+            linkMetadata?.travelerCount || req.body.passengers?.length || 1;
 
           const created = await tx.booking.create({
             data: {
               tenantId,
               bookingId: currentBookingId,
-              name: linkedName, fullName: linkedName,
-              phone: linkedPhone, mobile: linkedPhone,
+              name: linkedName,
+              fullName: linkedName,
+              phone: linkedPhone,
+              mobile: linkedPhone,
               tripId,
-              tripName: targetTrip ? targetTrip.title : 'Manual Booking',
+              tripName: targetTrip ? targetTrip.title : "Manual Booking",
               amount: calculations.amount,
               totalAmount: calculations.totalAmount,
               advancePaid: calculations.advancePaid,
               remainingAmount: calculations.remainingAmount,
-              status: 'pending',
-              paymentStatus: 'Pending / Manual Verification',
-              paymentMode: paymentMode || 'UPI',
-              notes: notes || req.body.specialRequests || '',
-              adminNotes: req.body.specialRequests || notes || '',
+              status: "pending",
+              paymentStatus: "Pending / Manual Verification",
+              paymentMode: paymentMode || "UPI",
+              notes: notes || req.body.specialRequests || "",
+              adminNotes: req.body.specialRequests || notes || "",
               email: linkedEmail,
               departureDate: departureDate ? new Date(departureDate) : null,
               pickupCity: calculations.pickupCity || null,
@@ -970,7 +1226,13 @@ exports.createBooking = async (req, res, next) => {
                 persons: req.body.passengers || [],
               },
               sourceBookingLinkId: sourceLink ? sourceLink.id : null,
-              salesAdminId: sourceLink ? sourceLink.createdByAdminId : (req.user ? (req.user.role === 'sales' ? req.user.id : req.body.salesAdminId || null) : null),
+              salesAdminId: sourceLink
+                ? sourceLink.createdByAdminId
+                : req.user
+                  ? req.user.role === "sales"
+                    ? req.user.id
+                    : req.body.salesAdminId || null
+                  : null,
               sourceMeta: sourceLink
                 ? {
                     tripId: sourceLink.tripId,
@@ -989,7 +1251,7 @@ exports.createBooking = async (req, res, next) => {
             await tx.bookingLink.update({
               where: { id: sourceLink.id },
               data: {
-                status: 'used',
+                status: "used",
                 completedCount: { increment: 1 },
                 lastCompletedAt: new Date(),
               },
@@ -999,9 +1261,9 @@ exports.createBooking = async (req, res, next) => {
               data: {
                 tenantId,
                 bookingLinkId: sourceLink.id,
-                type: 'booking_created',
+                type: "booking_created",
                 ipHash: getIpHash(req),
-                userAgent: req.headers['user-agent']?.toString(),
+                userAgent: req.headers["user-agent"]?.toString(),
               },
             });
           }
@@ -1011,116 +1273,194 @@ exports.createBooking = async (req, res, next) => {
         break;
       } catch (error) {
         attempts++;
-        if (error.code === 'P2002' && error.meta?.target?.includes('bookingId') && attempts < maxAttempts) {
-          console.warn(`[BOOKING_COLLISION] Retrying admin booking creation. Attempt: ${attempts}`);
+        if (
+          error.code === "P2002" &&
+          error.meta?.target?.includes("bookingId") &&
+          attempts < maxAttempts
+        ) {
+          console.warn(
+            `[BOOKING_COLLISION] Retrying admin booking creation. Attempt: ${attempts}`,
+          );
           continue;
         }
         if (attempts >= maxAttempts) {
-          throw new Error('Server failed to generate a unique booking ID after multiple attempts.');
+          throw new Error(
+            "Server failed to generate a unique booking ID after multiple attempts.",
+          );
         }
         throw error;
       }
     }
 
     if (!isAdmin) {
-      const confirmToken = jwt.sign({ bookingId: booking.bookingId }, process.env.JWT_SECRET, { expiresIn: '24h' });
+      const confirmToken = jwt.sign(
+        { bookingId: booking.bookingId },
+        process.env.JWT_SECRET,
+        { expiresIn: "24h" },
+      );
       res.cookie(`confirm_token_${booking.bookingId}`, confirmToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        path: `/api/bookings/lookup/${booking.bookingId}`
+        path: `/api/bookings/lookup/${booking.bookingId}`,
       });
     }
 
     await logBookingActivity({
       bookingId: booking.id,
-      action: 'CREATE',
-      details: `Booking created for ${booking.name} (Trip: ${booking.tripName || 'Manual Booking'})`,
-      performedByAdminId: req.user ? req.user.id : null
+      action: "CREATE",
+      details: `Booking created for ${booking.name} (Trip: ${booking.tripName || "Manual Booking"})`,
+      performedByAdminId: req.user ? req.user.id : null,
     });
 
     // Trigger simulated email confirmation log automatically on booking creation ONLY if confirmed
-    if (booking.status === 'Confirmed' || booking.status === 'confirmed' || booking.paymentStatus === 'Paid' || booking.paymentStatus === 'paid') {
+    if (
+      booking.status === "Confirmed" ||
+      booking.status === "confirmed" ||
+      booking.paymentStatus === "Paid" ||
+      booking.paymentStatus === "paid"
+    ) {
       try {
-        const { sendEmail, templates } = require('../lib/email');
+        const { sendEmail, templates } = require("../lib/email");
         const templateData = templates.confirmation(booking);
         await sendEmail({
-          to: booking.email || 'info@youthcamping.com',
+          to: booking.email || "info@youthcamping.com",
           subject: templateData.subject,
           html: templateData.html,
-          type: 'confirmation',
+          type: "confirmation",
           bookingId: booking.id,
           prisma,
-          attachments: []
+          attachments: [],
         });
-        console.log(`📧 Automatically logged booking confirmation email for booking ${booking.bookingId}`);
+        console.log(
+          `📧 Automatically logged booking confirmation email for booking ${booking.bookingId}`,
+        );
       } catch (emailErr) {
-        console.error('Failed to trigger automatic booking confirmation email:', emailErr.message);
+        console.error(
+          "Failed to trigger automatic booking confirmation email:",
+          emailErr.message,
+        );
       }
     }
 
-    res.status(201).json({ success: true, data: booking, message: 'Booking created successfully' });
-  } catch (error) { next(error); }
+    res
+      .status(201)
+      .json({
+        success: true,
+        data: booking,
+        message: "Booking created successfully",
+      });
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.updateBooking = async (req, res, next) => {
   try {
     const { email, reason, ...updateData } = req.body;
-    delete updateData.id; delete updateData.tenantId;
+    delete updateData.id;
+    delete updateData.tenantId;
 
     // Add email back to updateData if it exists
     if (email !== undefined) updateData.email = email;
 
-    // Only touch passengers json mapping if custom fields are explicitly present
+    // Only touch passengers json mapping if custom fields or passengers array are explicitly present
     const hasPassengerCustomFields = [
-      'trainClass', 'ticketStatus', 'roomType', 'basePrice', 'foodPreference',
-      'mealPreference', 'dietary', 'roomAllocation', 'guideAssignment',
-      'pickupStatus', 'travelStatus', 'participantNotes'
-    ].some(field => req.body[field] !== undefined);
+      "trainClass",
+      "ticketStatus",
+      "roomType",
+      "basePrice",
+      "foodPreference",
+      "mealPreference",
+      "dietary",
+      "roomAllocation",
+      "guideAssignment",
+      "pickupStatus",
+      "travelStatus",
+      "participantNotes",
+      "passengers",
+    ].some((field) => req.body[field] !== undefined);
 
     if (hasPassengerCustomFields) {
       let existingBooking = await prisma.booking.findFirst({
-        where: { id: req.params.id, tenantId: req.user?.tenantId || 'default' }
+        where: { id: req.params.id, tenantId: req.user?.tenantId || "default" },
       });
       if (!existingBooking) {
         existingBooking = await prisma.booking.findFirst({
-          where: { id: req.params.id }
+          where: { id: req.params.id },
         });
       }
 
       let currentPassengers = existingBooking?.passengers || {};
-      if (typeof currentPassengers === 'string') {
-        try { currentPassengers = JSON.parse(currentPassengers); } catch (e) { currentPassengers = {}; }
+      if (typeof currentPassengers === "string") {
+        try {
+          currentPassengers = JSON.parse(currentPassengers);
+        } catch (e) {
+          currentPassengers = {};
+        }
       }
 
       let safeDetails = {};
       let safePersons = [];
       if (Array.isArray(currentPassengers)) {
         safePersons = currentPassengers;
-      } else if (currentPassengers && typeof currentPassengers === 'object') {
-        safeDetails = (currentPassengers.details && typeof currentPassengers.details === 'object' && !Array.isArray(currentPassengers.details)) ? currentPassengers.details : {};
-        safePersons = Array.isArray(currentPassengers.persons) ? currentPassengers.persons : [];
+      } else if (currentPassengers && typeof currentPassengers === "object") {
+        safeDetails =
+          currentPassengers.details &&
+          typeof currentPassengers.details === "object" &&
+          !Array.isArray(currentPassengers.details)
+            ? currentPassengers.details
+            : {};
+        safePersons = Array.isArray(currentPassengers.persons)
+          ? currentPassengers.persons
+          : [];
       }
 
       updateData.passengers = {
         details: {
           ...safeDetails,
-          ...(req.body.trainClass !== undefined && { trainClass: req.body.trainClass }),
-          ...(req.body.ticketStatus !== undefined && { ticketStatus: req.body.ticketStatus }),
-          ...(req.body.roomType !== undefined && { roomType: req.body.roomType }),
-          ...(req.body.basePrice !== undefined && { basePrice: req.body.basePrice }),
-          ...(req.body.gstAmount !== undefined && { gstAmount: req.body.gstAmount }),
-          ...(req.body.foodPreference !== undefined && { foodPreference: req.body.foodPreference }),
-          ...(req.body.mealPreference !== undefined && { mealPreference: req.body.mealPreference }),
+          ...(req.body.trainClass !== undefined && {
+            trainClass: req.body.trainClass,
+          }),
+          ...(req.body.ticketStatus !== undefined && {
+            ticketStatus: req.body.ticketStatus,
+          }),
+          ...(req.body.roomType !== undefined && {
+            roomType: req.body.roomType,
+          }),
+          ...(req.body.basePrice !== undefined && {
+            basePrice: req.body.basePrice,
+          }),
+          ...(req.body.gstAmount !== undefined && {
+            gstAmount: req.body.gstAmount,
+          }),
+          ...(req.body.foodPreference !== undefined && {
+            foodPreference: req.body.foodPreference,
+          }),
+          ...(req.body.mealPreference !== undefined && {
+            mealPreference: req.body.mealPreference,
+          }),
           ...(req.body.dietary !== undefined && { dietary: req.body.dietary }),
-          ...(req.body.roomAllocation !== undefined && { roomAllocation: req.body.roomAllocation }),
-          ...(req.body.guideAssignment !== undefined && { guideAssignment: req.body.guideAssignment }),
-          ...(req.body.pickupStatus !== undefined && { pickupStatus: req.body.pickupStatus }),
-          ...(req.body.travelStatus !== undefined && { travelStatus: req.body.travelStatus }),
-          ...(req.body.participantNotes !== undefined && { participantNotes: req.body.participantNotes }),
+          ...(req.body.roomAllocation !== undefined && {
+            roomAllocation: req.body.roomAllocation,
+          }),
+          ...(req.body.guideAssignment !== undefined && {
+            guideAssignment: req.body.guideAssignment,
+          }),
+          ...(req.body.pickupStatus !== undefined && {
+            pickupStatus: req.body.pickupStatus,
+          }),
+          ...(req.body.travelStatus !== undefined && {
+            travelStatus: req.body.travelStatus,
+          }),
+          ...(req.body.participantNotes !== undefined && {
+            participantNotes: req.body.participantNotes,
+          }),
         },
-        persons: Array.isArray(req.body.passengers) ? req.body.passengers : safePersons
+        persons: Array.isArray(req.body.passengers)
+          ? req.body.passengers
+          : safePersons,
       };
     }
 
@@ -1140,31 +1480,61 @@ exports.updateBooking = async (req, res, next) => {
     delete updateData.participantNotes;
 
     if (updateData.basePrice !== undefined) {
-      updateData.baseAmount = updateData.basePrice !== null ? parseFloat(updateData.basePrice) : null;
+      updateData.baseAmount =
+        updateData.basePrice !== null ? parseFloat(updateData.basePrice) : null;
       delete updateData.basePrice;
     }
     if (updateData.gstAmount !== undefined) {
-      updateData.gstAmount = updateData.gstAmount !== null ? parseFloat(updateData.gstAmount) : null;
+      updateData.gstAmount =
+        updateData.gstAmount !== null ? parseFloat(updateData.gstAmount) : null;
     }
     if (req.body.passengers && Array.isArray(req.body.passengers)) {
       updateData.numberOfTravelers = req.body.passengers.length;
+      if (req.body.passengers.length > 0) {
+        const lead = req.body.passengers[0];
+        if (updateData.name === undefined && lead.name)
+          updateData.name = lead.name;
+        if (updateData.phone === undefined && lead.phone)
+          updateData.phone = lead.phone;
+        if (updateData.email === undefined && lead.email)
+          updateData.email = lead.email;
+        if (updateData.gender === undefined && lead.gender)
+          updateData.gender = lead.gender;
+        if (updateData.age === undefined && lead.age)
+          updateData.age = parseInt(lead.age) || null;
+      }
     }
 
-    if (updateData.advancePaid !== undefined) updateData.advancePaid = Number(updateData.advancePaid) || 0;
-    if (updateData.totalAmount !== undefined) updateData.totalAmount = Number(updateData.totalAmount) || 0;
-    if (updateData.amount !== undefined) updateData.amount = Number(updateData.amount) || 0;
-    if (updateData.remainingAmount !== undefined) updateData.remainingAmount = Number(updateData.remainingAmount) || 0;
-    if (updateData.age !== undefined && updateData.age !== null) updateData.age = parseInt(updateData.age) || null;
-    if (updateData.departureDate !== undefined && updateData.departureDate !== null && updateData.departureDate !== "") {
+    if (updateData.advancePaid !== undefined)
+      updateData.advancePaid = Number(updateData.advancePaid) || 0;
+    if (updateData.totalAmount !== undefined)
+      updateData.totalAmount = Number(updateData.totalAmount) || 0;
+    if (updateData.amount !== undefined)
+      updateData.amount = Number(updateData.amount) || 0;
+    if (updateData.remainingAmount !== undefined)
+      updateData.remainingAmount = Number(updateData.remainingAmount) || 0;
+    if (updateData.age !== undefined && updateData.age !== null)
+      updateData.age = parseInt(updateData.age) || null;
+    if (
+      updateData.departureDate !== undefined &&
+      updateData.departureDate !== null &&
+      updateData.departureDate !== ""
+    ) {
       const d = new Date(updateData.departureDate);
       if (!isNaN(d.getTime())) updateData.departureDate = d;
       else delete updateData.departureDate;
     } else if (updateData.departureDate === "") {
       delete updateData.departureDate;
     }
-    if (updateData.skipDays !== undefined) updateData.skipDays = parseInt(updateData.skipDays) || 0;
-    if (updateData.adjustedPrice !== undefined) updateData.adjustedPrice = parseFloat(updateData.adjustedPrice) || null;
-    if (updateData.joiningDate !== undefined && updateData.joiningDate !== null && updateData.joiningDate !== "") {
+    if (updateData.skipDays !== undefined)
+      updateData.skipDays = parseInt(updateData.skipDays) || 0;
+    if (updateData.adjustedPrice !== undefined)
+      updateData.adjustedPrice = parseFloat(updateData.adjustedPrice) || null;
+    if (
+      updateData.joiningDate !== undefined &&
+      updateData.joiningDate !== null &&
+      updateData.joiningDate !== ""
+    ) {
       const d = new Date(updateData.joiningDate);
       if (!isNaN(d.getTime())) updateData.joiningDate = d;
       else delete updateData.joiningDate;
@@ -1175,11 +1545,14 @@ exports.updateBooking = async (req, res, next) => {
     // Handle tripId change to sync tripName
     if (updateData.tripId) {
       let targetTrip = await prisma.trip.findFirst({
-        where: { id: updateData.tripId, tenantId: req.user?.tenantId || 'default' }
+        where: {
+          id: updateData.tripId,
+          tenantId: req.user?.tenantId || "default",
+        },
       });
       if (!targetTrip) {
         targetTrip = await prisma.trip.findFirst({
-          where: { id: updateData.tripId }
+          where: { id: updateData.tripId },
         });
       }
       if (targetTrip) {
@@ -1188,23 +1561,52 @@ exports.updateBooking = async (req, res, next) => {
     }
 
     let beforeBooking = await prisma.booking.findFirst({
-      where: { id: req.params.id, tenantId: req.user?.tenantId || 'default' }
+      where: { id: req.params.id, tenantId: req.user?.tenantId || "default" },
     });
     if (!beforeBooking) {
       beforeBooking = await prisma.booking.findFirst({
-        where: { id: req.params.id }
+        where: { id: req.params.id },
       });
     }
 
     const ALLOWED_BOOKING_FIELDS = new Set([
-      'tripId', 'tripName', 'status', 'name', 'fullName', 'phone', 'mobile',
-      'email', 'age', 'gender', 'numberOfTravelers', 'baseAmount', 'gstAmount',
-      'depositGst', 'totalAmount', 'amount', 'advancePaid', 'remainingAmount',
-      'paymentMode', 'paymentStatus', 'payment_status', 'payment_method',
-      'upi_reference', 'notes', 'adminNotes', 'sourceBookingLinkId',
-      'salesAdminId', 'sourceMeta', 'departureDate', 'pickupCity', 'skipDays',
-      'adjustedPrice', 'joiningDate', 'reminderSent', 'passengers',
-      'trainTicketRequired', 'trainTicketStatus'
+      "tripId",
+      "tripName",
+      "status",
+      "name",
+      "fullName",
+      "phone",
+      "mobile",
+      "email",
+      "age",
+      "gender",
+      "numberOfTravelers",
+      "baseAmount",
+      "gstAmount",
+      "depositGst",
+      "totalAmount",
+      "amount",
+      "advancePaid",
+      "remainingAmount",
+      "paymentMode",
+      "paymentStatus",
+      "payment_status",
+      "payment_method",
+      "upi_reference",
+      "notes",
+      "adminNotes",
+      "sourceBookingLinkId",
+      "salesAdminId",
+      "sourceMeta",
+      "departureDate",
+      "pickupCity",
+      "skipDays",
+      "adjustedPrice",
+      "joiningDate",
+      "reminderSent",
+      "passengers",
+      "trainTicketRequired",
+      "trainTicketStatus",
     ]);
 
     const sanitizedData = {};
@@ -1216,118 +1618,198 @@ exports.updateBooking = async (req, res, next) => {
 
     const booking = await prisma.booking.update({
       where: { id: req.params.id },
-      data: sanitizedData
+      data: sanitizedData,
     });
 
     // Log audit log (normalize Decimal/Number comparison using String())
-    const isReassignment = updateData.salesAdminId !== undefined && updateData.salesAdminId !== beforeBooking.salesAdminId;
-    const isPriceGstChange = (updateData.baseAmount !== undefined && String(updateData.baseAmount) !== String(beforeBooking.baseAmount)) ||
-                             (updateData.gstAmount !== undefined && String(updateData.gstAmount) !== String(beforeBooking.gstAmount));
-    const isPaymentUpdate = (updateData.paymentStatus !== undefined && updateData.paymentStatus !== beforeBooking.paymentStatus);
+    const isReassignment =
+      updateData.salesAdminId !== undefined &&
+      updateData.salesAdminId !== beforeBooking.salesAdminId;
+    const isPriceGstChange =
+      (updateData.baseAmount !== undefined &&
+        String(updateData.baseAmount) !== String(beforeBooking.baseAmount)) ||
+      (updateData.gstAmount !== undefined &&
+        String(updateData.gstAmount) !== String(beforeBooking.gstAmount));
+    const isPaymentUpdate =
+      updateData.paymentStatus !== undefined &&
+      updateData.paymentStatus !== beforeBooking.paymentStatus;
 
-    let logActionType = 'booking_update';
-    if (isReassignment) logActionType = 'sales_ownership_reassignment';
-    else if (isPriceGstChange) logActionType = 'price_gst_change';
-    else if (isPaymentUpdate) logActionType = 'payment_update';
+    let logActionType = "booking_update";
+    if (isReassignment) logActionType = "sales_ownership_reassignment";
+    else if (isPriceGstChange) logActionType = "price_gst_change";
+    else if (isPaymentUpdate) logActionType = "payment_update";
 
     try {
       await logAction({
-        tenantId: req.user?.tenantId || 'default',
-        actorUserId: req.user?.id || 'system',
+        tenantId: req.user?.tenantId || "default",
+        actorUserId: req.user?.id || "system",
         action: logActionType,
-        entityType: 'booking',
+        entityType: "booking",
         entityId: req.params.id,
         beforeData: beforeBooking,
         afterData: updateData,
-        ipAddress: req.ip || null
+        ipAddress: req.ip || null,
       });
 
       await logBookingActivity({
         bookingId: req.params.id,
-        action: updateData.status ? 'STATUS_CHANGE' : 'DETAILS_UPDATE',
+        action: updateData.status ? "STATUS_CHANGE" : "DETAILS_UPDATE",
         details: activityDetails,
-        performedByAdminId: req.user?.id || 'system'
+        performedByAdminId: req.user?.id || "system",
       });
 
-      const authScope = req.user?.role === 'sales' ? `sales-${req.user?.id}` : (req.user?.role || 'admin');
+      const authScope =
+        req.user?.role === "sales"
+          ? `sales-${req.user?.id}`
+          : req.user?.role || "admin";
       if (req.user?.tenantId && beforeBooking?.bookingId) {
-        await cache.del(`admin:summary:booking:${req.user.tenantId}:${beforeBooking.bookingId}:${authScope}`);
-        if (authScope !== 'admin') {
-          await cache.del(`admin:summary:booking:${req.user.tenantId}:${beforeBooking.bookingId}:admin`);
+        await cache.del(
+          `admin:summary:booking:${req.user.tenantId}:${beforeBooking.bookingId}:${authScope}`,
+        );
+        if (authScope !== "admin") {
+          await cache.del(
+            `admin:summary:booking:${req.user.tenantId}:${beforeBooking.bookingId}:admin`,
+          );
         }
       }
     } catch (logErr) {
       console.error("Non-critical logging error in updateBooking:", logErr);
     }
 
-    res.json({ success: true, message: 'Booking updated', data: booking });
-  } catch (error) { next(error); }
+    res.json({ success: true, message: "Booking updated", data: booking });
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.deleteBooking = async (req, res, next) => {
   try {
     const { id } = req.params;
     const tenantId = req.user.tenantId;
+    const isPermanent = req.query.permanent === "true";
     const role = req.user?.role;
-    const where = { id, tenantId };
-    /* all sales allowed */
+
+    // Superadmin can delete any booking regardless of tenantId, and match by id (cuid) or bookingId (code)
+    const whereCondition = role === "superadmin" || role === "admin"
+      ? { OR: [{ id }, { bookingId: id }] }
+      : { OR: [{ id, tenantId }, { bookingId: id, tenantId }] };
 
     const booking = await prisma.booking.findFirst({
-      where,
+      where: whereCondition,
     });
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    if (isPermanent) {
+      // Permanent hard delete for founder profile
+      const bookingIds = Array.from(new Set([id, booking.id, booking.bookingId].filter(Boolean)));
+
+      // Delete child records across all models referencing either cuid or bookingId
+      const safeDelete = async (fn, name) => {
+        try { await fn(); } catch(e) { console.warn(`[DELETE] ${name} skip/error:`, e.message); }
+      };
+
+      await safeDelete(() => prisma.trainTicketLog.deleteMany({ where: { trainTicket: { bookingId: { in: bookingIds } } } }), "trainTicketLog");
+      await safeDelete(() => prisma.trainTicketTraveller.deleteMany({ where: { trainTicket: { bookingId: { in: bookingIds } } } }), "trainTicketTraveller");
+      await safeDelete(() => prisma.trainTicketHistory.deleteMany({ where: { trainTicket: { bookingId: { in: bookingIds } } } }), "trainTicketHistory");
+      await safeDelete(() => prisma.trainTicketAlert.deleteMany({ where: { bookingId: { in: bookingIds } } }), "trainTicketAlert");
+      await safeDelete(() => prisma.trainTicketAlertEvent.deleteMany({ where: { bookingId: { in: bookingIds } } }), "trainTicketAlertEvent");
+      await safeDelete(() => prisma.trainTicketApproval.deleteMany({ where: { bookingId: { in: bookingIds } } }), "trainTicketApproval");
+      await safeDelete(() => prisma.ticketApproval.deleteMany({ where: { bookingId: { in: bookingIds } } }), "ticketApproval");
+      await safeDelete(() => prisma.trainTicketRequest.deleteMany({ where: { bookingId: { in: bookingIds } } }), "trainTicketRequest");
+      await safeDelete(() => prisma.trainTicket.deleteMany({ where: { bookingId: { in: bookingIds } } }), "trainTicket");
+      await safeDelete(() => prisma.payment.deleteMany({ where: { bookingId: { in: bookingIds } } }), "payment");
+      await safeDelete(() => prisma.bookingActivityLog.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingActivityLog");
+      await safeDelete(() => prisma.bookingTask.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingTask");
+      await safeDelete(() => prisma.bookingAttachment.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingAttachment");
+      await safeDelete(() => prisma.bookingDocument.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingDocument");
+      await safeDelete(() => prisma.bookingEmailLog.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingEmailLog");
+      await safeDelete(() => prisma.bookingVerificationLog.deleteMany({ where: { bookingVerification: { bookingId: { in: bookingIds } } } }), "bookingVerificationLog");
+      await safeDelete(() => prisma.bookingVerification.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingVerification");
+      await safeDelete(() => prisma.accountingEntryLog.deleteMany({ where: { accountingEntry: { bookingId: { in: bookingIds } } } }), "accountingEntryLog");
+      await safeDelete(() => prisma.accountingEntry.deleteMany({ where: { bookingId: { in: bookingIds } } }), "accountingEntry");
+      await safeDelete(() => prisma.auditLog.deleteMany({ where: { bookingId: { in: bookingIds } } }), "auditLog");
+      await safeDelete(() => prisma.quotation.deleteMany({ where: { bookingId: { in: bookingIds } } }), "quotation");
+      await safeDelete(() => prisma.opsVehicleAllocation.deleteMany({ where: { bookingId: { in: bookingIds } } }), "opsVehicleAllocation");
+      await safeDelete(() => prisma.opsRoomAllocation.deleteMany({ where: { bookingId: { in: bookingIds } } }), "opsRoomAllocation");
+      await safeDelete(() => prisma.opsClientPayment.deleteMany({ where: { bookingId: { in: bookingIds } } }), "opsClientPayment");
+      await safeDelete(() => prisma.stationPaymentCollection.deleteMany({ where: { bookingId: { in: bookingIds } } }), "stationPaymentCollection");
+      await safeDelete(() => prisma.passengerActivityAllocation.deleteMany({ where: { bookingId: { in: bookingIds } } }), "passengerActivityAllocation");
+
+      await prisma.booking.delete({ where: { id: booking.id } });
+
+      console.log(`[DELETE] Booking ${booking.id} (${booking.bookingId}) permanently deleted by ${req.user?.email}`);
+      return res.json({ success: true, message: "Booking permanently deleted successfully" });
+    }
+
 
     // Spec: "reject" should move to Cancelled state (not hard-delete),
     // so the booking lifecycle remains auditable.
     await prisma.booking.updateMany({
-      where,
+      where: { id, tenantId },
       data: {
-        status: 'cancelled',
-        paymentStatus: 'Cancelled',
+        status: "cancelled",
+        paymentStatus: "Cancelled",
       },
     });
 
     await logAction({
       tenantId,
       actorUserId: req.user.id,
-      action: 'booking_rejection',
-      entityType: 'booking',
+      action: "booking_rejection",
+      entityType: "booking",
       entityId: id,
       beforeData: booking,
-      afterData: { status: 'cancelled', paymentStatus: 'Cancelled' },
-      ipAddress: req.ip || null
+      afterData: { status: "cancelled", paymentStatus: "Cancelled" },
+      ipAddress: req.ip || null,
     });
 
     await logBookingActivity({
       bookingId: id,
-      action: 'STATUS_CHANGE',
-      details: 'Booking cancelled (deleted)',
-      performedByAdminId: req.user.id
+      action: "STATUS_CHANGE",
+      details: "Booking cancelled (deleted)",
+      performedByAdminId: req.user.id,
     });
 
-    res.json({ success: true, message: 'Booking cancelled successfully' });
+    res.json({ success: true, message: "Booking cancelled successfully" });
   } catch (error) {
-    console.error('🔥 [deleteBooking Error]:', error);
+    console.error("🔥 [deleteBooking Error]:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to delete booking. Please try again later.'
+      message: "Failed to delete booking. Please try again later.",
     });
   }
 };
 
 exports.confirmBooking = async (req, res, next) => {
   try {
-    const { totalAmount, advancePaid, paymentMode, paymentStatus, email, trainTicketStatus } = req.body;
+    const {
+      totalAmount,
+      advancePaid,
+      paymentMode,
+      paymentStatus,
+      email,
+      trainTicketStatus,
+    } = req.body;
 
     let targetTotal, targetAdvance;
     try {
-      targetTotal = validateAmount(totalAmount, 'totalAmount');
-      targetAdvance = validateAmount(advancePaid, 'advancePaid');
+      targetTotal = validateAmount(totalAmount, "totalAmount");
+      targetAdvance = validateAmount(advancePaid, "advancePaid");
     } catch (valErr) {
       return res.status(400).json({ success: false, message: valErr.message });
     }
     if (targetAdvance > targetTotal) {
-      return res.status(400).json({ success: false, message: 'advancePaid cannot exceed totalAmount' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "advancePaid cannot exceed totalAmount",
+        });
     }
 
     const role = req.user?.role;
@@ -1335,88 +1817,100 @@ exports.confirmBooking = async (req, res, next) => {
     /* all sales allowed */
 
     const beforeBooking = await prisma.booking.findFirst({ where });
-    if (!beforeBooking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!beforeBooking)
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
 
     const updatePayload = {
-      status: 'confirmed',
+      status: "confirmed",
       totalAmount: targetTotal,
       advancePaid: targetAdvance,
       remainingAmount: targetTotal - targetAdvance,
       paymentMode,
       paymentStatus,
       email: email || undefined,
-      trainTicketStatus: trainTicketStatus || undefined
+      trainTicketStatus: trainTicketStatus || undefined,
     };
 
     const booking = await prisma.booking.updateMany({
       where,
-      data: updatePayload
+      data: updatePayload,
     });
 
     await logAction({
       tenantId: req.user.tenantId,
       actorUserId: req.user.id,
-      action: 'booking_approval',
-      entityType: 'booking',
+      action: "booking_approval",
+      entityType: "booking",
       entityId: req.params.id,
       beforeData: beforeBooking,
       afterData: updatePayload,
-      ipAddress: req.ip || null
+      ipAddress: req.ip || null,
     });
 
     await logBookingActivity({
       bookingId: req.params.id,
-      action: 'STATUS_CHANGE',
+      action: "STATUS_CHANGE",
       details: `Booking status set to confirmed (Total: ₹${totalAmount}, Advance Paid: ₹${targetAdvance} via ${paymentMode})`,
-      performedByAdminId: req.user.id
+      performedByAdminId: req.user.id,
     });
 
     if (targetAdvance > 0) {
       const existingPayment = await prisma.payment.findFirst({
-        where: { bookingId: req.params.id, tenantId: req.user.tenantId }
+        where: { bookingId: req.params.id, tenantId: req.user.tenantId },
       });
       if (!existingPayment) {
         await prisma.payment.create({
           data: {
             bookingId: req.params.id,
             amount: targetAdvance,
-            paymentMode: paymentMode || 'UPI',
+            paymentMode: paymentMode || "UPI",
             tenantId: req.user.tenantId,
-            status: 'success'
-          }
+            status: "success",
+          },
         });
       }
     }
 
     // Sync to Google Sheets
-    const updatedBooking = await prisma.booking.findUnique({ where: { id: req.params.id } });
+    const updatedBooking = await prisma.booking.findUnique({
+      where: { id: req.params.id },
+    });
     if (updatedBooking) {
-      syncBookingToSheets(updatedBooking).catch(err => console.error('[SHEETS_SYNC_SILENT_ERR]', err.message));
+      syncBookingToSheets(updatedBooking).catch((err) =>
+        console.error("[SHEETS_SYNC_SILENT_ERR]", err.message),
+      );
     }
 
-    res.json({ success: true, message: 'Booking confirmed' });
-  } catch (error) { next(error); }
+    res.json({ success: true, message: "Booking confirmed" });
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.getMyBookings = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
     const where = { tenantId };
     if (req.user?.email) {
       where.email = req.user.email;
     }
     const bookings = await prisma.booking.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
     res.json({ success: true, count: bookings.length, data: bookings });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.searchByPhone = async (req, res, next) => {
   return res.status(403).json({
     success: false,
-    message: 'Public search by phone number is disabled for security and privacy reasons.'
+    message:
+      "Public search by phone number is disabled for security and privacy reasons.",
   });
 };
 
@@ -1429,21 +1923,34 @@ const TRIPS_CACHE_TTL = 5 * 60 * 1000;
 
 exports.getTrips = async (req, res, next) => {
   try {
-    const userTenant = req.user?.tenantId || 'default';
-    const whereTenant = userTenant === 'default' ? 'default' : { in: [userTenant, 'default'] };
+    const userTenant = req.user?.tenantId || "default";
+    const whereTenant =
+      userTenant === "default" ? "default" : { in: [userTenant, "default"] };
 
     const trips = await prisma.trip.findMany({
       where: { tenantId: whereTenant },
-      select: { id: true, title: true, price: true, availableDates: true }
+      select: { id: true, title: true, price: true, availableDates: true },
     });
-    const formatted = trips.map(t => ({ id: t.id, tripCode: t.id, title: t.title, tripName: t.title, price: t.price, availableDates: t.availableDates }));
-    tripsCache.set(userTenant, { data: formatted, expiresAt: Date.now() + TRIPS_CACHE_TTL });
+    const formatted = trips.map((t) => ({
+      id: t.id,
+      tripCode: t.id,
+      title: t.title,
+      tripName: t.title,
+      price: t.price,
+      availableDates: t.availableDates,
+    }));
+    tripsCache.set(userTenant, {
+      data: formatted,
+      expiresAt: Date.now() + TRIPS_CACHE_TTL,
+    });
 
     res.status(200).json({
       success: true,
-      data: formatted
+      data: formatted,
     });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 // Aliases for bookingRoutes.js
@@ -1452,32 +1959,34 @@ exports.getAllTrips = exports.getTrips;
 exports.createTrip = async (req, res, next) => {
   try {
     const tripCode = req.body.tripCode || req.body.id || `TRIP-${Date.now()}`;
-    const tripName = req.body.tripName || req.body.title || 'Untitled Trip';
+    const tripName = req.body.tripName || req.body.title || "Untitled Trip";
 
     const trip = await prisma.trip.create({
       data: {
         id: tripCode,
         title: tripName,
-        slug: tripCode.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        location: req.body.location || 'TBD',
-        duration: req.body.duration || 'TBD',
-        description: req.body.description || 'TBD',
-        tenantId: req.user?.tenantId || 'default',
-        price: Number(req.body.price) || 0
-      }
+        slug: tripCode.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+        location: req.body.location || "TBD",
+        duration: req.body.duration || "TBD",
+        description: req.body.description || "TBD",
+        tenantId: req.user?.tenantId || "default",
+        price: Number(req.body.price) || 0,
+      },
     });
     res.status(201).json({
       success: true,
-      data: { ...trip, tripCode: trip.id, tripName: trip.title }
+      data: { ...trip, tripCode: trip.id, tripName: trip.title },
     });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.updateTrip = async (req, res, next) => {
   try {
     const { id: oldId } = req.params;
     const { tripCode, tripName, ...otherData } = req.body;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     // Map tripName to title if provided
     const updateData = { ...otherData };
@@ -1490,17 +1999,21 @@ exports.updateTrip = async (req, res, next) => {
     const newId = tripCode ? tripCode.toUpperCase() : null;
 
     if (newId && newId !== oldId) {
-      console.log(`🔄 [updateTrip] Migrating Trip ID from ${oldId} to ${newId}`);
+      console.log(
+        `🔄 [updateTrip] Migrating Trip ID from ${oldId} to ${newId}`,
+      );
 
       // 2. Perform Migration Transaction
       await prisma.$transaction(async (tx) => {
-        const oldTrip = await tx.trip.findFirst({ where: { id: oldId, tenantId } });
-        if (!oldTrip) throw new Error('Original trip not found');
+        const oldTrip = await tx.trip.findFirst({
+          where: { id: oldId, tenantId },
+        });
+        if (!oldTrip) throw new Error("Original trip not found");
 
         // Rename old slug temporarily to avoid unique constraint error
         await tx.trip.update({
           where: { id: oldId },
-          data: { slug: `${oldTrip.slug}-old-${Date.now()}` }
+          data: { slug: `${oldTrip.slug}-old-${Date.now()}` },
         });
 
         // Create new record
@@ -1508,7 +2021,7 @@ exports.updateTrip = async (req, res, next) => {
           ...oldTrip,
           ...updateData,
           id: newId,
-          tenantId
+          tenantId,
         };
         // Ensure we don't accidentally spread relations or nested objects if they exist
         delete newTripData.bookings;
@@ -1522,8 +2035,8 @@ exports.updateTrip = async (req, res, next) => {
           where: { tripId: oldId, tenantId },
           data: {
             tripId: newId,
-            tripName: tripName || oldTrip.title
-          }
+            tripName: tripName || oldTrip.title,
+          },
         });
 
         // Inquiries
@@ -1531,51 +2044,57 @@ exports.updateTrip = async (req, res, next) => {
           where: { tripId: oldId, tenantId },
           data: {
             tripId: newId,
-            tripTitle: tripName || oldTrip.title
-          }
+            tripTitle: tripName || oldTrip.title,
+          },
         });
 
         // Reviews
         await tx.review.updateMany({
           where: { tripId: oldId, tenantId },
-          data: { tripId: newId }
+          data: { tripId: newId },
         });
 
         // Trip Vendors
         await tx.tripVendor.updateMany({
           where: { tripId: oldId, tenantId },
-          data: { tripId: newId }
+          data: { tripId: newId },
         });
 
         // 4. Delete old record
         await tx.trip.delete({ where: { id: oldId } });
       });
 
-      return res.json({ success: true, message: 'Trip Code and details updated successfully' });
+      return res.json({
+        success: true,
+        message: "Trip Code and details updated successfully",
+      });
     } else {
       // Regular update for other fields
       const trip = await prisma.trip.updateMany({
         where: { id: oldId, tenantId },
-        data: updateData
+        data: updateData,
       });
 
       // Also sync tripName in bookings if title was updated
       if (tripName) {
         await prisma.booking.updateMany({
           where: { tripId: oldId, tenantId },
-          data: { tripName }
+          data: { tripName },
         });
         await prisma.inquiry.updateMany({
           where: { tripId: oldId, tenantId },
-          data: { tripTitle: tripName }
+          data: { tripTitle: tripName },
         });
       }
 
-      if (trip.count === 0) return res.status(404).json({ success: false, message: 'Trip not found' });
-      res.json({ success: true, message: 'Trip updated successfully' });
+      if (trip.count === 0)
+        return res
+          .status(404)
+          .json({ success: false, message: "Trip not found" });
+      res.json({ success: true, message: "Trip updated successfully" });
     }
   } catch (error) {
-    console.error('🔥 [updateTrip] Error:', error);
+    console.error("🔥 [updateTrip] Error:", error);
     next(error);
   }
 };
@@ -1583,56 +2102,96 @@ exports.updateTrip = async (req, res, next) => {
 exports.deleteTrip = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     const trip = await prisma.trip.findFirst({
-      where: { id, tenantId }
+      where: { id, tenantId },
     });
 
     if (!trip) {
-      return res.status(404).json({ success: false, message: 'Trip not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
     }
 
     const activeBookingCount = await prisma.booking.count({
-      where: { tripId: id, tenantId, status: { notIn: ['cancelled', 'rejected'] } }
+      where: {
+        tripId: id,
+        tenantId,
+        status: { notIn: ["cancelled", "rejected"] },
+      },
     });
 
     if (activeBookingCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete trip with ${activeBookingCount} active booking(s). Please cancel or reassign bookings first.`
+        message: `Cannot delete trip with ${activeBookingCount} active booking(s). Please cancel or reassign bookings first.`,
       });
     }
 
     await Promise.all([
-      prisma.inquiry.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.review.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsSeatConfig.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsItinerary.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsAttraction.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsPackingItem.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsInclusionExclusion.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsFaq.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsTripChecklist.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsIncidentLog.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsHotelBooking.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsTransportFleet.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsGuidePayment.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsMiscExpense.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsTripExpense.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.opsTripLeader.deleteMany({ where: { tripId: id, tenantId } }).catch(() => {}),
-      prisma.tripAssignment.deleteMany({ where: { tripId: id } }).catch(() => {}),
-      prisma.tripVendor.deleteMany({ where: { tripId: id } }).catch(() => {})
+      prisma.inquiry
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.review
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsSeatConfig
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsItinerary
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsAttraction
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsPackingItem
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsInclusionExclusion
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsFaq
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsTripChecklist
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsIncidentLog
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsHotelBooking
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsTransportFleet
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsGuidePayment
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsMiscExpense
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsTripExpense
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.opsTripLeader
+        .deleteMany({ where: { tripId: id, tenantId } })
+        .catch(() => {}),
+      prisma.tripAssignment
+        .deleteMany({ where: { tripId: id } })
+        .catch(() => {}),
+      prisma.tripVendor.deleteMany({ where: { tripId: id } }).catch(() => {}),
     ]);
 
     await prisma.trip.delete({
-      where: { id }
+      where: { id },
     });
 
-    res.json({ success: true, message: 'Trip deleted' });
+    res.json({ success: true, message: "Trip deleted" });
   } catch (error) {
-    console.error('deleteTrip error:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete trip' });
+    console.error("deleteTrip error:", error);
+    res.status(500).json({ success: false, message: "Failed to delete trip" });
   }
 };
 
@@ -1643,27 +2202,29 @@ exports.deleteTrip = async (req, res, next) => {
 exports.submitBookingForm = async (req, res, next) => {
   try {
     const tripCode = req.params.tripCode;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     // Find the trip
     let targetTrip = await prisma.trip.findFirst({
-      where: { id: tripCode, tenantId }
+      where: { id: tripCode, tenantId },
     });
 
     if (!targetTrip) {
       targetTrip = await prisma.trip.findFirst({
         where: {
-          OR: [
-            { slug: tripCode },
-            { title: tripCode }
-          ],
-          tenantId
-        }
+          OR: [{ slug: tripCode }, { title: tripCode }],
+          tenantId,
+        },
       });
     }
 
     if (!targetTrip) {
-      return res.status(400).json({ success: false, message: 'Selected Trip is invalid or no longer exists in the system' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Selected Trip is invalid or no longer exists in the system",
+        });
     }
 
     let booking;
@@ -1676,7 +2237,12 @@ exports.submitBookingForm = async (req, res, next) => {
         // Explicitly construct the payload to match the schema
         booking = await prisma.$transaction(async (tx) => {
           // Re-verify calculations and capacity inside transaction context
-          const calculations = await verifyAndCalculateBooking(targetTrip, req.body, false, tx);
+          const calculations = await verifyAndCalculateBooking(
+            targetTrip,
+            req.body,
+            false,
+            tx,
+          );
 
           const created = await tx.booking.create({
             data: {
@@ -1684,16 +2250,20 @@ exports.submitBookingForm = async (req, res, next) => {
               tenantId,
               tripId: targetTrip.id, // Set resolved ID
               tripName: targetTrip.title,
-              name: req.body.fullName || req.body.name || 'Unknown',
+              name: req.body.fullName || req.body.name || "Unknown",
               fullName: req.body.fullName || req.body.name,
-              phone: req.body.mobile || req.body.phone || '0000000000',
+              phone: req.body.mobile || req.body.phone || "0000000000",
               mobile: req.body.mobile || req.body.phone,
               email: req.body.email || null,
-              departureDate: req.body.departureDate ? new Date(req.body.departureDate) : null,
+              departureDate: req.body.departureDate
+                ? new Date(req.body.departureDate)
+                : null,
               pickupCity: calculations.pickupCity || null,
               skipDays: calculations.skipDays,
               adjustedPrice: calculations.adjustedPrice,
-              joiningDate: req.body.joiningDate ? new Date(req.body.joiningDate) : null,
+              joiningDate: req.body.joiningDate
+                ? new Date(req.body.joiningDate)
+                : null,
               age: req.body.age ? parseInt(req.body.age) : null,
               gender: req.body.gender || null,
               numberOfTravelers: req.body.passengers?.length || 1,
@@ -1704,7 +2274,7 @@ exports.submitBookingForm = async (req, res, next) => {
               totalAmount: calculations.totalAmount,
               advancePaid: calculations.advancePaid,
               remainingAmount: calculations.remainingAmount,
-              status: req.body.status || 'pending',
+              status: req.body.status || "pending",
               paymentStatus: calculations.paymentStatus,
               paymentMode: req.body.paymentMode || null,
               notes: req.body.notes || null,
@@ -1715,157 +2285,212 @@ exports.submitBookingForm = async (req, res, next) => {
                   roomType: req.body.roomType,
                   basePrice: calculations.adjustedPrice,
                   gstAmount: calculations.gstAmount,
-                  depositGst: calculations.depositGst
+                  depositGst: calculations.depositGst,
                 },
-                persons: req.body.passengers || []
-              }
-            }
+                persons: req.body.passengers || [],
+              },
+            },
           });
           return created;
         });
         break;
       } catch (error) {
         attempts++;
-        if (error.code === 'P2002' && error.meta?.target?.includes('bookingId') && attempts < maxAttempts) {
-          console.warn(`[BOOKING_COLLISION] Retrying public booking creation. Attempt: ${attempts}`);
+        if (
+          error.code === "P2002" &&
+          error.meta?.target?.includes("bookingId") &&
+          attempts < maxAttempts
+        ) {
+          console.warn(
+            `[BOOKING_COLLISION] Retrying public booking creation. Attempt: ${attempts}`,
+          );
           continue;
         }
         if (attempts >= maxAttempts) {
-          throw new Error('Server failed to generate a unique booking ID after multiple attempts.');
+          throw new Error(
+            "Server failed to generate a unique booking ID after multiple attempts.",
+          );
         }
         throw error;
       }
     }
 
     // Set 24 hour secure cookie to allow unauthenticated lookup on confirmation page
-    const confirmToken = jwt.sign({ bookingId: booking.bookingId }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    const confirmToken = jwt.sign(
+      { bookingId: booking.bookingId },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" },
+    );
     res.cookie(`confirm_token_${booking.bookingId}`, confirmToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: `/api/bookings/lookup/${booking.bookingId}`
+      path: `/api/bookings/lookup/${booking.bookingId}`,
     });
 
     // Trigger simulated email confirmation log automatically on booking submission ONLY if confirmed
-    if (booking.status === 'Confirmed' || booking.status === 'confirmed' || booking.paymentStatus === 'Paid' || booking.paymentStatus === 'paid') {
+    if (
+      booking.status === "Confirmed" ||
+      booking.status === "confirmed" ||
+      booking.paymentStatus === "Paid" ||
+      booking.paymentStatus === "paid"
+    ) {
       try {
-        const { sendEmail, templates } = require('../lib/email');
+        const { sendEmail, templates } = require("../lib/email");
         const templateData = templates.confirmation(booking);
         await sendEmail({
-          to: booking.email || 'info@youthcamping.com',
+          to: booking.email || "info@youthcamping.com",
           subject: templateData.subject,
           html: templateData.html,
-          type: 'confirmation',
+          type: "confirmation",
           bookingId: booking.id,
           prisma,
-          attachments: []
+          attachments: [],
         });
-        console.log(`📧 Automatically logged booking confirmation email for booking ${booking.bookingId}`);
+        console.log(
+          `📧 Automatically logged booking confirmation email for booking ${booking.bookingId}`,
+        );
       } catch (emailErr) {
-        console.error('Failed to trigger automatic booking confirmation email:', emailErr.message);
+        console.error(
+          "Failed to trigger automatic booking confirmation email:",
+          emailErr.message,
+        );
       }
     }
 
     res.status(201).json({ success: true, data: booking });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.getTripInfo = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
     const trip = await prisma.trip.findFirst({
       where: {
         OR: [{ id: req.params.tripCode }, { slug: req.params.tripCode }],
-        tenantId
-      }
+        tenantId,
+      },
     });
-    if (!trip) return res.status(404).json({ success: false, message: 'Trip not found' });
+    if (!trip)
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
     res.json({ success: true, data: trip });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.confirmPayment = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     const booking = await prisma.booking.findFirst({
-      where: { id, tenantId }
+      where: { id, tenantId },
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
     const updatedBooking = await prisma.booking.update({
       where: { id },
       data: {
-        payment_status: 'confirmed',
-        paymentStatus: 'Paid'
-      }
+        payment_status: "confirmed",
+        paymentStatus: "Paid",
+      },
     });
 
     await logAction({
       tenantId,
       actorUserId: req.user.id,
-      action: 'payment_update',
-      entityType: 'booking',
+      action: "payment_update",
+      entityType: "booking",
       entityId: id,
       beforeData: booking,
-      afterData: { payment_status: 'confirmed', paymentStatus: 'Paid' },
-      ipAddress: req.ip || null
+      afterData: { payment_status: "confirmed", paymentStatus: "Paid" },
+      ipAddress: req.ip || null,
     });
 
     // Sync to Google Sheets
-    syncBookingToSheets(updatedBooking).catch(err => console.error('[SHEETS_SYNC_SILENT_ERR]', err.message));
+    syncBookingToSheets(updatedBooking).catch((err) =>
+      console.error("[SHEETS_SYNC_SILENT_ERR]", err.message),
+    );
 
     // Simulated WhatsApp trigger
-    console.log(`📲 [WHATSAPP PAYMENT CONFIRMATION] Sending WhatsApp notification to customer ${booking.name} (${booking.phone}): "Your payment of ₹${booking.advancePaid || booking.totalAmount} has been confirmed! Your booking ${booking.bookingId} is now active."`);
+    console.log(
+      `📲 [WHATSAPP PAYMENT CONFIRMATION] Sending WhatsApp notification to customer ${booking.name} (${booking.phone}): "Your payment of ₹${booking.advancePaid || booking.totalAmount} has been confirmed! Your booking ${booking.bookingId} is now active."`,
+    );
 
-    res.json({ success: true, message: 'Payment confirmed and WhatsApp triggered', data: updatedBooking });
-  } catch (error) { next(error); }
+    res.json({
+      success: true,
+      message: "Payment confirmed and WhatsApp triggered",
+      data: updatedBooking,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.updateBookingUpi = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { upi_reference } = req.body;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     const booking = await prisma.booking.findFirst({
-      where: { OR: [{ id }, { bookingId: id }], tenantId }
+      where: { OR: [{ id }, { bookingId: id }], tenantId },
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
     const updatedBooking = await prisma.booking.update({
       where: { id: booking.id },
       data: {
         upi_reference,
-        payment_status: 'pending',
-        payment_method: 'upi'
-      }
+        payment_status: "pending",
+        payment_method: "upi",
+      },
     });
 
     await logAction({
-      tenantId: booking.tenantId || 'default',
+      tenantId: booking.tenantId || "default",
       actorUserId: req.user?.id || null,
-      action: 'payment_update',
-      entityType: 'booking',
+      action: "payment_update",
+      entityType: "booking",
       entityId: booking.id,
       beforeData: booking,
-      afterData: { upi_reference, payment_status: 'pending', payment_method: 'upi' },
-      ipAddress: req.ip || null
+      afterData: {
+        upi_reference,
+        payment_status: "pending",
+        payment_method: "upi",
+      },
+      ipAddress: req.ip || null,
     });
 
     // Sync to Google Sheets
-    syncBookingToSheets(updatedBooking).catch(err => console.error('[SHEETS_SYNC_SILENT_ERR]', err.message));
+    syncBookingToSheets(updatedBooking).catch((err) =>
+      console.error("[SHEETS_SYNC_SILENT_ERR]", err.message),
+    );
 
-    res.json({ success: true, message: 'UPI reference saved successfully', data: updatedBooking });
-  } catch (error) { next(error); }
+    res.json({
+      success: true,
+      message: "UPI reference saved successfully",
+      data: updatedBooking,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.getBookingActivityLogs = async (req, res, next) => {
@@ -1875,15 +2500,18 @@ exports.getBookingActivityLogs = async (req, res, next) => {
     // Verify booking belongs to tenant before returning logs
     const booking = await prisma.booking.findFirst({
       where: { id, tenantId },
-      select: { id: true }
+      select: { id: true },
     });
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking)
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     const logs = await prisma.bookingActivityLog.findMany({
       where: { bookingId: id },
       include: {
-        performedBy: { select: { id: true, name: true, role: true } }
+        performedBy: { select: { id: true, name: true, role: true } },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
     res.json({ success: true, data: logs });
   } catch (error) {
@@ -1895,16 +2523,16 @@ exports.getColleagues = async (req, res, next) => {
   try {
     const colleagues = await prisma.admin.findMany({
       where: {
-        tenantId: req.user.tenantId || 'default',
-        isActive: true
+        tenantId: req.user.tenantId || "default",
+        isActive: true,
       },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true
+        role: true,
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: "asc" },
     });
     res.json({ success: true, data: colleagues });
   } catch (error) {
@@ -1919,16 +2547,19 @@ exports.getBookingTasks = async (req, res, next) => {
     // Verify booking belongs to tenant
     const booking = await prisma.booking.findFirst({
       where: { id, tenantId },
-      select: { id: true }
+      select: { id: true },
     });
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking)
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     const tasks = await prisma.bookingTask.findMany({
       where: { bookingId: id },
       include: {
         assignedBy: { select: { id: true, name: true } },
-        assignedTo: { select: { id: true, name: true } }
+        assignedTo: { select: { id: true, name: true } },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
     res.json({ success: true, data: tasks });
   } catch (error) {
@@ -1940,42 +2571,50 @@ exports.createBookingTask = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { title, description, assignedToId, dueDate } = req.body;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     if (!title || !assignedToId) {
-      return res.status(400).json({ success: false, message: 'Title and assignedToId are required' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Title and assignedToId are required",
+        });
     }
 
     // Verify booking exists and belongs to tenant
     const booking = await prisma.booking.findFirst({
       where: { id, tenantId },
-      select: { id: true }
+      select: { id: true },
     });
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking)
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
 
     const task = await prisma.bookingTask.create({
       data: {
         tenantId,
         bookingId: id,
         title,
-        description: description || '',
+        description: description || "",
         assignedById: req.user.id,
         assignedToId,
         dueDate: dueDate ? new Date(dueDate) : null,
-        status: 'PENDING'
+        status: "PENDING",
       },
       include: {
         assignedBy: { select: { id: true, name: true } },
-        assignedTo: { select: { id: true, name: true } }
-      }
+        assignedTo: { select: { id: true, name: true } },
+      },
     });
 
     // Log in activity log
     await logBookingActivity({
       bookingId: id,
-      action: 'TASK_ASSIGNED',
-      details: `Task "${title}" assigned to ${task.assignedTo?.name || 'junior'} by ${task.assignedBy?.name || 'senior'}`,
-      performedByAdminId: req.user.id
+      action: "TASK_ASSIGNED",
+      details: `Task "${title}" assigned to ${task.assignedTo?.name || "junior"} by ${task.assignedBy?.name || "senior"}`,
+      performedByAdminId: req.user.id,
     });
 
     res.status(201).json({ success: true, data: task });
@@ -1994,12 +2633,14 @@ exports.updateBookingTask = async (req, res, next) => {
       where: { id: taskId, tenantId },
       include: {
         assignedBy: { select: { id: true, name: true } },
-        assignedTo: { select: { id: true, name: true } }
-      }
+        assignedTo: { select: { id: true, name: true } },
+      },
     });
 
     if (!existingTask) {
-      return res.status(404).json({ success: false, message: 'Task not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Task not found" });
     }
 
     const updated = await prisma.bookingTask.update({
@@ -2007,16 +2648,16 @@ exports.updateBookingTask = async (req, res, next) => {
       data: { status },
       include: {
         assignedBy: { select: { id: true, name: true } },
-        assignedTo: { select: { id: true, name: true } }
-      }
+        assignedTo: { select: { id: true, name: true } },
+      },
     });
 
     // Log to booking activity log
     await logBookingActivity({
       bookingId: existingTask.bookingId,
-      action: 'TASK_UPDATED',
+      action: "TASK_UPDATED",
       details: `Task "${existingTask.title}" status changed to ${status}`,
-      performedByAdminId: req.user.id
+      performedByAdminId: req.user.id,
     });
 
     res.json({ success: true, data: updated });
@@ -2028,54 +2669,84 @@ exports.updateBookingTask = async (req, res, next) => {
 // ────────────────────────────────────────────
 // PASSENGER DOCUMENT UPLOAD & DOWNLOAD
 // ────────────────────────────────────────────
-const supabaseStorage = require('../utils/supabaseStorage');
+const supabaseStorage = require("../utils/supabaseStorage");
 
 exports.uploadPassengerDocument = async (req, res, next) => {
   try {
     const { id: bookingId, passengerId } = req.params;
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user.tenantId || "default";
 
     // 1. Role-based permissions
-    if (req.user.role === 'guide') {
-      return res.status(403).json({ success: false, message: 'Guides are not permitted to access documents.' });
+    if (req.user.role === "guide") {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Guides are not permitted to access documents.",
+        });
     }
 
     // 2. Fetch booking to check ownership / existence
     const booking = await prisma.booking.findFirst({
-      where: { id: bookingId, tenantId }
+      where: { id: bookingId, tenantId },
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found." });
     }
 
     // 3. File validation
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No file uploaded.' });
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded." });
     }
 
     // Size limit check: 5 MB
     if (req.file.size > 5 * 1024 * 1024) {
-      return res.status(400).json({ success: false, message: 'File size must be under 5 MB.' });
+      return res
+        .status(400)
+        .json({ success: false, message: "File size must be under 5 MB." });
     }
 
     // MimeType check (PDF, JPG, PNG)
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    const allowedMimes = [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "application/pdf",
+    ];
     if (!allowedMimes.includes(req.file.mimetype)) {
-      return res.status(400).json({ success: false, message: 'Invalid file type. Only JPG, PNG, and PDF are allowed.' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Invalid file type. Only JPG, PNG, and PDF are allowed.",
+        });
     }
 
     // 4. Storage execution
-    const documentType = req.body.documentType || 'ID Document';
-    const sanitizeName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const documentType = req.body.documentType || "ID Document";
+    const sanitizeName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
     const storagePath = `bookings/${bookingId}/passengers/${passengerId}/${Date.now()}-${sanitizeName}`;
 
     let uploadResult;
     try {
-      uploadResult = await supabaseStorage.uploadFile(req.file.buffer, storagePath, req.file.mimetype);
+      uploadResult = await supabaseStorage.uploadFile(
+        req.file.buffer,
+        storagePath,
+        req.file.mimetype,
+      );
     } catch (err) {
-      console.error('[UPLOAD CONTROLLER] Storage failed:', err.message);
-      return res.status(500).json({ success: false, message: 'Document upload failed. Please retry later.' });
+      console.error("[UPLOAD CONTROLLER] Storage failed:", err.message);
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Document upload failed. Please retry later.",
+        });
     }
 
     // 5. Always create a NEW database record so multiple documents per passenger are supported
@@ -2089,19 +2760,19 @@ exports.uploadPassengerDocument = async (req, res, next) => {
       originalFileName: req.file.originalname,
       mimeType: req.file.mimetype,
       fileSize: req.file.size,
-      status: 'UPLOADED'
+      status: "UPLOADED",
     };
 
     const doc = await prisma.bookingDocument.create({
-      data: docData
+      data: docData,
     });
 
     // Log booking activity
     await logBookingActivity({
       bookingId,
-      action: 'DOCUMENT_UPLOADED',
+      action: "DOCUMENT_UPLOADED",
       details: `Uploaded document "${req.file.originalname}" for passenger ${passengerId}`,
-      performedByAdminId: req.user.id
+      performedByAdminId: req.user.id,
     });
 
     res.json({ success: true, data: doc });
@@ -2114,44 +2785,56 @@ exports.downloadPassengerDocument = async (req, res, next) => {
   try {
     const { id: bookingId, passengerId, docId } = req.params;
     const targetDocId = docId || req.query.docId;
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user.tenantId || "default";
 
     // 1. Role-based permissions
-    if (req.user.role === 'guide') {
-      return res.status(403).json({ success: false, message: 'Guides are not permitted to access documents.' });
+    if (req.user.role === "guide") {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Guides are not permitted to access documents.",
+        });
     }
 
     // 2. Fetch booking to check ownership / existence
     const booking = await prisma.booking.findFirst({
-      where: { id: bookingId, tenantId }
+      where: { id: bookingId, tenantId },
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found." });
     }
 
     // 3. Fetch document metadata
     let doc = null;
     if (targetDocId) {
       doc = await prisma.bookingDocument.findFirst({
-        where: { id: String(targetDocId), bookingId, tenantId }
+        where: { id: String(targetDocId), bookingId, tenantId },
       });
     } else {
       doc = await prisma.bookingDocument.findFirst({
         where: { bookingId, passengerId, tenantId },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: "desc" },
       });
     }
 
     if (!doc) {
-      return res.status(404).json({ success: false, message: 'Document not found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Document not found." });
     }
 
     // 4. Download content
     const { buffer } = await supabaseStorage.downloadFile(doc.storagePath);
 
-    res.setHeader('Content-Type', doc.mimeType);
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(doc.originalFileName)}"`);
+    res.setHeader("Content-Type", doc.mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${encodeURIComponent(doc.originalFileName)}"`,
+    );
     res.send(buffer);
   } catch (error) {
     next(error);
@@ -2162,54 +2845,63 @@ exports.deletePassengerDocument = async (req, res, next) => {
   try {
     const { id: bookingId, passengerId, docId } = req.params;
     const targetDocId = docId || req.query.docId;
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user.tenantId || "default";
 
-    if (req.user.role === 'guide') {
-      return res.status(403).json({ success: false, message: 'Guides are not permitted to delete documents.' });
+    if (req.user.role === "guide") {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Guides are not permitted to delete documents.",
+        });
     }
 
     const booking = await prisma.booking.findFirst({
-      where: { id: bookingId, tenantId }
+      where: { id: bookingId, tenantId },
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found." });
     }
 
     let doc = null;
     if (targetDocId) {
       doc = await prisma.bookingDocument.findFirst({
-        where: { id: String(targetDocId), bookingId, tenantId }
+        where: { id: String(targetDocId), bookingId, tenantId },
       });
     } else {
       doc = await prisma.bookingDocument.findFirst({
         where: { bookingId, passengerId, tenantId },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: "desc" },
       });
     }
 
     if (!doc) {
-      return res.status(404).json({ success: false, message: 'Document not found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Document not found." });
     }
 
     try {
       await supabaseStorage.deleteFile(doc.storagePath);
     } catch (err) {
-      console.error('[DELETE CONTROLLER] Storage delete failed:', err.message);
+      console.error("[DELETE CONTROLLER] Storage delete failed:", err.message);
     }
 
     await prisma.bookingDocument.delete({
-      where: { id: doc.id }
+      where: { id: doc.id },
     });
 
     await logBookingActivity({
       bookingId,
-      action: 'DOCUMENT_DELETED',
+      action: "DOCUMENT_DELETED",
       details: `Deleted document "${doc.originalFileName}" for passenger ${doc.passengerId || passengerId}`,
-      performedByAdminId: req.user.id
+      performedByAdminId: req.user.id,
     });
 
-    res.json({ success: true, message: 'Document removed successfully.' });
+    res.json({ success: true, message: "Document removed successfully." });
   } catch (error) {
     next(error);
   }
@@ -2218,15 +2910,23 @@ exports.deletePassengerDocument = async (req, res, next) => {
 exports.cancelBookingWithRefund = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { reason, cancellationCharges, refundAmount, refundPaymentMode } = req.body;
+    const { reason, cancellationCharges, refundAmount, refundPaymentMode } =
+      req.body;
     const tenantId = req.user.tenantId;
+    const role = req.user?.role;
+
+    const whereCondition = role === "superadmin" || role === "admin"
+      ? { OR: [{ id }, { bookingId: id }] }
+      : { OR: [{ id, tenantId }, { bookingId: id, tenantId }] };
 
     const booking = await prisma.booking.findFirst({
-      where: { id, tenantId }
+      where: whereCondition,
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found.' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found." });
     }
 
     const charges = parseFloat(cancellationCharges) || 0;
@@ -2234,87 +2934,109 @@ exports.cancelBookingWithRefund = async (req, res, next) => {
 
     // 1. Update Booking status to cancelled, record cancellation charges and refund amount
     const updatedBooking = await prisma.booking.update({
-      where: { id },
+      where: { id: booking.id },
       data: {
-        status: 'cancelled',
-        paymentStatus: 'Cancelled',
-        notes: `${booking.notes || ''}\n[Cancellation Reason: ${reason || 'Not provided'} | Charges: ₹${charges} | Refunded: ₹${refund} (${refundPaymentMode || 'UPI'})]`.trim(),
-        remainingAmount: 0
-      }
+        status: "cancelled",
+        paymentStatus: "Cancelled",
+        notes:
+          `${booking.notes || ""}\n[Cancellation Reason: ${reason || "Not provided"} | Charges: ₹${charges} | Refunded: ₹${refund} (${refundPaymentMode || "UPI"})]`.trim(),
+        remainingAmount: 0,
+      },
     });
 
     // 2. Automatically Cancel associated Train Tickets
-    const trainTickets = await prisma.trainTicket.findMany({
-      where: { bookingId: booking.bookingId, tenantId }
-    });
-
-    if (trainTickets.length > 0) {
-      await prisma.trainTicket.updateMany({
-        where: { bookingId: booking.bookingId, tenantId },
-        data: {
-          ticketStatus: 'CANCELLED',
-          cancellationReason: `Booking Cancelled: ${reason || 'No reason specified'}`,
-          refundAmount: refund / trainTickets.length
-        }
-      });
-
-      // Log history for each ticket
-      for (const ticket of trainTickets) {
-        await prisma.trainTicketHistory.create({
-          data: {
-            ticketId: ticket.id,
-            action: 'CANCEL',
-            fromStatus: ticket.ticketStatus,
-            toStatus: 'CANCELLED',
-            notes: `Auto-cancelled due to booking cancellation. Reason: ${reason || 'None'}`,
-            performedById: req.user.id
-          }
+    try {
+      if (booking.bookingId) {
+        const trainTickets = await prisma.trainTicket.findMany({
+          where: { bookingId: booking.bookingId },
         });
+
+        if (trainTickets.length > 0) {
+          await prisma.trainTicket.updateMany({
+            where: { bookingId: booking.bookingId },
+            data: {
+              ticketStatus: "CANCELLED",
+              cancellationReason: `Booking Cancelled: ${reason || "No reason specified"}`,
+              refundAmount: refund / trainTickets.length,
+            },
+          });
+
+          for (const ticket of trainTickets) {
+            await prisma.trainTicketHistory.create({
+              data: {
+                ticketId: ticket.id,
+                action: "CANCEL",
+                fromStatus: ticket.ticketStatus,
+                toStatus: "CANCELLED",
+                notes: `Auto-cancelled due to booking cancellation. Reason: ${reason || "None"}`,
+                performedById: req.user.id,
+              },
+            }).catch(() => {});
+          }
+        }
       }
+    } catch (ticketErr) {
+      console.warn("[CANCEL] Train ticket cancellation warning:", ticketErr.message);
     }
 
     // 3. Record Refund in Accounting Ledger (if refund amount > 0)
-    if (refund > 0) {
-      await prisma.accountingEntry.create({
-        data: {
-          tenantId,
-          type: 'REFUND',
-          amount: refund,
-          category: 'REFUNDS',
-          paymentMode: refundPaymentMode || 'UPI',
-          status: 'CLEARED',
-          referenceId: booking.bookingId,
-          description: `Refund for Cancelled Booking #${booking.bookingId} (${booking.fullName}). Reason: ${reason || 'Not specified'}`,
-          date: new Date(),
-          createdById: req.user.id
+    if (refund > 0 && booking.bookingId) {
+      try {
+        let normalizedPaymentMode = "UPI";
+        if (refundPaymentMode) {
+          const upper = String(refundPaymentMode).toUpperCase();
+          if (upper.includes("CASH")) normalizedPaymentMode = "CASH";
+          else if (upper.includes("BANK") || upper.includes("NET")) normalizedPaymentMode = "BANK_TRANSFER";
+          else normalizedPaymentMode = "UPI";
         }
-      });
+
+        await prisma.accountingEntry.create({
+          data: {
+            tenantId: booking.tenantId || tenantId || "default",
+            bookingId: booking.bookingId,
+            amount: refund,
+            paymentMode: normalizedPaymentMode,
+            referenceNumber: `REFUND-${booking.bookingId}`,
+            notes: `Refund for Cancelled Booking #${booking.bookingId} (${booking.fullName || "Customer"}). Reason: ${reason || "Not specified"}`,
+            status: "APPROVED",
+            salespersonId: booking.salesAdminId || req.user.id,
+            actionedById: req.user.id,
+          },
+        });
+      } catch (accErr) {
+        console.warn("[CANCEL] Accounting entry creation warning:", accErr.message);
+      }
     }
 
     // 4. Log booking activity
-    await logBookingActivity({
-      bookingId: id,
-      action: 'STATUS_CHANGE',
-      details: `Booking Cancelled. Refund of ₹${refund} processed via ${refundPaymentMode || 'UPI'}. Reason: ${reason || 'None'}.`,
-      performedByAdminId: req.user.id
-    });
+    try {
+      await logBookingActivity({
+        bookingId: booking.id,
+        action: "STATUS_CHANGE",
+        details: `Booking Cancelled. Refund of ₹${refund} processed via ${refundPaymentMode || "UPI"}. Reason: ${reason || "None"}.`,
+        performedByAdminId: req.user.id,
+      });
+    } catch (actErr) {
+      console.warn("[CANCEL] Activity log warning:", actErr.message);
+    }
 
     // 5. Trigger email notification (cancellation)
     try {
-      const { sendEmail } = require('../services/emailService');
-      await sendEmail(booking.id, 'cancellation', {
-        reason: reason || 'Not specified',
+      const { sendEmail } = require("../services/emailService");
+      await sendEmail(booking.id, "cancellation", {
+        reason: reason || "Not specified",
         refundAmount: refund,
-        cancellationCharges: charges
+        cancellationCharges: charges,
       });
     } catch (e) {
-      console.error('Failed to send cancellation email:', e.message);
+      console.error("Failed to send cancellation email:", e.message);
     }
 
-    res.json({
+    return res.json({
       success: true,
-      message: 'Booking cancelled, tickets cancelled, and refund recorded successfully.',
-      booking: updatedBooking
+      message:
+        "Booking cancelled, tickets cancelled, and refund recorded successfully.",
+      booking: updatedBooking,
     });
   } catch (error) {
     next(error);

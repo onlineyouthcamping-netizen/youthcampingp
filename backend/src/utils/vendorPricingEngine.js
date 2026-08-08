@@ -39,7 +39,7 @@ function distributePassengers(passengerCount, roomCount) {
 
   return Array.from(
     { length: roomCount },
-    (_, index) => baseOccupancy + (index < remainder ? 1 : 0)
+    (_, index) => baseOccupancy + (index < remainder ? 1 : 0),
   );
 }
 
@@ -75,19 +75,27 @@ function calculateAccommodationAllocation(allocation) {
     subtotal = amount * paxCount * numberOfNights;
   } else if (rateBasis === "PER_ROOM_PER_NIGHT") {
     const defaultOccupancy = ROOM_OCCUPANCY[sharingType] || 2;
-    const occupancyLimit = maxRoomCapacity ? Number(maxRoomCapacity) : defaultOccupancy;
+    const occupancyLimit = maxRoomCapacity
+      ? Number(maxRoomCapacity)
+      : defaultOccupancy;
 
     if (numberOfRooms) {
       calculatedRooms = numberOfRooms;
       roomDistribution = distributePassengers(paxCount, calculatedRooms);
-      const limitExceeded = roomDistribution.some(pax => pax > occupancyLimit);
+      const limitExceeded = roomDistribution.some(
+        (pax) => pax > occupancyLimit,
+      );
       if (limitExceeded) {
-        throw new Error(`Room capacity exceeded! Max capacity per room is ${occupancyLimit}. Allocation ${JSON.stringify(roomDistribution)} requires more rooms.`);
+        throw new Error(
+          `Room capacity exceeded! Max capacity per room is ${occupancyLimit}. Allocation ${JSON.stringify(roomDistribution)} requires more rooms.`,
+        );
       }
     } else {
       calculatedRooms = Math.ceil(paxCount / defaultOccupancy);
       roomDistribution = distributePassengers(paxCount, calculatedRooms);
-      const limitExceeded = roomDistribution.some(pax => pax > occupancyLimit);
+      const limitExceeded = roomDistribution.some(
+        (pax) => pax > occupancyLimit,
+      );
       if (limitExceeded) {
         calculatedRooms = Math.ceil(paxCount / occupancyLimit);
         roomDistribution = distributePassengers(paxCount, calculatedRooms);
@@ -102,7 +110,8 @@ function calculateAccommodationAllocation(allocation) {
     throw new Error(`Unsupported accommodation rate basis: ${rateBasis}`);
   }
 
-  const tax = taxIncluded || !taxPercent ? 0 : subtotal * (money(taxPercent) / 100);
+  const tax =
+    taxIncluded || !taxPercent ? 0 : subtotal * (money(taxPercent) / 100);
   const total = subtotal + tax;
 
   return {
@@ -230,16 +239,24 @@ function calculateTripCost({
     throw new Error("Trip pax count must be greater than zero.");
   }
 
-  const accommodationResults = accommodations.map(calculateAccommodationAllocation);
-  const accommodationTotal = accommodationResults.reduce((sum, item) => sum + item.total, 0);
+  const accommodationResults = accommodations.map(
+    calculateAccommodationAllocation,
+  );
+  const accommodationTotal = accommodationResults.reduce(
+    (sum, item) => sum + item.total,
+    0,
+  );
 
   const transportResults = transports.map((transport) =>
     calculateTransportCost({
       ...transport,
       paxCount,
-    })
+    }),
   );
-  const transportTotal = transportResults.reduce((sum, item) => sum + item.subtotal, 0);
+  const transportTotal = transportResults.reduce(
+    (sum, item) => sum + item.subtotal,
+    0,
+  );
 
   const foodTotal = foodItems.reduce((sum, item) => {
     const meals = item.quantity || 1;
@@ -257,9 +274,18 @@ function calculateTripCost({
     );
   }, 0);
 
-  const totalRooms = accommodationResults.reduce((sum, item) => sum + (item.numberOfRooms || 0), 0);
-  const totalNights = accommodationResults.reduce((sum, item) => sum + (item.numberOfNights || 0), 0);
-  const totalVehicles = transportResults.reduce((sum, item) => sum + item.requiredVehicles, 0);
+  const totalRooms = accommodationResults.reduce(
+    (sum, item) => sum + (item.numberOfRooms || 0),
+    0,
+  );
+  const totalNights = accommodationResults.reduce(
+    (sum, item) => sum + (item.numberOfNights || 0),
+    0,
+  );
+  const totalVehicles = transportResults.reduce(
+    (sum, item) => sum + item.requiredVehicles,
+    0,
+  );
 
   const miscellaneousResults = miscCharges.map((charge) =>
     calculateMiscCharge({
@@ -268,11 +294,19 @@ function calculateTripCost({
       numberOfRooms: totalRooms,
       numberOfNights: totalNights,
       numberOfVehicles: totalVehicles,
-    })
+    }),
   );
-  const miscellaneousTotal = miscellaneousResults.reduce((sum, item) => sum + item.total, 0);
+  const miscellaneousTotal = miscellaneousResults.reduce(
+    (sum, item) => sum + item.total,
+    0,
+  );
 
-  const baseVendorCost = accommodationTotal + transportTotal + foodTotal + guideTotal + miscellaneousTotal;
+  const baseVendorCost =
+    accommodationTotal +
+    transportTotal +
+    foodTotal +
+    guideTotal +
+    miscellaneousTotal;
   const contingency = baseVendorCost * (money(contingencyPercent) / 100);
   const finalVendorCost = baseVendorCost + contingency;
 

@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Star, ExternalLink, Camera, X, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Star,
+  ExternalLink,
+  Camera,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Review } from "@/types";
 import { normalizeImageUrl } from "@/lib/api";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
@@ -17,8 +24,10 @@ const MOCK_HOMEPAGE_REVIEWS = [
     badge: "Joined Group Trip",
     tripName: "Spiti Valley Bike Trip",
     date: "1 month ago",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
-    comment: "I travelled with YouthCamping Spiti Valley Bike Trip this June first week. My experience was very thrilling with them. The management was super awesome. Marshal Abhinav and Dhruvil sir were extremely supportive throughout!",
+    avatar:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+    comment:
+      "I travelled with YouthCamping Spiti Valley Bike Trip this June first week. My experience was very thrilling with them. The management was super awesome. Marshal Abhinav and Dhruvil sir were extremely supportive throughout!",
     rating: 5,
     photos: [
       "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80",
@@ -32,8 +41,10 @@ const MOCK_HOMEPAGE_REVIEWS = [
     badge: "Joined Group Trip",
     tripName: "Thailand Explorer Exp",
     date: "2 weeks ago",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
-    comment: "Thank you for crafting a trip that perfectly matched our style and interests. Your attention to detail made all the difference! Will definitely book another trip soon.",
+    avatar:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
+    comment:
+      "Thank you for crafting a trip that perfectly matched our style and interests. Your attention to detail made all the difference! Will definitely book another trip soon.",
     rating: 5,
     photos: [
       "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=80",
@@ -47,8 +58,10 @@ const MOCK_HOMEPAGE_REVIEWS = [
     badge: "Joined Group Trip",
     tripName: "Hampta Pass Trek",
     date: "3 weeks ago",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
-    comment: "Just few weeks back I took the trip to Spiti Valley with YouthCamping and believe me I had an amazing expedition of a lifetime. The captains were top class!",
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
+    comment:
+      "Just few weeks back I took the trip to Spiti Valley with YouthCamping and believe me I had an amazing expedition of a lifetime. The captains were top class!",
     rating: 5,
     photos: [
       "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
@@ -68,37 +81,57 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
       const amount = scrollRef.current.clientWidth * 0.75;
       scrollRef.current.scrollBy({
         left: direction === "left" ? -amount : amount,
-        behavior: "smooth"
+        behavior: "smooth",
       });
     }
   };
 
-  const displayList = (reviews && reviews.length > 0) ? reviews.map((r: any, idx: number) => {
-    const fallback = MOCK_HOMEPAGE_REVIEWS[idx % MOCK_HOMEPAGE_REVIEWS.length];
-    const coverPhotos = (r.photos && r.photos.length >= 2) 
-      ? r.photos 
-      : (r.photo ? [r.photo, fallback.photos[1], fallback.photos[2]] : fallback.photos);
+  const displayList =
+    reviews && reviews.length > 0
+      ? reviews.map((r: any, idx: number) => {
+          const fallback =
+            MOCK_HOMEPAGE_REVIEWS[idx % MOCK_HOMEPAGE_REVIEWS.length];
+          const coverPhotos =
+            r.photos && r.photos.length >= 2
+              ? r.photos
+              : r.photo
+                ? [r.photo, fallback.photos[1], fallback.photos[2]]
+                : fallback.photos;
 
-    return {
-      id: r._id || r.id || `r-${idx}`,
-      name: r.author || r.userName || fallback.name,
-      badge: r.tripType || fallback.badge,
-      tripName: r.tripName || r.trip || r.city || fallback.tripName,
-      date: r.date || (r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : fallback.date),
-      avatar: r.avatar || r.userImage || fallback.avatar,
-      comment: r.text || r.comment || fallback.comment,
-      rating: r.rating || 5,
-      photos: (r.images && r.images.length > 0) ? r.images : coverPhotos,
-    };
-  }) : MOCK_HOMEPAGE_REVIEWS;
+          return {
+            id: r._id || r.id || `r-${idx}`,
+            name: r.author || r.userName || fallback.name,
+            badge: r.tripType || fallback.badge,
+            tripName: r.tripName || r.trip || r.city || fallback.tripName,
+            date:
+              r.date ||
+              (r.createdAt
+                ? new Date(r.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                : fallback.date),
+            avatar: r.avatar || r.userImage || fallback.avatar,
+            comment: r.text || r.comment || fallback.comment,
+            rating: r.rating || 5,
+            photos: r.images && r.images.length > 0 ? r.images : coverPhotos,
+          };
+        })
+      : MOCK_HOMEPAGE_REVIEWS;
 
   return (
-    <section className="space-y-6 scroll-mt-[140px] font-montserrat" id="reviews">
+    <section
+      className="space-y-6 scroll-mt-[140px] font-montserrat"
+      id="reviews"
+    >
       {/* Header System */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-zinc-100 pb-3">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight font-montserrat leading-none">
-            What <span className="text-[#D4541A] font-caveat italic">Travelers Say</span>
+            What{" "}
+            <span className="text-[#D4541A] font-caveat italic">
+              Travelers Say
+            </span>
           </h2>
         </div>
 
@@ -107,10 +140,15 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
             <span>5.0</span>
             <div className="flex gap-0.5">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-3.5 h-3.5 fill-[#FFB800] text-[#FFB800]" />
+                <Star
+                  key={i}
+                  className="w-3.5 h-3.5 fill-[#FFB800] text-[#FFB800]"
+                />
               ))}
             </div>
-            <span className="text-zinc-400 font-normal ml-1">(500+ Verified Review)</span>
+            <span className="text-zinc-400 font-normal ml-1">
+              (500+ Verified Review)
+            </span>
           </div>
 
           <div className="flex items-center gap-1.5 ml-2">
@@ -133,7 +171,7 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
       </div>
 
       {/* Horizontal Scrollable Review Cards */}
-      <div 
+      <div
         ref={scrollRef}
         className="flex overflow-x-auto no-scrollbar gap-3 sm:gap-4 py-2.5 pb-4 scroll-smooth snap-x snap-mandatory touch-manipulation"
       >
@@ -177,7 +215,10 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
               <div className="flex items-center gap-1.5 mb-2">
                 <div className="flex items-center gap-0.5">
                   {[...Array(Number(rev.rating) || 5)].map((_, i) => (
-                    <Star key={i} className="w-3 h-3 fill-[#FFB800] text-[#FFB800]" />
+                    <Star
+                      key={i}
+                      className="w-3 h-3 fill-[#FFB800] text-[#FFB800]"
+                    />
                   ))}
                 </div>
                 <span className="text-[#777777] font-medium text-[10px]">
@@ -218,23 +259,25 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
 
                 {/* RIGHT 2 LANDSCAPE PHOTOS */}
                 <div className="flex flex-col gap-1">
-                  {rev.photos.slice(1, 3).map((imgUrl: string, pIdx: number) => (
-                    <div
-                      key={pIdx}
-                      onClick={() => setSelectedPhoto(imgUrl)}
-                      className="relative aspect-[16/8.5] overflow-hidden bg-zinc-100 cursor-pointer group/img flex-1"
-                    >
-                      <OptimizedImage
-                        src={normalizeImageUrl(imgUrl)}
-                        fallbackSrc="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=600&q=80"
-                        alt={`Review photo ${pIdx + 2} by ${rev.name}`}
-                        className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
-                        <Camera className="w-3.5 h-3.5" />
+                  {rev.photos
+                    .slice(1, 3)
+                    .map((imgUrl: string, pIdx: number) => (
+                      <div
+                        key={pIdx}
+                        onClick={() => setSelectedPhoto(imgUrl)}
+                        className="relative aspect-[16/8.5] overflow-hidden bg-zinc-100 cursor-pointer group/img flex-1"
+                      >
+                        <OptimizedImage
+                          src={normalizeImageUrl(imgUrl)}
+                          fallbackSrc="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=600&q=80"
+                          alt={`Review photo ${pIdx + 2} by ${rev.name}`}
+                          className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
+                          <Camera className="w-3.5 h-3.5" />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             )}
@@ -292,13 +335,22 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
                 />
               </div>
               <div>
-                <h3 className="font-extrabold text-base text-zinc-900">{selectedReview.name}</h3>
-                <p className="text-xs font-bold text-[#D4541A]">Booked: {selectedReview.tripName}</p>
+                <h3 className="font-extrabold text-base text-zinc-900">
+                  {selectedReview.name}
+                </h3>
+                <p className="text-xs font-bold text-[#D4541A]">
+                  Booked: {selectedReview.tripName}
+                </p>
                 <div className="flex items-center gap-1 mt-1 text-amber-500">
                   {[...Array(selectedReview.rating || 5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-[#FFB800] text-[#FFB800]" />
+                    <Star
+                      key={i}
+                      className="w-3.5 h-3.5 fill-[#FFB800] text-[#FFB800]"
+                    />
                   ))}
-                  <span className="text-xs text-zinc-400 font-medium ml-1">{selectedReview.date}</span>
+                  <span className="text-xs text-zinc-400 font-medium ml-1">
+                    {selectedReview.date}
+                  </span>
                 </div>
               </div>
             </div>

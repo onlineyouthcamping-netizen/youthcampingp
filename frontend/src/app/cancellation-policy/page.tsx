@@ -22,7 +22,8 @@ export default function CancellationPolicyPage() {
           </h1>
           <div className="w-16 h-1.5 bg-[#D4541A] rounded-full mx-auto my-3" />
           <p className="text-xs sm:text-sm text-zinc-300 font-semibold max-w-xl mx-auto leading-relaxed">
-            We understand plans can change. Here is our transparent refund and cancellation policy.
+            We understand plans can change. Here is our transparent refund and
+            cancellation policy.
           </p>
         </div>
       </section>
@@ -40,9 +41,19 @@ export default function CancellationPolicyPage() {
               </h2>
             </div>
             <div className="space-y-3 text-xs sm:text-sm text-zinc-600 font-semibold leading-relaxed pl-9">
-              <p>• Cancellation 30+ days before trip start: 90% refund or 100% trip voucher.</p>
-              <p>• Cancellation 15-30 days before trip start: 50% refund or 75% trip voucher.</p>
-              <p>• Cancellation less than 15 days before trip start: Non-refundable due to pre-booked hotel, transport & permit commitments.</p>
+              <p>
+                • Cancellation 30+ days before trip start: 90% refund or 100%
+                trip voucher.
+              </p>
+              <p>
+                • Cancellation 15-30 days before trip start: 50% refund or 75%
+                trip voucher.
+              </p>
+              <p>
+                • Cancellation less than 15 days before trip start:
+                Non-refundable due to pre-booked hotel, transport & permit
+                commitments.
+              </p>
             </div>
           </section>
 
@@ -57,7 +68,9 @@ export default function CancellationPolicyPage() {
             </div>
             <div className="space-y-3 text-xs sm:text-sm text-zinc-600 font-semibold leading-relaxed pl-9">
               <p>
-                In case of trip cancellation due to unexpected landslides, snow blockages, or government advisories, a trip credit voucher of equal value will be issued for future travel within 12 months.
+                In case of trip cancellation due to unexpected landslides, snow
+                blockages, or government advisories, a trip credit voucher of
+                equal value will be issued for future travel within 12 months.
               </p>
             </div>
           </section>

@@ -12,7 +12,11 @@ interface TripBookingSectionProps {
   onDateSelect?: (date: string | null) => void;
 }
 
-export default function TripBookingSection({ trip, onPriceChange, onDateSelect }: TripBookingSectionProps) {
+export default function TripBookingSection({
+  trip,
+  onPriceChange,
+  onDateSelect,
+}: TripBookingSectionProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [variantIndex, setVariantIndex] = useState(0);
 
@@ -21,24 +25,30 @@ export default function TripBookingSection({ trip, onPriceChange, onDateSelect }
     if (onDateSelect) onDateSelect(date);
   };
 
-  const activeVariant = (Array.isArray(trip.variants) && trip.variants[variantIndex]) ? (trip.variants[variantIndex] as any) : null;
-  const activeItinerary = (activeVariant && Array.isArray(activeVariant.itinerary) && activeVariant.itinerary.length > 0)
-    ? activeVariant.itinerary
-    : trip.itinerary;
+  const activeVariant =
+    Array.isArray(trip.variants) && trip.variants[variantIndex]
+      ? (trip.variants[variantIndex] as any)
+      : null;
+  const activeItinerary =
+    activeVariant &&
+    Array.isArray(activeVariant.itinerary) &&
+    activeVariant.itinerary.length > 0
+      ? activeVariant.itinerary
+      : trip.itinerary;
   const currentSkipDays = activeVariant?.skipDays || 0;
 
   return (
     <div className="space-y-6 md:space-y-7">
-      <BookingOptions 
-        trip={trip} 
-        onDateSelect={handleDateSelect} 
+      <BookingOptions
+        trip={trip}
+        onDateSelect={handleDateSelect}
         onVariantSelect={(idx) => setVariantIndex(idx)}
         onPriceChange={onPriceChange}
       />
-      
+
       <section id="itinerary" className="scroll-mt-32">
-        <ItineraryAccordion 
-          itinerary={activeItinerary} 
+        <ItineraryAccordion
+          itinerary={activeItinerary}
           startDate={selectedDate}
           skipDays={currentSkipDays}
         />

@@ -1,7 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Users, ShieldCheck, UserCheck, PhoneCall, Award, Clock, Compass, Heart, MapPin, Sparkles } from "lucide-react";
+import {
+  X,
+  Users,
+  ShieldCheck,
+  UserCheck,
+  PhoneCall,
+  Award,
+  Clock,
+  Compass,
+  Heart,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AboutTripCard {
@@ -25,7 +37,16 @@ interface AboutTripProps {
 }
 
 const ICON_MAP: Record<string, any> = {
-  Users, ShieldCheck, UserCheck, PhoneCall, Award, Clock, Compass, Heart, MapPin, Sparkles
+  Users,
+  ShieldCheck,
+  UserCheck,
+  PhoneCall,
+  Award,
+  Clock,
+  Compass,
+  Heart,
+  MapPin,
+  Sparkles,
 };
 
 function decodeHtml(html: string) {
@@ -46,12 +67,19 @@ function stripHtml(html: string) {
 
 const DEFAULT_CARDS: AboutTripCard[] = [
   { title: "Group Trips", subtitle: "For Solo & Friends", icon: "Users" },
-  { title: "Verified & Safe", subtitle: "Trusted by 10K+", icon: "ShieldCheck" },
+  {
+    title: "Verified & Safe",
+    subtitle: "Trusted by 10K+",
+    icon: "ShieldCheck",
+  },
   { title: "Trip Captain", subtitle: "Expert & Friendly", icon: "UserCheck" },
-  { title: "24×7 Support", subtitle: "We're here for you", icon: "PhoneCall" }
+  { title: "24×7 Support", subtitle: "We're here for you", icon: "PhoneCall" },
 ];
 
-export default function AboutTrip({ description, customAboutTrip }: AboutTripProps) {
+export default function AboutTrip({
+  description,
+  customAboutTrip,
+}: AboutTripProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpandedInline, setIsExpandedInline] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -68,11 +96,13 @@ export default function AboutTrip({ description, customAboutTrip }: AboutTripPro
   const decodedDescription = decodeHtml(rawDesc);
   const plainText = stripHtml(rawDesc);
   const isLong = plainText.length > 250;
-  const previewText = plainText.length > 280 ? plainText.substring(0, 280) + "..." : plainText;
+  const previewText =
+    plainText.length > 280 ? plainText.substring(0, 280) + "..." : plainText;
 
-  const cardsToRender = (customAboutTrip?.cards && customAboutTrip.cards.length > 0)
-    ? customAboutTrip.cards.filter(c => c.isVisible !== false)
-    : DEFAULT_CARDS;
+  const cardsToRender =
+    customAboutTrip?.cards && customAboutTrip.cards.length > 0
+      ? customAboutTrip.cards.filter((c) => c.isVisible !== false)
+      : DEFAULT_CARDS;
 
   const handleToggle = () => {
     if (isMobile) setIsExpandedInline(!isExpandedInline);
@@ -82,15 +112,17 @@ export default function AboutTrip({ description, customAboutTrip }: AboutTripPro
   return (
     <section className="relative space-y-5">
       <h2 className="text-xl md:text-2xl font-bold text-[#0B1528] font-montserrat">
-        {sectionTitle.split(' ')[0]}{' '}
-        <span className="text-[#D4541A] font-caveat italic">{sectionTitle.split(' ').slice(1).join(' ')}</span>
+        {sectionTitle.split(" ")[0]}{" "}
+        <span className="text-[#D4541A] font-caveat italic">
+          {sectionTitle.split(" ").slice(1).join(" ")}
+        </span>
       </h2>
-      
+
       <div className="bg-[#F8F9FA] border border-zinc-100/90 rounded-[20px] p-6 sm:p-7 relative">
         {/* Mobile View */}
         <div className="md:hidden relative">
           {isExpandedInline ? (
-            <div 
+            <div
               className="prose prose-zinc max-w-none text-zinc-600 font-normal leading-normal text-sm [&>p]:mb-4 [&>p:last-child]:mb-0 [&>strong]:font-bold [&>ul]:list-disc [&>ul]:pl-5 [&>ul>li]:mb-1"
               dangerouslySetInnerHTML={{ __html: decodedDescription }}
             />
@@ -100,7 +132,7 @@ export default function AboutTrip({ description, customAboutTrip }: AboutTripPro
             </p>
           )}
           {isLong && (
-            <button 
+            <button
               onClick={handleToggle}
               className="text-[#D4541A] font-bold hover:text-navy transition-all mt-3 cursor-pointer text-sm font-montserrat"
             >
@@ -115,7 +147,7 @@ export default function AboutTrip({ description, customAboutTrip }: AboutTripPro
             {previewText}
           </p>
           {plainText.length > 280 && (
-            <button 
+            <button
               onClick={handleToggle}
               className="text-[#D4541A] font-bold hover:text-navy transition-all mt-3 float-right cursor-pointer text-sm font-montserrat"
             >
@@ -126,19 +158,35 @@ export default function AboutTrip({ description, customAboutTrip }: AboutTripPro
           {/* Dynamic Feature Badges Bar */}
           <div className="grid grid-cols-2 md:grid-cols-4 border border-zinc-100/90 rounded-2xl bg-white p-3 md:p-4 mt-6 divide-y md:divide-y-0 md:divide-x divide-zinc-100 shadow-2xs">
             {cardsToRender.map((card, idx) => {
-              const IconComponent = (card.icon && ICON_MAP[card.icon]) ? ICON_MAP[card.icon] : Sparkles;
+              const IconComponent =
+                card.icon && ICON_MAP[card.icon]
+                  ? ICON_MAP[card.icon]
+                  : Sparkles;
 
               return (
-                <div key={card.id || idx} className="flex items-center gap-3 p-2 md:px-3">
-                  <div 
+                <div
+                  key={card.id || idx}
+                  className="flex items-center gap-3 p-2 md:px-3"
+                >
+                  <div
                     className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: card.bgColor || "#fff7ed", border: `1px solid ${card.borderColor || "#ffedd5"}` }}
+                    style={{
+                      backgroundColor: card.bgColor || "#fff7ed",
+                      border: `1px solid ${card.borderColor || "#ffedd5"}`,
+                    }}
                   >
-                    <IconComponent className="w-4.5 h-4.5" style={{ color: card.iconColor || "#D4541A" }} />
+                    <IconComponent
+                      className="w-4.5 h-4.5"
+                      style={{ color: card.iconColor || "#D4541A" }}
+                    />
                   </div>
                   <div>
-                    <p className="text-[#0B1528] font-bold text-xs sm:text-sm font-montserrat leading-tight">{card.title}</p>
-                    <p className="text-zinc-400 font-medium text-[11px] font-montserrat leading-tight mt-0.5">{card.subtitle}</p>
+                    <p className="text-[#0B1528] font-bold text-xs sm:text-sm font-montserrat leading-tight">
+                      {card.title}
+                    </p>
+                    <p className="text-zinc-400 font-medium text-[11px] font-montserrat leading-tight mt-0.5">
+                      {card.subtitle}
+                    </p>
                   </div>
                 </div>
               );
@@ -151,14 +199,16 @@ export default function AboutTrip({ description, customAboutTrip }: AboutTripPro
       {isOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] p-6 sm:p-8 flex flex-col relative shadow-2xl animate-in fade-in zoom-in duration-200">
-            <button 
+            <button
               onClick={() => setIsOpen(false)}
               className="absolute top-5 right-5 p-1 text-zinc-400 hover:text-zinc-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-xl font-bold text-[#0B1528] mb-4 font-montserrat">{sectionTitle}</h3>
-            <div 
+            <h3 className="text-xl font-bold text-[#0B1528] mb-4 font-montserrat">
+              {sectionTitle}
+            </h3>
+            <div
               className="flex-1 overflow-y-auto prose prose-zinc max-w-none text-zinc-600 font-normal leading-relaxed text-sm sm:text-base pr-2"
               dangerouslySetInnerHTML={{ __html: decodedDescription }}
             />

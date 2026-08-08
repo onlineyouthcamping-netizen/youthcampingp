@@ -72,7 +72,10 @@ export default function DestinationInquiryModal({
     if (isOpen) {
       scrollLockCounter.current += 1;
       document.body.style.overflow = "hidden";
-      if (destination?.availableDates && destination.availableDates.length > 0) {
+      if (
+        destination?.availableDates &&
+        destination.availableDates.length > 0
+      ) {
         const firstDate = destination.availableDates[0];
         try {
           const d = new Date(firstDate);
@@ -105,7 +108,8 @@ export default function DestinationInquiryModal({
   }, [isOpen, destination, onClose]);
 
   const modalTitle = title || "Plan Your Next Trip";
-  const modalDescription = description || "CONNECT WITH OUR DESTINATION EXPERTS";
+  const modalDescription =
+    description || "CONNECT WITH OUR DESTINATION EXPERTS";
 
   if (!mounted || !destination) return null;
 
@@ -121,7 +125,9 @@ export default function DestinationInquiryModal({
         email: formData.email,
         city: formData.city,
         preferredDate: formData.date,
-        numberOfTravelers: formData.count ? parseInt(formData.count) : undefined,
+        numberOfTravelers: formData.count
+          ? parseInt(formData.count)
+          : undefined,
         message: formData.message,
         destinationId: destination.id,
         destinationName: destination.name,
@@ -139,7 +145,10 @@ export default function DestinationInquiryModal({
         message: "",
       });
     } catch (err: any) {
-      setError(err?.message || "Failed to submit inquiry. Please try again or call us directly.");
+      setError(
+        err?.message ||
+          "Failed to submit inquiry. Please try again or call us directly.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -202,7 +211,8 @@ export default function DestinationInquiryModal({
                     {destination.name}
                   </h2>
                   <p className="text-xs sm:text-sm font-medium text-slate-200 line-clamp-2 leading-relaxed">
-                    {destination.subtext || "Join our curated group expeditions with certified trip captains."}
+                    {destination.subtext ||
+                      "Join our curated group expeditions with certified trip captains."}
                   </p>
                 </div>
 
@@ -237,9 +247,19 @@ export default function DestinationInquiryModal({
                     <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-lg font-extrabold text-[#0B1528]">Inquiry Received! 🎉</h4>
+                    <h4 className="text-lg font-extrabold text-[#0B1528]">
+                      Inquiry Received! 🎉
+                    </h4>
                     <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
-                      Thank you <span className="font-bold text-[#0B1528]">{formData.name}</span>. Our trip expert will call you back within <span className="font-bold text-[#D4541A]">15 minutes</span> with complete itinerary details.
+                      Thank you{" "}
+                      <span className="font-bold text-[#0B1528]">
+                        {formData.name}
+                      </span>
+                      . Our trip expert will call you back within{" "}
+                      <span className="font-bold text-[#D4541A]">
+                        15 minutes
+                      </span>{" "}
+                      with complete itinerary details.
                     </p>
                   </div>
                   <button
@@ -268,7 +288,9 @@ export default function DestinationInquiryModal({
                       placeholder="Your Full Name"
                       className="w-full pl-10 pr-4 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                     />
                   </div>
 
@@ -284,7 +306,9 @@ export default function DestinationInquiryModal({
                       placeholder="Mobile No. (WhatsApp Enabled)"
                       className="flex-1 bg-transparent border-0 outline-none font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs py-2 w-full"
                       value={formData.mobile}
-                      onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, mobile: e.target.value })
+                      }
                     />
                   </div>
 
@@ -296,7 +320,9 @@ export default function DestinationInquiryModal({
                       placeholder="Email Address (optional)"
                       className="w-full pl-10 pr-4 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                     />
                   </div>
 
@@ -308,7 +334,9 @@ export default function DestinationInquiryModal({
                       placeholder="City of Residence (e.g. Ahmedabad, Mumbai)"
                       className="w-full pl-10 pr-4 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs"
                       value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, city: e.target.value })
+                      }
                     />
                   </div>
 
@@ -320,7 +348,9 @@ export default function DestinationInquiryModal({
                         type="date"
                         className="w-full pl-9 pr-3 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528]"
                         value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, date: e.target.value })
+                        }
                       />
                     </div>
 
@@ -332,7 +362,9 @@ export default function DestinationInquiryModal({
                         placeholder="No. Travellers"
                         className="w-full pl-9 pr-3 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs"
                         value={formData.count}
-                        onChange={(e) => setFormData({ ...formData, count: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, count: e.target.value })
+                        }
                       />
                     </div>
                   </div>
@@ -345,7 +377,9 @@ export default function DestinationInquiryModal({
                       placeholder="Special Requests / Custom Requirements (optional)"
                       className="w-full pl-10 pr-4 h-10 min-h-[40px] rounded-xl bg-slate-50 border border-slate-200 focus:border-[#D4541A] focus:bg-white outline-none transition-all font-semibold text-base text-[#0B1528] placeholder:text-slate-400 placeholder:text-xs"
                       value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, message: e.target.value })
+                      }
                     />
                   </div>
 

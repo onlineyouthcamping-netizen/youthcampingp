@@ -1,8 +1,8 @@
 "use client";
 
-import React from 'react';
-import { Quotation } from '@/types';
-import LuxuryQuotationUI from './LuxuryQuotationUI';
+import React from "react";
+import { Quotation } from "@/types";
+import LuxuryQuotationUI from "./LuxuryQuotationUI";
 
 interface PremiumQuoteLandingProps {
   q: Quotation;

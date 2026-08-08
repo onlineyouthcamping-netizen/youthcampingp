@@ -17,13 +17,16 @@ export default function TravelTimeline() {
   return (
     <section className="mb-24 p-12 border border-zinc-100 rounded-[40px] bg-white shadow-sm overflow-hidden">
       <h2 className="text-xl font-bold text-navy mb-16">Travelling</h2>
-      
+
       <div className="relative flex items-start justify-between">
         {/* Dashed Line */}
         <div className="absolute top-5 left-8 right-8 h-[2px] border-t-2 border-dashed border-zinc-200 z-0" />
-        
+
         {STEPS.map((step, i) => (
-          <div key={i} className="relative z-10 flex flex-col items-center text-center max-w-[120px]">
+          <div
+            key={i}
+            className="relative z-10 flex flex-col items-center text-center max-w-[120px]"
+          >
             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-6">
               {step.icon === "plane" ? (
                 <Plane className="w-7 h-7 text-navy -rotate-45" />

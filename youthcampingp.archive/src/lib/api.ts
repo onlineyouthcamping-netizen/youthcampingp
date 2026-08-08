@@ -96,7 +96,7 @@ export async function fetchReviews(init?: RequestInit): Promise<any[]> {
 }
 
 export async function fetchPublicReviews(init?: PublicRequestInit): Promise<any[]> {
-  const res = await fetch(`${API_BASE_URL}/reviews/public/cards`, init ?? publicRevalidate(600));
+  const res = await fetch(`${API_BASE_URL}/reviews`, init ?? publicRevalidate(600));
   if (!res.ok) throw new Error("Failed to fetch public reviews");
   const json = await res.json();
   return json.data || [];
@@ -104,7 +104,7 @@ export async function fetchPublicReviews(init?: PublicRequestInit): Promise<any[
 
 export async function fetchHomepageReviews(limit = 8): Promise<any[]> {
   const safeLimit = Math.max(1, Math.min(16, Math.trunc(limit)));
-  const res = await fetch(`${API_BASE_URL}/reviews/public/cards?limit=${safeLimit}`, publicRevalidate(600));
+  const res = await fetch(`${API_BASE_URL}/reviews?limit=${safeLimit}`, publicRevalidate(600));
   if (!res.ok) throw new Error("Failed to fetch homepage reviews");
   const json = await res.json();
   return json.data || [];

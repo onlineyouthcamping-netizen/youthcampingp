@@ -8,7 +8,7 @@ export default async function TripsPage() {
   let trips: Trip[] = [];
   try {
     const allTrips = await fetchPublicTrips();
-    trips = allTrips.filter(t => t.status === 'published');
+    trips = allTrips.filter((t) => t.status === "published");
   } catch (error) {
     console.error("Error fetching trips:", error);
   }

@@ -1,23 +1,40 @@
 #!/bin/bash
 
-# Script to run all components of the YouthCamping OS application on macOS
+# YouthCamping OS - Local Run All Script
+echo "======================================"
+echo "🚀 Starting All Services Locally..."
+echo "======================================"
 
-echo "🚀 Starting YouthCamping OS services..."
+# Function to handle exit
+cleanup() {
+    echo ""
+    echo "======================================"
+    echo "🛑 Stopping all services..."
+    echo "======================================"
+    kill $BACKEND_PID $FRONTEND_PID $ADMIN_PID 2>/dev/null
+    exit
+}
 
-# 1. Start Backend API
-echo "🟢 Launching Backend API..."
-osascript -e 'tell app "Terminal" to do script "cd /Users/parthpatel/Documents/youthcamping_os/backend && npm start"'
+# Catch Ctrl+C and call cleanup
+trap cleanup SIGINT SIGTERM
 
-# 2. Start Customer Frontend
-echo "🔵 Launching Customer Frontend..."
-osascript -e 'tell app "Terminal" to do script "cd /Users/parthpatel/Documents/youthcamping_os/frontend && npm run dev"'
+echo "📦 Starting Backend (Port 5005)..."
+(cd backend && npm run dev) &
+BACKEND_PID=$!
 
-# 3. Start Admin Panel
-echo "🟡 Launching Admin Panel..."
-osascript -e 'tell app "Terminal" to do script "cd /Users/parthpatel/Documents/youthcamping_os/ycadmin && npm run dev"'
+echo "📦 Starting Frontend (Port 3000)..."
+(cd frontend && npm run dev) &
+FRONTEND_PID=$!
 
-# 4. Start Guide Operations API Server
-echo "🟣 Launching Guide Operations API..."
-osascript -e 'tell app "Terminal" to do script "cd /Users/parthpatel/Documents/youthcamping_os/guide && pnpm --filter @workspace/api-server run dev"'
+echo "📦 Starting Admin Panel (Port 8081)..."
+(cd ycadmin && npm run dev) &
+ADMIN_PID=$!
 
-echo "🎉 All services launched in separate Terminal windows!"
+echo ""
+echo "✅ All services are starting up in the background."
+echo "Press [Ctrl+C] to stop all services."
+echo ""
+echo "Waiting for services to finish..."
+
+# Wait for all background processes
+wait

@@ -7,7 +7,10 @@ import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/api";
 
-const DestinationInquiryModal = dynamic(() => import("./DestinationInquiryModal"), { ssr: false });
+const DestinationInquiryModal = dynamic(
+  () => import("./DestinationInquiryModal"),
+  { ssr: false },
+);
 
 interface Destination {
   name: string;
@@ -60,22 +63,37 @@ const DEFAULT_DESTINATIONS: Destination[] = [
 ];
 
 const DEST_IMAGE_MAP: Record<string, string> = {
-  "himachal": "https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80",
-  "himachal pradesh": "https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80",
-  "uttarakhand": "https://images.unsplash.com/photo-1605640840605-14ac1855827b?auto=format&fit=crop&w=800&q=80",
-  "spiti": "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
-  "spiti valley": "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
-  "ladakh": "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?auto=format&fit=crop&w=800&q=80",
-  "kerala": "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800&q=80",
-  "sikkim": "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80",
-  "goa": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
-  "matheran": "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80",
-  "valley of flowers": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80",
-  "discover the dangs": "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
-  "the dangs": "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
-  "dangs": "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
-  "saputara": "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
-  "mahabaleshwar": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+  himachal:
+    "https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80",
+  "himachal pradesh":
+    "https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80",
+  uttarakhand:
+    "https://images.unsplash.com/photo-1605640840605-14ac1855827b?auto=format&fit=crop&w=800&q=80",
+  spiti:
+    "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
+  "spiti valley":
+    "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=800&q=80",
+  ladakh:
+    "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?auto=format&fit=crop&w=800&q=80",
+  kerala:
+    "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800&q=80",
+  sikkim:
+    "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80",
+  goa: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+  matheran:
+    "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80",
+  "valley of flowers":
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80",
+  "discover the dangs":
+    "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
+  "the dangs":
+    "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
+  dangs:
+    "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
+  saputara:
+    "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80",
+  mahabaleshwar:
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
 };
 
 export default function Destinations({
@@ -85,39 +103,59 @@ export default function Destinations({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedDest, setSelectedDest] = useState<Destination | null>(null);
 
-  const displayItems: Destination[] = (Array.isArray(destinations) && destinations.length > 0)
-    ? destinations.map((d: any, i: number) => {
-        const fallback = DEFAULT_DESTINATIONS[i % DEFAULT_DESTINATIONS.length];
-        const rawName = typeof d === 'string' ? d : (d?.name || fallback.name);
-        const customImg = (typeof d === 'object' && (d?.img || d?.imageUrl)) ? normalizeImageUrl(d.img || d.imageUrl) : undefined;
-        const cleanKey = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const mappedImg = customImg || Object.entries(DEST_IMAGE_MAP).find(([key]) => cleanKey.includes(key.replace(/[^a-z0-9]/g, '')))?.[1] || fallback.img;
-        return {
-          name: rawName,
-          subtext: (typeof d === 'object' && d?.subtext) ? d.subtext : (fallback.subtext || "Explore Group Trip"),
-          img: mappedImg,
-        };
-      })
-    : DEFAULT_DESTINATIONS;
+  const displayItems: Destination[] =
+    Array.isArray(destinations) && destinations.length > 0
+      ? destinations.map((d: any, i: number) => {
+          const fallback =
+            DEFAULT_DESTINATIONS[i % DEFAULT_DESTINATIONS.length];
+          const rawName = typeof d === "string" ? d : d?.name || fallback.name;
+          const customImg =
+            typeof d === "object" && (d?.img || d?.imageUrl)
+              ? normalizeImageUrl(d.img || d.imageUrl)
+              : undefined;
+          const cleanKey = rawName.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const mappedImg =
+            customImg ||
+            Object.entries(DEST_IMAGE_MAP).find(([key]) =>
+              cleanKey.includes(key.replace(/[^a-z0-9]/g, "")),
+            )?.[1] ||
+            fallback.img;
+          return {
+            name: rawName,
+            subtext:
+              typeof d === "object" && d?.subtext
+                ? d.subtext
+                : fallback.subtext || "Explore Group Trip",
+            img: mappedImg,
+          };
+        })
+      : DEFAULT_DESTINATIONS;
 
   const nudge = (dir: "l" | "r") => {
     if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: dir === "l" ? -250 : 250, behavior: "smooth" });
+      scrollRef.current.scrollBy({
+        left: dir === "l" ? -250 : 250,
+        behavior: "smooth",
+      });
     }
   };
 
   return (
-    <section className="popular-destinations popular-section destinations-grid py-6 sm:py-8 font-montserrat overflow-hidden" style={{ backgroundColor: '#E2E7ED' }}>
+    <section
+      className="popular-destinations popular-section destinations-grid py-6 sm:py-8 font-montserrat overflow-hidden"
+      style={{ backgroundColor: "#E2E7ED" }}
+    >
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
-        
         {/* HEADER ROW - FITS TITLE ON ONE LINE */}
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
           <div className="flex items-baseline gap-2 min-w-0 overflow-hidden whitespace-nowrap">
             <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight">
-              {(title.split(' ')[0] || "Popular").toLowerCase()}
+              {(title.split(" ")[0] || "Popular").toLowerCase()}
             </h2>
             <span className="font-caveat font-bold text-[#D4541A] text-[26px] sm:text-[34px] md:text-[40px] lg:text-[46px] leading-none shrink-0 capitalize pr-2 sm:pr-3">
-              {(title.split(' ').slice(1).join(' ') || "Destinations").toLowerCase()}
+              {(
+                title.split(" ").slice(1).join(" ") || "Destinations"
+              ).toLowerCase()}
             </span>
           </div>
 
@@ -165,7 +203,6 @@ export default function Destinations({
             </motion.div>
           ))}
         </div>
-
       </div>
 
       {/* INQUIRY MODAL */}

@@ -4,7 +4,11 @@ import { notFound } from "next/navigation";
 export const revalidate = 30;
 
 import {
-  Clock3, Mountain, Backpack, MountainSnow, ChevronLeft
+  Clock3,
+  Mountain,
+  Backpack,
+  MountainSnow,
+  ChevronLeft,
 } from "lucide-react";
 import TripGallerySection from "@/components/TripGallerySection";
 import TripSubNav from "@/components/TripSubNav";
@@ -13,8 +17,11 @@ import TripDetailView from "@/components/TripDetailView";
 import Link from "next/link";
 import TripInquiryAutoTrigger from "@/components/TripInquiryAutoTrigger";
 
-export default async function TripDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-
+export default async function TripDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
   const trip = await fetchTripBySlug(slug);
 
@@ -43,8 +50,19 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
         {/* 2. Title Section (Below photos) */}
         <div>
           {(() => {
-            const fullTitle = trip.title || "Manali Kasol Amritsar Backpacking Trip";
-            const keywords = ["Backpacking Trip", "Road Trip", "Group Trip", "Backpacking", "Roadtrip", "Trek", "Expedition", "Tour", "Trip"];
+            const fullTitle =
+              trip.title || "Manali Kasol Amritsar Backpacking Trip";
+            const keywords = [
+              "Backpacking Trip",
+              "Road Trip",
+              "Group Trip",
+              "Backpacking",
+              "Roadtrip",
+              "Trek",
+              "Expedition",
+              "Tour",
+              "Trip",
+            ];
             let main = fullTitle;
             let sub = "";
             for (const kw of keywords) {
@@ -64,8 +82,8 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
             }
             return (
               <div>
-                <h1 
-                  style={{ fontWeight: 800, color: '#0B1528' }} 
+                <h1
+                  style={{ fontWeight: 800, color: "#0B1528" }}
                   className="text-[26px] sm:text-[34px] md:text-[40px] font-black tracking-tight leading-[1.15] font-montserrat"
                 >
                   {main}
@@ -84,19 +102,34 @@ export default async function TripDetailPage({ params }: { params: Promise<{ slu
         <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-8 gap-y-3 gap-x-4 py-4 my-4 border-y border-zinc-200/80 w-full relative z-10 bg-white">
           {[
             { label: "Duration", val: durationStr, icon: Clock3 },
-            { 
-              label: "Difficulty", 
-              val: trip.difficulty ? (trip.difficulty.charAt(0).toUpperCase() + trip.difficulty.slice(1)) : "Easy to Moderate", 
-              icon: Mountain 
+            {
+              label: "Difficulty",
+              val: trip.difficulty
+                ? trip.difficulty.charAt(0).toUpperCase() +
+                  trip.difficulty.slice(1)
+                : "Easy to Moderate",
+              icon: Mountain,
             },
-            { label: "Age Group", val: trip.ageLimit || "12-35 Years", icon: Backpack },
-            { label: "Max Altitude", val: trip.maxAltitude || "10,000 ft", icon: MountainSnow },
+            {
+              label: "Age Group",
+              val: trip.ageLimit || "12-35 Years",
+              icon: Backpack,
+            },
+            {
+              label: "Max Altitude",
+              val: trip.maxAltitude || "10,000 ft",
+              icon: MountainSnow,
+            },
           ].map((info, i) => (
             <div key={i} className="flex items-center gap-2.5">
               <info.icon className="w-[18px] h-[18px] text-[#0B1528] stroke-[1.8] shrink-0" />
               <div className="min-w-0">
-                <p className="text-[#0B1528] font-semibold text-[13px] sm:text-sm leading-tight font-montserrat truncate">{info.val}</p>
-                <p className="text-zinc-400 font-medium text-[11px] leading-tight font-montserrat mt-0.5">{info.label}</p>
+                <p className="text-[#0B1528] font-semibold text-[13px] sm:text-sm leading-tight font-montserrat truncate">
+                  {info.val}
+                </p>
+                <p className="text-zinc-400 font-medium text-[11px] leading-tight font-montserrat mt-0.5">
+                  {info.label}
+                </p>
               </div>
             </div>
           ))}

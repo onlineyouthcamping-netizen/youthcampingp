@@ -1,29 +1,33 @@
-const { prisma } = require('../lib/prisma');
-const pricingEngine = require('../utils/vendorPricingEngine');
+const { prisma } = require("../lib/prisma");
+const pricingEngine = require("../utils/vendorPricingEngine");
 
 // ── 1. MAIN DIRECTORY VENDOR CRUD ──
 
 exports.getDirectoryAnalytics = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     // Counts on OpsVendor
     const totalVendors = await prisma.opsVendor.count({ where: { tenantId } });
-    const activeVendors = await prisma.opsVendor.count({ where: { tenantId, isActive: true } });
-    const gstRegisteredCount = await prisma.opsVendor.count({
-      where: { tenantId, gstin: { not: null, not: "" } }
+    const activeVendors = await prisma.opsVendor.count({
+      where: { tenantId, isActive: true },
     });
-    const preferredCount = await prisma.opsVendor.count({ where: { tenantId, isPreferred: true } });
+    const gstRegisteredCount = await prisma.opsVendor.count({
+      where: { tenantId, gstin: { not: null, not: "" } },
+    });
+    const preferredCount = await prisma.opsVendor.count({
+      where: { tenantId, isPreferred: true },
+    });
 
     // Group by category/type
     const categoryGroups = await prisma.opsVendor.groupBy({
-      by: ['type'],
+      by: ["type"],
       where: { tenantId },
-      _count: { id: true }
+      _count: { id: true },
     });
 
     const categoryCounts = {};
-    categoryGroups.forEach(g => {
+    categoryGroups.forEach((g) => {
       categoryCounts[g.type] = g._count.id;
     });
 
@@ -31,8 +35,8 @@ exports.getDirectoryAnalytics = async (req, res, next) => {
     const recentActivity = await prisma.opsVendorTimeline.findMany({
       where: { tenantId },
       take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: { vendor: { select: { id: true, name: true, type: true } } }
+      orderBy: { createdAt: "desc" },
+      include: { vendor: { select: { id: true, name: true, type: true } } },
     });
 
     res.json({
@@ -43,8 +47,8 @@ exports.getDirectoryAnalytics = async (req, res, next) => {
         gstRegisteredCount,
         preferredCount,
         categoryCounts,
-        recentActivity
-      }
+        recentActivity,
+      },
     });
   } catch (error) {
     next(error);
@@ -53,16 +57,16 @@ exports.getDirectoryAnalytics = async (req, res, next) => {
 
 exports.getDirectoryDestinations = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || 'default';
-    
+    const tenantId = req.user?.tenantId || "default";
+
     const vendors = await prisma.opsVendor.findMany({
       where: { tenantId },
       select: { city: true, state: true, location: true },
-      distinct: ['city']
+      distinct: ["city"],
     });
 
     const destinations = vendors
-      .map(v => v.city || v.location)
+      .map((v) => v.city || v.location)
       .filter(Boolean)
       .sort();
 
@@ -74,42 +78,54 @@ exports.getDirectoryDestinations = async (req, res, next) => {
 
 exports.getDirectoryVendors = async (req, res, next) => {
   try {
-    const { type, state, city, isActive, search, destination, page = 1, limit = 10 } = req.query;
-    const tenantId = req.user?.tenantId || 'default';
+    const {
+      type,
+      state,
+      city,
+      isActive,
+      search,
+      destination,
+      page = 1,
+      limit = 10,
+    } = req.query;
+    const tenantId = req.user?.tenantId || "default";
     const pageNum = parseInt(page) || 1;
     const limitNum = parseInt(limit) || 10;
     const skip = (pageNum - 1) * limitNum;
 
     const where = { tenantId };
 
-    if (type && type !== 'ALL') {
-      const parts = type.split(',').map(t => t.trim()).filter(Boolean);
+    if (type && type !== "ALL") {
+      const parts = type
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
       if (parts.length > 1) {
         where.type = { in: parts };
       } else if (parts.length === 1) {
         where.type = parts[0];
       }
     }
-    if (state && state !== 'ALL') where.state = state;
-    if ((city && city !== 'ALL') || (destination && destination !== 'ALL')) {
+    if (state && state !== "ALL") where.state = state;
+    if ((city && city !== "ALL") || (destination && destination !== "ALL")) {
       where.city = city || destination;
     }
-    if (isActive !== undefined && isActive !== 'ALL') {
-      where.isActive = isActive === 'true';
+    if (isActive !== undefined && isActive !== "ALL") {
+      where.isActive = isActive === "true";
     }
 
     if (search && search.trim()) {
       const q = search.trim();
       where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { contactPerson: { contains: q, mode: 'insensitive' } },
-        { phone: { contains: q, mode: 'insensitive' } },
-        { alternatePhone: { contains: q, mode: 'insensitive' } },
-        { email: { contains: q, mode: 'insensitive' } },
-        { gstin: { contains: q, mode: 'insensitive' } },
-        { panNumber: { contains: q, mode: 'insensitive' } },
-        { city: { contains: q, mode: 'insensitive' } },
-        { state: { contains: q, mode: 'insensitive' } }
+        { name: { contains: q, mode: "insensitive" } },
+        { contactPerson: { contains: q, mode: "insensitive" } },
+        { phone: { contains: q, mode: "insensitive" } },
+        { alternatePhone: { contains: q, mode: "insensitive" } },
+        { email: { contains: q, mode: "insensitive" } },
+        { gstin: { contains: q, mode: "insensitive" } },
+        { panNumber: { contains: q, mode: "insensitive" } },
+        { city: { contains: q, mode: "insensitive" } },
+        { state: { contains: q, mode: "insensitive" } },
       ];
     }
 
@@ -122,13 +138,15 @@ exports.getDirectoryVendors = async (req, res, next) => {
           destinations: true,
           vendorContacts: true,
           contracts: true,
-          tripVendors: { include: { trip: { select: { id: true, title: true } } } }
+          tripVendors: {
+            include: { trip: { select: { id: true, title: true } } },
+          },
         },
         skip,
         take: limitNum,
-        orderBy: { name: 'asc' }
+        orderBy: { name: "asc" },
       }),
-      prisma.opsVendor.count({ where })
+      prisma.opsVendor.count({ where }),
     ]);
 
     const pages = Math.ceil(total / limitNum) || 1;
@@ -144,8 +162,8 @@ exports.getDirectoryVendors = async (req, res, next) => {
         limit: limitNum,
         pages,
         startIndex,
-        endIndex
-      }
+        endIndex,
+      },
     });
   } catch (error) {
     next(error);
@@ -162,10 +180,15 @@ exports.getDirectoryVendor = async (req, res, next) => {
         destinations: true,
         vendorContacts: true,
         contracts: true,
-        tripVendors: { include: { trip: { select: { id: true, title: true } } } }
-      }
+        tripVendors: {
+          include: { trip: { select: { id: true, title: true } } },
+        },
+      },
     });
-    if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
+    if (!vendor)
+      return res
+        .status(404)
+        .json({ success: false, message: "Vendor not found" });
     res.json({ success: true, data: vendor });
   } catch (error) {
     next(error);
@@ -175,17 +198,36 @@ exports.getDirectoryVendor = async (req, res, next) => {
 exports.createDirectoryVendor = async (req, res, next) => {
   try {
     const {
-      vendorCode, name, type, accommodationType, contactPerson, phone,
-      alternatePhone, whatsappNumber, email, gstin, panNumber,
-      state, city, area, address, paymentTerms, creditDays, bankName, accountNumber, ifscCode,
-      notes, contacts = [], tripId
+      vendorCode,
+      name,
+      type,
+      accommodationType,
+      contactPerson,
+      phone,
+      alternatePhone,
+      whatsappNumber,
+      email,
+      gstin,
+      panNumber,
+      state,
+      city,
+      area,
+      address,
+      paymentTerms,
+      creditDays,
+      bankName,
+      accountNumber,
+      ifscCode,
+      notes,
+      contacts = [],
+      tripId,
     } = req.body;
 
     const vendor = await prisma.opsVendor.create({
       data: {
         vendorCode: vendorCode || `VND-${Date.now()}`,
         name,
-        type: type || 'HOTEL',
+        type: type || "HOTEL",
         accommodationType,
         contactPerson,
         phone,
@@ -206,17 +248,17 @@ exports.createDirectoryVendor = async (req, res, next) => {
         notes,
         isActive: true,
         vendorContacts: {
-          create: contacts.map(c => ({
+          create: contacts.map((c) => ({
             name: c.name || c.contactName,
-            role: c.role || c.designation || 'General Contact',
+            role: c.role || c.designation || "General Contact",
             phone: c.phone,
             whatsapp: c.whatsapp || c.phone,
             email: c.email || null,
-            isPrimary: c.isPrimary || false
-          }))
-        }
+            isPrimary: c.isPrimary || false,
+          })),
+        },
       },
-      include: { vendorContacts: true }
+      include: { vendorContacts: true },
     });
 
     res.status(201).json({ success: true, data: vendor });
@@ -228,10 +270,35 @@ exports.createDirectoryVendor = async (req, res, next) => {
 exports.updateDirectoryVendor = async (req, res, next) => {
   try {
     const {
-      name, type, accommodationType, contactPerson, phone, alternatePhone,
-      whatsappNumber, email, gstin, panNumber, state, city, area, address, fullAddress,
-      paymentTerms, creditDays, bankName, accountNumber, ifscCode, starRating,
-      checkInTime, checkOutTime, mealPlans, amenities, tags, notes, isActive, isPreferred
+      name,
+      type,
+      accommodationType,
+      contactPerson,
+      phone,
+      alternatePhone,
+      whatsappNumber,
+      email,
+      gstin,
+      panNumber,
+      state,
+      city,
+      area,
+      address,
+      fullAddress,
+      paymentTerms,
+      creditDays,
+      bankName,
+      accountNumber,
+      ifscCode,
+      starRating,
+      checkInTime,
+      checkOutTime,
+      mealPlans,
+      amenities,
+      tags,
+      notes,
+      isActive,
+      isPreferred,
     } = req.body;
 
     const vendor = await prisma.opsVendor.update({
@@ -262,11 +329,15 @@ exports.updateDirectoryVendor = async (req, res, next) => {
         checkOutTime: checkOutTime || undefined,
         mealPlans: mealPlans || undefined,
         amenities: amenities || undefined,
-        tags: tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : undefined,
+        tags: tags
+          ? typeof tags === "string"
+            ? tags
+            : JSON.stringify(tags)
+          : undefined,
         notes: notes || undefined,
         isActive: isActive !== undefined ? isActive : undefined,
-        isPreferred: isPreferred !== undefined ? isPreferred : undefined
-      }
+        isPreferred: isPreferred !== undefined ? isPreferred : undefined,
+      },
     });
 
     res.json({ success: true, data: vendor });
@@ -280,9 +351,13 @@ exports.deleteDirectoryVendor = async (req, res, next) => {
     // Inactivate instead of hard delete to preserve historical pricing integrity
     const vendor = await prisma.directoryVendor.update({
       where: { id: req.params.vendorId },
-      data: { isActive: false }
+      data: { isActive: false },
     });
-    res.json({ success: true, message: 'Vendor deactivated successfully', data: vendor });
+    res.json({
+      success: true,
+      message: "Vendor deactivated successfully",
+      data: vendor,
+    });
   } catch (error) {
     next(error);
   }
@@ -294,7 +369,9 @@ exports.createDirectoryRoomRate = async (req, res, next) => {
   try {
     const { rates } = req.body;
     if (rates && Array.isArray(rates)) {
-      await prisma.directoryVendorRoomRate.deleteMany({ where: { vendorId: req.params.vendorId } });
+      await prisma.directoryVendorRoomRate.deleteMany({
+        where: { vendorId: req.params.vendorId },
+      });
       const created = [];
       for (const r of rates) {
         const rate = await prisma.directoryVendorRoomRate.create({
@@ -304,10 +381,12 @@ exports.createDirectoryRoomRate = async (req, res, next) => {
             sharingType: r.sharingType || "DOUBLE",
             rateBasis: r.rateBasis || "PER_ROOM_PER_NIGHT",
             amount: Number(r.amount || 0),
-            availableRooms: r.availableRooms ? parseInt(r.availableRooms) : null,
+            availableRooms: r.availableRooms
+              ? parseInt(r.availableRooms)
+              : null,
             mealPlan: r.mealPlan || "EP",
-            season: r.season || "ALL"
-          }
+            season: r.season || "ALL",
+          },
         });
         created.push(rate);
       }
@@ -315,10 +394,27 @@ exports.createDirectoryRoomRate = async (req, res, next) => {
     }
 
     const {
-      propertyName, roomCategory, sharingType, standardOccupancy, maximumOccupancy,
-      mixedOccupancyAllowed, rateBasis, amount, extraAdultRate, extraChildRate,
-      guideRoomRate, availableRooms, mealPlan, season, validFrom, validTo,
-      taxIncluded, taxPercent, minimumRooms, cancellationPolicy, blackoutDates
+      propertyName,
+      roomCategory,
+      sharingType,
+      standardOccupancy,
+      maximumOccupancy,
+      mixedOccupancyAllowed,
+      rateBasis,
+      amount,
+      extraAdultRate,
+      extraChildRate,
+      guideRoomRate,
+      availableRooms,
+      mealPlan,
+      season,
+      validFrom,
+      validTo,
+      taxIncluded,
+      taxPercent,
+      minimumRooms,
+      cancellationPolicy,
+      blackoutDates,
     } = req.body;
 
     const rate = await prisma.directoryVendorRoomRate.create({
@@ -344,8 +440,8 @@ exports.createDirectoryRoomRate = async (req, res, next) => {
         taxPercent: taxPercent ? Number(taxPercent) : 0,
         minimumRooms: minimumRooms ? parseInt(minimumRooms) : null,
         cancellationPolicy,
-        blackoutDates: blackoutDates || null
-      }
+        blackoutDates: blackoutDates || null,
+      },
     });
     res.status(201).json({ success: true, data: rate });
   } catch (error) {
@@ -357,7 +453,9 @@ exports.createDirectoryTransportRate = async (req, res, next) => {
   try {
     const { rates } = req.body;
     if (rates && Array.isArray(rates)) {
-      await prisma.directoryVendorTransportRate.deleteMany({ where: { vendorId: req.params.vendorId } });
+      await prisma.directoryVendorTransportRate.deleteMany({
+        where: { vendorId: req.params.vendorId },
+      });
       const created = [];
       for (const r of rates) {
         const rate = await prisma.directoryVendorTransportRate.create({
@@ -369,8 +467,8 @@ exports.createDirectoryTransportRate = async (req, res, next) => {
             rateBasis: r.rateBasis || "PER_VEHICLE",
             amount: Number(r.amount || 0),
             extraCharge: Number(r.extraCharge || 0),
-            season: r.season || "ALL"
-          }
+            season: r.season || "ALL",
+          },
         });
         created.push(rate);
       }
@@ -378,10 +476,27 @@ exports.createDirectoryTransportRate = async (req, res, next) => {
     }
 
     const {
-      routeName, pickupLocation, dropLocation, vehicleType, seatCapacity, rateBasis,
-      amount, extraCharge, extraKmRate, extraHourRate, nightHaltRate, tollIncluded,
-      parkingIncluded, fuelIncluded, driverAllowanceIncluded, stateTaxIncluded,
-      backupVehicleAvailable, season, validFrom, validTo, cancellationPolicy
+      routeName,
+      pickupLocation,
+      dropLocation,
+      vehicleType,
+      seatCapacity,
+      rateBasis,
+      amount,
+      extraCharge,
+      extraKmRate,
+      extraHourRate,
+      nightHaltRate,
+      tollIncluded,
+      parkingIncluded,
+      fuelIncluded,
+      driverAllowanceIncluded,
+      stateTaxIncluded,
+      backupVehicleAvailable,
+      season,
+      validFrom,
+      validTo,
+      cancellationPolicy,
     } = req.body;
 
     const rate = await prisma.directoryVendorTransportRate.create({
@@ -407,8 +522,8 @@ exports.createDirectoryTransportRate = async (req, res, next) => {
         season,
         validFrom: validFrom ? new Date(validFrom) : null,
         validTo: validTo ? new Date(validTo) : null,
-        cancellationPolicy
-      }
+        cancellationPolicy,
+      },
     });
     res.status(201).json({ success: true, data: rate });
   } catch (error) {
@@ -419,9 +534,20 @@ exports.createDirectoryTransportRate = async (req, res, next) => {
 exports.createDirectoryFoodRate = async (req, res, next) => {
   try {
     const {
-      mealType, menuDescription, isVeg, ratePerPerson, minimumPax, maximumPax,
-      packedMeal, guideMealRate, driverMealRate, taxIncluded, taxPercent,
-      validFrom, validTo, cancellationPolicy
+      mealType,
+      menuDescription,
+      isVeg,
+      ratePerPerson,
+      minimumPax,
+      maximumPax,
+      packedMeal,
+      guideMealRate,
+      driverMealRate,
+      taxIncluded,
+      taxPercent,
+      validFrom,
+      validTo,
+      cancellationPolicy,
     } = req.body;
 
     const rate = await prisma.directoryVendorFoodRate.create({
@@ -440,8 +566,8 @@ exports.createDirectoryFoodRate = async (req, res, next) => {
         taxPercent: taxPercent ? Number(taxPercent) : 0,
         validFrom: validFrom ? new Date(validFrom) : null,
         validTo: validTo ? new Date(validTo) : null,
-        cancellationPolicy
-      }
+        cancellationPolicy,
+      },
     });
     res.status(201).json({ success: true, data: rate });
   } catch (error) {
@@ -452,9 +578,20 @@ exports.createDirectoryFoodRate = async (req, res, next) => {
 exports.createDirectoryGuideRate = async (req, res, next) => {
   try {
     const {
-      serviceName, serviceLocation, languages, specialization, dailyRate, travelCharge,
-      foodCharge, stayCharge, maximumGroupSize, emergencySupport, idVerified,
-      policeVerified, validFrom, validTo
+      serviceName,
+      serviceLocation,
+      languages,
+      specialization,
+      dailyRate,
+      travelCharge,
+      foodCharge,
+      stayCharge,
+      maximumGroupSize,
+      emergencySupport,
+      idVerified,
+      policeVerified,
+      validFrom,
+      validTo,
     } = req.body;
 
     const rate = await prisma.directoryVendorGuideRate.create({
@@ -473,8 +610,8 @@ exports.createDirectoryGuideRate = async (req, res, next) => {
         idVerified: idVerified === true,
         policeVerified: policeVerified === true,
         validFrom: validFrom ? new Date(validFrom) : null,
-        validTo: validTo ? new Date(validTo) : null
-      }
+        validTo: validTo ? new Date(validTo) : null,
+      },
     });
     res.status(201).json({ success: true, data: rate });
   } catch (error) {
@@ -486,7 +623,9 @@ exports.createDirectoryMiscCharge = async (req, res, next) => {
   try {
     const { charges } = req.body;
     if (charges && Array.isArray(charges)) {
-      await prisma.directoryVendorMiscCharge.deleteMany({ where: { vendorId: req.params.vendorId } });
+      await prisma.directoryVendorMiscCharge.deleteMany({
+        where: { vendorId: req.params.vendorId },
+      });
       const created = [];
       for (const c of charges) {
         const rate = await prisma.directoryVendorMiscCharge.create({
@@ -495,17 +634,16 @@ exports.createDirectoryMiscCharge = async (req, res, next) => {
             chargeName: c.chargeName || "",
             chargeType: c.chargeType || "",
             amount: Number(c.amount || 0),
-            unit: c.unit || "FLAT"
-          }
+            unit: c.unit || "FLAT",
+          },
         });
         created.push(rate);
       }
       return res.status(201).json({ success: true, data: created });
     }
 
-    const {
-      chargeName, chargeType, amount, unit, validFrom, validTo, notes
-    } = req.body;
+    const { chargeName, chargeType, amount, unit, validFrom, validTo, notes } =
+      req.body;
 
     const rate = await prisma.directoryVendorMiscCharge.create({
       data: {
@@ -516,8 +654,8 @@ exports.createDirectoryMiscCharge = async (req, res, next) => {
         unit,
         validFrom: validFrom ? new Date(validFrom) : null,
         validTo: validTo ? new Date(validTo) : null,
-        notes
-      }
+        notes,
+      },
     });
     res.status(201).json({ success: true, data: rate });
   } catch (error) {
@@ -533,8 +671,11 @@ exports.searchVendorsByLocation = async (req, res, next) => {
     const where = { isActive: true };
     if (state) where.state = state;
     if (city) where.city = city;
-    if (type && type !== 'ALL') {
-      const parts = type.split(',').map(t => t.trim()).filter(Boolean);
+    if (type && type !== "ALL") {
+      const parts = type
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
       if (parts.length > 1) {
         where.type = { in: parts };
       } else if (parts.length === 1) {
@@ -549,8 +690,8 @@ exports.searchVendorsByLocation = async (req, res, next) => {
         transportRates: true,
         foodRates: true,
         guideRates: true,
-        miscCharges: true
-      }
+        miscCharges: true,
+      },
     });
     res.json({ success: true, data: vendors });
   } catch (error) {
@@ -563,23 +704,26 @@ exports.getTripVendorOptions = async (req, res, next) => {
     const { tripId } = req.params;
     // Find all vendors mapping to this trip location or category
     const trip = await prisma.trip.findUnique({ where: { id: tripId } });
-    if (!trip) return res.status(404).json({ success: false, message: 'Trip not found' });
+    if (!trip)
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
 
     const vendors = await prisma.directoryVendor.findMany({
       where: {
         isActive: true,
         OR: [
-          { city: { contains: trip.destination || '', mode: 'insensitive' } },
-          { state: { contains: trip.state || '', mode: 'insensitive' } }
-        ]
+          { city: { contains: trip.destination || "", mode: "insensitive" } },
+          { state: { contains: trip.state || "", mode: "insensitive" } },
+        ],
       },
       include: {
         roomRates: true,
         transportRates: true,
         foodRates: true,
         guideRates: true,
-        miscCharges: true
-      }
+        miscCharges: true,
+      },
     });
 
     res.json({ success: true, data: vendors });
@@ -595,7 +739,7 @@ exports.saveTripVendorMappings = async (req, res, next) => {
 
     // Delete existing mapped vendors for this trip to overwrite
     await prisma.directoryTripVendorMapping.deleteMany({
-      where: { tripId }
+      where: { tripId },
     });
 
     const createdMappings = [];
@@ -618,14 +762,16 @@ exports.saveTripVendorMappings = async (req, res, next) => {
           paxCount: m.paxCount ? parseInt(m.paxCount) : null,
           numberOfNights: m.numberOfNights ? parseInt(m.numberOfNights) : null,
           numberOfDays: m.numberOfDays ? parseInt(m.numberOfDays) : null,
-          numberOfVehicles: m.numberOfVehicles ? parseInt(m.numberOfVehicles) : 1,
+          numberOfVehicles: m.numberOfVehicles
+            ? parseInt(m.numberOfVehicles)
+            : 1,
           isPrimary: m.isPrimary !== false,
           quotedAmount: m.quotedAmount ? Number(m.quotedAmount) : null,
           confirmedAmount: m.confirmedAmount ? Number(m.confirmedAmount) : null,
           confirmationNo: m.confirmationNo || null,
-          status: m.status || 'PLANNED',
-          instructions: m.instructions || null
-        }
+          status: m.status || "PLANNED",
+          instructions: m.instructions || null,
+        },
       });
       createdMappings.push(mapping);
     }
@@ -640,8 +786,16 @@ exports.saveTripVendorMappings = async (req, res, next) => {
 
 exports.calculateVendorCosting = async (req, res, next) => {
   try {
-    const { paxCount, accommodations = [], transports = [], foodItems = [], guideItems = [], miscCharges = [], contingencyPercent = 0 } = req.body;
-    
+    const {
+      paxCount,
+      accommodations = [],
+      transports = [],
+      foodItems = [],
+      guideItems = [],
+      miscCharges = [],
+      contingencyPercent = 0,
+    } = req.body;
+
     const calculation = pricingEngine.calculateTripCost({
       paxCount: parseInt(paxCount),
       accommodations,
@@ -649,7 +803,7 @@ exports.calculateVendorCosting = async (req, res, next) => {
       foodItems,
       guideItems,
       miscCharges,
-      contingencyPercent: Number(contingencyPercent)
+      contingencyPercent: Number(contingencyPercent),
     });
 
     res.json({ success: true, data: calculation });
@@ -660,7 +814,13 @@ exports.calculateVendorCosting = async (req, res, next) => {
 
 exports.createCostingSnapshot = async (req, res, next) => {
   try {
-    const { tripId, departureDate, paxCount, calculationData, vendorRatesData } = req.body;
+    const {
+      tripId,
+      departureDate,
+      paxCount,
+      calculationData,
+      vendorRatesData,
+    } = req.body;
 
     const snapshot = await prisma.directoryTripCostSnapshot.create({
       data: {
@@ -671,8 +831,8 @@ exports.createCostingSnapshot = async (req, res, next) => {
         costPerPerson: Number(calculationData.costPerPerson || 0),
         calculationData: calculationData || {},
         vendorRatesData: vendorRatesData || {},
-        createdById: req.user?.id || 'admin'
-      }
+        createdById: req.user?.id || "admin",
+      },
     });
 
     res.status(201).json({ success: true, data: snapshot });
@@ -693,7 +853,7 @@ exports.getVendorPayments = async (req, res, next) => {
     const payments = await prisma.directoryVendorPayment.findMany({
       where,
       include: { vendor: true },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
     res.json({ success: true, data: payments });
   } catch (error) {
@@ -704,8 +864,17 @@ exports.getVendorPayments = async (req, res, next) => {
 exports.createVendorPayment = async (req, res, next) => {
   try {
     const {
-      vendorId, tripId, departureDate, invoiceAmount, advanceAmount = 0, paidAmount = 0,
-      dueDate, paymentDate, paymentMode, transactionRef, remarks
+      vendorId,
+      tripId,
+      departureDate,
+      invoiceAmount,
+      advanceAmount = 0,
+      paidAmount = 0,
+      dueDate,
+      paymentDate,
+      paymentMode,
+      transactionRef,
+      remarks,
     } = req.body;
 
     const parsedInvoice = Number(invoiceAmount);
@@ -714,11 +883,11 @@ exports.createVendorPayment = async (req, res, next) => {
     const totalPaid = parsedAdvance + parsedPaid;
     const remainingBalance = parsedInvoice - totalPaid;
 
-    let paymentStatus = 'PENDING';
+    let paymentStatus = "PENDING";
     if (totalPaid >= parsedInvoice) {
-      paymentStatus = 'PAID';
+      paymentStatus = "PAID";
     } else if (totalPaid > 0) {
-      paymentStatus = 'PARTIAL';
+      paymentStatus = "PARTIAL";
     }
 
     const payment = await prisma.directoryVendorPayment.create({
@@ -735,10 +904,10 @@ exports.createVendorPayment = async (req, res, next) => {
         paymentDate: paymentDate ? new Date(paymentDate) : null,
         paymentMode,
         transactionRef,
-        approvedBy: req.user?.id || 'admin',
-        remarks
+        approvedBy: req.user?.id || "admin",
+        remarks,
       },
-      include: { vendor: true }
+      include: { vendor: true },
     });
 
     res.status(201).json({ success: true, data: payment });
@@ -750,25 +919,41 @@ exports.createVendorPayment = async (req, res, next) => {
 exports.updateVendorPayment = async (req, res, next) => {
   try {
     const { paymentId } = req.params;
-    const { advanceAmount, paidAmount, paymentMode, transactionRef, paymentStatus, remarks } = req.body;
+    const {
+      advanceAmount,
+      paidAmount,
+      paymentMode,
+      transactionRef,
+      paymentStatus,
+      remarks,
+    } = req.body;
 
     const currentPayment = await prisma.directoryVendorPayment.findUnique({
-      where: { id: paymentId }
+      where: { id: paymentId },
     });
-    if (!currentPayment) return res.status(404).json({ success: false, message: 'Payment record not found' });
+    if (!currentPayment)
+      return res
+        .status(404)
+        .json({ success: false, message: "Payment record not found" });
 
-    const newAdvance = advanceAmount !== undefined ? Number(advanceAmount) : Number(currentPayment.advanceAmount);
-    const newPaid = paidAmount !== undefined ? Number(paidAmount) : Number(currentPayment.paidAmount);
+    const newAdvance =
+      advanceAmount !== undefined
+        ? Number(advanceAmount)
+        : Number(currentPayment.advanceAmount);
+    const newPaid =
+      paidAmount !== undefined
+        ? Number(paidAmount)
+        : Number(currentPayment.paidAmount);
     const invoice = Number(currentPayment.invoiceAmount);
     const totalPaid = newAdvance + newPaid;
     const remaining = invoice - totalPaid;
 
-    let calculatedStatus = paymentStatus || 'PENDING';
+    let calculatedStatus = paymentStatus || "PENDING";
     if (!paymentStatus) {
       if (totalPaid >= invoice) {
-        calculatedStatus = 'PAID';
+        calculatedStatus = "PAID";
       } else if (totalPaid > 0) {
-        calculatedStatus = 'PARTIAL';
+        calculatedStatus = "PARTIAL";
       }
     }
 
@@ -781,9 +966,9 @@ exports.updateVendorPayment = async (req, res, next) => {
         paymentStatus: calculatedStatus,
         paymentMode,
         transactionRef,
-        remarks
+        remarks,
       },
-      include: { vendor: true }
+      include: { vendor: true },
     });
 
     res.json({ success: true, data: payment });

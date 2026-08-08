@@ -15,10 +15,10 @@ export default function ImageGallery({
   title = "The Gallery",
   images = [],
   backgroundColor = "#ffffff",
-  padding = "80px"
+  padding = "80px",
 }: ImageGalleryProps) {
   return (
-    <section 
+    <section
       style={{ backgroundColor, paddingTop: padding, paddingBottom: padding }}
       className="px-6"
     >
@@ -44,9 +44,9 @@ export default function ImageGallery({
               transition={{ delay: index * 0.05 }}
               className="relative rounded-[24px] overflow-hidden group shadow-lg break-inside-avoid"
             >
-              <OptimizedImage 
-                src={normalizeImageUrl(image.url) || ""} 
-                alt={image.alt} 
+              <OptimizedImage
+                src={normalizeImageUrl(image.url) || ""}
+                alt={image.alt}
                 cloudinaryWidth={800}
                 bunnyVariant="x540gt"
                 sizes="(max-width: 768px) calc(100vw - 48px), 33vw"
@@ -54,7 +54,9 @@ export default function ImageGallery({
               />
               {image.alt && (
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-6 text-center">
-                   <p className="text-white font-bold tracking-widest text-sm">{image.alt}</p>
+                  <p className="text-white font-bold tracking-widest text-sm">
+                    {image.alt}
+                  </p>
                 </div>
               )}
             </motion.div>

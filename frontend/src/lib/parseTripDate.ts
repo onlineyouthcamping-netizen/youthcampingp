@@ -5,9 +5,9 @@
  */
 export function parseTripDate(
   dateStr: any,
-  options?: { referenceDate?: Date; defaultYear?: number }
+  options?: { referenceDate?: Date; defaultYear?: number },
 ): Date | null {
-  if (!dateStr || typeof dateStr !== 'string') return null;
+  if (!dateStr || typeof dateStr !== "string") return null;
   const trimmed = dateStr.trim();
   if (!trimmed) return null;
 
@@ -31,10 +31,20 @@ export function parseTripDate(
 
   // 2. Try month name match (e.g., "06 Jun", "6 June", "06 Jun 2026", "06 Jun 26")
   const monthNames = [
-    /jan/i, /feb/i, /mar/i, /apr/i, /may/i, /jun/i,
-    /jul/i, /aug/i, /sep/i, /oct/i, /nov/i, /dec/i
+    /jan/i,
+    /feb/i,
+    /mar/i,
+    /apr/i,
+    /may/i,
+    /jun/i,
+    /jul/i,
+    /aug/i,
+    /sep/i,
+    /oct/i,
+    /nov/i,
+    /dec/i,
   ];
-  const monthIndex = monthNames.findIndex(rx => rx.test(trimmed));
+  const monthIndex = monthNames.findIndex((rx) => rx.test(trimmed));
   if (monthIndex !== -1) {
     const numbers = trimmed.match(/\d+/g);
     if (!numbers || numbers.length === 0) return null;
@@ -68,10 +78,10 @@ export function parseTripDate(
     } else {
       // numbers.length >= 2
       // Find a 4-digit number first (year)
-      const fourDigitYear = numbers.find(n => n.length === 4);
+      const fourDigitYear = numbers.find((n) => n.length === 4);
       if (fourDigitYear) {
         year = parseInt(fourDigitYear, 10);
-        const dayStr = numbers.find(n => n !== fourDigitYear);
+        const dayStr = numbers.find((n) => n !== fourDigitYear);
         day = dayStr ? parseInt(dayStr, 10) : 1;
       } else {
         // Check if there is a 2-digit number for year (assume last number is year, first is day)

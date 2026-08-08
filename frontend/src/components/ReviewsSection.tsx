@@ -3,7 +3,15 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Star, ArrowRight, ChevronLeft, ChevronRight, ExternalLink, Camera, X } from "lucide-react";
+import {
+  Star,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Camera,
+  X,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface GoogleReviewItem {
@@ -25,8 +33,10 @@ const MOCK_GOOGLE_REVIEWS: GoogleReviewItem[] = [
     badge: "Joined Group Trip",
     tripName: "Spiti Valley Bike Trip",
     date: "1 month ago",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
-    comment: "I travelled with YouthCamping Spiti Valley Bike Trip this June first week. My experience was very thrilling with them. The management was super awesome. Marshal Abhinav and Dhruvil sir were extremely supportive throughout!",
+    avatar:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+    comment:
+      "I travelled with YouthCamping Spiti Valley Bike Trip this June first week. My experience was very thrilling with them. The management was super awesome. Marshal Abhinav and Dhruvil sir were extremely supportive throughout!",
     rating: 5,
     photos: [
       "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80", // Tall photo left
@@ -40,8 +50,10 @@ const MOCK_GOOGLE_REVIEWS: GoogleReviewItem[] = [
     badge: "Joined Group Trip",
     tripName: "Thailand Explorer Expedition",
     date: "2 weeks ago",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
-    comment: "Thank you for crafting a trip that perfectly matched our style and interests. Your attention to detail made all the difference! Will definitely book another trip soon.",
+    avatar:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
+    comment:
+      "Thank you for crafting a trip that perfectly matched our style and interests. Your attention to detail made all the difference! Will definitely book another trip soon.",
     rating: 5,
     photos: [
       "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=80",
@@ -55,8 +67,10 @@ const MOCK_GOOGLE_REVIEWS: GoogleReviewItem[] = [
     badge: "Joined Group Trip",
     tripName: "Hampta Pass Trek",
     date: "3 weeks ago",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
-    comment: "Just few weeks back I took the trip to Spiti Valley with YouthCamping and believe me I had an amazing expedition of a lifetime. The captains were top class!",
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
+    comment:
+      "Just few weeks back I took the trip to Spiti Valley with YouthCamping and believe me I had an amazing expedition of a lifetime. The captains were top class!",
     rating: 5,
     photos: [
       "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
@@ -70,8 +84,10 @@ const MOCK_GOOGLE_REVIEWS: GoogleReviewItem[] = [
     badge: "Joined Group Trip",
     tripName: "Kedarkantha Winter Trek",
     date: "1 month ago",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
-    comment: "It won't be wrong to say YouthCamping is synonymous with great experiences. And it also won't be wrong to say that you can trust them blindly!",
+    avatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
+    comment:
+      "It won't be wrong to say YouthCamping is synonymous with great experiences. And it also won't be wrong to say that you can trust them blindly!",
     rating: 5,
     photos: [
       "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80",
@@ -90,44 +106,72 @@ export default function ReviewsSection({
   reviews,
   title,
 }: ReviewsSectionProps) {
-  const displayTitle = (!title || title === "New reviews" || title === "Reviews" || title.toLowerCase().includes("review")) 
-    ? "What Travelers Say" 
-    : title;
+  const displayTitle =
+    !title ||
+    title === "New reviews" ||
+    title === "Reviews" ||
+    title.toLowerCase().includes("review")
+      ? "What Travelers Say"
+      : title;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const [selectedReview, setSelectedReview] = useState<GoogleReviewItem | null>(null);
+  const [selectedReview, setSelectedReview] = useState<GoogleReviewItem | null>(
+    null,
+  );
 
-  const displayReviews: GoogleReviewItem[] = (reviews && reviews.length > 0)
-    ? reviews.map((r: any, idx: number) => ({
-        id: r._id || r.id || `gr-${idx}`,
-        name: r.userName || r.name || MOCK_GOOGLE_REVIEWS[idx % 4].name,
-        badge: r.tripType || r.badge || "Joined Group Trip",
-        tripName: r.tripName || r.city || MOCK_GOOGLE_REVIEWS[idx % 4].tripName,
-        date: r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : MOCK_GOOGLE_REVIEWS[idx % 4].date,
-        avatar: r.userImage || MOCK_GOOGLE_REVIEWS[idx % 4].avatar,
-        comment: r.comment || MOCK_GOOGLE_REVIEWS[idx % 4].comment,
-        rating: r.rating || 5,
-        photos: (r.photos && r.photos.length > 0) ? r.photos : (r.photo ? [r.photo] : MOCK_GOOGLE_REVIEWS[idx % 4].photos),
-      }))
-    : MOCK_GOOGLE_REVIEWS;
+  const apiMappedReviews: GoogleReviewItem[] =
+    reviews && reviews.length > 0
+      ? reviews.map((r: any, idx: number) => ({
+          id: r._id || r.id || `gr-${idx}`,
+          name: r.userName || r.name || MOCK_GOOGLE_REVIEWS[idx % 4].name,
+          badge: r.tripType || r.badge || "Joined Group Trip",
+          tripName:
+            r.tripName || r.city || MOCK_GOOGLE_REVIEWS[idx % 4].tripName,
+          date: r.createdAt
+            ? new Date(r.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : MOCK_GOOGLE_REVIEWS[idx % 4].date,
+          avatar: r.userImage || MOCK_GOOGLE_REVIEWS[idx % 4].avatar,
+          comment: r.comment || MOCK_GOOGLE_REVIEWS[idx % 4].comment,
+          rating: r.rating || 5,
+          photos:
+            r.photos && r.photos.length > 0
+              ? r.photos
+              : r.photo
+                ? [r.photo]
+                : MOCK_GOOGLE_REVIEWS[idx % 4].photos,
+        }))
+      : [];
+
+  const displayReviews: GoogleReviewItem[] =
+    apiMappedReviews.length >= 4
+      ? apiMappedReviews
+      : [...apiMappedReviews, ...MOCK_GOOGLE_REVIEWS.slice(apiMappedReviews.length)];
 
   const nudge = (dir: "l" | "r") => {
     if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: dir === "l" ? -380 : 380, behavior: "smooth" });
+      const cardEl = scrollRef.current.firstElementChild as HTMLElement | null;
+      const cardWidth = cardEl ? cardEl.offsetWidth : 320;
+      const scrollAmount = cardWidth + 24;
+      scrollRef.current.scrollBy({
+        left: dir === "l" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
     }
   };
 
   return (
     <section className="testimonials testimonials-slider module-center bg-white py-8 md:py-10 border-t border-zinc-100 font-montserrat">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
-        
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
           <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight truncate">
             {displayTitle}
           </h2>
 
           <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden sm:flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => nudge("l")}
                 aria-label="Previous reviews"
@@ -211,7 +255,10 @@ export default function ReviewsSection({
                   <div className="flex items-center gap-2 mb-2">
                     <div className="flex items-center gap-0.5">
                       {[...Array(rev.rating || 5)].map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-[#FFB800] text-[#FFB800]" />
+                        <Star
+                          key={i}
+                          className="w-3.5 h-3.5 fill-[#FFB800] text-[#FFB800]"
+                        />
                       ))}
                     </div>
                     <span className="text-[#777777] font-medium text-[11px] sm:text-xs">
@@ -323,7 +370,6 @@ export default function ReviewsSection({
             );
           })}
         </div>
-
       </div>
 
       {/* PHOTO LIGHTBOX MODAL */}
@@ -380,17 +426,29 @@ export default function ReviewsSection({
 
               <div className="flex items-start gap-4 mb-4">
                 <div className="relative w-14 h-14 rounded-full overflow-hidden shrink-0 border border-zinc-200">
-                  <Image src={selectedReview.avatar} alt={selectedReview.name} fill className="object-cover" />
+                  <Image
+                    src={selectedReview.avatar}
+                    alt={selectedReview.name}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-[#111827] text-lg capitalize">{selectedReview.name}</h4>
+                    <h4 className="font-bold text-[#111827] text-lg capitalize">
+                      {selectedReview.name}
+                    </h4>
                     {selectedReview.badge && (
-                      <span className="text-[#888888] font-medium text-sm">{selectedReview.badge}</span>
+                      <span className="text-[#888888] font-medium text-sm">
+                        {selectedReview.badge}
+                      </span>
                     )}
                   </div>
                   <p className="text-zinc-500 text-sm font-medium mt-0.5">
-                    Booked: <span className="font-bold text-[#111827]">{selectedReview.tripName}</span>
+                    Booked:{" "}
+                    <span className="font-bold text-[#111827]">
+                      {selectedReview.tripName}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -398,10 +456,15 @@ export default function ReviewsSection({
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex items-center gap-1">
                   {[...Array(selectedReview.rating || 5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-[#FFB800] text-[#FFB800]" />
+                    <Star
+                      key={i}
+                      className="w-4 h-4 fill-[#FFB800] text-[#FFB800]"
+                    />
                   ))}
                 </div>
-                <span className="text-[#777777] text-xs font-medium">{selectedReview.date}</span>
+                <span className="text-[#777777] text-xs font-medium">
+                  {selectedReview.date}
+                </span>
               </div>
 
               <p className="text-[#111827] font-normal text-base leading-relaxed mb-6">
@@ -411,8 +474,16 @@ export default function ReviewsSection({
               {selectedReview.photos && selectedReview.photos.length > 0 && (
                 <div className="grid grid-cols-3 gap-3 pt-2">
                   {selectedReview.photos.map((img, i) => (
-                    <div key={i} className="relative aspect-[4/3] rounded-[18px] overflow-hidden bg-zinc-100">
-                      <Image src={img} alt="Photo" fill className="object-cover" />
+                    <div
+                      key={i}
+                      className="relative aspect-[4/3] rounded-[18px] overflow-hidden bg-zinc-100"
+                    >
+                      <Image
+                        src={img}
+                        alt="Photo"
+                        fill
+                        className="object-cover"
+                      />
                     </div>
                   ))}
                 </div>

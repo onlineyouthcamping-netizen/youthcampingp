@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Phone, MapPin, MessageSquare, Clock, Send, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  MessageSquare,
+  Clock,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { submitInquiry } from "@/lib/api";
 
 export default function ContactPage() {
@@ -10,7 +19,7 @@ export default function ContactPage() {
     mobile: "",
     email: "",
     destination: "",
-    message: ""
+    message: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +38,7 @@ export default function ContactPage() {
         email: formData.email,
         destinationName: formData.destination,
         message: formData.message,
-        source: 'contact_page_form'
+        source: "contact_page_form",
       });
 
       setIsSuccess(true);
@@ -38,10 +47,13 @@ export default function ContactPage() {
         mobile: "",
         email: "",
         destination: "",
-        message: ""
+        message: "",
       });
     } catch (err: any) {
-      setError(err?.message || "Failed to submit message. Please try again or WhatsApp us directly.");
+      setError(
+        err?.message ||
+          "Failed to submit message. Please try again or WhatsApp us directly.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -60,7 +72,8 @@ export default function ContactPage() {
           </h1>
           <div className="w-16 h-1.5 bg-[#D4541A] rounded-full mx-auto my-3" />
           <p className="text-sm sm:text-lg text-zinc-300 font-semibold max-w-2xl mx-auto leading-relaxed font-montserrat">
-            Have questions about an upcoming trek or need custom group planning? Talk to our destination experts.
+            Have questions about an upcoming trek or need custom group planning?
+            Talk to our destination experts.
           </p>
         </div>
       </section>
@@ -75,7 +88,8 @@ export default function ContactPage() {
                 Send Us A Message
               </h2>
               <p className="text-xs sm:text-sm font-semibold text-zinc-500 font-montserrat">
-                Fill in your details below and our trip captain will call you back within 15 minutes.
+                Fill in your details below and our trip captain will call you
+                back within 15 minutes.
               </p>
             </div>
 
@@ -84,9 +98,12 @@ export default function ContactPage() {
                 <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                 </div>
-                <h3 className="text-xl font-extrabold text-[#0B1528] font-montserrat">Inquiry Submitted! 🎉</h3>
+                <h3 className="text-xl font-extrabold text-[#0B1528] font-montserrat">
+                  Inquiry Submitted! 🎉
+                </h3>
                 <p className="text-xs sm:text-sm text-zinc-600 font-semibold leading-relaxed max-w-sm mx-auto font-montserrat">
-                  Thank you for reaching out! Our destination team is reviewing your message and will get in touch shortly.
+                  Thank you for reaching out! Our destination team is reviewing
+                  your message and will get in touch shortly.
                 </p>
               </div>
             ) : (
@@ -109,7 +126,9 @@ export default function ContactPage() {
                       placeholder="e.g. Rahul Sharma"
                       className="w-full px-4 py-3.5 rounded-xl bg-zinc-50 border border-zinc-200 focus:border-[#D4541A] focus:bg-white outline-none font-semibold text-xs sm:text-sm text-[#0B1528] placeholder:text-zinc-400 font-montserrat transition-all"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                     />
                   </div>
 
@@ -123,7 +142,9 @@ export default function ContactPage() {
                       placeholder="+91 99999 99999"
                       className="w-full px-4 py-3.5 rounded-xl bg-zinc-50 border border-zinc-200 focus:border-[#D4541A] focus:bg-white outline-none font-semibold text-xs sm:text-sm text-[#0B1528] placeholder:text-zinc-400 font-montserrat transition-all"
                       value={formData.mobile}
-                      onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, mobile: e.target.value })
+                      }
                     />
                   </div>
                 </div>
@@ -138,7 +159,9 @@ export default function ContactPage() {
                       placeholder="rahul@gmail.com"
                       className="w-full px-4 py-3.5 rounded-xl bg-zinc-50 border border-zinc-200 focus:border-[#D4541A] focus:bg-white outline-none font-semibold text-xs sm:text-sm text-[#0B1528] placeholder:text-zinc-400 font-montserrat transition-all"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                     />
                   </div>
 
@@ -151,7 +174,12 @@ export default function ContactPage() {
                       placeholder="e.g. Manali, Spiti, Ladakh"
                       className="w-full px-4 py-3.5 rounded-xl bg-zinc-50 border border-zinc-200 focus:border-[#D4541A] focus:bg-white outline-none font-semibold text-xs sm:text-sm text-[#0B1528] placeholder:text-zinc-400 font-montserrat transition-all"
                       value={formData.destination}
-                      onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          destination: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -165,7 +193,9 @@ export default function ContactPage() {
                     placeholder="Tell us about your travel dates, group size, or custom requirements..."
                     className="w-full px-4 py-3.5 rounded-xl bg-zinc-50 border border-zinc-200 focus:border-[#D4541A] focus:bg-white outline-none font-semibold text-xs sm:text-sm text-[#0B1528] placeholder:text-zinc-400 font-montserrat transition-all resize-none"
                     value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, message: e.target.value })
+                    }
                   />
                 </div>
 
@@ -200,9 +230,12 @@ export default function ContactPage() {
                     <MapPin className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-montserrat mb-0.5">Office Address</p>
+                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-montserrat mb-0.5">
+                      Office Address
+                    </p>
                     <p className="text-xs sm:text-sm font-semibold text-white leading-relaxed font-montserrat">
-                      Money Plant High Street, A 738, Jagatpur Rd, Gota, Ahmedabad, Gujarat 382470
+                      Money Plant High Street, A 738, Jagatpur Rd, Gota,
+                      Ahmedabad, Gujarat 382470
                     </p>
                   </div>
                 </div>
@@ -212,9 +245,15 @@ export default function ContactPage() {
                     <Phone className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-montserrat mb-0.5">Call & WhatsApp Hotline</p>
-                    <p className="text-xs sm:text-sm font-semibold text-white font-montserrat">+91 99242 46267</p>
-                    <p className="text-[11px] text-zinc-400 font-medium font-montserrat mt-0.5">Available 10 AM - 8 PM IST</p>
+                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-montserrat mb-0.5">
+                      Call & WhatsApp Hotline
+                    </p>
+                    <p className="text-xs sm:text-sm font-semibold text-white font-montserrat">
+                      +91 99242 46267
+                    </p>
+                    <p className="text-[11px] text-zinc-400 font-medium font-montserrat mt-0.5">
+                      Available 10 AM - 8 PM IST
+                    </p>
                   </div>
                 </div>
 
@@ -223,8 +262,12 @@ export default function ContactPage() {
                     <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-montserrat mb-0.5">Email Support</p>
-                    <p className="text-xs sm:text-sm font-semibold text-white font-montserrat">youthcampingmedia@gmail.com</p>
+                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-montserrat mb-0.5">
+                      Email Support
+                    </p>
+                    <p className="text-xs sm:text-sm font-semibold text-white font-montserrat">
+                      youthcampingmedia@gmail.com
+                    </p>
                   </div>
                 </div>
               </div>

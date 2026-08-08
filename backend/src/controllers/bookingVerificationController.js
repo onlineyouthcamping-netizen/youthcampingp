@@ -1,4 +1,4 @@
-const { prisma } = require('../lib/prisma');
+const { prisma } = require("../lib/prisma");
 const countCache = new Map();
 const {
   getTicketActionConfig,
@@ -6,7 +6,7 @@ const {
   buildTicketAlertSummary,
   getDefaultEmailTemplates,
   getDefaultTrainTicketTemplates,
-} = require('../utils/trainTicketWorkflow');
+} = require("../utils/trainTicketWorkflow");
 
 // ────────────────────────────────────────────
 // BOOKING VERIFICATION CONTROLLER
@@ -35,8 +35,8 @@ exports.getVerificationStatus = async (req, res) => {
             status: true,
             submittedAt: true,
             verifiedAt: true,
-            verifiedBy: { select: { id: true, name: true } }
-          }
+            verifiedBy: { select: { id: true, name: true } },
+          },
         },
         trainTicket: {
           select: {
@@ -44,15 +44,17 @@ exports.getVerificationStatus = async (req, res) => {
             bookingId: true,
             status: true,
             pnr: true,
-            preferredTrain: true
-          }
-        }
-      }
+            preferredTrain: true,
+          },
+        },
+      },
     });
     const queryDuration = Date.now() - queryStart;
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
     const resData = {
@@ -62,20 +64,24 @@ exports.getVerificationStatus = async (req, res) => {
         trainTicketRequired: booking.trainTicketRequired,
         trainTicketStatus: booking.trainTicketStatus,
         verification: booking.verification || null,
-        trainTicket: booking.trainTicket || null
-      }
+        trainTicket: booking.trainTicket || null,
+      },
     };
 
-    if (process.env.ENABLE_PERFORMANCE_METRICS === 'true') {
+    if (process.env.ENABLE_PERFORMANCE_METRICS === "true") {
       const duration = Date.now() - start;
       const payloadBytes = Buffer.byteLength(JSON.stringify(resData));
-      console.log(`[METRICS] getVerificationStatus - Total: ${duration}ms, Query: ${queryDuration}ms, Payload: ${payloadBytes} bytes`);
+      console.log(
+        `[METRICS] getVerificationStatus - Total: ${duration}ms, Query: ${queryDuration}ms, Payload: ${payloadBytes} bytes`,
+      );
     }
 
     return res.json(resData);
   } catch (err) {
-    console.error('getVerificationStatus error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch verification status' });
+    console.error("getVerificationStatus error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch verification status" });
   }
 };
 
@@ -90,15 +96,31 @@ exports.submitForVerification = async (req, res) => {
     const role = req.user.role;
 
     const booking = await prisma.booking.findFirst({
-      where: { bookingId, tenantId: req.user.tenantId }
+      where: { bookingId, tenantId: req.user.tenantId },
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
-    if (!['sales', 'admin', 'superadmin', 'BOOKING_VERIFIER', 'operations', 'finance'].includes(role)) {
-      return res.status(403).json({ success: false, message: 'Forbidden: Insufficient permissions' });
+    if (
+      ![
+        "sales",
+        "admin",
+        "superadmin",
+        "BOOKING_VERIFIER",
+        "operations",
+        "finance",
+      ].includes(role)
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Forbidden: Insufficient permissions",
+        });
     }
 
     // Create or update the verification record
@@ -107,52 +129,54 @@ exports.submitForVerification = async (req, res) => {
       create: {
         tenantId: req.user.tenantId,
         bookingId: booking.bookingId,
-        status: 'PENDING_VERIFICATION',
-        submittedAt: new Date()
+        status: "PENDING_VERIFICATION",
+        submittedAt: new Date(),
       },
       update: {
-        status: 'PENDING_VERIFICATION',
-        submittedAt: new Date()
-      }
+        status: "PENDING_VERIFICATION",
+        submittedAt: new Date(),
+      },
     });
 
     // Create verification log
     await prisma.bookingVerificationLog.create({
       data: {
         bookingVerificationId: verification.id,
-        action: 'SUBMIT',
+        action: "SUBMIT",
         notes: req.body.notes || null,
-        adminId: userId
-      }
+        adminId: userId,
+      },
     });
 
     // If train ticket is required, update ticket status
     const updates = {};
     if (booking.trainTicketRequired) {
-      updates.trainTicketStatus = 'PENDING_VERIFICATION';
+      updates.trainTicketStatus = "PENDING_VERIFICATION";
 
       // Also update the train ticket request status if it exists
       await prisma.trainTicketRequest.updateMany({
         where: { bookingId: booking.bookingId },
-        data: { status: 'PENDING_VERIFICATION' }
+        data: { status: "PENDING_VERIFICATION" },
       });
     }
 
     if (Object.keys(updates).length > 0) {
       await prisma.booking.update({
         where: { bookingId: booking.bookingId },
-        data: updates
+        data: updates,
       });
     }
 
     return res.json({
       success: true,
       data: verification,
-      message: 'Booking submitted for verification'
+      message: "Booking submitted for verification",
     });
   } catch (err) {
-    console.error('submitForVerification error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to submit for verification' });
+    console.error("submitForVerification error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to submit for verification" });
   }
 };
 
@@ -188,7 +212,7 @@ exports.getVerificationQueue = async (req, res) => {
     if (cachedCount && Date.now() < cachedCount.expiresAt) {
       totalPromise = Promise.resolve(cachedCount.count);
     } else {
-      totalPromise = prisma.bookingVerification.count({ where }).then(c => {
+      totalPromise = prisma.bookingVerification.count({ where }).then((c) => {
         countCache.set(cacheKey, { count: c, expiresAt: Date.now() + 30000 });
         return c;
       });
@@ -200,7 +224,7 @@ exports.getVerificationQueue = async (req, res) => {
         where,
         skip,
         take: limit,
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { updatedAt: "desc" },
         select: {
           id: true,
           bookingId: true,
@@ -223,13 +247,13 @@ exports.getVerificationQueue = async (req, res) => {
               salesAdminId: true,
               numberOfTravelers: true,
               paymentStatus: true,
-              salesAdmin: { select: { id: true, name: true } }
-            }
+              salesAdmin: { select: { id: true, name: true } },
+            },
           },
-          verifiedBy: { select: { id: true, name: true } }
-        }
+          verifiedBy: { select: { id: true, name: true } },
+        },
       }),
-      totalPromise
+      totalPromise,
     ]);
     const queryDuration = Date.now() - queryStart;
 
@@ -241,21 +265,25 @@ exports.getVerificationQueue = async (req, res) => {
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit)
-        }
-      }
+          totalPages: Math.ceil(total / limit),
+        },
+      },
     };
 
-    if (process.env.ENABLE_PERFORMANCE_METRICS === 'true') {
+    if (process.env.ENABLE_PERFORMANCE_METRICS === "true") {
       const duration = Date.now() - start;
       const payloadBytes = Buffer.byteLength(JSON.stringify(resData));
-      console.log(`[METRICS] getVerificationQueue - Total: ${duration}ms, Query: ${queryDuration}ms, Rows: ${verifications.length}, Payload: ${payloadBytes} bytes`);
+      console.log(
+        `[METRICS] getVerificationQueue - Total: ${duration}ms, Query: ${queryDuration}ms, Rows: ${verifications.length}, Payload: ${payloadBytes} bytes`,
+      );
     }
 
     return res.json(resData);
   } catch (err) {
-    console.error('getVerificationQueue error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch verification queue' });
+    console.error("getVerificationQueue error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch verification queue" });
   }
 };
 
@@ -269,45 +297,55 @@ exports.performVerificationAction = async (req, res) => {
     const { action, notes, checklist } = req.body;
     const userId = req.user.id;
 
-    if (!action || !['VERIFY', 'REQUEST_CHANGES', 'REJECT'].includes(action)) {
-      return res.status(400).json({ success: false, message: 'Invalid action. Must be VERIFY, REQUEST_CHANGES, or REJECT' });
+    if (!action || !["VERIFY", "REQUEST_CHANGES", "REJECT"].includes(action)) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Invalid action. Must be VERIFY, REQUEST_CHANGES, or REJECT",
+        });
     }
 
     const verification = await prisma.bookingVerification.findFirst({
       where: {
         bookingId,
-        tenantId: req.user.tenantId
-      }
+        tenantId: req.user.tenantId,
+      },
     });
 
     if (!verification) {
-      return res.status(404).json({ success: false, message: 'Verification record not found for this booking' });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "Verification record not found for this booking",
+        });
     }
 
     // Map action to verification status
     const statusMap = {
-      'VERIFY': 'VERIFIED',
-      'REQUEST_CHANGES': 'CHANGES_REQUESTED',
-      'REJECT': 'REJECTED'
+      VERIFY: "VERIFIED",
+      REQUEST_CHANGES: "CHANGES_REQUESTED",
+      REJECT: "REJECTED",
     };
 
     const updateData = {
       status: statusMap[action],
-      notes: notes || verification.notes
+      notes: notes || verification.notes,
     };
 
     if (checklist) {
       updateData.checklist = checklist;
     }
 
-    if (action === 'VERIFY') {
+    if (action === "VERIFY") {
       updateData.verifiedAt = new Date();
       updateData.verifiedByAdminId = userId;
     }
 
     const updated = await prisma.bookingVerification.update({
       where: { id: verification.id },
-      data: updateData
+      data: updateData,
     });
 
     // Create verification log
@@ -316,18 +354,23 @@ exports.performVerificationAction = async (req, res) => {
         bookingVerificationId: verification.id,
         action,
         notes: notes || null,
-        adminId: userId
-      }
+        adminId: userId,
+      },
     });
 
     return res.json({
       success: true,
       data: updated,
-      message: `Verification action '${action}' performed successfully`
+      message: `Verification action '${action}' performed successfully`,
     });
   } catch (err) {
-    console.error('performVerificationAction error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to perform verification action' });
+    console.error("performVerificationAction error:", err);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to perform verification action",
+      });
   }
 };
 
@@ -339,17 +382,25 @@ exports.saveTrainTicketDraft = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const {
-      journeyDate, fromStation, toStation,
-      preferredTrain, preferredClass, seatPreference,
-      estimatedAmount, specialNotes, travellers
+      journeyDate,
+      fromStation,
+      toStation,
+      preferredTrain,
+      preferredClass,
+      seatPreference,
+      estimatedAmount,
+      specialNotes,
+      travellers,
     } = req.body;
 
     const booking = await prisma.booking.findFirst({
-      where: { bookingId, tenantId: req.user.tenantId }
+      where: { bookingId, tenantId: req.user.tenantId },
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
     // Upsert the train ticket request
@@ -361,7 +412,7 @@ exports.saveTrainTicketDraft = async (req, res) => {
       preferredClass: preferredClass || null,
       seatPreference: seatPreference || null,
       estimatedAmount: estimatedAmount ? parseFloat(estimatedAmount) : 0,
-      specialNotes: specialNotes || null
+      specialNotes: specialNotes || null,
     };
 
     const ticket = await prisma.trainTicketRequest.upsert({
@@ -369,28 +420,28 @@ exports.saveTrainTicketDraft = async (req, res) => {
       create: {
         tenantId: req.user.tenantId,
         bookingId: booking.bookingId,
-        status: 'DRAFT',
-        ...ticketData
+        status: "DRAFT",
+        ...ticketData,
       },
       update: {
-        ...ticketData
-      }
+        ...ticketData,
+      },
     });
 
     // Delete existing travellers and recreate
     await prisma.trainTicketTraveller.deleteMany({
-      where: { trainTicketRequestId: ticket.id }
+      where: { trainTicketRequestId: ticket.id },
     });
 
     if (travellers && Array.isArray(travellers) && travellers.length > 0) {
       await prisma.trainTicketTraveller.createMany({
-        data: travellers.map(t => ({
+        data: travellers.map((t) => ({
           trainTicketRequestId: ticket.id,
           name: t.name,
           age: t.age ? parseInt(t.age, 10) : null,
           gender: t.gender || null,
-          phone: t.phone || null
-        }))
+          phone: t.phone || null,
+        })),
       });
     }
 
@@ -398,10 +449,10 @@ exports.saveTrainTicketDraft = async (req, res) => {
     await prisma.trainTicketLog.create({
       data: {
         trainTicketRequestId: ticket.id,
-        action: 'SAVE_DRAFT',
+        action: "SAVE_DRAFT",
         notes: specialNotes || null,
-        adminId: req.user.id
-      }
+        adminId: req.user.id,
+      },
     });
 
     // Update booking flags
@@ -409,24 +460,26 @@ exports.saveTrainTicketDraft = async (req, res) => {
       where: { bookingId: booking.bookingId },
       data: {
         trainTicketRequired: true,
-        trainTicketStatus: 'DRAFT'
-      }
+        trainTicketStatus: "DRAFT",
+      },
     });
 
     // Fetch complete ticket with travellers
     const fullTicket = await prisma.trainTicketRequest.findUnique({
       where: { id: ticket.id },
-      include: { travellers: true }
+      include: { travellers: true },
     });
 
     return res.json({
       success: true,
       data: fullTicket,
-      message: 'Train ticket draft saved'
+      message: "Train ticket draft saved",
     });
   } catch (err) {
-    console.error('saveTrainTicketDraft error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to save train ticket draft' });
+    console.error("saveTrainTicketDraft error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to save train ticket draft" });
   }
 };
 
@@ -441,25 +494,29 @@ exports.getTrainTicketDraft = async (req, res) => {
     const ticket = await prisma.trainTicketRequest.findFirst({
       where: {
         bookingId,
-        booking: { tenantId: req.user.tenantId }
+        booking: { tenantId: req.user.tenantId },
       },
       include: {
         travellers: true,
         logs: {
-          orderBy: { createdAt: 'desc' },
-          include: { admin: { select: { id: true, name: true } } }
-        }
-      }
+          orderBy: { createdAt: "desc" },
+          include: { admin: { select: { id: true, name: true } } },
+        },
+      },
     });
 
     if (!ticket) {
-      return res.status(404).json({ success: false, message: 'Train ticket request not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Train ticket request not found" });
     }
 
     return res.json({ success: true, data: ticket });
   } catch (err) {
-    console.error('getTrainTicketDraft error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch train ticket draft' });
+    console.error("getTrainTicketDraft error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch train ticket draft" });
   }
 };
 
@@ -474,11 +531,13 @@ exports.getTicketTemplates = async (req, res) => {
       data: {
         trainTemplates: getDefaultTrainTicketTemplates(),
         emailTemplates: getDefaultEmailTemplates(),
-      }
+      },
     });
   } catch (err) {
-    console.error('getTicketTemplates error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch ticket templates' });
+    console.error("getTicketTemplates error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch ticket templates" });
   }
 };
 
@@ -487,43 +546,52 @@ exports.bulkUpdateTickets = async (req, res) => {
     const { bookingIds = [], action, notes, pnr, ticketDetails } = req.body;
 
     if (!Array.isArray(bookingIds) || bookingIds.length === 0) {
-      return res.status(400).json({ success: false, message: 'bookingIds is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "bookingIds is required" });
     }
 
     const actionConfig = getTicketActionConfig(action);
     if (!actionConfig) {
-      return res.status(400).json({ success: false, message: 'Invalid action' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid action" });
     }
 
-    const updates = await Promise.all(bookingIds.map(async (bookingId) => {
-      const ticket = await prisma.trainTicketRequest.findFirst({
-        where: { bookingId, booking: { tenantId: req.user.tenantId } }
-      });
+    const updates = await Promise.all(
+      bookingIds.map(async (bookingId) => {
+        const ticket = await prisma.trainTicketRequest.findFirst({
+          where: { bookingId, booking: { tenantId: req.user.tenantId } },
+        });
 
-      if (!ticket) return null;
+        if (!ticket) return null;
 
-      const updated = await prisma.trainTicketRequest.update({
-        where: { id: ticket.id },
-        data: {
-          status: actionConfig.status,
-          ...(pnr ? { pnr } : {}),
-          ...(ticketDetails ? { ticketDetails } : {}),
-        }
-      });
+        const updated = await prisma.trainTicketRequest.update({
+          where: { id: ticket.id },
+          data: {
+            status: actionConfig.status,
+            ...(pnr ? { pnr } : {}),
+            ...(ticketDetails ? { ticketDetails } : {}),
+          },
+        });
 
-      await prisma.trainTicketLog.create({
-        data: {
-          trainTicketRequestId: ticket.id,
-          action: actionConfig.logAction,
-          notes: notes || null,
-          adminId: req.user.id,
-          snapshot: { bulkAction: action }
-        }
-      });
+        await prisma.trainTicketLog.create({
+          data: {
+            trainTicketRequestId: ticket.id,
+            action: actionConfig.logAction,
+            notes: notes || null,
+            adminId: req.user.id,
+            snapshot: { bulkAction: action },
+          },
+        });
 
-      await prisma.booking.update({ where: { bookingId }, data: { trainTicketStatus: actionConfig.status } });
-      return updated;
-    }));
+        await prisma.booking.update({
+          where: { bookingId },
+          data: { trainTicketStatus: actionConfig.status },
+        });
+        return updated;
+      }),
+    );
 
     return res.json({
       success: true,
@@ -532,30 +600,37 @@ exports.bulkUpdateTickets = async (req, res) => {
         templates: getDefaultTrainTicketTemplates(),
         emailTemplates: getDefaultEmailTemplates(),
       },
-      message: 'Bulk ticket update completed successfully'
+      message: "Bulk ticket update completed successfully",
     });
   } catch (err) {
-    console.error('bulkUpdateTickets error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to bulk update tickets' });
+    console.error("bulkUpdateTickets error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to bulk update tickets" });
   }
 };
 
 exports.triggerTicketAlerts = async (req, res) => {
   try {
     const { bookingIds = [] } = req.body;
-    const summary = buildTicketAlertSummary(bookingIds.map((bookingId) => ({ bookingId, status: 'PENDING' })), {
-      triggeredBy: req.user.id,
-      scope: bookingIds.length > 0 ? 'selected' : 'all',
-    });
+    const summary = buildTicketAlertSummary(
+      bookingIds.map((bookingId) => ({ bookingId, status: "PENDING" })),
+      {
+        triggeredBy: req.user.id,
+        scope: bookingIds.length > 0 ? "selected" : "all",
+      },
+    );
 
     return res.json({
       success: true,
       data: summary,
-      message: 'Ticket alerts triggered successfully'
+      message: "Ticket alerts triggered successfully",
     });
   } catch (err) {
-    console.error('triggerTicketAlerts error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to trigger ticket alerts' });
+    console.error("triggerTicketAlerts error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to trigger ticket alerts" });
   }
 };
 
@@ -565,24 +640,48 @@ exports.performTicketAction = async (req, res) => {
     const { action, notes, pnr, ticketDetails } = req.body;
     const userId = req.user.id;
 
-    if (!action || !['APPROVE', 'REJECT', 'REQUEST_CHANGES', 'MARK_ISSUED', 'CANCEL_TICKET', 'REBOOK'].includes(action)) {
-      return res.status(400).json({ success: false, message: 'Invalid action. Must be APPROVE, REJECT, REQUEST_CHANGES, MARK_ISSUED, CANCEL_TICKET, or REBOOK' });
+    if (
+      !action ||
+      ![
+        "APPROVE",
+        "REJECT",
+        "REQUEST_CHANGES",
+        "MARK_ISSUED",
+        "CANCEL_TICKET",
+        "REBOOK",
+      ].includes(action)
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Invalid action. Must be APPROVE, REJECT, REQUEST_CHANGES, MARK_ISSUED, CANCEL_TICKET, or REBOOK",
+        });
     }
 
     const ticket = await prisma.trainTicketRequest.findFirst({
       where: {
         bookingId,
-        booking: { tenantId: req.user.tenantId }
-      }
+        booking: { tenantId: req.user.tenantId },
+      },
     });
 
     if (!ticket) {
-      return res.status(404).json({ success: false, message: 'Train ticket request not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Train ticket request not found" });
     }
 
     const actionConfig = getTicketActionConfig(action);
     if (!actionConfig) {
-      return res.status(400).json({ success: false, message: 'Invalid action. Must be APPROVE, REJECT, REQUEST_CHANGES, MARK_ISSUED, CANCEL_TICKET, or REBOOK' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Invalid action. Must be APPROVE, REJECT, REQUEST_CHANGES, MARK_ISSUED, CANCEL_TICKET, or REBOOK",
+        });
     }
 
     const updateData = { status: actionConfig.status };
@@ -591,7 +690,7 @@ exports.performTicketAction = async (req, res) => {
 
     const updated = await prisma.trainTicketRequest.update({
       where: { id: ticket.id },
-      data: updateData
+      data: updateData,
     });
 
     const historyEntry = {
@@ -610,8 +709,8 @@ exports.performTicketAction = async (req, res) => {
         action: actionConfig.logAction,
         notes: notes || null,
         adminId: userId,
-        snapshot: { history }
-      }
+        snapshot: { history },
+      },
     });
 
     await prisma.trainTicketRequest.update({
@@ -619,12 +718,12 @@ exports.performTicketAction = async (req, res) => {
       data: {
         history,
         status: actionConfig.status,
-      }
+      },
     });
 
     await prisma.booking.update({
       where: { bookingId },
-      data: { trainTicketStatus: actionConfig.status }
+      data: { trainTicketStatus: actionConfig.status },
     });
 
     return res.json({
@@ -636,10 +735,12 @@ exports.performTicketAction = async (req, res) => {
         templates: getDefaultTrainTicketTemplates(),
         emailTemplates: getDefaultEmailTemplates(),
       },
-      message: `Ticket action '${action}' performed successfully`
+      message: `Ticket action '${action}' performed successfully`,
     });
   } catch (err) {
-    console.error('performTicketAction error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to perform ticket action' });
+    console.error("performTicketAction error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to perform ticket action" });
   }
 };

@@ -1,18 +1,15 @@
-const { prisma } = require('../lib/prisma');
+const { prisma } = require("../lib/prisma");
 
 exports.getBookingLogs = async (req, res, next) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user.tenantId || "default";
     const { bookingId } = req.params;
 
     const booking = await prisma.booking.findFirst({
       where: {
         tenantId,
-        OR: [
-          { id: bookingId },
-          { bookingId: bookingId }
-        ]
-      }
+        OR: [{ id: bookingId }, { bookingId: bookingId }],
+      },
     });
 
     if (!booking) {
@@ -22,17 +19,14 @@ exports.getBookingLogs = async (req, res, next) => {
     const logs = await prisma.emailLog.findMany({
       where: {
         tenantId,
-        OR: [
-          { bookingId: booking.id },
-          { bookingId: booking.bookingId }
-        ]
+        OR: [{ bookingId: booking.id }, { bookingId: booking.bookingId }],
       },
       include: {
         sender: {
-          select: { name: true, email: true }
-        }
+          select: { name: true, email: true },
+        },
       },
-      orderBy: { sentAt: 'desc' }
+      orderBy: { sentAt: "desc" },
     });
 
     res.json({ success: true, data: logs });
@@ -43,29 +37,36 @@ exports.getBookingLogs = async (req, res, next) => {
 
 exports.getInquiryLogs = async (req, res, next) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user.tenantId || "default";
     const { inquiryId } = req.params;
 
     const inquiry = await prisma.inquiry.findFirst({
-      where: { id: inquiryId, tenantId }
+      where: { id: inquiryId, tenantId },
     });
 
     if (!inquiry) {
-      return res.status(404).json({ success: false, message: 'Inquiry not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Inquiry not found" });
     }
 
-    if (req.user.role === 'sales' && inquiry.salesAdminId !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Forbidden: Scoped ownership violation' });
+    if (req.user.role === "sales" && inquiry.salesAdminId !== req.user.id) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Forbidden: Scoped ownership violation",
+        });
     }
 
     const logs = await prisma.emailLog.findMany({
       where: { inquiryId, tenantId },
       include: {
         sender: {
-          select: { name: true, email: true }
-        }
+          select: { name: true, email: true },
+        },
       },
-      orderBy: { sentAt: 'desc' }
+      orderBy: { sentAt: "desc" },
     });
 
     res.json({ success: true, data: logs });
@@ -76,32 +77,42 @@ exports.getInquiryLogs = async (req, res, next) => {
 
 exports.getTicketLogs = async (req, res, next) => {
   try {
-    const tenantId = req.user.tenantId || 'default';
+    const tenantId = req.user.tenantId || "default";
     const { trainTicketId } = req.params;
 
     const ticket = await prisma.trainTicket.findFirst({
       where: { id: trainTicketId, tenantId },
       include: {
-        booking: true
-      }
+        booking: true,
+      },
     });
 
     if (!ticket) {
-      return res.status(404).json({ success: false, message: 'Train ticket not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Train ticket not found" });
     }
 
-    if (req.user.role === 'sales' && ticket.booking.salesAdminId !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Forbidden: Scoped ownership violation' });
+    if (
+      req.user.role === "sales" &&
+      ticket.booking.salesAdminId !== req.user.id
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Forbidden: Scoped ownership violation",
+        });
     }
 
     const logs = await prisma.emailLog.findMany({
       where: { trainTicketId, tenantId },
       include: {
         sender: {
-          select: { name: true, email: true }
-        }
+          select: { name: true, email: true },
+        },
       },
-      orderBy: { sentAt: 'desc' }
+      orderBy: { sentAt: "desc" },
     });
 
     res.json({ success: true, data: logs });

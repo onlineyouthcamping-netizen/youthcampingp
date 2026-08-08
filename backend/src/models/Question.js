@@ -1,32 +1,35 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const questionSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: [true, 'Please add a question title'],
-    trim: true
-  },
-  options: {
-    type: [String],
-    required: [true, 'Please add options'],
-    validate: {
-      validator: function(v) {
-        return v.length >= 2;
+const questionSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, "Please add a question title"],
+      trim: true,
+    },
+    options: {
+      type: [String],
+      required: [true, "Please add options"],
+      validate: {
+        validator: function (v) {
+          return v.length >= 2;
+        },
+        message: "A question must have at least 2 options",
       },
-      message: 'A question must have at least 2 options'
-    }
+    },
+    answer: {
+      type: String,
+      required: [true, "Please add an answer"],
+    },
+    category: {
+      type: String,
+      required: [true, "Please add a category"],
+      default: "General",
+    },
   },
-  answer: {
-    type: String,
-    required: [true, 'Please add an answer']
+  {
+    timestamps: true,
   },
-  category: {
-    type: String,
-    required: [true, 'Please add a category'],
-    default: 'General'
-  }
-}, {
-  timestamps: true
-});
+);
 
-module.exports = mongoose.model('Question', questionSchema);
+module.exports = mongoose.model("Question", questionSchema);

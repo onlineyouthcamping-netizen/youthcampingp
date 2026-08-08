@@ -1,19 +1,19 @@
-const { prisma } = require('../lib/prisma');
+const { prisma } = require("../lib/prisma");
 
 function normalizeDepartureDateIndia(dateInput) {
   if (!dateInput) return null;
-  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+  if (typeof dateInput === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
     const directDate = new Date(`${dateInput}T00:00:00.000Z`);
     if (!isNaN(directDate.getTime())) return directDate;
   }
   const d = new Date(dateInput);
   if (isNaN(d.getTime())) return null;
   try {
-    const formatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Kolkata',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
     const indiaDateStr = formatter.format(d);
     return new Date(`${indiaDateStr}T00:00:00.000Z`);
@@ -27,36 +27,40 @@ async function parseDepartureFilter(req, res) {
   const rawDate = req.query.departureDate || req.body.departureDate;
 
   if (!rawDate) {
-    res.status(400).json({ success: false, message: 'departureDate is required' });
+    res
+      .status(400)
+      .json({ success: false, message: "departureDate is required" });
     return null;
   }
 
   const departureDate = normalizeDepartureDateIndia(rawDate);
   if (!departureDate || isNaN(departureDate.getTime())) {
-    res.status(400).json({ success: false, message: 'Invalid departureDate format' });
+    res
+      .status(400)
+      .json({ success: false, message: "Invalid departureDate format" });
     return null;
   }
 
-  const tenantId = req.user?.tenantId || 'default';
+  const tenantId = req.user?.tenantId || "default";
   let tripId = rawTripId;
   if (rawTripId) {
     const trip = await prisma.trip.findFirst({
       where: {
         tenantId,
-        OR: [
-          { id: rawTripId },
-          { slug: rawTripId },
-          { shortName: rawTripId }
-        ]
+        OR: [{ id: rawTripId }, { slug: rawTripId }, { shortName: rawTripId }],
       },
-      select: { id: true }
+      select: { id: true },
     });
     if (trip) tripId = trip.id;
   }
 
   const where = { tenantId, tripId, departureDate };
 
-  let bookingWhere = { tenantId, tripId, status: { notIn: ['cancelled', 'rejected'] } };
+  let bookingWhere = {
+    tenantId,
+    tripId,
+    status: { notIn: ["cancelled", "rejected"] },
+  };
   const startOfDay = new Date(departureDate);
   startOfDay.setUTCHours(0, 0, 0, 0);
   const endOfDay = new Date(departureDate);
@@ -82,50 +86,59 @@ exports.getClientPayments = async (req, res) => {
         advancePaid: true,
         remainingAmount: true,
         paymentStatus: true,
-        passengers: true
-      }
+        passengers: true,
+      },
     });
 
-    const bookingIds = bookings.map(b => b.bookingId);
+    const bookingIds = bookings.map((b) => b.bookingId);
 
     // Fetch all recorded transaction receipts
     const receipts = await prisma.opsClientPayment.findMany({
       where: {
-        bookingId: { in: bookingIds }
+        bookingId: { in: bookingIds },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return res.json({
       success: true,
       data: {
         bookings,
-        receipts
-      }
+        receipts,
+      },
     });
   } catch (err) {
-    console.error('getClientPayments error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch client payments' });
+    console.error("getClientPayments error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch client payments" });
   }
 };
 
 exports.addClientPayment = async (req, res) => {
   try {
     const { bookingId: paramBookingId } = req.params;
-    const { amount, paymentMode, transactionId, paymentDate, proofUrl, status, remarks } = req.body;
-    const tenantId = req.user?.tenantId || 'default';
+    const {
+      amount,
+      paymentMode,
+      transactionId,
+      paymentDate,
+      proofUrl,
+      status,
+      remarks,
+    } = req.body;
+    const tenantId = req.user?.tenantId || "default";
 
     const booking = await prisma.booking.findFirst({
       where: {
-        OR: [
-          { id: paramBookingId },
-          { bookingId: paramBookingId }
-        ]
-      }
+        OR: [{ id: paramBookingId }, { bookingId: paramBookingId }],
+      },
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
     const targetBookingId = booking.bookingId || booking.id;
@@ -139,34 +152,41 @@ exports.addClientPayment = async (req, res) => {
         transactionId,
         paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
         proofUrl,
-        status: status || 'Pending Verification',
-        collectedBy: req.user?.name || req.user?.email || 'Staff',
-        remarks
-      }
+        status: status || "Pending Verification",
+        collectedBy: req.user?.name || req.user?.email || "Staff",
+        remarks,
+      },
     });
 
     // Automatically recalculate booking advancePaid and remainingAmount if status is Verified
-    if (receipt.status === 'Verified') {
+    if (receipt.status === "Verified") {
       const allVerified = await prisma.opsClientPayment.findMany({
-        where: { bookingId: targetBookingId, status: 'Verified' }
+        where: { bookingId: targetBookingId, status: "Verified" },
       });
       const totalVerified = allVerified.reduce((s, r) => s + r.amount, 0);
       const remaining = Math.max(0, booking.totalAmount - totalVerified);
-      
+
       await prisma.booking.update({
         where: { id: booking.id },
         data: {
           advancePaid: totalVerified,
           remainingAmount: remaining,
-          paymentStatus: remaining === 0 ? 'Paid' : totalVerified > 0 ? 'Partially Paid' : 'Unpaid'
-        }
+          paymentStatus:
+            remaining === 0
+              ? "Paid"
+              : totalVerified > 0
+                ? "Partially Paid"
+                : "Unpaid",
+        },
       });
     }
 
     return res.json({ success: true, data: receipt });
   } catch (err) {
-    console.error('addClientPayment error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to record client payment' });
+    console.error("addClientPayment error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to record client payment" });
   }
 };
 
@@ -176,34 +196,33 @@ exports.verifyClientPayment = async (req, res) => {
     const { status, remarks } = req.body; // Verified, Rejected, Refunded
 
     const receipt = await prisma.opsClientPayment.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!receipt) {
-      return res.status(404).json({ success: false, message: 'Payment record not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Payment record not found" });
     }
 
     const updated = await prisma.opsClientPayment.update({
       where: { id },
       data: {
         status,
-        remarks: remarks || receipt.remarks
-      }
+        remarks: remarks || receipt.remarks,
+      },
     });
 
     // Update booking totals
     const booking = await prisma.booking.findFirst({
       where: {
-        OR: [
-          { bookingId: receipt.bookingId },
-          { id: receipt.bookingId }
-        ]
-      }
+        OR: [{ bookingId: receipt.bookingId }, { id: receipt.bookingId }],
+      },
     });
 
     if (booking) {
       const allVerified = await prisma.opsClientPayment.findMany({
-        where: { bookingId: receipt.bookingId, status: 'Verified' }
+        where: { bookingId: receipt.bookingId, status: "Verified" },
       });
       const totalVerified = allVerified.reduce((s, r) => s + r.amount, 0);
       const remaining = Math.max(0, booking.totalAmount - totalVerified);
@@ -213,68 +232,83 @@ exports.verifyClientPayment = async (req, res) => {
         data: {
           advancePaid: totalVerified,
           remainingAmount: remaining,
-          paymentStatus: remaining === 0 ? 'Paid' : totalVerified > 0 ? 'Partially Paid' : 'Unpaid'
-        }
+          paymentStatus:
+            remaining === 0
+              ? "Paid"
+              : totalVerified > 0
+                ? "Partially Paid"
+                : "Unpaid",
+        },
       });
     }
 
     return res.json({ success: true, data: updated });
   } catch (err) {
-    console.error('verifyClientPayment error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to verify client payment' });
+    console.error("verifyClientPayment error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to verify client payment" });
   }
 };
 
 exports.getBookingPayments = async (req, res) => {
   try {
     const { bookingId: paramBookingId } = req.params;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     const booking = await prisma.booking.findFirst({
       where: {
-        OR: [
-          { id: paramBookingId },
-          { bookingId: paramBookingId }
-        ]
-      }
+        OR: [{ id: paramBookingId }, { bookingId: paramBookingId }],
+      },
     });
 
-    const possibleBookingIds = booking ? Array.from(new Set([booking.id, booking.bookingId].filter(Boolean))) : [paramBookingId];
+    const possibleBookingIds = booking
+      ? Array.from(new Set([booking.id, booking.bookingId].filter(Boolean)))
+      : [paramBookingId];
 
     // Query standard Payment records
     const standardPayments = await prisma.payment.findMany({
       where: { bookingId: { in: possibleBookingIds }, tenantId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     // Query operations client receipts (manual uploads)
     const clientReceipts = await prisma.opsClientPayment.findMany({
       where: { bookingId: { in: possibleBookingIds }, tenantId },
-      orderBy: { paymentDate: 'desc' }
+      orderBy: { paymentDate: "desc" },
     });
 
     // Merge both sources together cleanly
     const allPayments = [
-      ...standardPayments.map(p => ({
+      ...standardPayments.map((p) => ({
         id: p.id,
         amount: p.amount,
-        paymentMode: p.paymentMode || 'Online',
-        notes: p.transactionId ? `Txn ID: ${p.transactionId}` : 'Booking payment',
-        status: p.status || 'success',
-        createdAt: p.createdAt
+        paymentMode: p.paymentMode || "Online",
+        notes: p.transactionId
+          ? `Txn ID: ${p.transactionId}`
+          : "Booking payment",
+        status: p.status || "success",
+        createdAt: p.createdAt,
       })),
-      ...clientReceipts.map(r => ({
+      ...clientReceipts.map((r) => ({
         id: r.id,
         amount: r.amount,
         paymentMode: r.paymentMode,
-        notes: r.remarks || 'Manual Payment',
-        status: r.status === 'Verified' ? 'success' : r.status === 'Rejected' ? 'failed' : 'pending',
-        createdAt: r.paymentDate
-      }))
+        notes: r.remarks || "Manual Payment",
+        status:
+          r.status === "Verified"
+            ? "success"
+            : r.status === "Rejected"
+              ? "failed"
+              : "pending",
+        createdAt: r.paymentDate,
+      })),
     ];
 
     // Compute basic totals
-    const successfulPayments = allPayments.filter(p => p.status === 'success');
+    const successfulPayments = allPayments.filter(
+      (p) => p.status === "success",
+    );
     const totalPaid = successfulPayments.reduce((sum, p) => sum + p.amount, 0);
 
     return res.json({
@@ -282,12 +316,14 @@ exports.getBookingPayments = async (req, res) => {
       data: allPayments,
       summary: {
         totalPaid,
-        paymentsCount: allPayments.length
-      }
+        paymentsCount: allPayments.length,
+      },
     });
   } catch (err) {
-    console.error('getBookingPayments error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to retrieve booking payments' });
+    console.error("getBookingPayments error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to retrieve booking payments" });
   }
 };
 
@@ -299,21 +335,36 @@ exports.getVendorPayments = async (req, res) => {
 
     const vendorPayments = await prisma.opsVendorPayment.findMany({
       where: ctx.where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return res.json({ success: true, data: vendorPayments });
   } catch (err) {
-    console.error('getVendorPayments error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch vendor payments' });
+    console.error("getVendorPayments error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch vendor payments" });
   }
 };
 
 exports.createVendorPayment = async (req, res) => {
   try {
     const { tripId } = req.params;
-    const { departureDate, vendorName, category, serviceDescription, agreedAmount, advancePaid, paymentDate, paymentMode, transactionId, invoiceProof, status, remarks } = req.body;
-    const tenantId = req.user?.tenantId || 'default';
+    const {
+      departureDate,
+      vendorName,
+      category,
+      serviceDescription,
+      agreedAmount,
+      advancePaid,
+      paymentDate,
+      paymentMode,
+      transactionId,
+      invoiceProof,
+      status,
+      remarks,
+    } = req.body;
+    const tenantId = req.user?.tenantId || "default";
 
     const depDate = normalizeDepartureDateIndia(departureDate);
     const agreed = parseFloat(agreedAmount) || 0;
@@ -335,34 +386,56 @@ exports.createVendorPayment = async (req, res) => {
         paymentMode,
         transactionId,
         invoiceProof,
-        status: status || 'Not Paid',
-        paidBy: req.user?.name || req.user?.email || 'Operations',
-        remarks
-      }
+        status: status || "Not Paid",
+        paidBy: req.user?.name || req.user?.email || "Operations",
+        remarks,
+      },
     });
 
     return res.json({ success: true, data: payment });
   } catch (err) {
-    console.error('createVendorPayment error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to create vendor payment' });
+    console.error("createVendorPayment error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to create vendor payment" });
   }
 };
 
 exports.updateVendorPayment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { vendorName, category, serviceDescription, agreedAmount, advancePaid, paymentDate, paymentMode, transactionId, invoiceProof, status, remarks } = req.body;
+    const {
+      vendorName,
+      category,
+      serviceDescription,
+      agreedAmount,
+      advancePaid,
+      paymentDate,
+      paymentMode,
+      transactionId,
+      invoiceProof,
+      status,
+      remarks,
+    } = req.body;
 
     const existing = await prisma.opsVendorPayment.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!existing) {
-      return res.status(444).json({ success: false, message: 'Vendor payment not found' });
+      return res
+        .status(444)
+        .json({ success: false, message: "Vendor payment not found" });
     }
 
-    const agreed = agreedAmount !== undefined ? parseFloat(agreedAmount) : existing.agreedAmount;
-    const advance = advancePaid !== undefined ? parseFloat(advancePaid) : existing.advancePaid;
+    const agreed =
+      agreedAmount !== undefined
+        ? parseFloat(agreedAmount)
+        : existing.agreedAmount;
+    const advance =
+      advancePaid !== undefined
+        ? parseFloat(advancePaid)
+        : existing.advancePaid;
     const remaining = Math.max(0, agreed - advance);
 
     const updated = await prisma.opsVendorPayment.update({
@@ -370,23 +443,31 @@ exports.updateVendorPayment = async (req, res) => {
       data: {
         vendorName: vendorName || existing.vendorName,
         category: category || existing.category,
-        serviceDescription: serviceDescription !== undefined ? serviceDescription : existing.serviceDescription,
+        serviceDescription:
+          serviceDescription !== undefined
+            ? serviceDescription
+            : existing.serviceDescription,
         agreedAmount: agreed,
         advancePaid: advance,
         remainingPayable: remaining,
         paymentDate: paymentDate ? new Date(paymentDate) : existing.paymentDate,
-        paymentMode: paymentMode !== undefined ? paymentMode : existing.paymentMode,
-        transactionId: transactionId !== undefined ? transactionId : existing.transactionId,
-        invoiceProof: invoiceProof !== undefined ? invoiceProof : existing.invoiceProof,
+        paymentMode:
+          paymentMode !== undefined ? paymentMode : existing.paymentMode,
+        transactionId:
+          transactionId !== undefined ? transactionId : existing.transactionId,
+        invoiceProof:
+          invoiceProof !== undefined ? invoiceProof : existing.invoiceProof,
         status: status || existing.status,
-        remarks: remarks !== undefined ? remarks : existing.remarks
-      }
+        remarks: remarks !== undefined ? remarks : existing.remarks,
+      },
     });
 
     return res.json({ success: true, data: updated });
   } catch (err) {
-    console.error('updateVendorPayment error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to update vendor payment' });
+    console.error("updateVendorPayment error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to update vendor payment" });
   }
 };
 
@@ -394,12 +475,14 @@ exports.deleteVendorPayment = async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.opsVendorPayment.delete({
-      where: { id }
+      where: { id },
     });
-    return res.json({ success: true, message: 'Vendor payment deleted' });
+    return res.json({ success: true, message: "Vendor payment deleted" });
   } catch (err) {
-    console.error('deleteVendorPayment error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to delete vendor payment' });
+    console.error("deleteVendorPayment error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to delete vendor payment" });
   }
 };
 
@@ -417,28 +500,32 @@ exports.getPaymentsDashboardStats = async (req, res) => {
         bookingId: true,
         totalAmount: true,
         advancePaid: true,
-        remainingAmount: true
-      }
+        remainingAmount: true,
+      },
     });
 
-    const totalClientRevenue = bookings.reduce((s, b) => s + (b.totalAmount || 0), 0);
+    const totalClientRevenue = bookings.reduce(
+      (s, b) => s + (b.totalAmount || 0),
+      0,
+    );
 
-    const bookingIds = bookings.map(b => b.bookingId);
+    const bookingIds = bookings.map((b) => b.bookingId);
     const clientPayments = await prisma.opsClientPayment.findMany({
       where: {
         bookingId: { in: bookingIds },
-        status: 'Verified'
+        status: "Verified",
       },
       select: {
         amount: true,
-        bookingId: true
-      }
+        bookingId: true,
+      },
     });
 
     // Build a map of opsClientPayment sums per booking
     const receiptSumByBooking = {};
     clientPayments.forEach((p) => {
-      receiptSumByBooking[p.bookingId] = (receiptSumByBooking[p.bookingId] || 0) + p.amount;
+      receiptSumByBooking[p.bookingId] =
+        (receiptSumByBooking[p.bookingId] || 0) + p.amount;
     });
 
     // For each booking, use the higher of: advancePaid OR sum of verified receipts
@@ -449,9 +536,10 @@ exports.getPaymentsDashboardStats = async (req, res) => {
       const advancePaid = b.advancePaid || 0;
       const receiptSum = receiptSumByBooking[b.bookingId] || 0;
       const effectivePaid = Math.max(advancePaid, receiptSum);
-      const outstanding = b.remainingAmount !== undefined && b.remainingAmount !== null
-        ? b.remainingAmount
-        : Math.max(0, (b.totalAmount || 0) - effectivePaid);
+      const outstanding =
+        b.remainingAmount !== undefined && b.remainingAmount !== null
+          ? b.remainingAmount
+          : Math.max(0, (b.totalAmount || 0) - effectivePaid);
       clientAmountReceived += effectivePaid;
       clientOutstandingBalance += outstanding;
     });
@@ -462,13 +550,22 @@ exports.getPaymentsDashboardStats = async (req, res) => {
       select: {
         agreedAmount: true,
         advancePaid: true,
-        remainingPayable: true
-      }
+        remainingPayable: true,
+      },
     });
 
-    const totalVendorPayable = vendorPayments.reduce((s, v) => s + v.agreedAmount, 0);
-    const vendorAmountPaid = vendorPayments.reduce((s, v) => s + v.advancePaid, 0);
-    const vendorOutstandingBalance = vendorPayments.reduce((s, v) => s + v.remainingPayable, 0);
+    const totalVendorPayable = vendorPayments.reduce(
+      (s, v) => s + v.agreedAmount,
+      0,
+    );
+    const vendorAmountPaid = vendorPayments.reduce(
+      (s, v) => s + v.advancePaid,
+      0,
+    );
+    const vendorOutstandingBalance = vendorPayments.reduce(
+      (s, v) => s + v.remainingPayable,
+      0,
+    );
 
     // Profits
     const estProfit = totalClientRevenue - totalVendorPayable;
@@ -484,11 +581,16 @@ exports.getPaymentsDashboardStats = async (req, res) => {
         vendorAmountPaid,
         vendorOutstandingBalance,
         estimatedProfit: estProfit,
-        actualProfit: actProfit
-      }
+        actualProfit: actProfit,
+      },
     });
   } catch (err) {
-    console.error('getPaymentsDashboardStats error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to compute payment dashboard stats' });
+    console.error("getPaymentsDashboardStats error:", err);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to compute payment dashboard stats",
+      });
   }
 };

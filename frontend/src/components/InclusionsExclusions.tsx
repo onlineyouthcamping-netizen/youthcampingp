@@ -27,8 +27,8 @@ const defaultInclusions = [
   "All sightseeing mentioned in itinerary",
   "Trip Captain",
   "24*7 Support throughout trip",
-  "Sightseeing & \"Dher Saari Masti\"",
-  "Toll, Parking and Transport Taxes"
+  'Sightseeing & "Dher Saari Masti"',
+  "Toll, Parking and Transport Taxes",
 ];
 
 const defaultExclusions = [
@@ -38,21 +38,29 @@ const defaultExclusions = [
   "Personal Expense of any kind, anything not specifically mentioned under head 'Includes'",
   "Any additional meals or stays other than mentioned in itinerary",
   "Inter railway station transfers are not included",
-  "5% GST"
+  "5% GST",
 ];
 
-export default function InclusionsExclusions({ inclusions, exclusions }: InclusionsExclusionsProps) {
-  const [activeTab, setActiveTab] = useState<"inclusions" | "exclusions">("inclusions");
+export default function InclusionsExclusions({
+  inclusions,
+  exclusions,
+}: InclusionsExclusionsProps) {
+  const [activeTab, setActiveTab] = useState<"inclusions" | "exclusions">(
+    "inclusions",
+  );
 
-  const incList = inclusions && inclusions.length > 0 ? inclusions : defaultInclusions;
-  const excList = exclusions && exclusions.length > 0 ? exclusions : defaultExclusions;
+  const incList =
+    inclusions && inclusions.length > 0 ? inclusions : defaultInclusions;
+  const excList =
+    exclusions && exclusions.length > 0 ? exclusions : defaultExclusions;
 
   return (
     <div className="space-y-5 scroll-mt-[140px]" id="inclusions">
       {/* Header System — Title + Tab Switcher inline */}
       <div className="flex items-center justify-between gap-3 flex-wrap border-b border-zinc-100/90 pb-3">
         <h2 className="text-xl sm:text-2xl font-black text-[#0B1528] tracking-tight font-montserrat leading-none shrink-0">
-          Inclusions & <span className="text-[#D4541A] font-caveat italic">Exclusions</span>
+          Inclusions &{" "}
+          <span className="text-[#D4541A] font-caveat italic">Exclusions</span>
         </h2>
 
         {/* Segmented Tab Switcher for Mobile Screens */}
@@ -64,7 +72,7 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
               "py-1.5 px-3 rounded-lg text-xs font-bold font-montserrat transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap",
               activeTab === "inclusions"
                 ? "bg-white text-emerald-700 shadow-2xs font-extrabold"
-                : "text-zinc-500 hover:text-zinc-800"
+                : "text-zinc-500 hover:text-zinc-800",
             )}
           >
             <Check className="w-3.5 h-3.5 text-[#00C853] stroke-[3]" />
@@ -78,7 +86,7 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
               "py-1.5 px-3 rounded-lg text-xs font-bold font-montserrat transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap",
               activeTab === "exclusions"
                 ? "bg-white text-rose-700 shadow-2xs font-extrabold"
-                : "text-zinc-500 hover:text-zinc-800"
+                : "text-zinc-500 hover:text-zinc-800",
             )}
           >
             <X className="w-3.5 h-3.5 text-[#FF2D55] stroke-[3]" />
@@ -90,10 +98,12 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
       {/* Main Content Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pt-1">
         {/* Inclusions Card */}
-        <div className={cn(
-          "bg-white border border-zinc-200/90 rounded-[20px] overflow-hidden shadow-2xs flex flex-col",
-          activeTab === "inclusions" ? "flex" : "hidden md:flex"
-        )}>
+        <div
+          className={cn(
+            "bg-white border border-zinc-200/90 rounded-[20px] overflow-hidden shadow-2xs flex flex-col",
+            activeTab === "inclusions" ? "flex" : "hidden md:flex",
+          )}
+        >
           {/* Inclusions Header */}
           <div className="bg-emerald-50/70 border-b border-emerald-100/90 px-4 sm:px-5 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -110,7 +120,10 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
           {/* Inclusions Items List */}
           <div className="p-4 sm:p-5 divide-y divide-zinc-200/60">
             {incList.map((item, i) => (
-              <div key={i} className="py-3 flex items-start gap-3.5 first:pt-0 last:pb-0 group">
+              <div
+                key={i}
+                className="py-3 flex items-start gap-3.5 first:pt-0 last:pb-0 group"
+              >
                 <Check className="w-5 h-5 text-[#00C853] shrink-0 mt-0.5 stroke-[3.5]" />
                 <span className="text-xs sm:text-sm font-semibold text-[#1B2A4A] font-montserrat leading-snug">
                   {getItemText(item)}
@@ -121,10 +134,12 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
         </div>
 
         {/* Exclusions Card */}
-        <div className={cn(
-          "bg-white border border-zinc-200/90 rounded-[20px] overflow-hidden shadow-2xs flex flex-col",
-          activeTab === "exclusions" ? "flex" : "hidden md:flex"
-        )}>
+        <div
+          className={cn(
+            "bg-white border border-zinc-200/90 rounded-[20px] overflow-hidden shadow-2xs flex flex-col",
+            activeTab === "exclusions" ? "flex" : "hidden md:flex",
+          )}
+        >
           {/* Exclusions Header */}
           <div className="bg-rose-50/70 border-b border-rose-100/90 px-4 sm:px-5 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -141,7 +156,10 @@ export default function InclusionsExclusions({ inclusions, exclusions }: Inclusi
           {/* Exclusions Items List */}
           <div className="p-4 sm:p-5 divide-y divide-zinc-200/60">
             {excList.map((item, i) => (
-              <div key={i} className="py-3 flex items-start gap-3.5 first:pt-0 last:pb-0 group">
+              <div
+                key={i}
+                className="py-3 flex items-start gap-3.5 first:pt-0 last:pb-0 group"
+              >
                 <X className="w-5 h-5 text-[#FF2D55] shrink-0 mt-0.5 stroke-[3.5]" />
                 <span className="text-xs sm:text-sm font-semibold text-[#1B2A4A] font-montserrat leading-snug">
                   {getItemText(item)}

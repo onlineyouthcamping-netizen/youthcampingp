@@ -1,27 +1,32 @@
-const { prisma } = require('../lib/prisma');
+const { prisma } = require("../lib/prisma");
 
 // Get all price overrides for a specific trip
 exports.getOverridesForTrip = async (req, res) => {
   try {
     const { tripId } = req.params;
-    
+
     // Optional: filter by isActive
     const { activeOnly } = req.query;
     let where = { tripId };
-    
-    if (activeOnly === 'true') {
+
+    if (activeOnly === "true") {
       where.isActive = true;
     }
 
     const overrides = await prisma.tripDeparturePriceOverride.findMany({
       where,
-      orderBy: { departureDate: 'asc' }
+      orderBy: { departureDate: "asc" },
     });
-    
+
     res.status(200).json({ success: true, overrides });
   } catch (error) {
-    console.error('Error fetching departure pricing overrides:', error);
-    res.status(500).json({ success: false, message: 'Server error fetching pricing overrides' });
+    console.error("Error fetching departure pricing overrides:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error fetching pricing overrides",
+      });
   }
 };
 
@@ -32,38 +37,56 @@ exports.createOverride = async (req, res) => {
     const { departureDate, overrideType, amount, reason, isActive } = req.body;
 
     if (!departureDate || !overrideType || amount === undefined) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
     }
 
     if (amount < 0) {
-      return res.status(400).json({ success: false, message: 'Amount cannot be negative' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Amount cannot be negative" });
     }
 
-    if (overrideType === 'FIXED_PRICE' && amount <= 0) {
-      return res.status(400).json({ success: false, message: 'Fixed price must be greater than zero' });
+    if (overrideType === "FIXED_PRICE" && amount <= 0) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Fixed price must be greater than zero",
+        });
     }
 
     // Check if trip exists
     const trip = await prisma.trip.findUnique({ where: { id: tripId } });
     if (!trip) {
-      return res.status(404).json({ success: false, message: 'Trip not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
     }
 
     // Check if an override already exists for this date
-    const existingOverride = await prisma.tripDeparturePriceOverride.findUnique({
-      where: {
-        tripId_departureDate: {
-          tripId,
-          departureDate
-        }
-      }
-    });
-    
+    const existingOverride = await prisma.tripDeparturePriceOverride.findUnique(
+      {
+        where: {
+          tripId_departureDate: {
+            tripId,
+            departureDate,
+          },
+        },
+      },
+    );
+
     if (existingOverride) {
-      return res.status(400).json({ success: false, message: `An override already exists for ${departureDate}` });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: `An override already exists for ${departureDate}`,
+        });
     }
 
-    const createdBy = req.admin ? req.admin.id : (req.user ? req.user.id : null);
+    const createdBy = req.admin ? req.admin.id : req.user ? req.user.id : null;
 
     const newOverride = await prisma.tripDeparturePriceOverride.create({
       data: {
@@ -73,14 +96,25 @@ exports.createOverride = async (req, res) => {
         amount: Number(amount),
         reason,
         isActive: isActive !== undefined ? isActive : true,
-        createdBy
-      }
+        createdBy,
+      },
     });
 
-    res.status(201).json({ success: true, message: 'Pricing override created successfully', override: newOverride });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Pricing override created successfully",
+        override: newOverride,
+      });
   } catch (error) {
-    console.error('Error creating departure pricing override:', error);
-    res.status(500).json({ success: false, message: 'Server error creating pricing override' });
+    console.error("Error creating departure pricing override:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error creating pricing override",
+      });
   }
 };
 
@@ -90,16 +124,31 @@ exports.updateOverride = async (req, res) => {
     const { id } = req.params;
     const { overrideType, amount, reason, isActive } = req.body;
 
-    const override = await prisma.tripDeparturePriceOverride.findUnique({ where: { id } });
+    const override = await prisma.tripDeparturePriceOverride.findUnique({
+      where: { id },
+    });
     if (!override) {
-      return res.status(404).json({ success: false, message: 'Override not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Override not found" });
     }
 
     let updatedAmount = override.amount;
     if (amount !== undefined) {
-      if (amount < 0) return res.status(400).json({ success: false, message: 'Amount cannot be negative' });
-      if ((overrideType || override.overrideType) === 'FIXED_PRICE' && amount <= 0) {
-        return res.status(400).json({ success: false, message: 'Fixed price must be greater than zero' });
+      if (amount < 0)
+        return res
+          .status(400)
+          .json({ success: false, message: "Amount cannot be negative" });
+      if (
+        (overrideType || override.overrideType) === "FIXED_PRICE" &&
+        amount <= 0
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Fixed price must be greater than zero",
+          });
       }
       updatedAmount = Number(amount);
     }
@@ -110,14 +159,25 @@ exports.updateOverride = async (req, res) => {
         overrideType: overrideType || undefined,
         amount: updatedAmount,
         reason: reason !== undefined ? reason : undefined,
-        isActive: isActive !== undefined ? isActive : undefined
-      }
+        isActive: isActive !== undefined ? isActive : undefined,
+      },
     });
 
-    res.status(200).json({ success: true, message: 'Pricing override updated successfully', override: updatedOverride });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Pricing override updated successfully",
+        override: updatedOverride,
+      });
   } catch (error) {
-    console.error('Error updating departure pricing override:', error);
-    res.status(500).json({ success: false, message: 'Server error updating pricing override' });
+    console.error("Error updating departure pricing override:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error updating pricing override",
+      });
   }
 };
 
@@ -125,12 +185,22 @@ exports.updateOverride = async (req, res) => {
 exports.deleteOverride = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     await prisma.tripDeparturePriceOverride.delete({ where: { id } });
 
-    res.status(200).json({ success: true, message: 'Pricing override deleted successfully' });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Pricing override deleted successfully",
+      });
   } catch (error) {
-    console.error('Error deleting departure pricing override:', error);
-    res.status(500).json({ success: false, message: 'Server error deleting pricing override' });
+    console.error("Error deleting departure pricing override:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error deleting pricing override",
+      });
   }
 };

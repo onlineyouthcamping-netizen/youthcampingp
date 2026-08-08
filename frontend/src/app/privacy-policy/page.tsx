@@ -4,7 +4,8 @@ import { ShieldCheck, Lock, Eye, Database } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | YouthCamping OS",
-  description: "Learn about how YouthCamping protects and handles your personal data.",
+  description:
+    "Learn about how YouthCamping protects and handles your personal data.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -21,14 +22,14 @@ export default function PrivacyPolicyPage() {
           </h1>
           <div className="w-16 h-1.5 bg-[#D4541A] rounded-full mx-auto my-3" />
           <p className="text-xs sm:text-sm text-zinc-300 font-semibold max-w-xl mx-auto leading-relaxed">
-            Your privacy is our utmost priority. Read how we collect, safeguard, and use your travel data.
+            Your privacy is our utmost priority. Read how we collect, safeguard,
+            and use your travel data.
           </p>
         </div>
       </section>
 
       <div className="max-w-4xl mx-auto px-5 sm:px-8 py-12 space-y-8">
         <div className="bg-white border border-zinc-200/90 rounded-[28px] p-6 sm:p-10 shadow-2xs space-y-8">
-          
           <section className="space-y-3 border-b border-zinc-100 pb-6">
             <div className="flex items-center gap-2.5">
               <ShieldCheck className="w-5 h-5 text-[#D4541A]" />
@@ -37,7 +38,11 @@ export default function PrivacyPolicyPage() {
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-zinc-600 font-semibold leading-relaxed pl-7">
-              We collect essential personal information required to process your bookings, issue train/flight tickets, and ensure emergency safety during expeditions. This includes your name, phone number, email address, city of residence, and government ID numbers for permit processing.
+              We collect essential personal information required to process your
+              bookings, issue train/flight tickets, and ensure emergency safety
+              during expeditions. This includes your name, phone number, email
+              address, city of residence, and government ID numbers for permit
+              processing.
             </p>
           </section>
 
@@ -49,7 +54,9 @@ export default function PrivacyPolicyPage() {
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-zinc-600 font-semibold leading-relaxed pl-7">
-              All personal traveler records are stored on secure servers with strict role-based access control. We never sell, rent, or lease your private information to third-party marketing companies.
+              All personal traveler records are stored on secure servers with
+              strict role-based access control. We never sell, rent, or lease
+              your private information to third-party marketing companies.
             </p>
           </section>
 
@@ -61,7 +68,9 @@ export default function PrivacyPolicyPage() {
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-zinc-600 font-semibold leading-relaxed pl-7">
-              We use standard session cookies to remember your destination preferences, simplify seat booking checkouts, and analyze website traffic to continuously improve your user experience.
+              We use standard session cookies to remember your destination
+              preferences, simplify seat booking checkouts, and analyze website
+              traffic to continuously improve your user experience.
             </p>
           </section>
 
@@ -73,10 +82,18 @@ export default function PrivacyPolicyPage() {
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-zinc-600 font-semibold leading-relaxed pl-7">
-              You have the right to request access to or deletion of your stored booking profile. For any data inquiries, contact our compliance team at <a href="mailto:info@youthcamping.com" className="text-[#D4541A] font-bold underline">info@youthcamping.com</a>.
+              You have the right to request access to or deletion of your stored
+              booking profile. For any data inquiries, contact our compliance
+              team at{" "}
+              <a
+                href="mailto:info@youthcamping.com"
+                className="text-[#D4541A] font-bold underline"
+              >
+                info@youthcamping.com
+              </a>
+              .
             </p>
           </section>
-
         </div>
       </div>
     </div>

@@ -30,22 +30,26 @@ const DEFAULT_HERO_SLIDES = [
   {
     url: "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=1800&q=85",
     topTag: "EXPLORE. CONNECT. BELONG.",
-    subtitle: "Pick a month and explore group adventures that bring stories to life.",
+    subtitle:
+      "Pick a month and explore group adventures that bring stories to life.",
   },
   {
     url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=85",
     topTag: "HIGH ROADS. HIGHER VIBES.",
-    subtitle: "Pick a month and explore group adventures that bring stories to life.",
+    subtitle:
+      "Pick a month and explore group adventures that bring stories to life.",
   },
   {
     url: "https://images.unsplash.com/photo-1605640840605-14ac1855827b?w=1800&q=85",
     topTag: "SUMMIT DREAMS.",
-    subtitle: "Pick a month and explore group adventures that bring stories to life.",
+    subtitle:
+      "Pick a month and explore group adventures that bring stories to life.",
   },
   {
     url: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1800&q=85",
     topTag: "BACKWATERS. BEACHES. BLISS.",
-    subtitle: "Pick a month and explore group adventures that bring stories to life.",
+    subtitle:
+      "Pick a month and explore group adventures that bring stories to life.",
   },
 ];
 
@@ -64,7 +68,8 @@ export default function Hero({
   const [wordIdx, setWordIdx] = useState(0);
 
   const imagesList: string[] = (() => {
-    if (Array.isArray(backgroundImages) && backgroundImages.length > 0) return backgroundImages;
+    if (Array.isArray(backgroundImages) && backgroundImages.length > 0)
+      return backgroundImages;
     if (backgroundImage) return [backgroundImage];
     return DEFAULT_HERO_SLIDES.map((s) => s.url);
   })();
@@ -72,7 +77,10 @@ export default function Hero({
   const rotWords: string[] = (() => {
     if (Array.isArray(rotatingWords)) return rotatingWords;
     if (typeof rotatingWords === "string" && rotatingWords.trim()) {
-      return rotatingWords.split(",").map((s) => s.trim()).filter(Boolean);
+      return rotatingWords
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
     if (rotatingWords === null || rotatingWords === undefined) return [];
     return DEFAULT_ROTATING_WORDS;
@@ -95,12 +103,22 @@ export default function Hero({
   }, [rotWords.length]);
 
   const activeImg = imagesList[currentSlide % imagesList.length];
-  const displayTagline = tagline || DEFAULT_HERO_SLIDES[currentSlide % DEFAULT_HERO_SLIDES.length]?.topTag || "EXPLORE. CONNECT. BELONG.";
+  const displayTagline =
+    tagline ||
+    DEFAULT_HERO_SLIDES[currentSlide % DEFAULT_HERO_SLIDES.length]?.topTag ||
+    "EXPLORE. CONNECT. BELONG.";
   const displayHeadline = headlinePrefix || headline || "Trips for the";
-  const displaySubheadline = subheadline || subtitle || "Pick a month and explore group adventures that bring stories to life.";
+  const displaySubheadline =
+    subheadline ||
+    subtitle ||
+    "Pick a month and explore group adventures that bring stories to life.";
 
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % imagesList.length);
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + imagesList.length) % imagesList.length);
+  const nextSlide = () =>
+    setCurrentSlide((prev) => (prev + 1) % imagesList.length);
+  const prevSlide = () =>
+    setCurrentSlide(
+      (prev) => (prev - 1 + imagesList.length) % imagesList.length,
+    );
 
   return (
     <div className="relative w-full h-[60vh] sm:h-[70vh] md:h-[78vh] min-h-[440px] md:min-h-[540px] max-h-[720px] overflow-hidden bg-zinc-900 font-montserrat flex items-center">
@@ -114,7 +132,8 @@ export default function Hero({
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(to right, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.65) 55%, rgba(0, 0, 0, 0.35) 100%)",
+            background:
+              "linear-gradient(to right, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.65) 55%, rgba(0, 0, 0, 0.35) 100%)",
           }}
         />
       </div>

@@ -18,17 +18,49 @@ interface PhotoSliderProps {
 
 export default function PhotoSlider({
   slides = [],
-  title = "GLIMPSES OF ADVENTURE"
+  title = "GLIMPSES OF ADVENTURE",
 }: PhotoSliderProps) {
   const defaultSlides: Slide[] = [
-    { image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80", title: "Alpine Lakes" },
-    { image: "https://images.unsplash.com/photo-1472396961693-142e6e269027?w=800&q=80", title: "Sunset Valleys" },
-    { image: "https://images.unsplash.com/photo-1493246507139-91e8bef99c17?w=800&q=80", title: "High Pass Treks" },
-    { image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80", title: "Spiti Expeditions" },
-    { image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80", title: "Himalayan Ridge" },
-    { image: "https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800&q=80", title: "Stargazing Nights" },
-    { image: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=800&q=80", title: "Summit Trails" },
-    { image: "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80", title: "Group Memories" }
+    {
+      image:
+        "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80",
+      title: "Alpine Lakes",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1472396961693-142e6e269027?w=800&q=80",
+      title: "Sunset Valleys",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1493246507139-91e8bef99c17?w=800&q=80",
+      title: "High Pass Treks",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80",
+      title: "Spiti Expeditions",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
+      title: "Himalayan Ridge",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=800&q=80",
+      title: "Stargazing Nights",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=800&q=80",
+      title: "Summit Trails",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=800&q=80",
+      title: "Group Memories",
+    },
   ];
 
   const list = slides.length > 0 ? slides : defaultSlides;
@@ -40,8 +72,10 @@ export default function PhotoSlider({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-zinc-100 pb-4">
           <div>
             <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight font-montserrat leading-none">
-              {title.split(' ')[0]}{' '}
-              <span className="text-[#D4541A] font-caveat italic">{title.split(' ').slice(1).join(' ')}</span>
+              {title.split(" ")[0]}{" "}
+              <span className="text-[#D4541A] font-caveat italic">
+                {title.split(" ").slice(1).join(" ")}
+              </span>
             </h2>
           </div>
           <p className="text-zinc-500 font-semibold text-xs sm:text-sm font-montserrat max-w-sm">
@@ -67,7 +101,11 @@ export default function PhotoSlider({
               key={i}
               className="flex-none w-[180px] sm:w-[240px] md:w-[280px] h-[130px] sm:h-[160px] md:h-[180px] bg-zinc-100 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 group relative"
             >
-              <Link href={slide.link || "/trips"} prefetch={false} className="block w-full h-full relative">
+              <Link
+                href={slide.link || "/trips"}
+                prefetch={false}
+                className="block w-full h-full relative"
+              >
                 <OptimizedImage
                   src={normalizeImageUrl(slide.image)}
                   alt={slide.title || `Adventure ${i + 1}`}

@@ -7,16 +7,22 @@ const REQUEST_TIMEOUT_MS = 30_000;
 
 const requestTimeout = (req, res, next) => {
   // Skip health check & file upload endpoints (large videos can take >30s to upload)
-  if (req.path === '/api/health' || req.path === '/health' || req.path.includes('/upload')) {
+  if (
+    req.path === "/api/health" ||
+    req.path === "/health" ||
+    req.path.includes("/upload")
+  ) {
     return next();
   }
 
   const timer = setTimeout(() => {
     if (!res.headersSent) {
-      console.warn(`⏱️ [TIMEOUT] ${req.method} ${req.originalUrl} exceeded ${REQUEST_TIMEOUT_MS}ms`);
+      console.warn(
+        `⏱️ [TIMEOUT] ${req.method} ${req.originalUrl} exceeded ${REQUEST_TIMEOUT_MS}ms`,
+      );
       res.status(408).json({
         success: false,
-        message: 'Request timed out',
+        message: "Request timed out",
         timeout: REQUEST_TIMEOUT_MS,
       });
     }

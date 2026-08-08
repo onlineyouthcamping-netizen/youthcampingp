@@ -1,14 +1,14 @@
-const { prisma } = require('../lib/prisma');
-const { sanitizeHtml } = require('../utils/sanitizer');
+const { prisma } = require("../lib/prisma");
+const { sanitizeHtml } = require("../utils/sanitizer");
 
-const stripHtml = (value = '') => String(value).replace(/<[^>]*>/g, '');
+const stripHtml = (value = "") => String(value).replace(/<[^>]*>/g, "");
 
 const hasEmbeddedVideo = (blog) => {
-  const content = String(blog.content || '');
+  const content = String(blog.content || "");
   return Boolean(
-    content.includes('youtube.com') ||
-    content.includes('youtu.be') ||
-    content.includes('iframe')
+    content.includes("youtube.com") ||
+    content.includes("youtu.be") ||
+    content.includes("iframe"),
   );
 };
 
@@ -16,73 +16,85 @@ const DEFAULT_SEED_BLOGS = [
   {
     title: "The Winter Beauty of Kashmir",
     slug: "winter-beauty-of-kashmir",
-    content: "Discover snow-covered valleys, frozen lakes, and warm Kashmiri hospitality in our comprehensive winter guide.",
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1200",
+    content:
+      "Discover snow-covered valleys, frozen lakes, and warm Kashmiri hospitality in our comprehensive winter guide.",
+    image:
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1200",
     author: "Aditi Raval",
-    authorImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300",
+    authorImage:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300",
     readTime: "7 min read",
     status: "published",
     isActive: true,
-    tenantId: 'default'
+    tenantId: "default",
   },
   {
     title: "8-Day Dubai Adventure: A Journey of Thrills & Luxury",
     slug: "dubai-adventure",
-    content: "From desert safaris and skyscraper views to luxury cruises, explore the ultimate 8-day Dubai itinerary.",
-    image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200",
+    content:
+      "From desert safaris and skyscraper views to luxury cruises, explore the ultimate 8-day Dubai itinerary.",
+    image:
+      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200",
     author: "Harsh Patel",
-    authorImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
+    authorImage:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
     readTime: "6 min read",
     status: "published",
     isActive: true,
-    tenantId: 'default'
+    tenantId: "default",
   },
   {
     title: "Winter Spiti Valley Experience",
     slug: "winter-spiti-experience",
-    content: "Trek through frozen rivers, ancient monasteries, and snowcapped peaks in the middle land of Spiti.",
-    image: "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200",
+    content:
+      "Trek through frozen rivers, ancient monasteries, and snowcapped peaks in the middle land of Spiti.",
+    image:
+      "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200",
     author: "Avdhesh Patel",
-    authorImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300",
+    authorImage:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300",
     readTime: "5 min read",
     status: "published",
     isActive: true,
-    tenantId: 'default'
+    tenantId: "default",
   },
   {
     title: "Bhrigu Lake Trek – High Altitude Serenity",
     slug: "bhrigu-lake-trek",
-    content: "Experience alpine meadows, glacial lakes, and breathtaking Himalayan views on the famous Bhrigu Lake trek.",
-    image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200",
+    content:
+      "Experience alpine meadows, glacial lakes, and breathtaking Himalayan views on the famous Bhrigu Lake trek.",
+    image:
+      "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200",
     author: "Priya Shah",
-    authorImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300",
+    authorImage:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300",
     readTime: "8 min read",
     status: "published",
     isActive: true,
-    tenantId: 'default'
-  }
+    tenantId: "default",
+  },
 ];
 
 const FALLBACK_BLOG_IMAGES = [
   "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1200",
   "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200",
   "https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200",
-  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200"
+  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200",
 ];
 
 exports.getBlogs = async (req, res, next) => {
   try {
     let blogs = await prisma.blog.findMany({
-      where: { tenantId: req.user?.tenantId || 'default', isActive: true },
-      orderBy: { createdAt: 'desc' }
+      where: { tenantId: req.user?.tenantId || "default", isActive: true },
+      orderBy: { createdAt: "desc" },
     });
 
     if (blogs.length === 0) {
       try {
         await prisma.blog.createMany({ data: DEFAULT_SEED_BLOGS });
         blogs = await prisma.blog.findMany({
-          where: { tenantId: req.user?.tenantId || 'default', isActive: true },
-          orderBy: { createdAt: 'desc' }
+          where: { tenantId: req.user?.tenantId || "default", isActive: true },
+          orderBy: { createdAt: "desc" },
         });
       } catch (seedErr) {
         console.warn("⚠️ Could not seed default blogs:", seedErr.message);
@@ -91,7 +103,10 @@ exports.getBlogs = async (req, res, next) => {
 
     const sanitizedBlogs = blogs.map((b, idx) => ({
       ...b,
-      image: b.image && b.image.trim() !== "" ? b.image : FALLBACK_BLOG_IMAGES[idx % FALLBACK_BLOG_IMAGES.length]
+      image:
+        b.image && b.image.trim() !== ""
+          ? b.image
+          : FALLBACK_BLOG_IMAGES[idx % FALLBACK_BLOG_IMAGES.length],
     }));
 
     res.json({ success: true, data: sanitizedBlogs });
@@ -110,7 +125,7 @@ exports.getPublicBlogCards = async (req, res, next) => {
       ? Math.max(1, Math.min(requestedLimit, 100))
       : undefined;
     let blogs = await prisma.blog.findMany({
-      where: { tenantId: 'default', isActive: true, status: 'published' },
+      where: { tenantId: "default", isActive: true, status: "published" },
       select: {
         id: true,
         title: true,
@@ -124,7 +139,7 @@ exports.getPublicBlogCards = async (req, res, next) => {
         createdAt: true,
         updatedAt: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take,
     });
 
@@ -132,7 +147,7 @@ exports.getPublicBlogCards = async (req, res, next) => {
       try {
         await prisma.blog.createMany({ data: DEFAULT_SEED_BLOGS });
         blogs = await prisma.blog.findMany({
-          where: { tenantId: 'default', isActive: true, status: 'published' },
+          where: { tenantId: "default", isActive: true, status: "published" },
           select: {
             id: true,
             title: true,
@@ -146,7 +161,7 @@ exports.getPublicBlogCards = async (req, res, next) => {
             createdAt: true,
             updatedAt: true,
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take,
         });
       } catch (e) {
@@ -159,15 +174,18 @@ exports.getPublicBlogCards = async (req, res, next) => {
       title: blog.title,
       slug: blog.slug,
       excerpt: stripHtml(blog.content).slice(0, 160),
-      image: blog.image && blog.image.trim() !== "" ? blog.image : FALLBACK_BLOG_IMAGES[idx % FALLBACK_BLOG_IMAGES.length],
+      image:
+        blog.image && blog.image.trim() !== ""
+          ? blog.image
+          : FALLBACK_BLOG_IMAGES[idx % FALLBACK_BLOG_IMAGES.length],
       author: blog.author,
       authorImage: blog.authorImage,
-      readTime: blog.readTime || '5 min read',
+      readTime: blog.readTime || "5 min read",
       hasVideo: hasEmbeddedVideo(blog),
       createdAt: blog.createdAt,
     }));
 
-    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=600');
+    res.set("Cache-Control", "public, max-age=600, stale-while-revalidate=600");
     res.json({ success: true, data });
   } catch (error) {
     next(error);
@@ -185,7 +203,7 @@ exports.getPublicBlogCards = async (req, res, next) => {
       ? Math.max(1, Math.min(requestedLimit, 100))
       : undefined;
     const blogs = await prisma.blog.findMany({
-      where: { tenantId: 'default', isActive: true, status: 'published' },
+      where: { tenantId: "default", isActive: true, status: "published" },
       select: {
         id: true,
         title: true,
@@ -199,7 +217,7 @@ exports.getPublicBlogCards = async (req, res, next) => {
         createdAt: true,
         updatedAt: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take,
     });
 
@@ -218,7 +236,7 @@ exports.getPublicBlogCards = async (req, res, next) => {
       updatedAt: blog.updatedAt,
     }));
 
-    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=600');
+    res.set("Cache-Control", "public, max-age=600, stale-while-revalidate=600");
     res.json({ success: true, data });
   } catch (error) {
     next(error);
@@ -234,21 +252,23 @@ exports.getPublicBlogDetail = async (req, res, next) => {
     const blog = await prisma.blog.findFirst({
       where: {
         slug: req.params.slug,
-        tenantId: 'default',
+        tenantId: "default",
         isActive: true,
-        status: 'published',
-      }
+        status: "published",
+      },
     });
 
     if (!blog) {
-      return res.status(404).json({ success: false, message: 'Blog not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Blog not found" });
     }
 
     if (blog.content) {
       blog.content = sanitizeHtml(blog.content);
     }
 
-    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=600');
+    res.set("Cache-Control", "public, max-age=600, stale-while-revalidate=600");
     res.json({ success: true, data: blog });
   } catch (error) {
     next(error);
@@ -258,12 +278,15 @@ exports.getPublicBlogDetail = async (req, res, next) => {
 exports.getBlog = async (req, res, next) => {
   try {
     const blog = await prisma.blog.findFirst({
-      where: { 
-        OR: [ { id: req.params.id }, { slug: req.params.id } ],
-        tenantId: req.user?.tenantId || 'default'
-      }
+      where: {
+        OR: [{ id: req.params.id }, { slug: req.params.id }],
+        tenantId: req.user?.tenantId || "default",
+      },
     });
-    if (!blog) return res.status(404).json({ success: false, message: 'Blog not found' });
+    if (!blog)
+      return res
+        .status(404)
+        .json({ success: false, message: "Blog not found" });
     res.json({ success: true, data: blog });
   } catch (error) {
     next(error);
@@ -274,17 +297,28 @@ exports.getBlog = async (req, res, next) => {
  * @desc    Create blog
  * @route   POST /api/blogs
  */
-const slugify = require('slugify');
+const slugify = require("slugify");
 
 exports.createBlog = async (req, res, next) => {
   try {
-    const { title, content, image, author, authorImage, status, readTime, hasVideo, slug } = req.body;
-    
+    const {
+      title,
+      content,
+      image,
+      author,
+      authorImage,
+      status,
+      readTime,
+      hasVideo,
+      slug,
+    } = req.body;
+
     // Generate slug if not provided
-    const finalSlug = slug || slugify(title || 'untitled', { lower: true, strict: true });
+    const finalSlug =
+      slug || slugify(title || "untitled", { lower: true, strict: true });
 
     const blog = await prisma.blog.create({
-      data: { 
+      data: {
         title: title || "Untitled Story",
         content: content ? sanitizeHtml(content) : "",
         image: image || null,
@@ -294,13 +328,18 @@ exports.createBlog = async (req, res, next) => {
         readTime: readTime || "5 MIN READ",
         hasVideo: !!hasVideo,
         slug: finalSlug,
-        tenantId: req.user?.tenantId || 'default'
-      }
+        tenantId: req.user?.tenantId || "default",
+      },
     });
     res.status(201).json({ success: true, data: blog });
   } catch (error) {
-    if (error.code === 'P2002') {
-      return res.status(400).json({ success: false, message: 'A blog with this title/slug already exists' });
+    if (error.code === "P2002") {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "A blog with this title/slug already exists",
+        });
     }
     next(error);
   }
@@ -312,8 +351,18 @@ exports.createBlog = async (req, res, next) => {
  */
 exports.updateBlog = async (req, res, next) => {
   try {
-    const { title, content, image, author, authorImage, status, readTime, hasVideo, slug } = req.body;
-    
+    const {
+      title,
+      content,
+      image,
+      author,
+      authorImage,
+      status,
+      readTime,
+      hasVideo,
+      slug,
+    } = req.body;
+
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (content !== undefined) updateData.content = sanitizeHtml(content);
@@ -325,23 +374,28 @@ exports.updateBlog = async (req, res, next) => {
     if (hasVideo !== undefined) updateData.hasVideo = !!hasVideo;
     if (slug !== undefined) updateData.slug = slug;
 
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
     let blog = await prisma.blog.updateMany({
       where: { id: req.params.id, tenantId },
-      data: updateData
+      data: updateData,
     });
 
     if (blog.count === 0) {
       await prisma.blog.updateMany({
         where: { id: req.params.id },
-        data: updateData
+        data: updateData,
       });
     }
 
-    res.json({ success: true, message: 'Blog updated' });
+    res.json({ success: true, message: "Blog updated" });
   } catch (error) {
-    if (error.code === 'P2002') {
-      return res.status(400).json({ success: false, message: 'A blog with this title/slug already exists' });
+    if (error.code === "P2002") {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "A blog with this title/slug already exists",
+        });
     }
     next(error);
   }
@@ -354,10 +408,13 @@ exports.updateBlog = async (req, res, next) => {
 exports.deleteBlog = async (req, res, next) => {
   try {
     const result = await prisma.blog.deleteMany({
-      where: { id: req.params.id, tenantId: req.user?.tenantId || 'default' }
+      where: { id: req.params.id, tenantId: req.user?.tenantId || "default" },
     });
-    if (result.count === 0) return res.status(404).json({ success: false, message: 'Blog not found' });
-    res.json({ success: true, message: 'Blog deleted' });
+    if (result.count === 0)
+      return res
+        .status(404)
+        .json({ success: false, message: "Blog not found" });
+    res.json({ success: true, message: "Blog deleted" });
   } catch (error) {
     next(error);
   }

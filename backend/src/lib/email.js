@@ -1,26 +1,29 @@
-const SibApiV3Sdk = require('sib-api-v3-sdk');
+const SibApiV3Sdk = require("sib-api-v3-sdk");
 
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
-const apiKey = defaultClient.authentications['api-key'];
+const apiKey = defaultClient.authentications["api-key"];
 apiKey.apiKey = process.env.BREVO_API_KEY;
 
 const emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
-const BRAND_COLOR = '#0f172a';
-const ACCENT_COLOR = '#ff5722';
-const ACCENT_HOVER = '#e64a19';
-const LOGO_URL = 'https://www.youthcamping.online/logo.png';
+const BRAND_COLOR = "#0f172a";
+const ACCENT_COLOR = "#ff5722";
+const ACCENT_HOVER = "#e64a19";
+const LOGO_URL = "https://www.youthcamping.online/logo.png";
 
 const getPublicSiteBaseUrl = () => {
-  const envUrl = process.env.PUBLIC_SITE_URL || process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL;
-  if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
+  const envUrl =
+    process.env.PUBLIC_SITE_URL ||
+    process.env.FRONTEND_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL;
+  if (envUrl && typeof envUrl === "string" && envUrl.trim().length > 0) {
     let url = envUrl.trim();
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = 'https://' + url;
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      url = "https://" + url;
     }
-    return url.replace(/\/+$/, '');
+    return url.replace(/\/+$/, "");
   }
-  return 'https://youthcamping.online';
+  return "https://youthcamping.online";
 };
 
 const getBaseTemplate = (content, previewText) => `
@@ -71,26 +74,37 @@ const getBaseTemplate = (content, previewText) => `
 </html>
 `;
 
-const sendEmail = async ({ to, subject, html, type, bookingId, prisma, attachments }) => {
+const sendEmail = async ({
+  to,
+  subject,
+  html,
+  type,
+  bookingId,
+  prisma,
+  attachments,
+}) => {
   try {
     const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
     sendSmtpEmail.subject = subject;
     sendSmtpEmail.htmlContent = html;
-    sendSmtpEmail.sender = { "name": "Youth Camping", "email": process.env.EMAIL_FROM || "onlineyouthcamping@gmail.com" };
-    sendSmtpEmail.to = [{ "email": to }];
-    
+    sendSmtpEmail.sender = {
+      name: "Youth Camping",
+      email: process.env.EMAIL_FROM || "onlineyouthcamping@gmail.com",
+    };
+    sendSmtpEmail.to = [{ email: to }];
+
     if (attachments && attachments.length > 0) {
       sendSmtpEmail.attachment = attachments;
     }
 
-    const bccEnv = (process.env.INTERNAL_EMAIL_BCC || '').trim();
+    const bccEnv = (process.env.INTERNAL_EMAIL_BCC || "").trim();
     if (bccEnv) {
       const bccAddresses = bccEnv
-        .split(',')
-        .map(e => e.trim())
-        .filter(e => e && e.includes('@'));
+        .split(",")
+        .map((e) => e.trim())
+        .filter((e) => e && e.includes("@"));
       if (bccAddresses.length > 0) {
-        sendSmtpEmail.bcc = bccAddresses.map(email => ({ email }));
+        sendSmtpEmail.bcc = bccAddresses.map((email) => ({ email }));
       }
     }
 
@@ -104,7 +118,7 @@ const sendEmail = async ({ to, subject, html, type, bookingId, prisma, attachmen
           type,
           recipient: to,
           subject,
-          status: 'success',
+          status: "success",
           metadata: { messageId: info.messageId, hasAttachment: !!attachments },
         },
       });
@@ -112,11 +126,11 @@ const sendEmail = async ({ to, subject, html, type, bookingId, prisma, attachmen
 
     return info;
   } catch (error) {
-    console.error('❌ SMTP ERROR:', {
+    console.error("❌ SMTP ERROR:", {
       message: error.message,
       code: error.code,
       command: error.command,
-      response: error.response
+      response: error.response,
     });
     if (prisma && bookingId) {
       await prisma.bookingEmailLog.create({
@@ -125,7 +139,7 @@ const sendEmail = async ({ to, subject, html, type, bookingId, prisma, attachmen
           type,
           recipient: to,
           subject,
-          status: 'failed',
+          status: "failed",
           error: error.message,
         },
       });
@@ -137,67 +151,91 @@ const sendEmail = async ({ to, subject, html, type, bookingId, prisma, attachmen
 const templates = {
   confirmation: (booking, includeTicket = false) => {
     const trip = booking.tripRef || {};
-    const departureDate = booking.departureDate 
+    const departureDate = booking.departureDate
       ? new Date(booking.departureDate)
       : null;
-      
-    let dayOfWeek = 'TBD';
-    let dayOfMonth = '--';
-    let monthName = 'TBD';
-    let year = '----';
+
+    let dayOfWeek = "TBD";
+    let dayOfMonth = "--";
+    let monthName = "TBD";
+    let year = "----";
 
     if (departureDate) {
-      dayOfWeek = departureDate.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-      dayOfMonth = departureDate.toLocaleDateString('en-US', { day: '2-digit' });
-      monthName = departureDate.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
+      dayOfWeek = departureDate
+        .toLocaleDateString("en-US", { weekday: "short" })
+        .toUpperCase();
+      dayOfMonth = departureDate.toLocaleDateString("en-US", {
+        day: "2-digit",
+      });
+      monthName = departureDate
+        .toLocaleDateString("en-US", { month: "long" })
+        .toUpperCase();
       year = departureDate.getFullYear().toString();
     }
 
     const meta = booking.sourceMeta || {};
     const storedItems = meta.bookingItems || [];
 
-    const passengersObj = (booking.passengers && typeof booking.passengers === 'object')
-      ? booking.passengers
-      : (booking.passengers && typeof booking.passengers === 'string' ? JSON.parse(booking.passengers) : {});
+    const passengersObj =
+      booking.passengers && typeof booking.passengers === "object"
+        ? booking.passengers
+        : booking.passengers && typeof booking.passengers === "string"
+          ? JSON.parse(booking.passengers)
+          : {};
     const details = passengersObj.details || {};
-    const trainClass = booking.trainClass || details.trainClass || '';
-    const roomType = booking.roomType || details.roomType || '';
+    const trainClass = booking.trainClass || details.trainClass || "";
+    const roomType = booking.roomType || details.roomType || "";
 
     let basePrice = 0;
     let gstDiscount = 0;
-    let priceRowsHtml = '';
+    let priceRowsHtml = "";
 
-    const primaryName = booking.fullName || booking.name || 'Valued Traveller';
-    const pickupCity = booking.pickupCity || trip.location || trip.departureCity || 'Ahmedabad';
+    const primaryName = booking.fullName || booking.name || "Valued Traveller";
+    const pickupCity =
+      booking.pickupCity || trip.location || trip.departureCity || "Ahmedabad";
 
-    const activeItems = storedItems.filter((item) => item.qty > 0 || item.rate < 0);
-    const baseItems = activeItems.filter((item) => !(item.name.toLowerCase().includes("discount") || item.rate < 0));
-    const discountItems = activeItems.filter((item) => item.name.toLowerCase().includes("discount") || item.rate < 0);
+    const activeItems = storedItems.filter(
+      (item) => item.qty > 0 || item.rate < 0,
+    );
+    const baseItems = activeItems.filter(
+      (item) =>
+        !(item.name.toLowerCase().includes("discount") || item.rate < 0),
+    );
+    const discountItems = activeItems.filter(
+      (item) => item.name.toLowerCase().includes("discount") || item.rate < 0,
+    );
 
-    basePrice = baseItems.reduce((acc, item) => acc + (item.rate * item.qty), 0);
-    gstDiscount = discountItems.reduce((acc, item) => acc + Math.abs(item.rate * item.qty), 0);
+    basePrice = baseItems.reduce((acc, item) => acc + item.rate * item.qty, 0);
+    gstDiscount = discountItems.reduce(
+      (acc, item) => acc + Math.abs(item.rate * item.qty),
+      0,
+    );
 
     if (baseItems.length > 0) {
       baseItems.forEach((item) => {
-        const desc = item.name || 'Package Line Item';
+        const desc = item.name || "Package Line Item";
         priceRowsHtml += `
           <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
             <td style="padding: 12px 16px; color: #0f172a; text-align: left; vertical-align: top; font-weight: 700;">
               ${desc}
             </td>
             <td style="padding: 12px 16px; color: #64748b; text-align: center; vertical-align: top; font-weight: 600; font-size: 12px;">
-              ${item.qty} &times; ₹${Number(item.rate).toLocaleString('en-IN')}
+              ${item.qty} &times; ₹${Number(item.rate).toLocaleString("en-IN")}
             </td>
             <td style="padding: 12px 16px; color: #0f172a; font-weight: 800; text-align: right; vertical-align: top; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px;">
-              ₹ ${Number(item.rate * item.qty).toLocaleString('en-IN')}
+              ₹ ${Number(item.rate * item.qty).toLocaleString("en-IN")}
             </td>
           </tr>
         `;
       });
     } else {
       basePrice = booking.baseAmount || booking.totalAmount || 21499;
-      const trainDesc = trainClass ? `${trainClass} (${pickupCity} to ${pickupCity}) [${primaryName}]` : `NON AC SLEEPER (${pickupCity} to ${pickupCity}) [${primaryName}]`;
-      const roomDesc = roomType ? `${roomType} [${primaryName}]` : `QUAD SHARING [${primaryName}]`;
+      const trainDesc = trainClass
+        ? `${trainClass} (${pickupCity} to ${pickupCity}) [${primaryName}]`
+        : `NON AC SLEEPER (${pickupCity} to ${pickupCity}) [${primaryName}]`;
+      const roomDesc = roomType
+        ? `${roomType} [${primaryName}]`
+        : `QUAD SHARING [${primaryName}]`;
 
       priceRowsHtml += `
         <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
@@ -205,10 +243,10 @@ const templates = {
             ${trainDesc}
           </td>
           <td style="padding: 12px 16px; color: #64748b; text-align: center; vertical-align: top; font-weight: 600; font-size: 12px;">
-            1 &times; ₹${Number(basePrice).toLocaleString('en-IN')}
+            1 &times; ₹${Number(basePrice).toLocaleString("en-IN")}
           </td>
           <td style="padding: 12px 16px; color: #0f172a; font-weight: 800; text-align: right; vertical-align: top; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px;">
-            ₹ ${Number(basePrice).toLocaleString('en-IN')}
+            ₹ ${Number(basePrice).toLocaleString("en-IN")}
           </td>
         </tr>
         <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
@@ -233,23 +271,33 @@ const templates = {
             DISCOUNT
           </td>
           <td style="padding: 12px 16px; color: #ff5722; font-weight: 800; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
-            - ₹ ${Number(discountVal).toLocaleString('en-IN')}
+            - ₹ ${Number(discountVal).toLocaleString("en-IN")}
           </td>
         </tr>
       `;
     }
 
-    const gstRate = (booking.baseAmount && booking.gstAmount) ? Math.round((booking.gstAmount / booking.baseAmount) * 100) / 100 : 0.05;
-    const calculatedGst = (booking.gstAmount !== null && booking.gstAmount !== undefined && booking.gstAmount > 0)
-      ? booking.gstAmount
-      : Math.round((basePrice - gstDiscount) * gstRate);
+    const gstRate =
+      booking.baseAmount && booking.gstAmount
+        ? Math.round((booking.gstAmount / booking.baseAmount) * 100) / 100
+        : 0.05;
+    const calculatedGst =
+      booking.gstAmount !== null &&
+      booking.gstAmount !== undefined &&
+      booking.gstAmount > 0
+        ? booking.gstAmount
+        : Math.round((basePrice - gstDiscount) * gstRate);
 
-    const totalWithGst = (booking.totalAmount !== null && booking.totalAmount !== undefined && booking.totalAmount > 0)
-      ? booking.totalAmount
-      : (basePrice - gstDiscount + calculatedGst);
+    const totalWithGst =
+      booking.totalAmount !== null &&
+      booking.totalAmount !== undefined &&
+      booking.totalAmount > 0
+        ? booking.totalAmount
+        : basePrice - gstDiscount + calculatedGst;
 
-    const calculatedGstFormatted = Number(calculatedGst).toLocaleString('en-IN');
-    const totalWithGstFormatted = Number(totalWithGst).toLocaleString('en-IN');
+    const calculatedGstFormatted =
+      Number(calculatedGst).toLocaleString("en-IN");
+    const totalWithGstFormatted = Number(totalWithGst).toLocaleString("en-IN");
 
     const gstPct = Math.round(gstRate * 100);
     priceRowsHtml += `
@@ -271,14 +319,17 @@ const templates = {
       </tr>
     `;
 
-    let passengerRowsHtml = '';
+    let passengerRowsHtml = "";
     let passengersList = [];
     try {
       if (booking.passengers) {
-        const parsed = typeof booking.passengers === 'string' ? JSON.parse(booking.passengers) : booking.passengers;
+        const parsed =
+          typeof booking.passengers === "string"
+            ? JSON.parse(booking.passengers)
+            : booking.passengers;
         if (Array.isArray(parsed)) {
           passengersList = parsed;
-        } else if (parsed && typeof parsed === 'object') {
+        } else if (parsed && typeof parsed === "object") {
           passengersList = parsed.persons || parsed.passengers || [];
         }
       }
@@ -290,17 +341,17 @@ const templates = {
     }
 
     if (passengersList.length > 0) {
-      passengersList.forEach(p => {
+      passengersList.forEach((p) => {
         passengerRowsHtml += `
           <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
             <td style="padding: 12px 16px; color: #0f172a; text-align: left; font-weight: 800;">
-              ${p.name || '—'}
+              ${p.name || "—"}
             </td>
             <td style="padding: 12px 16px; color: #64748b; text-align: center; font-weight: 600;">
-              ${p.age ? p.age + ' Yrs' : '—'}
+              ${p.age ? p.age + " Yrs" : "—"}
             </td>
             <td style="padding: 12px 16px; color: #0f172a; font-weight: 800; text-align: right;">
-              ${p.gender || '—'}
+              ${p.gender || "—"}
             </td>
           </tr>
         `;
@@ -312,19 +363,27 @@ const templates = {
             ${primaryName}
           </td>
           <td style="padding: 12px 16px; color: #64748b; text-align: center; font-weight: 600;">
-            ${booking.age ? booking.age + ' Yrs' : '—'}
+            ${booking.age ? booking.age + " Yrs" : "—"}
           </td>
           <td style="padding: 12px 16px; color: #0f172a; font-weight: 800; text-align: right;">
-            ${booking.gender || '—'}
+            ${booking.gender || "—"}
           </td>
         </tr>
       `;
     }
 
-    const heroImage = trip.heroImage || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb';
-    const bookingTokenLink = booking.bookingToken ? `https://youthcamping.online/b/${booking.bookingToken}` : 'https://youthcamping.online/my-bookings';
-    const rawTicketStatus = String(booking.trainTicketStatus || (booking.passengers?.details?.ticketStatus) || (includeTicket ? 'CONFIRMED' : 'RAC')).replace(/_/g, ' ');
-    const paymentModeText = (booking.paymentMode || 'UPI').trim();
+    const heroImage =
+      trip.heroImage ||
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb";
+    const bookingTokenLink = booking.bookingToken
+      ? `https://youthcamping.online/b/${booking.bookingToken}`
+      : "https://youthcamping.online/my-bookings";
+    const rawTicketStatus = String(
+      booking.trainTicketStatus ||
+        booking.passengers?.details?.ticketStatus ||
+        (includeTicket ? "CONFIRMED" : "RAC"),
+    ).replace(/_/g, " ");
+    const paymentModeText = (booking.paymentMode || "UPI").trim();
 
     const emailContent = `
 <!DOCTYPE html>
@@ -387,7 +446,7 @@ const templates = {
         ${trip.title || booking.tripName}
       </h1>
       <div style="font-size: 13px; color: #64748b; font-weight: 600;">
-        ${pickupCity} &bull; ${passengersList.length || 1} Traveller${(passengersList.length || 1) > 1 ? 's' : ''}
+        ${pickupCity} &bull; ${passengersList.length || 1} Traveller${(passengersList.length || 1) > 1 ? "s" : ""}
       </div>
     </div>
 
@@ -507,7 +566,7 @@ const templates = {
               Payment made by ${paymentModeText}
             </td>
             <td style="color: #059669; font-size: 14px; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
-              ₹ ${Number(booking.advancePaid || 0).toLocaleString('en-IN')}
+              ₹ ${Number(booking.advancePaid || 0).toLocaleString("en-IN")}
             </td>
           </tr>
         </table>
@@ -559,7 +618,7 @@ const templates = {
 
     return {
       subject: `Booking Confirmed – ${trip.title || booking.tripName}`,
-      html: emailContent
+      html: emailContent,
     };
   },
 
@@ -594,7 +653,10 @@ const templates = {
     `;
     return {
       subject: `Payment Receipt: ${booking.bookingId} - YouthCamping`,
-      html: getBaseTemplate(content, `Payment of ₹${amount} received for booking ${booking.bookingId}`),
+      html: getBaseTemplate(
+        content,
+        `Payment of ₹${amount} received for booking ${booking.bookingId}`,
+      ),
     };
   },
 
@@ -609,7 +671,7 @@ const templates = {
         <div class="label">Trip Detail</div>
         <div class="value">${trip.title || booking.tripName || booking.tripId}</div>
         <div class="label" style="margin-top: 10px;">Boarding City</div>
-        <div class="value">${trip.departureCity || booking.boardingCity || 'To be updated'}</div>
+        <div class="value">${trip.departureCity || booking.boardingCity || "To be updated"}</div>
       </div>
 
       <p>Make sure you have all your essentials ready. Don't forget to check the weather forecast for your destination!</p>
@@ -618,7 +680,10 @@ const templates = {
     `;
     return {
       subject: `Trip Reminder: Your journey to ${trip.title || booking.tripName || booking.tripId} is coming soon!`,
-      html: getBaseTemplate(content, `Are you ready for your trip to ${trip.title || booking.tripName}?`),
+      html: getBaseTemplate(
+        content,
+        `Are you ready for your trip to ${trip.title || booking.tripName}?`,
+      ),
     };
   },
 
@@ -637,7 +702,10 @@ const templates = {
     `;
     return {
       subject: `Booking Cancelled: ${booking.bookingId}`,
-      html: getBaseTemplate(content, `Your booking ${booking.bookingId} has been cancelled.`),
+      html: getBaseTemplate(
+        content,
+        `Your booking ${booking.bookingId} has been cancelled.`,
+      ),
     };
   },
 
@@ -681,12 +749,15 @@ const templates = {
     `;
     return {
       subject: `Invoice for Booking ${booking.bookingId} - YouthCamping`,
-      html: getBaseTemplate(content, `Invoice for your trip ${trip.title || booking.tripName}`),
+      html: getBaseTemplate(
+        content,
+        `Invoice for your trip ${trip.title || booking.tripName}`,
+      ),
     };
-  }
+  },
 };
 
 module.exports = {
   sendEmail,
-  templates
+  templates,
 };

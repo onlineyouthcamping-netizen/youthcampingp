@@ -26,9 +26,9 @@ interface NavbarProps {
   navLinks?: NavLink[];
 }
 
-export default function Navbar({ 
+export default function Navbar({
   logoUrl = "/logo.png",
-  navLinks
+  navLinks,
 }: NavbarProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -40,20 +40,21 @@ export default function Navbar({
   }, []);
 
   // Use props/defaults on server & initial hydration pass to guarantee 100% SSR match
-  const rawLinks = (mounted && settings?.navbar?.links && settings.navbar.links.length > 0)
-    ? settings.navbar.links
-    : (navLinks || defaultNavLinks);
+  const rawLinks =
+    mounted && settings?.navbar?.links && settings.navbar.links.length > 0
+      ? settings.navbar.links
+      : navLinks || defaultNavLinks;
 
   const resolvedNavLinks = rawLinks
     .map((link: any, idx: number) => ({
-      id: link.id || `nav-${idx}-${link.href || 'link'}`,
+      id: link.id || `nav-${idx}-${link.href || "link"}`,
       name: link.name || link.label || "Link",
       href: link.href || "/",
     }))
     .filter(
       (link: any) =>
         !["Destinations", "Journal"].includes(link.name) &&
-        !["/destinations", "/blogs"].includes(link.href)
+        !["/destinations", "/blogs"].includes(link.href),
     );
 
   useEffect(() => {
@@ -71,18 +72,18 @@ export default function Navbar({
     <>
       <nav
         className={cn(
-          "fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 px-5 sm:px-8 md:px-10 flex items-center bg-white/95 backdrop-blur-md border-b border-zinc-100/80 shadow-xs h-[80px]"
+          "fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 px-5 sm:px-8 md:px-10 flex items-center bg-white/95 backdrop-blur-md border-b border-zinc-100/80 shadow-xs h-[80px]",
         )}
       >
         <div className="max-w-[1440px] w-full mx-auto flex items-center justify-between">
           {/* BRAND LOGO */}
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="relative z-[60] flex items-center justify-start shrink-0"
           >
-            <img 
+            <img
               src="/logo.png"
-              alt="Youthcamping Logo" 
+              alt="Youthcamping Logo"
               width={160}
               height={44}
               className="h-10 sm:h-11 max-h-10 sm:max-h-11 w-auto max-w-[160px] object-contain transition-transform hover:scale-105"
@@ -92,14 +93,19 @@ export default function Navbar({
           {/* DESKTOP NAV LINKS */}
           <div className="hidden md:flex items-center gap-10 text-[16px] font-semibold text-[#1B2A4A]">
             {resolvedNavLinks.map((link: any) => {
-              const isActive = pathname === link.href || (link.href === '/trips' && pathname.startsWith('/trips'));
+              const isActive =
+                pathname === link.href ||
+                (link.href === "/trips" && pathname.startsWith("/trips"));
               return (
-                <div key={link.id} className="relative flex flex-col items-center py-2">
+                <div
+                  key={link.id}
+                  className="relative flex flex-col items-center py-2"
+                >
                   <Link
                     href={link.href}
                     className={cn(
                       "transition-colors hover:text-[#D4541A]",
-                      isActive ? "text-[#1B2A4A] font-bold" : "text-[#555555]"
+                      isActive ? "text-[#1B2A4A] font-bold" : "text-[#555555]",
                     )}
                   >
                     {link.name}
@@ -142,7 +148,7 @@ export default function Navbar({
       <div
         className={cn(
           "fixed inset-0 bg-white z-[9998] transition-transform duration-300 md:hidden flex flex-col pt-28 px-6 sm:px-8 gap-4 overflow-y-auto",
-          isMenuOpen ? "translate-x-0" : "translate-x-full"
+          isMenuOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
         <div className="flex flex-col gap-2">

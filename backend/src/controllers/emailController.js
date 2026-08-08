@@ -1,52 +1,74 @@
-const { prisma } = require('../lib/prisma');
-const { sendEmail, templates } = require('../lib/email');
+const { prisma } = require("../lib/prisma");
+const { sendEmail, templates } = require("../lib/email");
 
 // DEBUG: Confirm SDK API Key is loaded
 console.log("⚙️  BREVO API CONFIG LOADED:", {
-  apiKeyLoaded: !!process.env.BREVO_API_KEY
+  apiKeyLoaded: !!process.env.BREVO_API_KEY,
 });
 
 const sendBookingEmail = async (req, res) => {
-  const { bookingId, type, amount, includeTicket, ticketFile, ticketFileName, ticketFiles, trainTicketStatus } = req.body;
-  console.log('📡 [Backend] Incoming email request:', { bookingId, type, amount, includeTicket, ticketFileName, fileCount: ticketFiles?.length });
+  const {
+    bookingId,
+    type,
+    amount,
+    includeTicket,
+    ticketFile,
+    ticketFileName,
+    ticketFiles,
+    trainTicketStatus,
+  } = req.body;
+  console.log("📡 [Backend] Incoming email request:", {
+    bookingId,
+    type,
+    amount,
+    includeTicket,
+    ticketFileName,
+    fileCount: ticketFiles?.length,
+  });
 
   try {
     if (!bookingId) {
-      console.warn('⚠️ [Backend] Missing bookingId in request body');
-      return res.status(400).json({ message: 'Missing bookingId in request body' });
+      console.warn("⚠️ [Backend] Missing bookingId in request body");
+      return res
+        .status(400)
+        .json({ message: "Missing bookingId in request body" });
     }
 
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { tripRef: true }
+      include: { tripRef: true },
     });
 
-    console.log('🔍 [Backend] Found booking:', booking ? 'Yes' : 'No');
+    console.log("🔍 [Backend] Found booking:", booking ? "Yes" : "No");
 
     if (!booking) {
-      return res.status(404).json({ message: 'Booking not found in database' });
+      return res.status(404).json({ message: "Booking not found in database" });
     }
 
     if (trainTicketStatus) {
       booking.trainTicketStatus = trainTicketStatus;
-      await prisma.booking.update({
-        where: { id: bookingId },
-        data: { trainTicketStatus }
-      }).catch(err => console.warn('⚠️ Could not update trainTicketStatus in DB:', err));
+      await prisma.booking
+        .update({
+          where: { id: bookingId },
+          data: { trainTicketStatus },
+        })
+        .catch((err) =>
+          console.warn("⚠️ Could not update trainTicketStatus in DB:", err),
+        );
     }
 
     if (!booking.email) {
-      console.warn('⚠️ [Backend] Booking has no email address:', bookingId);
-      return res.status(400).json({ message: 'Booking has no email address' });
+      console.warn("⚠️ [Backend] Booking has no email address:", bookingId);
+      return res.status(400).json({ message: "Booking has no email address" });
     }
 
     let templateData;
     let attachments = [];
 
     const cleanBase64 = (str) => {
-      if (!str) return '';
-      const raw = str.includes(',') ? str.split(',')[1] : str;
-      return raw.split(/\s+/).join('');
+      if (!str) return "";
+      const raw = str.includes(",") ? str.split(",")[1] : str;
+      return raw.split(/\s+/).join("");
     };
 
     const MAX_ATTACHMENT_BYTES = 16 * 1024 * 1024; // 16MB base64 cap for Brevo SMTP
@@ -61,42 +83,55 @@ const sendBookingEmail = async (req, res) => {
       if (currentPayloadSize + itemSize <= MAX_ATTACHMENT_BYTES) {
         attachments.push({ content: cleanContent, name });
         currentPayloadSize += itemSize;
-        console.log(`📄 [Backend] Attached directly: ${name} (${Math.round(itemSize * 0.75 / 1024)} KB)`);
+        console.log(
+          `📄 [Backend] Attached directly: ${name} (${Math.round((itemSize * 0.75) / 1024)} KB)`,
+        );
       } else {
         try {
-          const fs = require('fs');
-          const path = require('path');
-          const uploadDir = path.join(__dirname, '../../../public/uploads/tickets');
+          const fs = require("fs");
+          const path = require("path");
+          const uploadDir = path.join(
+            __dirname,
+            "../../../public/uploads/tickets",
+          );
           if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
           }
-          const safeName = `${Date.now()}_${name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+          const safeName = `${Date.now()}_${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
           const filePath = path.join(uploadDir, safeName);
-          const buffer = Buffer.from(cleanContent, 'base64');
+          const buffer = Buffer.from(cleanContent, "base64");
           fs.writeFileSync(filePath, buffer);
           const fileUrl = `https://api.youthcamping.online/uploads/tickets/${safeName}`;
           overflowDownloadLinks.push({ name, url: fileUrl });
-          console.log(`📄 [Backend] Brevo 16MB cap reached. Saved overflow file to URL: ${fileUrl}`);
+          console.log(
+            `📄 [Backend] Brevo 16MB cap reached. Saved overflow file to URL: ${fileUrl}`,
+          );
         } catch (saveErr) {
-          console.error(`❌ [Backend] Failed to save overflow file ${name}:`, saveErr);
+          console.error(
+            `❌ [Backend] Failed to save overflow file ${name}:`,
+            saveErr,
+          );
         }
       }
     };
 
     // Generate PDF for confirmation and invoice types
-    if (type === 'confirmation' || type === 'invoice') {
+    if (type === "confirmation" || type === "invoice") {
       try {
-        const { generateInvoicePDF } = require('../utils/pdfGenerator');
+        const { generateInvoicePDF } = require("../utils/pdfGenerator");
         const pdfBuffer = await generateInvoicePDF(booking);
-        processAttachment(`Invoice_${booking.bookingId || 'booking'}.pdf`, pdfBuffer.toString('base64'));
-        console.log('📄 [Backend] PDF Invoice generated and processed');
+        processAttachment(
+          `Invoice_${booking.bookingId || "booking"}.pdf`,
+          pdfBuffer.toString("base64"),
+        );
+        console.log("📄 [Backend] PDF Invoice generated and processed");
       } catch (pdfErr) {
-        console.error('❌ [Backend] PDF Generation failed:', pdfErr);
+        console.error("❌ [Backend] PDF Generation failed:", pdfErr);
       }
     }
 
     let parsedTicketFiles = ticketFiles;
-    if (typeof parsedTicketFiles === 'string') {
+    if (typeof parsedTicketFiles === "string") {
       try {
         parsedTicketFiles = JSON.parse(parsedTicketFiles);
       } catch (e) {
@@ -107,7 +142,7 @@ const sendBookingEmail = async (req, res) => {
     const processedNames = new Set();
 
     if (Array.isArray(parsedTicketFiles) && parsedTicketFiles.length > 0) {
-      parsedTicketFiles.forEach(file => {
+      parsedTicketFiles.forEach((file) => {
         if (file) {
           const name = file.name || file.fileName || file.filename;
           const content = file.content || file.data || file.base64 || file.file;
@@ -124,23 +159,23 @@ const sendBookingEmail = async (req, res) => {
     }
 
     switch (type) {
-      case 'confirmation':
+      case "confirmation":
         templateData = templates.confirmation(booking, includeTicket);
         break;
-      case 'payment':
+      case "payment":
         templateData = templates.payment(booking, amount || 0);
         break;
-      case 'reminder':
+      case "reminder":
         templateData = templates.reminder(booking);
         break;
-      case 'cancellation':
+      case "cancellation":
         templateData = templates.cancellation(booking);
         break;
-      case 'invoice':
+      case "invoice":
         templateData = templates.invoice(booking);
         break;
       default:
-        return res.status(400).json({ message: 'Invalid email type' });
+        return res.status(400).json({ message: "Invalid email type" });
     }
 
     if (overflowDownloadLinks.length > 0 && templateData && templateData.html) {
@@ -149,17 +184,21 @@ const sendBookingEmail = async (req, res) => {
           <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 13px; text-transform: uppercase;">📎 Additional Document Downloads</h4>
           <p style="margin: 0 0 10px 0; color: #64748b; font-size: 12px;">The following additional documents were attached to your booking:</p>
           <ul style="margin: 0; padding-left: 18px; color: #2563eb; font-size: 13px;">
-            ${overflowDownloadLinks.map(link => `<li style="margin-bottom: 4px;"><a href="${link.url}" target="_blank" style="color: #2563eb; text-decoration: underline; font-weight: bold;">Download ${link.name}</a></li>`).join('')}
+            ${overflowDownloadLinks.map((link) => `<li style="margin-bottom: 4px;"><a href="${link.url}" target="_blank" style="color: #2563eb; text-decoration: underline; font-weight: bold;">Download ${link.name}</a></li>`).join("")}
           </ul>
         </div>
       `;
       templateData.html += downloadSection;
     }
 
-    console.log(`Sending email to: ${booking.email} with ${attachments.length} attachments and ${overflowDownloadLinks.length} download links:`);
+    console.log(
+      `Sending email to: ${booking.email} with ${attachments.length} attachments and ${overflowDownloadLinks.length} download links:`,
+    );
     attachments.forEach((att, idx) => {
-      const approxKB = Math.round((att.content?.length || 0) * 0.75 / 1024);
-      console.log(`   [Attachment ${idx + 1}] Name: "${att.name}", Approx Size: ${approxKB} KB`);
+      const approxKB = Math.round(((att.content?.length || 0) * 0.75) / 1024);
+      console.log(
+        `   [Attachment ${idx + 1}] Name: "${att.name}", Approx Size: ${approxKB} KB`,
+      );
     });
 
     await sendEmail({
@@ -169,17 +208,22 @@ const sendBookingEmail = async (req, res) => {
       type,
       bookingId,
       prisma,
-      attachments
+      attachments,
     });
 
-    res.json({ message: 'Email sent successfully' });
+    res.json({ message: "Email sent successfully" });
   } catch (error) {
-    console.error('Error in sendBookingEmail:', error.response?.body || error.message || error);
+    console.error(
+      "Error in sendBookingEmail:",
+      error.response?.body || error.message || error,
+    );
     if (req.headers.origin) {
-      res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+      res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
     }
     res.status(500).json({
-      message: 'Failed to send email: ' + (error.response?.body?.message || error.message || 'Server error')
+      message:
+        "Failed to send email: " +
+        (error.response?.body?.message || error.message || "Server error"),
     });
   }
 };
@@ -190,17 +234,17 @@ const getEmailLogs = async (req, res) => {
   try {
     const logs = await prisma.bookingEmailLog.findMany({
       where: { bookingId },
-      orderBy: { sentAt: 'desc' }
+      orderBy: { sentAt: "desc" },
     });
 
     res.json(logs);
   } catch (error) {
-    console.error('Error in getEmailLogs:', error);
-    res.status(500).json({ message: 'Failed to fetch email logs' });
+    console.error("Error in getEmailLogs:", error);
+    res.status(500).json({ message: "Failed to fetch email logs" });
   }
 };
 
 module.exports = {
   sendBookingEmail,
-  getEmailLogs
+  getEmailLogs,
 };

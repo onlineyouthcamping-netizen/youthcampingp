@@ -85,12 +85,27 @@ export default function RecentPhotosSection({
   const hasCustomPhotos = Boolean(photos && photos.length > 0);
   const rawPhotos = hasCustomPhotos ? photos : DEFAULT_PHOTOS;
 
-  const displayPhotos = rawPhotos.map((p: any, idx: number) => ({
-    id: p.id || `photo-${idx}`,
-    url: normalizeImageUrl(p.url || p.image || p.src || "") || (hasCustomPhotos ? (p.url || p.image || p.src || "") : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].url),
-    caption: p.caption || p.title || (hasCustomPhotos ? "" : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].caption),
-    location: p.location || (hasCustomPhotos ? "" : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].location),
-  })).filter((p) => Boolean(p.url));
+  const displayPhotos = rawPhotos
+    .map((p: any, idx: number) => ({
+      id: p.id || `photo-${idx}`,
+      url:
+        normalizeImageUrl(p.url || p.image || p.src || "") ||
+        (hasCustomPhotos
+          ? p.url || p.image || p.src || ""
+          : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].url),
+      caption:
+        p.caption ||
+        p.title ||
+        (hasCustomPhotos
+          ? ""
+          : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].caption),
+      location:
+        p.location ||
+        (hasCustomPhotos
+          ? ""
+          : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].location),
+    }))
+    .filter((p) => Boolean(p.url));
 
   const basePhotos = displayPhotos.length > 0 ? displayPhotos : DEFAULT_PHOTOS;
 
@@ -105,7 +120,12 @@ export default function RecentPhotosSection({
     let animationId: number;
 
     const step = () => {
-      if (scrollRef.current && !isHovered && !isDragging && selectedIndex === null) {
+      if (
+        scrollRef.current &&
+        !isHovered &&
+        !isDragging &&
+        selectedIndex === null
+      ) {
         scrollRef.current.scrollLeft += 1.2;
 
         const maxScroll = scrollRef.current.scrollWidth / 3;
@@ -123,7 +143,9 @@ export default function RecentPhotosSection({
   const handlePrevModal = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (selectedIndex === null) return;
-    setSelectedIndex((selectedIndex - 1 + basePhotos.length) % basePhotos.length);
+    setSelectedIndex(
+      (selectedIndex - 1 + basePhotos.length) % basePhotos.length,
+    );
   };
 
   const handleNextModal = (e: React.MouseEvent) => {
@@ -133,9 +155,11 @@ export default function RecentPhotosSection({
   };
 
   return (
-    <section className="py-8 md:py-10 font-montserrat overflow-hidden bg-[#E2E7ED]" style={{ backgroundColor: '#E2E7ED' }}>
+    <section
+      className="py-8 md:py-10 font-montserrat overflow-hidden bg-[#E2E7ED]"
+      style={{ backgroundColor: "#E2E7ED" }}
+    >
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
-        
         {/* HEADER ROW - FITS TITLE ON ONE LINE */}
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
           <div className="flex items-baseline gap-2 min-w-0 overflow-hidden whitespace-nowrap">
@@ -186,7 +210,8 @@ export default function RecentPhotosSection({
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = DEFAULT_PHOTOS[actualIndex % DEFAULT_PHOTOS.length].url;
+                    target.src =
+                      DEFAULT_PHOTOS[actualIndex % DEFAULT_PHOTOS.length].url;
                   }}
                 />
               </div>
@@ -198,11 +223,15 @@ export default function RecentPhotosSection({
         <div className="flex items-center gap-1.5 sm:gap-2 mt-4 text-[11px] sm:text-[13px] md:text-sm text-zinc-600 font-montserrat whitespace-nowrap overflow-hidden">
           <Camera className="w-4 h-4 text-[#D4541A] shrink-0" />
           <span className="truncate">
-            Tag us <strong className="text-[#0B1528] font-bold">@youthcamping.in</strong> and use{" "}
-            <strong className="text-[#D4541A] font-bold">#YouthCamping</strong> to get featured!
+            Tag us{" "}
+            <strong className="text-[#0B1528] font-bold">
+              @youthcamping.in
+            </strong>{" "}
+            and use{" "}
+            <strong className="text-[#D4541A] font-bold">#YouthCamping</strong>{" "}
+            to get featured!
           </span>
         </div>
-
       </div>
 
       {/* FULLSCREEN LIGHTBOX MODAL */}

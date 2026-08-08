@@ -1,5 +1,5 @@
-const { prisma } = require('../lib/prisma');
-const slugify = require('slugify');
+const { prisma } = require("../lib/prisma");
+const slugify = require("slugify");
 
 /**
  * @desc    Get all attractions
@@ -8,14 +8,14 @@ const slugify = require('slugify');
  */
 exports.getAttractions = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
     const attractions = await prisma.attraction.findMany({
       where: { tenantId },
-      orderBy: { order: 'asc' }
+      orderBy: { order: "asc" },
     });
     res.json({ success: true, data: attractions });
   } catch (error) {
-    console.error('Error fetching attractions:', error);
+    console.error("Error fetching attractions:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -28,16 +28,18 @@ exports.getAttractions = async (req, res, next) => {
 exports.getAttractionBySlug = async (req, res, next) => {
   try {
     const { slug } = req.params;
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
     const attraction = await prisma.attraction.findFirst({
-      where: { slug, tenantId }
+      where: { slug, tenantId },
     });
     if (!attraction) {
-      return res.status(404).json({ success: false, message: 'Attraction not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Attraction not found" });
     }
     res.json({ success: true, data: attraction });
   } catch (error) {
-    console.error('Error fetching attraction by slug:', error);
+    console.error("Error fetching attraction by slug:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -50,7 +52,7 @@ exports.getAttractionBySlug = async (req, res, next) => {
 exports.createAttraction = async (req, res, next) => {
   try {
     const data = { ...req.body };
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = req.user?.tenantId || "default";
 
     if (!data.slug && data.name) {
       data.slug = slugify(data.name, { lower: true, strict: true });
@@ -59,13 +61,13 @@ exports.createAttraction = async (req, res, next) => {
     const attraction = await prisma.attraction.create({
       data: {
         ...data,
-        tenantId
-      }
+        tenantId,
+      },
     });
 
     res.status(201).json({ success: true, data: attraction });
   } catch (error) {
-    console.error('Error creating attraction:', error);
+    console.error("Error creating attraction:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -79,18 +81,18 @@ exports.updateAttraction = async (req, res, next) => {
   try {
     const { id } = req.params;
     const data = { ...req.body };
-    
+
     delete data.id;
     delete data.tenantId;
 
     const attraction = await prisma.attraction.update({
       where: { id },
-      data
+      data,
     });
 
     res.json({ success: true, data: attraction });
   } catch (error) {
-    console.error('Error updating attraction:', error);
+    console.error("Error updating attraction:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -103,14 +105,14 @@ exports.updateAttraction = async (req, res, next) => {
 exports.deleteAttraction = async (req, res, next) => {
   try {
     const { id } = req.params;
-    
+
     await prisma.attraction.delete({
-      where: { id }
+      where: { id },
     });
 
-    res.json({ success: true, message: 'Attraction deleted' });
+    res.json({ success: true, message: "Attraction deleted" });
   } catch (error) {
-    console.error('Error deleting attraction:', error);
+    console.error("Error deleting attraction:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

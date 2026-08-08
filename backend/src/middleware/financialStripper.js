@@ -3,13 +3,13 @@
  */
 
 const stripFinancialFieldsForGuides = (req, res, next) => {
-  if (!req.user || req.user.role !== 'guide') {
+  if (!req.user || req.user.role !== "guide") {
     return next();
   }
 
   const originalJson = res.json;
   res.json = function (body) {
-    if (body && typeof body === 'object') {
+    if (body && typeof body === "object") {
       if (body.success && body.data !== undefined) {
         body.data = sanitize(body.data);
       } else {
@@ -28,30 +28,30 @@ const stripFinancialFieldsForGuides = (req, res, next) => {
     if (Array.isArray(data)) {
       return data.map(sanitize);
     }
-    if (typeof data === 'object') {
+    if (typeof data === "object") {
       // If it's a Date object, return it directly
       if (data instanceof Date) {
         return data;
       }
-      
+
       const keysToStrip = [
-        'price',
-        'stickyCardPrice',
-        'stickyCardLabel',
-        'baseAmount',
-        'gstAmount',
-        'totalAmount',
-        'amount',
-        'advancePaid',
-        'remainingAmount',
-        'paymentMode',
-        'paymentStatus',
-        'payment_status',
-        'payment_method',
-        'upiReference',
-        'upi_reference',
-        'invoiceStatus',
-        'adjustedPrice'
+        "price",
+        "stickyCardPrice",
+        "stickyCardLabel",
+        "baseAmount",
+        "gstAmount",
+        "totalAmount",
+        "amount",
+        "advancePaid",
+        "remainingAmount",
+        "paymentMode",
+        "paymentStatus",
+        "payment_status",
+        "payment_method",
+        "upiReference",
+        "upi_reference",
+        "invoiceStatus",
+        "adjustedPrice",
       ];
 
       const clean = {};
@@ -60,9 +60,9 @@ const stripFinancialFieldsForGuides = (req, res, next) => {
           // Strip/Exclude financial fields
           continue;
         }
-        
+
         // Recursively sanitize nested objects/arrays (but don't recurse on buffers or specific classes)
-        if (value && typeof value === 'object') {
+        if (value && typeof value === "object") {
           clean[key] = sanitize(value);
         } else {
           clean[key] = value;
@@ -75,5 +75,5 @@ const stripFinancialFieldsForGuides = (req, res, next) => {
 };
 
 module.exports = {
-  stripFinancialFieldsForGuides
+  stripFinancialFieldsForGuides,
 };

@@ -1,14 +1,22 @@
-const { prisma } = require('../lib/prisma');
-const { logBookingActivity } = require('../utils/bookingActivityLogger');
+const { prisma } = require("../lib/prisma");
+const { logBookingActivity } = require("../utils/bookingActivityLogger");
 
 // Helper to check booking ownership for sales
 const checkBookingOwnership = async (bookingId, user) => {
-  if (['superadmin', 'admin', 'finance', 'operations', 'BOOKING_VERIFIER'].includes(user.role)) {
+  if (
+    [
+      "superadmin",
+      "admin",
+      "finance",
+      "operations",
+      "BOOKING_VERIFIER",
+    ].includes(user.role)
+  ) {
     return true;
   }
-  if (user.role === 'sales') {
+  if (user.role === "sales") {
     const booking = await prisma.booking.findFirst({
-      where: { bookingId, tenantId: user.tenantId }
+      where: { bookingId, tenantId: user.tenantId },
     });
     if (!booking) return false;
     return booking.salesAdminId === user.id;
@@ -29,11 +37,11 @@ exports.getEntries = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const where = {
-      tenantId: req.user.tenantId || 'default'
+      tenantId: req.user.tenantId || "default",
     };
 
     // Role-based security scoping
-    if (req.user.role === 'sales') {
+    if (req.user.role === "sales") {
       where.salespersonId = req.user.id;
     } else if (salespersonId) {
       where.salespersonId = salespersonId;
@@ -53,11 +61,11 @@ exports.getEntries = async (req, res) => {
 
     if (search) {
       where.OR = [
-        { referenceNumber: { contains: search, mode: 'insensitive' } },
-        { booking: { name: { contains: search, mode: 'insensitive' } } },
-        { booking: { fullName: { contains: search, mode: 'insensitive' } } },
-        { booking: { bookingId: { contains: search, mode: 'insensitive' } } },
-        { booking: { tripName: { contains: search, mode: 'insensitive' } } }
+        { referenceNumber: { contains: search, mode: "insensitive" } },
+        { booking: { name: { contains: search, mode: "insensitive" } } },
+        { booking: { fullName: { contains: search, mode: "insensitive" } } },
+        { booking: { bookingId: { contains: search, mode: "insensitive" } } },
+        { booking: { tripName: { contains: search, mode: "insensitive" } } },
       ];
     }
 
@@ -88,18 +96,18 @@ exports.getEntries = async (req, res) => {
               totalAmount: true,
               adjustedPrice: true,
               numberOfTravelers: true,
-              salesAdminId: true
-            }
+              salesAdminId: true,
+            },
           },
           salesperson: { select: { id: true, name: true, email: true } },
-          actionedBy: { select: { id: true, name: true } }
+          actionedBy: { select: { id: true, name: true } },
         },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: "desc" },
       }),
       prisma.accountingEntry.groupBy({
-        by: ['status'],
+        by: ["status"],
         where: summaryWhere,
         _sum: { amount: true },
       }),
@@ -120,18 +128,23 @@ exports.getEntries = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('getEntries error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch accounting entries' });
+    console.error("getEntries error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch accounting entries" });
   }
 };
 
 exports.getEntryHistory = async (req, res) => {
   try {
     const entry = await prisma.accountingEntry.findFirst({
-      where: { id: req.params.id, tenantId: req.user.tenantId || 'default' },
+      where: { id: req.params.id, tenantId: req.user.tenantId || "default" },
       select: { id: true },
     });
-    if (!entry) return res.status(404).json({ success: false, message: 'Accounting entry not found' });
+    if (!entry)
+      return res
+        .status(404)
+        .json({ success: false, message: "Accounting entry not found" });
 
     const history = await prisma.accountingEntryLog.findMany({
       where: { accountingEntryId: entry.id },
@@ -144,13 +157,15 @@ exports.getEntryHistory = async (req, res) => {
         createdAt: true,
         actor: { select: { id: true, name: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 100,
     });
     return res.json({ success: true, data: history });
   } catch (err) {
-    console.error('getEntryHistory error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch accounting history' });
+    console.error("getEntryHistory error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch accounting history" });
   }
 };
 
@@ -163,13 +178,23 @@ exports.createEntry = async (req, res) => {
     const { bookingId, amount, paymentMode, referenceNumber, notes } = req.body;
 
     if (!bookingId || !amount || !paymentMode) {
-      return res.status(400).json({ success: false, message: 'bookingId, amount, and paymentMode are required' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "bookingId, amount, and paymentMode are required",
+        });
     }
 
     // 1. Verify salesperson owns this booking or has admin rights
     const hasAccess = await checkBookingOwnership(bookingId, req.user);
     if (!hasAccess) {
-      return res.status(403).json({ success: false, message: 'Access denied: You do not own this booking' });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Access denied: You do not own this booking",
+        });
     }
 
     // 2. Prevent fake/ghost duplicate entry check (same amount, mode, ref inside 5 mins)
@@ -180,55 +205,63 @@ exports.createEntry = async (req, res) => {
         amount: parseFloat(amount),
         paymentMode,
         referenceNumber: referenceNumber || null,
-        createdAt: { gte: fiveMinsAgo }
-      }
+        createdAt: { gte: fiveMinsAgo },
+      },
     });
 
     if (existingDuplicate) {
       return res.status(409).json({
         success: false,
-        message: 'Duplicate payment entry detected. Please wait 5 minutes before submitting the same payment.'
+        message:
+          "Duplicate payment entry detected. Please wait 5 minutes before submitting the same payment.",
       });
     }
 
     // 3. Create the pending entry
     const entry = await prisma.accountingEntry.create({
       data: {
-        tenantId: req.user.tenantId || 'default',
+        tenantId: req.user.tenantId || "default",
         bookingId,
         amount: parseFloat(amount),
         paymentMode,
         referenceNumber,
         notes,
-        status: 'PENDING',
-        salespersonId: req.user.role === 'sales' ? req.user.id : req.body.salespersonId || req.user.id
-      }
+        status: "PENDING",
+        salespersonId:
+          req.user.role === "sales"
+            ? req.user.id
+            : req.body.salespersonId || req.user.id,
+      },
     });
 
     // 4. Write immutable history log
     await prisma.accountingEntryLog.create({
       data: {
         accountingEntryId: entry.id,
-        action: 'SUBMIT',
+        action: "SUBMIT",
         notes: `Submitted payment entry of ₹${amount} via ${paymentMode}`,
-        actorId: req.user.id
-      }
+        actorId: req.user.id,
+      },
     });
 
-    const bookingRecord = await prisma.booking.findUnique({ where: { bookingId } });
+    const bookingRecord = await prisma.booking.findUnique({
+      where: { bookingId },
+    });
     if (bookingRecord) {
       await logBookingActivity({
         bookingId: bookingRecord.id,
-        action: 'PAYMENT_SUBMITTED',
-        details: `Ledger payment of ₹${amount} via ${paymentMode} submitted for approval by salesperson ${req.user.name || 'System'}`,
-        performedByAdminId: req.user.id
+        action: "PAYMENT_SUBMITTED",
+        details: `Ledger payment of ₹${amount} via ${paymentMode} submitted for approval by salesperson ${req.user.name || "System"}`,
+        performedByAdminId: req.user.id,
       });
     }
 
     return res.status(201).json({ success: true, data: entry });
   } catch (err) {
-    console.error('createEntry error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to create accounting entry' });
+    console.error("createEntry error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to create accounting entry" });
   }
 };
 
@@ -241,50 +274,61 @@ exports.approveEntry = async (req, res) => {
     const { id } = req.params;
 
     const entry = await prisma.accountingEntry.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!entry) {
-      return res.status(404).json({ success: false, message: 'Accounting entry not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Accounting entry not found" });
     }
 
-    if (entry.status !== 'PENDING') {
-      return res.status(400).json({ success: false, message: `Cannot approve entry with status ${entry.status}` });
+    if (entry.status !== "PENDING") {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: `Cannot approve entry with status ${entry.status}`,
+        });
     }
 
     // Update status
     const updated = await prisma.accountingEntry.update({
       where: { id },
       data: {
-        status: 'APPROVED',
-        actionedById: req.user.id
-      }
+        status: "APPROVED",
+        actionedById: req.user.id,
+      },
     });
 
     // Write immutable history log
     await prisma.accountingEntryLog.create({
       data: {
         accountingEntryId: entry.id,
-        action: 'APPROVE',
-        notes: 'Approved payment entry',
-        actorId: req.user.id
-      }
+        action: "APPROVE",
+        notes: "Approved payment entry",
+        actorId: req.user.id,
+      },
     });
 
-    const bookingRecord = await prisma.booking.findUnique({ where: { bookingId: updated.bookingId } });
+    const bookingRecord = await prisma.booking.findUnique({
+      where: { bookingId: updated.bookingId },
+    });
     if (bookingRecord) {
       await logBookingActivity({
         bookingId: bookingRecord.id,
-        action: 'PAYMENT_APPROVED',
-        details: `Ledger payment of ₹${updated.amount} approved by manager ${req.user.name || 'System'}`,
-        performedByAdminId: req.user.id
+        action: "PAYMENT_APPROVED",
+        details: `Ledger payment of ₹${updated.amount} approved by manager ${req.user.name || "System"}`,
+        performedByAdminId: req.user.id,
       });
     }
 
     return res.json({ success: true, data: updated });
   } catch (err) {
-    console.error('approveEntry error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to approve entry' });
+    console.error("approveEntry error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to approve entry" });
   }
 };
 
@@ -298,55 +342,68 @@ exports.rejectEntry = async (req, res) => {
     const { reason } = req.body;
 
     if (!reason) {
-      return res.status(400).json({ success: false, message: 'Rejection reason is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Rejection reason is required" });
     }
 
     const entry = await prisma.accountingEntry.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!entry) {
-      return res.status(404).json({ success: false, message: 'Accounting entry not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Accounting entry not found" });
     }
 
-    if (entry.status !== 'PENDING') {
-      return res.status(400).json({ success: false, message: `Cannot reject entry with status ${entry.status}` });
+    if (entry.status !== "PENDING") {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: `Cannot reject entry with status ${entry.status}`,
+        });
     }
 
     // Update status
     const updated = await prisma.accountingEntry.update({
       where: { id },
       data: {
-        status: 'REJECTED',
+        status: "REJECTED",
         rejectionReason: reason,
-        actionedById: req.user.id
-      }
+        actionedById: req.user.id,
+      },
     });
 
     // Write immutable history log
     await prisma.accountingEntryLog.create({
       data: {
         accountingEntryId: entry.id,
-        action: 'REJECT',
+        action: "REJECT",
         notes: `Rejected payment entry. Reason: ${reason}`,
-        actorId: req.user.id
-      }
+        actorId: req.user.id,
+      },
     });
 
-    const bookingRecord = await prisma.booking.findUnique({ where: { bookingId: updated.bookingId } });
+    const bookingRecord = await prisma.booking.findUnique({
+      where: { bookingId: updated.bookingId },
+    });
     if (bookingRecord) {
       await logBookingActivity({
         bookingId: bookingRecord.id,
-        action: 'PAYMENT_REJECTED',
-        details: `Ledger payment of ₹${updated.amount} rejected by manager ${req.user.name || 'System'}. Reason: ${reason}`,
-        performedByAdminId: req.user.id
+        action: "PAYMENT_REJECTED",
+        details: `Ledger payment of ₹${updated.amount} rejected by manager ${req.user.name || "System"}. Reason: ${reason}`,
+        performedByAdminId: req.user.id,
       });
     }
 
     return res.json({ success: true, data: updated });
   } catch (err) {
-    console.error('rejectEntry error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to reject entry' });
+    console.error("rejectEntry error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to reject entry" });
   }
 };
 
@@ -356,10 +413,11 @@ exports.rejectEntry = async (req, res) => {
  */
 exports.getReports = async (req, res) => {
   try {
-    const { tripId, salespersonId, paymentMode, startDate, endDate } = req.query;
+    const { tripId, salespersonId, paymentMode, startDate, endDate } =
+      req.query;
 
     const where = {
-      tenantId: req.user.tenantId || 'default'
+      tenantId: req.user.tenantId || "default",
     };
 
     // Filter by dates if provided
@@ -390,16 +448,16 @@ exports.getReports = async (req, res) => {
             tripId: true,
             tripName: true,
             totalAmount: true,
-            salesAdminId: true
-          }
+            salesAdminId: true,
+          },
         },
-        salesperson: { select: { id: true, name: true } }
-      }
+        salesperson: { select: { id: true, name: true } },
+      },
     });
 
     // 1. Total pending collections
     const pendingTotal = entries
-      .filter(e => e.status === 'PENDING')
+      .filter((e) => e.status === "PENDING")
       .reduce((sum, e) => sum + e.amount, 0);
 
     // 2. Revenue grouped by trip
@@ -415,24 +473,25 @@ exports.getReports = async (req, res) => {
     const onlineDatewise = {};
     const onlineTripwise = {};
 
-    entries.forEach(e => {
-      if (e.status === 'APPROVED') {
+    entries.forEach((e) => {
+      if (e.status === "APPROVED") {
         const amount = e.amount;
-        const tripName = e.booking?.tripName || 'Unknown Trip';
-        const dateStr = new Date(e.createdAt).toISOString().split('T')[0];
+        const tripName = e.booking?.tripName || "Unknown Trip";
+        const dateStr = new Date(e.createdAt).toISOString().split("T")[0];
 
         // Standard stats
         tripRevenueMap[tripName] = (tripRevenueMap[tripName] || 0) + amount;
 
-        const spName = e.salesperson?.name || 'Unknown Sales';
-        salesPerformanceMap[spName] = (salesPerformanceMap[spName] || 0) + amount;
+        const spName = e.salesperson?.name || "Unknown Sales";
+        salesPerformanceMap[spName] =
+          (salesPerformanceMap[spName] || 0) + amount;
 
         const date = new Date(e.createdAt);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         monthlyTrendMap[monthKey] = (monthlyTrendMap[monthKey] || 0) + amount;
 
         // Cash vs Online breakdowns
-        const isCash = e.paymentMode === 'CASH';
+        const isCash = e.paymentMode === "CASH";
         if (isCash) {
           cashDatewise[dateStr] = (cashDatewise[dateStr] || 0) + amount;
           cashTripwise[tripName] = (cashTripwise[tripName] || 0) + amount;
@@ -444,8 +503,12 @@ exports.getReports = async (req, res) => {
     });
 
     // Format reports
-    const revenuePerTrip = Object.entries(tripRevenueMap).map(([tripName, amount]) => ({ tripName, amount }));
-    const salespersonCollection = Object.entries(salesPerformanceMap).map(([salespersonName, amount]) => ({ salespersonName, amount }));
+    const revenuePerTrip = Object.entries(tripRevenueMap).map(
+      ([tripName, amount]) => ({ tripName, amount }),
+    );
+    const salespersonCollection = Object.entries(salesPerformanceMap).map(
+      ([salespersonName, amount]) => ({ salespersonName, amount }),
+    );
     const monthlyRevenue = Object.entries(monthlyTrendMap)
       .map(([month, amount]) => ({ month, amount }))
       .sort((a, b) => a.month.localeCompare(b.month));
@@ -453,12 +516,16 @@ exports.getReports = async (req, res) => {
     const cashCollectionDatewise = Object.entries(cashDatewise)
       .map(([date, amount]) => ({ date, amount }))
       .sort((a, b) => b.date.localeCompare(a.date));
-    const cashCollectionTripwise = Object.entries(cashTripwise).map(([tripName, amount]) => ({ tripName, amount }));
-    
+    const cashCollectionTripwise = Object.entries(cashTripwise).map(
+      ([tripName, amount]) => ({ tripName, amount }),
+    );
+
     const onlineCollectionDatewise = Object.entries(onlineDatewise)
       .map(([date, amount]) => ({ date, amount }))
       .sort((a, b) => b.date.localeCompare(a.date));
-    const onlineCollectionTripwise = Object.entries(onlineTripwise).map(([tripName, amount]) => ({ tripName, amount }));
+    const onlineCollectionTripwise = Object.entries(onlineTripwise).map(
+      ([tripName, amount]) => ({ tripName, amount }),
+    );
 
     return res.json({
       success: true,
@@ -470,11 +537,13 @@ exports.getReports = async (req, res) => {
         cashCollectionDatewise,
         cashCollectionTripwise,
         onlineCollectionDatewise,
-        onlineCollectionTripwise
-      }
+        onlineCollectionTripwise,
+      },
     });
   } catch (err) {
-    console.error('getReports error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch accounting reports' });
+    console.error("getReports error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch accounting reports" });
   }
 };

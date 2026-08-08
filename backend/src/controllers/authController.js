@@ -1,19 +1,30 @@
-const { prisma } = require('../lib/prisma');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const { logAction } = require('../utils/auditLogger');
-const { sanitizeUser } = require('../utils/sanitize');
-const { ROLE_PERMISSIONS, PERMISSIONS } = require('../config/permissions');
+const { prisma } = require("../lib/prisma");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const { logAction } = require("../utils/auditLogger");
+const { sanitizeUser } = require("../utils/sanitize");
+const { ROLE_PERMISSIONS, PERMISSIONS } = require("../config/permissions");
 
-const crypto = require('crypto');
-const getSecretHash = () => crypto.createHash('sha256').update(process.env.JWT_SECRET || '').digest('hex').substring(0, 8);
+const crypto = require("crypto");
+const getSecretHash = () =>
+  crypto
+    .createHash("sha256")
+    .update(process.env.JWT_SECRET || "")
+    .digest("hex")
+    .substring(0, 8);
 
 // Generate JWT with tenantId and tokenVersion
-const generateToken = (id, role, tenantId = 'default', tokenVersion = 0) => {
-  console.log(`[AUTH GENERATE] Secret Hash: ${getSecretHash()} | User ID: ${id} | Role: ${role}`);
-  return jwt.sign({ id, role, tenantId, tokenVersion }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  });
+const generateToken = (id, role, tenantId = "default", tokenVersion = 0) => {
+  console.log(
+    `[AUTH GENERATE] Secret Hash: ${getSecretHash()} | User ID: ${id} | Role: ${role}`,
+  );
+  return jwt.sign(
+    { id, role, tenantId, tokenVersion },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    },
+  );
 };
 
 // @desc    Admin login
@@ -25,58 +36,85 @@ exports.adminLogin = async (req, res, next) => {
     const ipAddress = req.ip || req.connection.remoteAddress || null;
 
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide email and password' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Please provide email and password" });
     }
 
     const submittedEmail = email.toLowerCase().trim();
 
     // Database-backed authentication only. Synthetic or fallback identities are
     // intentionally unsupported in every environment.
-    const admin = await prisma.admin.findUnique({ where: { email: submittedEmail } });
+    const admin = await prisma.admin.findUnique({
+      where: { email: submittedEmail },
+    });
     if (admin) {
       // Check if user is active
       if (!admin.isActive) {
         await logAction({
           tenantId: admin.tenantId,
           actorUserId: admin.id,
-          action: 'failed_login_deactivated',
-          entityType: 'admin',
+          action: "failed_login_deactivated",
+          entityType: "admin",
           entityId: admin.id,
-          ipAddress
+          ipAddress,
         });
-        return res.status(403).json({ success: false, message: 'Account is deactivated' });
+        return res
+          .status(403)
+          .json({ success: false, message: "Account is deactivated" });
       }
 
       let match = false;
-      const normalizedHash = admin.password.startsWith('$2y$')
+      const normalizedHash = admin.password.startsWith("$2y$")
         ? `$2b$${admin.password.slice(4)}`
         : admin.password;
       match = await bcrypt.compare(password, normalizedHash);
       if (match) {
         // Fire lastLoginAt update and audit log in background (non-blocking for fast login response)
         const now = new Date();
-        prisma.admin.update({
-          where: { id: admin.id },
-          data: { lastLoginAt: now }
-        }).catch(err => console.error('⚠️ [Auth] Failed to update lastLoginAt:', err.message));
+        prisma.admin
+          .update({
+            where: { id: admin.id },
+            data: { lastLoginAt: now },
+          })
+          .catch((err) =>
+            console.error(
+              "⚠️ [Auth] Failed to update lastLoginAt:",
+              err.message,
+            ),
+          );
 
         logAction({
           tenantId: admin.tenantId,
           actorUserId: admin.id,
-          action: 'login',
-          entityType: 'admin',
+          action: "login",
+          entityType: "admin",
           entityId: admin.id,
-          ipAddress
-        }).catch(err => console.error('⚠️ [Auth] Failed to log action:', err.message));
+          ipAddress,
+        }).catch((err) =>
+          console.error("⚠️ [Auth] Failed to log action:", err.message),
+        );
 
-        const defaultPerms = admin.role === 'superadmin' ? (PERMISSIONS || []) : (ROLE_PERMISSIONS[admin.role] || []);
-        const customPerms = Array.isArray(admin.customPermissions) ? admin.customPermissions : [];
-        const permissions = Array.from(new Set([...defaultPerms, ...customPerms]));
+        const defaultPerms =
+          admin.role === "superadmin"
+            ? PERMISSIONS || []
+            : ROLE_PERMISSIONS[admin.role] || [];
+        const customPerms = Array.isArray(admin.customPermissions)
+          ? admin.customPermissions
+          : [];
+        const permissions = Array.from(
+          new Set([...defaultPerms, ...customPerms]),
+        );
 
         return res.json({
           success: true,
           data: {
-            token: generateToken(admin.id, admin.role, admin.tenantId, admin.tokenVersion || 0),
+            token: generateToken(
+              admin.id,
+              admin.role,
+              admin.tenantId,
+              admin.tokenVersion || 0,
+            ),
             admin: {
               id: admin.id,
               name: admin.name,
@@ -84,25 +122,27 @@ exports.adminLogin = async (req, res, next) => {
               role: admin.role,
               tenantId: admin.tenantId,
               customPermissions: customPerms,
-              permissions
-            }
-          }
+              permissions,
+            },
+          },
         });
       }
     }
 
     // Log failed login attempt
     await logAction({
-      tenantId: 'default',
+      tenantId: "default",
       actorUserId: null,
-      action: 'failed_login',
-      entityType: 'admin',
+      action: "failed_login",
+      entityType: "admin",
       entityId: null,
       beforeData: { email: submittedEmail },
-      ipAddress
+      ipAddress,
     });
 
-    res.status(401).json({ success: false, message: 'Invalid email or password' });
+    res
+      .status(401)
+      .json({ success: false, message: "Invalid email or password" });
   } catch (error) {
     next(error);
   }
@@ -130,18 +170,23 @@ exports.getMe = async (req, res, next) => {
         customPermissions: true,
         lastLoginAt: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     });
 
     if (!admin) {
-      return res.status(404).json({ success: false, message: 'User profile not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "User profile not found" });
     }
 
     // Role-based permissions calculation (shallow clone to prevent mutating global ROLE_PERMISSIONS)
-    let permissions = admin.role === 'superadmin' ? [...PERMISSIONS] : [...(ROLE_PERMISSIONS[admin.role] || [])];
+    let permissions =
+      admin.role === "superadmin"
+        ? [...PERMISSIONS]
+        : [...(ROLE_PERMISSIONS[admin.role] || [])];
     if (Array.isArray(admin.customPermissions)) {
-      admin.customPermissions.forEach(p => {
+      admin.customPermissions.forEach((p) => {
         if (!permissions.includes(p)) permissions.push(p);
       });
     }
@@ -150,8 +195,8 @@ exports.getMe = async (req, res, next) => {
       success: true,
       data: {
         ...sanitizeUser(admin),
-        permissions
-      }
+        permissions,
+      },
     });
   } catch (error) {
     next(error);
@@ -163,18 +208,37 @@ exports.getMe = async (req, res, next) => {
 // @access  Private (Self only - NEVER accepts user ID from frontend)
 exports.updateMe = async (req, res, next) => {
   try {
-    const { phone, avatarUrl, notificationPreferences, uiSettings, location, bio, preferences } = req.body;
+    const {
+      phone,
+      avatarUrl,
+      notificationPreferences,
+      uiSettings,
+      location,
+      bio,
+      preferences,
+    } = req.body;
 
     let mergedUiSettings = uiSettings;
-    if (location !== undefined || bio !== undefined || preferences !== undefined) {
-      const current = await prisma.admin.findUnique({ where: { id: req.user.id }, select: { uiSettings: true } });
-      const currentUi = (current && typeof current.uiSettings === 'object' && current.uiSettings) || {};
+    if (
+      location !== undefined ||
+      bio !== undefined ||
+      preferences !== undefined
+    ) {
+      const current = await prisma.admin.findUnique({
+        where: { id: req.user.id },
+        select: { uiSettings: true },
+      });
+      const currentUi =
+        (current &&
+          typeof current.uiSettings === "object" &&
+          current.uiSettings) ||
+        {};
       mergedUiSettings = {
         ...currentUi,
         ...(uiSettings || {}),
         ...(location !== undefined && { location }),
         ...(bio !== undefined && { bio }),
-        ...(preferences !== undefined && { preferences })
+        ...(preferences !== undefined && { preferences }),
       };
     }
 
@@ -183,8 +247,10 @@ exports.updateMe = async (req, res, next) => {
       data: {
         ...(phone !== undefined && { phone }),
         ...(avatarUrl !== undefined && { avatarUrl }),
-        ...(notificationPreferences !== undefined && { notificationPreferences }),
-        ...(mergedUiSettings !== undefined && { uiSettings: mergedUiSettings })
+        ...(notificationPreferences !== undefined && {
+          notificationPreferences,
+        }),
+        ...(mergedUiSettings !== undefined && { uiSettings: mergedUiSettings }),
       },
       select: {
         id: true,
@@ -197,14 +263,14 @@ exports.updateMe = async (req, res, next) => {
         notificationPreferences: true,
         uiSettings: true,
         isActive: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     });
 
     res.json({
       success: true,
-      message: 'Profile and settings updated successfully',
-      data: sanitizeUser(updatedUser)
+      message: "Profile and settings updated successfully",
+      data: sanitizeUser(updatedUser),
     });
   } catch (error) {
     next(error);
@@ -219,19 +285,28 @@ exports.updateMyPassword = async (req, res, next) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!newPassword || newPassword.length < 4) {
-      return res.status(400).json({ success: false, message: 'New password must be at least 4 characters long' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "New password must be at least 4 characters long",
+        });
     }
 
     const admin = await prisma.admin.findUnique({ where: { id: req.user.id } });
     if (!admin) {
-      return res.status(404).json({ success: false, message: 'Admin not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Admin not found" });
     }
 
     // Verify current password if provided
     if (currentPassword) {
       const isMatch = await bcrypt.compare(currentPassword, admin.password);
       if (!isMatch) {
-        return res.status(400).json({ success: false, message: 'Incorrect current password' });
+        return res
+          .status(400)
+          .json({ success: false, message: "Incorrect current password" });
       }
     }
 
@@ -242,11 +317,11 @@ exports.updateMyPassword = async (req, res, next) => {
       where: { id: req.user.id },
       data: {
         password: passwordHash,
-        tokenVersion: { increment: 1 }
-      }
+        tokenVersion: { increment: 1 },
+      },
     });
 
-    res.json({ success: true, message: 'Password updated successfully' });
+    res.json({ success: true, message: "Password updated successfully" });
   } catch (error) {
     next(error);
   }
@@ -259,25 +334,34 @@ exports.forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email) {
-      return res.status(400).json({ success: false, message: 'Please provide email address' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Please provide email address" });
     }
-    const admin = await prisma.admin.findUnique({ where: { email: email.toLowerCase().trim() } });
+    const admin = await prisma.admin.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
     if (!admin) {
-      return res.json({ success: true, message: 'If the email exists in our system, password reset instructions have been sent.' });
+      return res.json({
+        success: true,
+        message:
+          "If the email exists in our system, password reset instructions have been sent.",
+      });
     }
-    
+
     await logAction({
       tenantId: admin.tenantId,
       actorUserId: admin.id,
-      action: 'password_reset_request',
-      entityType: 'admin',
+      action: "password_reset_request",
+      entityType: "admin",
       entityId: admin.id,
-      beforeData: { email: admin.email }
+      beforeData: { email: admin.email },
     });
 
     res.json({
       success: true,
-      message: 'If the email exists in our system, password reset instructions have been sent.'
+      message:
+        "If the email exists in our system, password reset instructions have been sent.",
     });
   } catch (error) {
     next(error);

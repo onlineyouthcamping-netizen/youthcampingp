@@ -19,7 +19,10 @@ function buildApprovedEmail({ booking, ticket, template } = {}) {
       ? `\n\n${template?.waitlistDisclaimer || WAITLIST_DISCLAIMER}`
       : "";
 
-  const envUrl = process.env.PUBLIC_SITE_URL || process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL;
+  const envUrl =
+    process.env.PUBLIC_SITE_URL ||
+    process.env.FRONTEND_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL;
   let publicBase = "https://youthcamping.in";
   if (envUrl && typeof envUrl === "string" && envUrl.trim().length > 0) {
     let url = envUrl.trim();
@@ -57,7 +60,12 @@ ${disclaimer}
  * train_ticket_status_update
  * Operational notification when ticket status changes.
  */
-function buildStatusUpdateEmail({ booking, ticket, oldStatus, newStatus } = {}) {
+function buildStatusUpdateEmail({
+  booking,
+  ticket,
+  oldStatus,
+  newStatus,
+} = {}) {
   return {
     subject: `Train Ticket Status Updated – ${booking?.tripName || "YouthCamping"}`,
     html: `
