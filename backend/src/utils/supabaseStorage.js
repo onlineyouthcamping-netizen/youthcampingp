@@ -24,8 +24,8 @@ if (supabaseUrl && supabaseKey) {
     );
   }
 } else {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("[STORAGE] FATAL: Supabase credentials not found in production. Cannot fallback to local storage for booking documents.");
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_LOCAL_STORAGE !== "true") {
+    throw new Error("[STORAGE] FATAL: Supabase credentials not found in production. Set SUPABASE_URL & SUPABASE_KEY or ALLOW_LOCAL_STORAGE=true.");
   }
   console.log(
     "[STORAGE] Supabase credentials not found. Falling back to local storage.",
