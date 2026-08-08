@@ -105,6 +105,7 @@ model Admin {
   paymentAccountsCreated     PaymentReceivingAccount[]  @relation("AccountCreatedByAdmin")
   paymentAccountsApproved    PaymentReceivingAccount[]  @relation("AccountApprovedByAdmin")
   linkedReceivingAccounts    PaymentReceivingAccount[]  @relation("AccountLinkedAdmin")
+  departuresConfirmed        Departure[]                @relation("DepartureConfirmedBy")
 
   @@index([tenantId])
 }
@@ -356,6 +357,7 @@ model Trip {
   activityLog         TripActivityLog[]
   activityTemplates   TripActivityTemplate[]
   departurePriceOverrides TripDeparturePriceOverride[]
+  departures          Departure[]
 
   @@index([tenantId])
   @@index([category])
@@ -4671,5 +4673,26 @@ model Faq {
 
   @@index([tripId])
   @@map("faqs")
+}
+
+model Departure {
+  id            String    @id @default(cuid())
+  tenantId      String    @default("default")
+  departureCode String    @unique
+  tripId        String
+  departureDate DateTime  @db.Date
+  status        String    @default("Planning") // Planning | Ready | Confirmed | In_Progress | Completed | Cancelled
+  notes         String?   @db.Text
+  confirmedAt   DateTime?
+  confirmedById String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  trip        Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  confirmedBy Admin? @relation("DepartureConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+
+  @@unique([tripId, departureDate])
+  @@index([tenantId, tripId, departureDate])
+  @@map("departures")
 }
 

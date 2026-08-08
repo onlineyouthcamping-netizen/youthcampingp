@@ -100,6 +100,7 @@ app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/vendors", require("./routes/vendorRoutes"));
 app.use("/api/ledger", require("./routes/ledgerRoutes"));
 app.use("/api/departure-engine", require("./routes/departureEngineRoutes"));
+app.use("/api/departures", require("./routes/departureEngineRoutes"));
 app.use("/api/ops", require("./routes/departureOperationsRoutes"));
 app.use("/api/quotations", require("./routes/quotationRoutes"));
 app.use("/api/blogs", require("./routes/blogRoutes"));
