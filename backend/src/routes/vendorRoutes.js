@@ -205,6 +205,28 @@ router.post(
   dirCtrl.createDirectoryMiscCharge,
 );
 
+// Trip-Vendor Endpoints
+router.get(
+  "/trips",
+  requirePermission("vendors.view"),
+  dirCtrl.getTripVendorTrips,
+);
+router.get(
+  "/trips/:tripId/destinations",
+  requirePermission("vendors.view"),
+  dirCtrl.getTripDestinations,
+);
+router.post(
+  "/trips/:tripId/assign",
+  requirePermission("vendors.edit"),
+  dirCtrl.assignVendorToTrip,
+);
+router.delete(
+  "/trips/:tripId/remove/:vendorId",
+  requirePermission("vendors.edit"),
+  dirCtrl.removeVendorFromTrip,
+);
+
 // Main Directory Vendor CRUD
 router.get(
   "/directory",

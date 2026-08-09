@@ -750,15 +750,16 @@ exports.createHotelBooking = async (req, res) => {
               },
             });
           } else {
-            return res
-              .status(400)
-              .json({
-                success: false,
-                code: "VALIDATION_ERROR",
-                message: `Selected vendor ${h.vendorId} does not exist in directory.`,
-                field: "vendorId",
-                index: idx,
-              });
+            // If vendorId is dummy (e.g., HTL-2), match by hotelName or set to null
+            const matchedByName = await prisma.opsVendor.findFirst({
+              where: { name: { equals: h.hotelName, mode: "insensitive" } },
+            });
+            if (matchedByName) {
+              h.vendorId = matchedByName.id;
+              dbVendor = matchedByName;
+            } else {
+              h.vendorId = null;
+            }
           }
         }
         const vType = (dbVendor.type || "").toUpperCase();
@@ -3142,10 +3143,14 @@ exports.saveManualAllocations = async (req, res) => {
     const {
       tripId,
       departureDate: rawDate,
-      roomAllocations = [],
-      vehicleAllocations = [],
+      roomAllocations: rawRoomAllocations = [],
+      vehicleAllocations: rawVehicleAllocations = [],
       clearExisting = false,
     } = req.body;
+
+    // Mutable working copies so we can normalize bookingId references before FK-constrained upserts
+    let roomAllocations = [...rawRoomAllocations];
+    let vehicleAllocations = [...rawVehicleAllocations];
 
     if (!tripId || !rawDate) {
       return res
@@ -3200,14 +3205,22 @@ exports.saveManualAllocations = async (req, res) => {
     if (allBookingIds.length > 0) {
       const validBookings = await prisma.booking.findMany({
         where: {
-          bookingId: { in: [...new Set(allBookingIds)] },
+          OR: [
+            { bookingId: { in: [...new Set(allBookingIds)] } },
+            { id: { in: [...new Set(allBookingIds)] } },
+          ],
           tripId: resolvedTripId,
         },
-        select: { bookingId: true, departureDate: true, status: true },
+        select: { id: true, bookingId: true, departureDate: true, status: true },
       });
-      const validBookingIds = new Set(validBookings.map((b) => b.bookingId));
+      // Build a normalization map: any id form (Prisma id or bookingId) → canonical bookingId display string
+      const idToBookingId = {};
+      validBookings.forEach((b) => {
+        if (b.id) idToBookingId[b.id] = b.bookingId;
+        if (b.bookingId) idToBookingId[b.bookingId] = b.bookingId;
+      });
       const invalidBookings = [...new Set(allBookingIds)].filter(
-        (id) => !validBookingIds.has(id),
+        (id) => !idToBookingId[id],
       );
       if (invalidBookings.length > 0) {
         return res.status(400).json({
@@ -3215,6 +3228,16 @@ exports.saveManualAllocations = async (req, res) => {
           message: `These bookingIds do not belong to trip ${tripId}: ${invalidBookings.join(", ")}`,
         });
       }
+
+      // Normalize all allocation bookingId fields to use the FK-compatible bookingId display string
+      roomAllocations = roomAllocations.map((r) => ({
+        ...r,
+        bookingId: idToBookingId[r.bookingId] || r.bookingId,
+      }));
+      vehicleAllocations = vehicleAllocations.map((v) => ({
+        ...v,
+        bookingId: idToBookingId[v.bookingId] || v.bookingId,
+      }));
     }
 
     // 2. Validate all fleetIds belong to this departure

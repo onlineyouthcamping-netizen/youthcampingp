@@ -3408,6 +3408,7 @@ model OpsTripVendor {
   priority  Int      @default(0)
   active    Boolean  @default(true)
   notes     String?  @db.Text
+  destinationId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

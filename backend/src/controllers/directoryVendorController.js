@@ -76,15 +76,36 @@ exports.getDirectoryDestinations = async (req, res, next) => {
   }
 };
 
+const ACCOMMODATION_TYPES = [
+  "HOTEL",
+  "HOMESTAY",
+  "CAMP",
+  "RESORT",
+  "HOSTEL",
+  "GUEST_HOUSE",
+  "VILLA",
+  "COTTAGE",
+  "APARTMENT",
+  "DORMITORY",
+  "LUXURY_TENT",
+];
+const TRANSPORT_TYPES = ["TRANSPORT"];
+const ACTIVITIES_TYPES = ["ACTIVITIES"];
+const RESTAURANT_TYPES = ["RESTAURANT", "FOOD"];
+const GUIDE_TYPES = ["GUIDE"];
+const OTHER_TYPES = ["OTHER"];
+
 exports.getDirectoryVendors = async (req, res, next) => {
   try {
     const {
       type,
+      category,
       state,
       city,
       isActive,
       search,
       destination,
+      tripId,
       page = 1,
       limit = 10,
     } = req.query;
@@ -93,30 +114,63 @@ exports.getDirectoryVendors = async (req, res, next) => {
     const limitNum = parseInt(limit) || 10;
     const skip = (pageNum - 1) * limitNum;
 
-    const where = { tenantId };
+    const where = tenantId === "default" ? { tenantId: "default" } : { OR: [{ tenantId }, { tenantId: "default" }] };
 
-    if (type && type !== "ALL") {
-      const parts = type
+    // Trip-scoped filtering enforced at backend query level
+    if (tripId && tripId !== "ALL" && tripId !== "GLOBAL") {
+      where.tripVendors = {
+        some: {
+          tripId: tripId,
+        },
+      };
+    }
+
+    // Category / Type filter
+    const activeType = type || category;
+    if (activeType && activeType !== "ALL") {
+      const parts = activeType
         .split(",")
-        .map((t) => t.trim())
+        .map((t) => t.trim().toUpperCase())
         .filter(Boolean);
-      if (parts.length > 1) {
-        where.type = { in: parts };
-      } else if (parts.length === 1) {
-        where.type = parts[0];
+
+      // Map friendly category identifiers if passed
+      let resolvedTypes = [...parts];
+      if (parts.includes("ACCOMMODATION")) {
+        resolvedTypes = [...resolvedTypes.filter((t) => t !== "ACCOMMODATION"), ...ACCOMMODATION_TYPES];
+      }
+      if (parts.includes("RESTAURANTS")) {
+        resolvedTypes = [...resolvedTypes.filter((t) => t !== "RESTAURANTS"), ...RESTAURANT_TYPES];
+      }
+      if (parts.includes("OTHER")) {
+        resolvedTypes = [...resolvedTypes.filter((t) => t !== "OTHER"), ...OTHER_TYPES];
+      }
+
+      if (resolvedTypes.length > 1) {
+        where.type = { in: resolvedTypes };
+      } else if (resolvedTypes.length === 1) {
+        where.type = resolvedTypes[0];
       }
     }
+
     if (state && state !== "ALL") where.state = state;
-    if ((city && city !== "ALL") || (destination && destination !== "ALL")) {
-      where.city = city || destination;
+
+    const activeDest = destination || city;
+    if (activeDest && activeDest !== "ALL") {
+      where.OR = [
+        { city: { contains: activeDest, mode: "insensitive" } },
+        { location: { contains: activeDest, mode: "insensitive" } },
+        { area: { contains: activeDest, mode: "insensitive" } },
+        { destinations: { some: { name: { contains: activeDest, mode: "insensitive" } } } },
+      ];
     }
+
     if (isActive !== undefined && isActive !== "ALL") {
       where.isActive = isActive === "true";
     }
 
     if (search && search.trim()) {
       const q = search.trim();
-      where.OR = [
+      const searchOR = [
         { name: { contains: q, mode: "insensitive" } },
         { contactPerson: { contains: q, mode: "insensitive" } },
         { phone: { contains: q, mode: "insensitive" } },
@@ -127,9 +181,30 @@ exports.getDirectoryVendors = async (req, res, next) => {
         { city: { contains: q, mode: "insensitive" } },
         { state: { contains: q, mode: "insensitive" } },
       ];
+
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchOR }];
+        delete where.OR;
+      } else {
+        where.OR = searchOR;
+      }
     }
 
-    const [vendors, total] = await Promise.all([
+    // Calculate live category counts for the current scope (trip vs global)
+    const baseScopeWhere = { ...where };
+    delete baseScopeWhere.type;
+    delete baseScopeWhere.AND; // Keep scope intact for category counts
+
+    const [
+      vendors,
+      total,
+      accommodationCount,
+      transportCount,
+      activitiesCount,
+      restaurantsCount,
+      guidesCount,
+      otherCount,
+    ] = await Promise.all([
       prisma.opsVendor.findMany({
         where,
         include: {
@@ -147,6 +222,12 @@ exports.getDirectoryVendors = async (req, res, next) => {
         orderBy: { name: "asc" },
       }),
       prisma.opsVendor.count({ where }),
+      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: ACCOMMODATION_TYPES } } }),
+      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: TRANSPORT_TYPES } } }),
+      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: ACTIVITIES_TYPES } } }),
+      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: RESTAURANT_TYPES } } }),
+      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: GUIDE_TYPES } } }),
+      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: OTHER_TYPES } } }),
     ]);
 
     const pages = Math.ceil(total / limitNum) || 1;
@@ -164,6 +245,241 @@ exports.getDirectoryVendors = async (req, res, next) => {
         startIndex,
         endIndex,
       },
+      categoryCounts: {
+        total,
+        accommodation: accommodationCount,
+        transport: transportCount,
+        activities: activitiesCount,
+        restaurants: restaurantsCount,
+        guides: guidesCount,
+        other: otherCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/vendors/trips
+ * Returns list of created trips for the trip selector
+ */
+exports.getTripVendorTrips = async (req, res, next) => {
+  try {
+    const tenantId = req.user?.tenantId || "default";
+    const tenantWhere = tenantId === "default" ? { tenantId: "default" } : { OR: [{ tenantId }, { tenantId: "default" }] };
+    const trips = await prisma.trip.findMany({
+      where: tenantWhere,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        location: true,
+        duration: true,
+        itinerary: true,
+        _count: {
+          select: { opsTripVendors: true },
+        },
+      },
+      orderBy: { title: "asc" },
+    });
+
+    const formattedTrips = trips.map((t) => ({
+      ...t,
+      _count: {
+        tripVendors: t._count?.opsTripVendors || 0,
+      },
+    }));
+
+    res.json({
+      success: true,
+      data: formattedTrips,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/vendors/trips/:tripId/destinations
+ * Returns actual itinerary destinations for a given trip
+ */
+exports.getTripDestinations = async (req, res, next) => {
+  try {
+    const { tripId } = req.params;
+    const trip = await prisma.trip.findUnique({
+      where: { id: tripId },
+      select: { id: true, title: true, location: true, itinerary: true },
+    });
+
+    if (!trip) {
+      return res.status(404).json({ success: false, message: "Trip not found" });
+    }
+
+    const destinationsSet = new Set();
+
+    if (trip.location) {
+      trip.location.split("/").forEach((loc) => {
+        const clean = loc.trim();
+        if (clean && !clean.toLowerCase().includes("no stay") && !clean.toLowerCase().includes("enroute")) {
+          destinationsSet.add(clean);
+        }
+      });
+    }
+
+    if (Array.isArray(trip.itinerary)) {
+      trip.itinerary.forEach((item) => {
+        const stay = item.stay || item.location || "";
+        if (stay && stay !== "—") {
+          stay.split("/").forEach((loc) => {
+            const clean = loc.trim();
+            if (
+              clean &&
+              !clean.toLowerCase().includes("no stay") &&
+              !clean.toLowerCase().includes("enroute") &&
+              !clean.toLowerCase().includes("train") &&
+              !clean.toLowerCase().includes("return") &&
+              !clean.toLowerCase().includes("arrival") &&
+              !clean.toLowerCase().includes("departure") &&
+              !clean.toLowerCase().includes("visit ") &&
+              !clean.toLowerCase().includes("trek")
+            ) {
+              destinationsSet.add(clean);
+            }
+          });
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: Array.from(destinationsSet),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/vendors/trips/:tripId/assign
+ * Map a master vendor to a trip (creates OpsTripVendor mapping)
+ */
+exports.assignVendorToTrip = async (req, res, next) => {
+  try {
+    const { tripId } = req.params;
+    const { vendorId, category, destinationId, notes, preferred } = req.body;
+    const tenantId = req.user?.tenantId || "default";
+
+    if (!vendorId) {
+      return res.status(400).json({ success: false, message: "vendorId is required" });
+    }
+
+    // Verify vendor exists
+    const vendor = await prisma.opsVendor.findUnique({ where: { id: vendorId } });
+    if (!vendor) {
+      return res.status(404).json({ success: false, message: "Vendor not found" });
+    }
+
+    // Determine category if not provided
+    const cat = category || vendor.type || "OTHER";
+
+    // Upsert trip-vendor mapping (no duplication of master vendor)
+    const mapping = await prisma.opsTripVendor.upsert({
+      where: {
+        tripId_vendorId_category: {
+          tripId,
+          vendorId,
+          category: cat,
+        },
+      },
+      update: {
+        preferred: preferred !== undefined ? preferred : true,
+        notes: notes || undefined,
+        destinationId: destinationId || undefined,
+      },
+      create: {
+        tripId,
+        vendorId,
+        category: cat,
+        preferred: preferred !== undefined ? preferred : true,
+        notes: notes || null,
+        destinationId: destinationId || null,
+      },
+    });
+
+    // Write Audit Log
+    const auditLogger = require("../utils/auditLogger");
+    await auditLogger.logAction({
+      tenantId,
+      actorUserId: req.user?.id || req.user?.userId || "system",
+      action: "TRIP_VENDOR_ASSIGNED",
+      entityType: "OpsTripVendor",
+      entityId: mapping.id,
+      afterData: {
+        tripId,
+        vendorId,
+        vendorName: vendor.name,
+        category: cat,
+        destinationId,
+      },
+      ipAddress: req.ip,
+    });
+
+    res.json({
+      success: true,
+      message: `Vendor ${vendor.name} assigned to trip successfully`,
+      data: mapping,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/vendors/trips/:tripId/remove/:vendorId
+ * Unmap a vendor from a trip (removes ONLY the OpsTripVendor mapping record!)
+ */
+exports.removeVendorFromTrip = async (req, res, next) => {
+  try {
+    const { tripId, vendorId } = req.params;
+    const tenantId = req.user?.tenantId || "default";
+
+    // Find mapping record
+    const mappings = await prisma.opsTripVendor.findMany({
+      where: { tripId, vendorId },
+    });
+
+    if (mappings.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor mapping for this trip not found",
+      });
+    }
+
+    // Delete mapping records ONLY — master OpsVendor remains intact!
+    await prisma.opsTripVendor.deleteMany({
+      where: { tripId, vendorId },
+    });
+
+    // Write Audit Log
+    const auditLogger = require("../utils/auditLogger");
+    await auditLogger.logAction({
+      tenantId,
+      actorUserId: req.user?.id || req.user?.userId || "system",
+      action: "TRIP_VENDOR_REMOVED",
+      entityType: "OpsTripVendor",
+      entityId: mappings[0].id,
+      beforeData: {
+        tripId,
+        vendorId,
+        removedMappingsCount: mappings.length,
+      },
+      ipAddress: req.ip,
+    });
+
+    res.json({
+      success: true,
+      message: "Vendor removed from trip (master record preserved)",
     });
   } catch (error) {
     next(error);
