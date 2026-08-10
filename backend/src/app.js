@@ -151,9 +151,24 @@ const {
 } = require("./controllers/bookingLinkController");
 app.get("/api/analytics", protectAnalytics, getBookingLinksAnalytics);
 
-// Serve Static Files
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+// Serve Static Files under both /uploads and /api/uploads
+const uploadDirs = [
+  path.join(__dirname, "../../public/uploads"),
+  path.join(__dirname, "../public/uploads"),
+  path.join(process.cwd(), "public/uploads"),
+  path.join(process.cwd(), "uploads"),
+];
+uploadDirs.forEach((dir) => {
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    app.use("/uploads", express.static(dir));
+    app.use("/api/uploads", express.static(dir));
+  } catch (e) {
+    // Ignore error if folder cannot be created
+  }
+});
 
 // Revalidation Proxy
 app.post("/api/revalidate", (req, res) => {

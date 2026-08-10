@@ -65,7 +65,10 @@ export function OptimizedImage({
   ) {
     finalSrc = fallbackSrc;
   } else if (finalSrc.startsWith("/uploads/")) {
-    finalSrc = fallbackSrc; // Block unoptimized local uploads
+    const apiBase = (
+      process.env.NEXT_PUBLIC_API_URL || "https://api.youthcamping.online"
+    ).replace(/\/api$/, "");
+    finalSrc = `${apiBase}${finalSrc}`;
   } else if (
     finalSrc.includes("unsplash.com") &&
     !finalSrc.startsWith("https://")
