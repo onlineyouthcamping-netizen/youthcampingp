@@ -40,9 +40,96 @@ const corsOptions = {
 router.use(cors(corsOptions));
 router.options("*", cors(corsOptions));
 
+const isCloudinaryConfigured = () => !!(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
+
+/**
+ * Uploads a file buffer to Cloudinary if configured; otherwise gracefully falls back to local disk.
+ */
+async function saveUploadedFile(file, folder = "youthcamping/trips") {
+  const ext = path.extname(file.originalname || "").toLowerCase() || ".jpg";
+  const mime = (file.mimetype || "").toLowerCase();
+  const isVideo = mime.startsWith("video/") || [".mp4", ".webm", ".mov", ".ogg", ".avi", ".mkv"].includes(ext);
+
+  // 1. Try Cloudinary if configured
+  if (isCloudinaryConfigured()) {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder,
+            resource_type: isVideo ? "video" : "auto",
+          },
+          (error, res) => {
+            if (error) return reject(error);
+            resolve(res);
+          }
+        );
+        uploadStream.end(file.buffer);
+      });
+
+      if (result && (result.secure_url || result.url)) {
+        const finalUrl = result.secure_url || result.url;
+        console.log("[UPLOAD] ✅ Uploaded to Cloudinary:", finalUrl);
+        return {
+          url: finalUrl,
+          publicId: result.public_id,
+          size: file.size,
+          filename: file.originalname,
+        };
+      }
+    } catch (cErr) {
+      console.warn("[UPLOAD] ⚠️ Cloudinary upload failed, falling back to local disk storage:", cErr.message);
+    }
+  }
+
+  // 2. Fallback to local disk storage
+  const primaryDir = path.join(__dirname, "../../public/uploads/trips");
+  const fallbackDir = path.join(process.cwd(), "public/uploads/trips");
+  const cwdDir = path.join(process.cwd(), "uploads/trips");
+  let targetDir = primaryDir;
+
+  try {
+    if (!fs.existsSync(primaryDir)) {
+      fs.mkdirSync(primaryDir, { recursive: true });
+    }
+  } catch (err) {
+    console.warn(`[UPLOAD] Could not create ${primaryDir}, trying fallback:`, err.message);
+    try {
+      if (!fs.existsSync(fallbackDir)) {
+        fs.mkdirSync(fallbackDir, { recursive: true });
+      }
+      targetDir = fallbackDir;
+    } catch (err2) {
+      if (!fs.existsSync(cwdDir)) {
+        fs.mkdirSync(cwdDir, { recursive: true });
+      }
+      targetDir = cwdDir;
+    }
+  }
+
+  const safeBaseName = (file.fieldname || "image") + "-" + Date.now() + "-" + Math.round(Math.random() * 1e9);
+  const finalFilename = safeBaseName + ext;
+  const filePath = path.join(targetDir, finalFilename);
+
+  fs.writeFileSync(filePath, file.buffer);
+  const webUrl = `/uploads/trips/${finalFilename}`;
+  console.log("[UPLOAD] ✅ Saved to local disk:", webUrl);
+
+  return {
+    url: webUrl,
+    publicId: `local_${finalFilename}`,
+    size: file.size,
+    filename: finalFilename,
+  };
+}
+
 // ── DELETE /api/upload/photo ──
-// Physically removes a file from uploads directory
-router.delete("/photo", (req, res) => {
+// Physically removes a file from uploads directory or Cloudinary
+router.delete("/photo", async (req, res) => {
   try {
     const { url } = req.body;
     if (!url) {
@@ -51,32 +138,44 @@ router.delete("/photo", (req, res) => {
         .json({ success: false, message: "No URL provided" });
     }
 
+    // Cloudinary photo deletion
+    if (url.startsWith("http") && url.includes("cloudinary.com")) {
+      if (isCloudinaryConfigured()) {
+        try {
+          const match = url.match(/\/youthcamping\/trips\/([^.]+)/);
+          if (match) {
+            await cloudinary.uploader.destroy(`youthcamping/trips/${match[1]}`);
+          }
+        } catch (cErr) {
+          console.warn("[DELETE PHOTO] Cloudinary destroy error:", cErr.message);
+        }
+      }
+      return res.json({ success: true, message: "Cloudinary photo deleted" });
+    }
+
     // Only allow deleting files from /uploads/
-    if (!url.startsWith("/uploads/")) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Invalid file path - must start with /uploads/",
-        });
+    if (url.startsWith("/uploads/")) {
+      const fullPath = path.join(__dirname, "../../public", url);
+      const cwdPath = path.join(process.cwd(), "public", url);
+      const directCwd = path.join(process.cwd(), url.replace(/^\//, ""));
+
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+        console.log(`[DELETE PHOTO] ✅ Deleted: ${fullPath}`);
+      } else if (fs.existsSync(cwdPath)) {
+        fs.unlinkSync(cwdPath);
+        console.log(`[DELETE PHOTO] ✅ Deleted: ${cwdPath}`);
+      } else if (fs.existsSync(directCwd)) {
+        fs.unlinkSync(directCwd);
+        console.log(`[DELETE PHOTO] ✅ Deleted: ${directCwd}`);
+      }
+      return res.json({ success: true, message: "File deleted" });
     }
 
-    const fullPath = path.join(__dirname, "../../public", url);
-    console.log(`[DELETE PHOTO] Attempting to delete: ${fullPath}`);
-
-    if (fs.existsSync(fullPath)) {
-      fs.unlinkSync(fullPath);
-      console.log(`[DELETE PHOTO] ✅ Deleted: ${fullPath}`);
-      res.json({ success: true, message: "File deleted" });
-    } else {
-      console.log(
-        `[DELETE PHOTO] ⚠️ File not found (already deleted?): ${fullPath}`,
-      );
-      res.json({
-        success: true,
-        message: "File not found (may already be deleted)",
-      });
-    }
+    res.json({
+      success: true,
+      message: "File skipped or not local",
+    });
   } catch (error) {
     console.error("[DELETE PHOTO] ❌ Error:", error.message);
     res.status(500).json({ success: false, message: error.message });
@@ -85,11 +184,11 @@ router.delete("/photo", (req, res) => {
 
 // ── POST /api/upload/single ──
 // Upload a single image and return its persistent URL
-router.post("/single", (req, res, next) => {
-  upload.single("image")(req, res, (err) => {
+router.post("/single", (req, res) => {
+  upload.single("image")(req, res, async (err) => {
     if (err) {
-      console.error("[UPLOAD SINGLE] Multer/Cloudinary Error:", err.message);
-      return res.status(500).json({
+      console.error("[UPLOAD SINGLE] Multer Error:", err.message);
+      return res.status(400).json({
         success: false,
         message: `Upload failed: ${err.message}`,
         error: err.code || "UPLOAD_ERROR",
@@ -97,42 +196,27 @@ router.post("/single", (req, res, next) => {
     }
 
     try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No file uploaded. Ensure field name is "image"',
+        });
+      }
+
       console.log(
         "[UPLOAD SINGLE] File received:",
-        req.file ? req.file.originalname || "Yes" : "NONE",
+        req.file.originalname,
+        `(${req.file.size} bytes)`
       );
-      if (req.body)
-        console.log("[UPLOAD SINGLE] Body:", JSON.stringify(req.body));
 
-      if (!req.file) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: 'No file uploaded. Ensure field name is "image"',
-          });
-      }
-
-      let url = req.file.path;
-
-      // If it's a local file (not a Cloudinary URL), normalize it to a relative web path
-      if (!url.startsWith("http")) {
-        // Multer diskStorage path looks like "public/uploads/trips/image-..."
-        // We want "/uploads/trips/image-..."
-        url = "/" + url.replace(/\\/g, "/").replace(/^public\//, "");
-      }
-
-      if (!url) {
-        throw new Error("File processing failed - no URL generated");
-      }
-
-      console.log("[UPLOAD SINGLE] ✅ Success:", url);
+      const saved = await saveUploadedFile(req.file, "youthcamping/trips");
 
       res.status(200).json({
         success: true,
-        url: url,
-        size: req.file.size,
-        filename: req.file.filename || req.file.originalname,
+        url: saved.url,
+        size: saved.size,
+        filename: saved.filename,
+        publicId: saved.publicId,
       });
     } catch (innerErr) {
       console.error("[UPLOAD SINGLE] Processing Error:", innerErr.message);
@@ -144,11 +228,11 @@ router.post("/single", (req, res, next) => {
 // ── POST /api/upload/multiple ──
 // Upload multiple images and return their persistent URLs
 router.post("/multiple", (req, res) => {
-  upload.array("images", 10)(req, res, (err) => {
+  upload.array("images", 10)(req, res, async (err) => {
     if (err) {
-      console.error("[UPLOAD MULTI] Multer/Cloudinary Error:", err.message);
+      console.error("[UPLOAD MULTI] Multer Error:", err.message);
       return res
-        .status(500)
+        .status(400)
         .json({ success: false, message: `Upload failed: ${err.message}` });
     }
 
@@ -159,18 +243,11 @@ router.post("/multiple", (req, res) => {
           .json({ success: false, message: "No files uploaded" });
       }
 
-      const urls = [];
-      for (const file of req.files) {
-        let url = file.path;
-        if (url) {
-          // Local path normalization
-          if (!url.startsWith("http")) {
-            url = "/" + url.replace(/\\/g, "/").replace(/^public\//, "");
-          }
-          urls.push(url);
-          console.log(`[UPLOAD MULTI] ✅ Success: ${url}`);
-        }
-      }
+      const results = await Promise.all(
+        req.files.map((file) => saveUploadedFile(file, "youthcamping/trips"))
+      );
+
+      const urls = results.map((r) => r.url);
 
       res.status(200).json({
         success: true,

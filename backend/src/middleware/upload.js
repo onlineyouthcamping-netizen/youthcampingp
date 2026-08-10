@@ -1,8 +1,6 @@
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs");
 const cloudinary = require("cloudinary").v2;
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 const isCloudinaryConfigured = !!(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -10,76 +8,17 @@ const isCloudinaryConfigured = !!(
   process.env.CLOUDINARY_API_SECRET
 );
 
-if (!isCloudinaryConfigured) {
-  console.warn(
-    "⚠️  Cloudinary is not fully configured. The following variables are missing:",
-  );
-  if (!process.env.CLOUDINARY_CLOUD_NAME)
-    console.warn("   - CLOUDINARY_CLOUD_NAME");
-  if (!process.env.CLOUDINARY_API_KEY) console.warn("   - CLOUDINARY_API_KEY");
-  if (!process.env.CLOUDINARY_API_SECRET)
-    console.warn("   - CLOUDINARY_API_SECRET");
-  console.warn(
-    "   Fallback to local storage may be needed if production keys are not set in Render/Vercel.",
-  );
-}
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-let storage;
 if (isCloudinaryConfigured) {
-  storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: async (req, file) => {
-      const isVideo = file.mimetype.startsWith("video/");
-      return {
-        folder: "youthcamping/trips",
-        resource_type: isVideo ? "video" : "image",
-        allowed_formats: isVideo
-          ? ["mp4", "webm", "mov", "ogg"]
-          : ["jpg", "png", "jpeg", "webp", "gif"],
-      };
-    },
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
   });
-  console.log("[UPLOAD] ✅ Cloudinary Storage configured and active");
+  console.log("[UPLOAD] ✅ Cloudinary configured");
 } else {
   console.warn(
-    "[UPLOAD] ⚠️ Falling back to LOCAL DISK STORAGE because Cloudinary is not configured",
+    "[UPLOAD] ⚠️ Cloudinary credentials missing or partial. Local disk storage fallback is active."
   );
-  const os = require("os");
-  storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      const uploadDir = "public/uploads/trips";
-      try {
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-      } catch (err) {
-        console.error(
-          "[UPLOAD] ❌ Failed to create public upload directory, using system temp fallback:",
-          err.message,
-        );
-        const tempDir = path.join(os.tmpdir(), "youthcamping-uploads");
-        if (!fs.existsSync(tempDir)) {
-          fs.mkdirSync(tempDir, { recursive: true });
-        }
-        cb(null, tempDir);
-      }
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      cb(
-        null,
-        file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname),
-      );
-    },
-  });
 }
 
 const fileFilter = (req, file, cb) => {
@@ -90,6 +29,11 @@ const fileFilter = (req, file, cb) => {
     "image/jpg",
     "image/gif",
     "image/svg+xml",
+    "image/avif",
+    "image/heic",
+    "image/heif",
+    "image/bmp",
+    "image/tiff",
   ];
   const allowedVideos = [
     "video/mp4",
@@ -98,28 +42,71 @@ const fileFilter = (req, file, cb) => {
     "video/ogg",
     "video/x-msvideo",
     "video/mov",
+    "video/avi",
+    "video/mkv",
   ];
-  const isVideo =
-    allowedVideos.includes(file.mimetype) || file.mimetype.startsWith("video/");
-  const isImage =
-    allowedImages.includes(file.mimetype) || file.mimetype.startsWith("image/");
 
-  if (isImage || isVideo) {
+  const mime = (file.mimetype || "").toLowerCase();
+  const ext = path.extname(file.originalname || "").toLowerCase();
+  const allowedExts = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".gif",
+    ".svg",
+    ".avif",
+    ".heic",
+    ".heif",
+    ".bmp",
+    ".tiff",
+    ".mp4",
+    ".webm",
+    ".mov",
+    ".ogg",
+    ".avi",
+    ".mkv",
+  ];
+
+  const isVideo =
+    allowedVideos.includes(mime) ||
+    mime.startsWith("video/") ||
+    [".mp4", ".webm", ".mov", ".ogg", ".avi", ".mkv"].includes(ext);
+  const isImage =
+    allowedImages.includes(mime) ||
+    mime.startsWith("image/") ||
+    [
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".webp",
+      ".gif",
+      ".svg",
+      ".avif",
+      ".heic",
+      ".heif",
+      ".bmp",
+      ".tiff",
+    ].includes(ext);
+
+  if (isImage || isVideo || allowedExts.includes(ext)) {
     cb(null, true);
   } else {
     cb(
       new Error(
-        `Invalid file type: ${file.mimetype}. Allowed: JPG, PNG, WEBP, GIF, MP4, WEBM, MOV.`,
+        `Invalid file type: ${file.mimetype || ext}. Allowed image & video formats only.`
       ),
-      false,
+      false
     );
   }
 };
 
+// Use memoryStorage for reliable streaming to Cloudinary and safe fallback to disk
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for videos and images
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
   fileFilter,
 });
 
 module.exports = upload;
+
