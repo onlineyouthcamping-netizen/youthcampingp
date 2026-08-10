@@ -946,10 +946,34 @@ exports.getTransportFleet = async (req, res) => {
   try {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
+    const includeRates = req.query.includeRates === 'true';
     const fleet = await prisma.opsTransportFleet.findMany({
       where: ctx.where,
-      include: { vendor: true },
+      include: {
+        vendor: true,
+        ...(includeRates && { directoryVendorTransportRate: true }),
+      },
     });
+    if (includeRates) {
+      // Resolve applicable tariff for each vehicle based on route and vehicle type
+      const resolvedFleet = fleet.map((veh) => {
+        const rates = veh.directoryVendorTransportRate || [];
+        const applicable = rates.find(
+          (r) =>
+            (!r.route || r.route === veh.route) &&
+            r.vehicleType === veh.vehicleType &&
+            r.status === 'ACTIVE',
+        );
+        return {
+          ...veh,
+          tariff: applicable ? {
+            amount: applicable.amount,
+            rateBasis: applicable.rateBasis,
+          } : null,
+        };
+      });
+      return res.json({ success: true, data: resolvedFleet });
+    }
     return res.json({ success: true, data: fleet });
   } catch (err) {
     console.error("getTransportFleet error:", err);

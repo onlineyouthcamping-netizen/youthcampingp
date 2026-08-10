@@ -97,8 +97,10 @@ export function OptimizedImage({
     const w1 = Math.min(360, resolvedWidth);
     const w2 = Math.min(720, resolvedWidth * 2);
 
-    finalSrc = withCloudinaryWidth(finalSrc, w1);
-    srcSet = `${withCloudinaryWidth(finalSrc, w1)} ${w1}w, ${withCloudinaryWidth(finalSrc, w2)} ${w2}w`;
+    const cSrc1 = withCloudinaryWidth(finalSrc, w1);
+    const cSrc2 = withCloudinaryWidth(finalSrc, w2);
+    finalSrc = cSrc1;
+    srcSet = `${cSrc1} ${w1}w, ${cSrc2} ${w2}w`;
   } else if (isBunny && bunnyVariant && finalSrc.includes("/original/")) {
     finalSrc = finalSrc.replace("/original/", `/${bunnyVariant}/`);
   }

@@ -231,7 +231,7 @@ export default function ItineraryAccordion({
                   {/* STARTING POINT DATE LINE */}
                   {calDateFull && (
                     <div className="border-b border-zinc-100 pb-2.5">
-                      <p className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat">
+                      <p suppressHydrationWarning className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat">
                         {calDateFull}
                       </p>
                     </div>

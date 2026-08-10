@@ -164,8 +164,13 @@ exports.getDirectoryVendors = async (req, res, next) => {
       ];
     }
 
-    if (isActive !== undefined && isActive !== "ALL") {
-      where.isActive = isActive === "true";
+    if (isActive === "false" || isActive === false) {
+      where.isActive = false;
+    } else if (isActive === "ALL" || isActive === "all" || isActive === "both") {
+      // Return both active and inactive vendors
+    } else {
+      // Default: Active vendors only
+      where.isActive = true;
     }
 
     if (search && search.trim()) {
@@ -488,25 +493,42 @@ exports.removeVendorFromTrip = async (req, res, next) => {
 
 exports.getDirectoryVendor = async (req, res, next) => {
   try {
-    const vendor = await prisma.opsVendor.findUnique({
-      where: { id: req.params.vendorId },
-      include: {
-        vendorRooms: true,
-        seasonalRates: true,
-        destinations: true,
-        vendorContacts: true,
-        contracts: true,
-        tripVendors: {
-          include: { trip: { select: { id: true, title: true } } },
+    const vendorId = req.params.vendorId;
+    if (!vendorId) {
+      return res.status(400).json({ success: false, message: "vendorId is required" });
+    }
+
+    let vendor = null;
+    try {
+      vendor = await prisma.opsVendor.findUnique({
+        where: { id: vendorId },
+        include: {
+          vendorRooms: true,
+          seasonalRates: true,
+          destinations: true,
+          vendorContacts: true,
+          contracts: true,
+          tripVendors: {
+            include: { trip: { select: { id: true, title: true } } },
+          },
         },
-      },
-    });
-    if (!vendor)
+      });
+    } catch (relError) {
+      console.warn("getDirectoryVendor relation query failed, using direct query fallback:", relError?.message);
+      vendor = await prisma.opsVendor.findUnique({
+        where: { id: vendorId },
+      });
+    }
+
+    if (!vendor) {
       return res
         .status(404)
         .json({ success: false, message: "Vendor not found" });
+    }
+
     res.json({ success: true, data: vendor });
   } catch (error) {
+    console.error("getDirectoryVendor error:", error);
     next(error);
   }
 };
@@ -664,9 +686,14 @@ exports.updateDirectoryVendor = async (req, res, next) => {
 
 exports.deleteDirectoryVendor = async (req, res, next) => {
   try {
+    const vendorId = req.params.vendorId;
+    if (!vendorId) {
+      return res.status(400).json({ success: false, message: "vendorId is required" });
+    }
+
     // Inactivate instead of hard delete to preserve historical pricing integrity
-    const vendor = await prisma.directoryVendor.update({
-      where: { id: req.params.vendorId },
+    const vendor = await prisma.opsVendor.update({
+      where: { id: vendorId },
       data: { isActive: false },
     });
     res.json({
@@ -675,6 +702,7 @@ exports.deleteDirectoryVendor = async (req, res, next) => {
       data: vendor,
     });
   } catch (error) {
+    console.error("deleteDirectoryVendor error:", error);
     next(error);
   }
 };
