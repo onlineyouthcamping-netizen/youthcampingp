@@ -608,6 +608,19 @@ exports.getPersonalCollections = async (req, res) => {
   try {
     const tenantId = req.user.tenantId || "default";
 
+    // Parse optional date range filters
+    const { startDate, endDate } = req.query;
+    let dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter = {};
+      if (startDate) dateFilter.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateFilter.lte = end;
+      }
+    }
+
     const admins = await prisma.admin.findMany({
       where: { tenantId },
       select: {
@@ -620,11 +633,14 @@ exports.getPersonalCollections = async (req, res) => {
       orderBy: { name: "asc" },
     });
 
+    const bookingWhere = {
+      tenantId,
+      advancePaid: { gt: 0 },
+      ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+    };
+
     const bookings = await prisma.booking.findMany({
-      where: {
-        tenantId,
-        advancePaid: { gt: 0 },
-      },
+      where: bookingWhere,
       select: {
         id: true,
         bookingId: true,
@@ -634,8 +650,14 @@ exports.getPersonalCollections = async (req, res) => {
       },
     });
 
+    const stationWhere = {
+      tenantId,
+      isReversed: false,
+      ...(Object.keys(dateFilter).length > 0 ? { collectedAt: dateFilter } : {}),
+    };
+
     const stationCollections = await prisma.stationPaymentCollection.findMany({
-      where: { tenantId, isReversed: false },
+      where: stationWhere,
       select: {
         id: true,
         amount: true,
@@ -644,8 +666,14 @@ exports.getPersonalCollections = async (req, res) => {
       },
     });
 
+    const entryWhere = {
+      tenantId,
+      status: "APPROVED",
+      ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+    };
+
     const accountingEntries = await prisma.accountingEntry.findMany({
-      where: { tenantId, status: "APPROVED" },
+      where: entryWhere,
       select: {
         id: true,
         bookingId: true,
@@ -655,6 +683,7 @@ exports.getPersonalCollections = async (req, res) => {
       },
     });
 
+    // Submissions are never date-filtered — they are cumulative (total submitted)
     const submissions = await prisma.employeeCollectionSubmission.findMany({
       where: { tenantId },
       select: {
