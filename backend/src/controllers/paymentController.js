@@ -143,6 +143,9 @@ exports.addClientPayment = async (req, res) => {
 
     const targetBookingId = booking.bookingId || booking.id;
 
+    const collectorAdminId =
+      req.body.collectedByAdminId || req.body.salesAdminId || req.user?.id;
+
     const receipt = await prisma.opsClientPayment.create({
       data: {
         tenantId,
@@ -152,34 +155,38 @@ exports.addClientPayment = async (req, res) => {
         transactionId,
         paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
         proofUrl,
-        status: status || "Pending Verification",
+        status: status || "Verified",
         collectedBy: req.user?.name || req.user?.email || "Staff",
         remarks,
       },
     });
 
     // Automatically recalculate booking advancePaid and remainingAmount if status is Verified
-    if (receipt.status === "Verified") {
-      const allVerified = await prisma.opsClientPayment.findMany({
-        where: { bookingId: targetBookingId, status: "Verified" },
-      });
-      const totalVerified = allVerified.reduce((s, r) => s + r.amount, 0);
-      const remaining = Math.max(0, booking.totalAmount - totalVerified);
+    const allVerified = await prisma.opsClientPayment.findMany({
+      where: { bookingId: targetBookingId, status: "Verified" },
+    });
+    const totalVerified = allVerified.reduce((s, r) => s + r.amount, 0);
+    const remaining = Math.max(0, booking.totalAmount - totalVerified);
 
-      await prisma.booking.update({
-        where: { id: booking.id },
-        data: {
-          advancePaid: totalVerified,
-          remainingAmount: remaining,
-          paymentStatus:
-            remaining === 0
-              ? "Paid"
-              : totalVerified > 0
-                ? "Partially Paid"
-                : "Unpaid",
-        },
-      });
+    const updateData: any = {
+      advancePaid: totalVerified,
+      remainingAmount: remaining,
+      paymentStatus:
+        remaining === 0
+          ? "Paid"
+          : totalVerified > 0
+            ? "Partially Paid"
+            : "Unpaid",
+    };
+
+    if (collectorAdminId) {
+      updateData.salesAdminId = collectorAdminId;
     }
+
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: updateData,
+    });
 
     return res.json({ success: true, data: receipt });
   } catch (err) {
