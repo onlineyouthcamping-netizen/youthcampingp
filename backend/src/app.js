@@ -51,10 +51,25 @@ const isTestEnv =
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isTestEnv ? 99999 : 3000,
+  max: isTestEnv ? 99999 : 5000,
   message: { error: "Too many requests, try again later" },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    const authHeader =
+      req.headers.authorization || req.headers["x-access-token"];
+    const url = req.originalUrl || req.url || "";
+    if (
+      authHeader ||
+      url.includes("/admin") ||
+      url.includes("/bookings") ||
+      url.includes("/accounting") ||
+      url.includes("/knowledge")
+    ) {
+      return true;
+    }
+    return false;
+  },
 });
 
 const authLimiter = rateLimit({
