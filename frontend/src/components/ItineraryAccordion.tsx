@@ -148,20 +148,23 @@ export default function ItineraryAccordion({
   }));
 
   const toggleDay = (dayNumber: number) => {
-    if (openDays.includes(dayNumber)) {
-      setOpenDays(openDays.filter((d) => d !== dayNumber));
-    } else {
-      setOpenDays([...openDays, dayNumber]);
-    }
+    setOpenDays((prev) => {
+      const next = prev.includes(dayNumber)
+        ? prev.filter((d) => d !== dayNumber)
+        : [...prev, dayNumber];
+      setIsAllExpanded(next.length === displayItinerary.length && next.length > 0);
+      return next;
+    });
   };
 
   const toggleExpandAll = () => {
     if (isAllExpanded) {
       setOpenDays([]);
+      setIsAllExpanded(false);
     } else {
       setOpenDays(displayItinerary.map((d) => d.displayDay));
+      setIsAllExpanded(true);
     }
-    setIsAllExpanded(!isAllExpanded);
   };
 
   return (

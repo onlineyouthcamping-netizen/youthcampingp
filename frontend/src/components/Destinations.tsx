@@ -129,7 +129,7 @@ export default function Destinations({
             img: mappedImg,
           };
         })
-      : DEFAULT_DESTINATIONS;
+      : [];
 
   const nudge = (dir: "l" | "r") => {
     if (scrollRef.current) {
@@ -142,7 +142,7 @@ export default function Destinations({
 
   return (
     <section
-      className="popular-destinations popular-section destinations-grid py-6 sm:py-8 font-montserrat overflow-hidden"
+      className="popular-destinations popular-section destinations-grid py-4 sm:py-5 font-montserrat overflow-hidden"
       style={{ backgroundColor: "#E2E7ED" }}
     >
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
@@ -180,7 +180,8 @@ export default function Destinations({
         {/* DESTINATION PORTRAIT CARDS SLIDER WITH NAME OVERLAY & INQUIRY FORM CLICK */}
         <div
           ref={scrollRef}
-          className="flex gap-3.5 sm:gap-5 overflow-x-auto no-scrollbar py-2 px-1 scroll-smooth touch-manipulation"
+          className="carousel-track w-full max-w-full flex gap-3.5 sm:gap-5 overflow-x-auto no-scrollbar py-2 px-1 scroll-smooth snap-x snap-mandatory touch-pan-x"
+          style={{ touchAction: "pan-x" }}
         >
           {displayItems.map((item, idx) => (
             <motion.div

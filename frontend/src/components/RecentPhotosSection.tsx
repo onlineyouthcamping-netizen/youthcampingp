@@ -82,38 +82,25 @@ export default function RecentPhotosSection({
   const scrollRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  const hasCustomPhotos = Boolean(photos && photos.length > 0);
-  const rawPhotos = hasCustomPhotos ? photos : DEFAULT_PHOTOS;
+  const rawPhotos = photos && Array.isArray(photos) ? photos : [];
 
   const displayPhotos = rawPhotos
     .map((p: any, idx: number) => ({
       id: p.id || `photo-${idx}`,
-      url:
-        normalizeImageUrl(p.url || p.image || p.src || "") ||
-        (hasCustomPhotos
-          ? p.url || p.image || p.src || ""
-          : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].url),
-      caption:
-        p.caption ||
-        p.title ||
-        (hasCustomPhotos
-          ? ""
-          : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].caption),
-      location:
-        p.location ||
-        (hasCustomPhotos
-          ? ""
-          : DEFAULT_PHOTOS[idx % DEFAULT_PHOTOS.length].location),
+      url: normalizeImageUrl(p.url || p.image || p.src || ""),
+      caption: p.caption || p.title || "",
+      location: p.location || "",
     }))
     .filter((p) => Boolean(p.url));
 
-  const basePhotos = displayPhotos.length > 0 ? displayPhotos : DEFAULT_PHOTOS;
+  const basePhotos = displayPhotos;
 
-  let extendedPhotos = [...basePhotos];
-  while (extendedPhotos.length > 0 && extendedPhotos.length < 12) {
-    extendedPhotos = [...extendedPhotos, ...basePhotos];
-  }
-  const marqueePhotos = extendedPhotos;
+  const marqueePhotos = [
+    ...basePhotos,
+    ...basePhotos,
+    ...basePhotos,
+    ...basePhotos,
+  ];
 
   // Hardware-accelerated smooth continuous scroll loop
   useEffect(() => {
@@ -128,9 +115,9 @@ export default function RecentPhotosSection({
       ) {
         scrollRef.current.scrollLeft += 1.2;
 
-        const maxScroll = scrollRef.current.scrollWidth / 3;
-        if (scrollRef.current.scrollLeft >= maxScroll * 2) {
-          scrollRef.current.scrollLeft -= maxScroll;
+        const container = scrollRef.current;
+        if (container.scrollLeft >= container.scrollWidth / 2) {
+          container.scrollLeft = 0;
         }
       }
       animationId = requestAnimationFrame(step);
@@ -156,7 +143,7 @@ export default function RecentPhotosSection({
 
   return (
     <section
-      className="py-8 md:py-10 font-montserrat overflow-hidden bg-[#E2E7ED]"
+      className="py-4 sm:py-5 font-montserrat overflow-hidden bg-[#E2E7ED]"
       style={{ backgroundColor: "#E2E7ED" }}
     >
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
@@ -192,7 +179,8 @@ export default function RecentPhotosSection({
           onMouseUp={() => setIsDragging(false)}
           onTouchStart={() => setIsDragging(true)}
           onTouchEnd={() => setIsDragging(false)}
-          className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 touch-manipulation cursor-grab active:cursor-grabbing select-none"
+          className="w-full max-w-full flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 touch-pan-x cursor-grab active:cursor-grabbing select-none"
+          style={{ touchAction: "pan-x" }}
         >
           {marqueePhotos.map((photo, idx) => {
             const actualIndex = idx % displayPhotos.length;
@@ -200,7 +188,7 @@ export default function RecentPhotosSection({
               <div
                 key={`${photo.id}-${idx}`}
                 onClick={() => setSelectedIndex(actualIndex)}
-                className="group relative shrink-0 flex-none w-[62vw] sm:w-[180px] md:w-[200px] max-w-[210px] aspect-[16/10.5] rounded-2xl overflow-hidden bg-zinc-100 shadow-2xs hover:shadow-md hover:scale-[1.02] transition-all duration-300 cursor-pointer isolate"
+                className="group relative shrink-0 flex-none w-[130px] sm:w-[155px] md:w-[175px] aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden bg-zinc-100 shadow-2xs hover:shadow-md hover:scale-[1.02] transition-all duration-300 cursor-pointer isolate"
               >
                 <Image
                   src={photo.url}

@@ -12,6 +12,7 @@ import {
 import { Review } from "@/types";
 import { normalizeImageUrl } from "@/lib/api";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
+import { cn } from "@/lib/utils";
 
 interface TripReviewsProps {
   reviews?: Review[];
@@ -74,6 +75,13 @@ const MOCK_HOMEPAGE_REVIEWS = [
 export default function TripReviews({ reviews }: TripReviewsProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [selectedReview, setSelectedReview] = useState<any | null>(null);
+  const [expandedReviewIds, setExpandedReviewIds] = useState<string[]>([]);
+
+  const toggleReviewExpand = (id: string) => {
+    setExpandedReviewIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    );
+  };
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollByAmount = (direction: "left" | "right") => {
@@ -117,7 +125,7 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
             photos: r.images && r.images.length > 0 ? r.images : coverPhotos,
           };
         })
-      : MOCK_HOMEPAGE_REVIEWS;
+      : [];
 
   return (
     <section
@@ -173,7 +181,8 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
       {/* Horizontal Scrollable Review Cards */}
       <div
         ref={scrollRef}
-        className="flex overflow-x-auto no-scrollbar gap-3 sm:gap-4 py-2.5 pb-4 scroll-smooth snap-x snap-mandatory touch-manipulation"
+        className="carousel-track w-full max-w-full flex overflow-x-auto no-scrollbar gap-3 sm:gap-4 py-2.5 pb-4 scroll-smooth snap-x snap-mandatory touch-pan-x"
+        style={{ touchAction: "pan-x" }}
       >
         {displayList.map((rev) => (
           <div
@@ -226,16 +235,41 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
                 </span>
               </div>
 
-              {/* REVIEW COMMENT TEXT */}
-              <p className="text-[#1B2A4A] font-normal text-[11px] sm:text-xs leading-[1.5] line-clamp-3 mb-2.5 font-montserrat">
-                {rev.comment}{" "}
-                <button
-                  onClick={() => setSelectedReview(rev)}
-                  className="font-bold text-[#111827] hover:text-[#D4541A] transition-colors cursor-pointer inline"
+              {/* REVIEW COMMENT TEXT & INLINE TOGGLE */}
+              <div className="mb-2.5">
+                <p
+                  className={cn(
+                    "text-[#1B2A4A] font-normal text-[11px] sm:text-xs leading-[1.5] font-montserrat transition-all",
+                    !expandedReviewIds.includes(rev.id) && "line-clamp-3",
+                  )}
                 >
-                  Read More
-                </button>
-              </p>
+                  {rev.comment}
+                </p>
+                <div className="flex items-center justify-between gap-2 mt-1.5">
+                  {rev.comment && rev.comment.length > 80 ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleReviewExpand(rev.id);
+                      }}
+                      className="font-bold text-[11px] text-[#D4541A] hover:underline cursor-pointer inline-flex items-center gap-0.5"
+                    >
+                      {expandedReviewIds.includes(rev.id)
+                        ? "Show Less"
+                        : "Read More"}
+                    </button>
+                  ) : <span />}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedReview(rev);
+                    }}
+                    className="font-semibold text-[10px] text-zinc-400 hover:text-[#0B1528] cursor-pointer"
+                  >
+                    Full Story
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* ATTACHED 3-PHOTO GALLERY GRID */}

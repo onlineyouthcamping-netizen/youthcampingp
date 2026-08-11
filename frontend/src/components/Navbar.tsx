@@ -39,11 +39,13 @@ export default function Navbar({
     setMounted(true);
   }, []);
 
-  // Use props/defaults on server & initial hydration pass to guarantee 100% SSR match
+  // Use props/defaults consistently across SSR and client pass to eliminate layout shift
   const rawLinks =
-    mounted && settings?.navbar?.links && settings.navbar.links.length > 0
-      ? settings.navbar.links
-      : navLinks || defaultNavLinks;
+    navLinks && navLinks.length > 0
+      ? navLinks
+      : settings?.navbar?.links && settings.navbar.links.length > 0
+        ? settings.navbar.links
+        : defaultNavLinks;
 
   const resolvedNavLinks = rawLinks
     .map((link: any, idx: number) => ({

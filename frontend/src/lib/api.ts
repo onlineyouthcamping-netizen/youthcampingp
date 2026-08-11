@@ -564,9 +564,10 @@ export async function fetchPageBySlug(
   init?: PublicRequestInit,
 ): Promise<any | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/page-builder/public/${slug}`, {
-      cache: "no-store",
-    });
+    const res = await fetchWithRetry(
+      `${API_BASE_URL}/page-builder/public/${slug}`,
+      init ?? publicRevalidate(60),
+    );
     if (!res.ok) return null;
     const json = await res.json();
 

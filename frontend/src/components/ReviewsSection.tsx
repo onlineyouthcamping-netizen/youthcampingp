@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface GoogleReviewItem {
   id: string;
@@ -118,6 +119,13 @@ export default function ReviewsSection({
   const [selectedReview, setSelectedReview] = useState<GoogleReviewItem | null>(
     null,
   );
+  const [expandedReviewIds, setExpandedReviewIds] = useState<string[]>([]);
+
+  const toggleReviewExpand = (id: string) => {
+    setExpandedReviewIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    );
+  };
 
   const apiMappedReviews: GoogleReviewItem[] =
     reviews && reviews.length > 0
@@ -145,10 +153,7 @@ export default function ReviewsSection({
         }))
       : [];
 
-  const displayReviews: GoogleReviewItem[] =
-    apiMappedReviews.length >= 4
-      ? apiMappedReviews
-      : [...apiMappedReviews, ...MOCK_GOOGLE_REVIEWS.slice(apiMappedReviews.length)];
+  const displayReviews: GoogleReviewItem[] = apiMappedReviews;
 
   const nudge = (dir: "l" | "r") => {
     if (scrollRef.current) {
@@ -166,42 +171,24 @@ export default function ReviewsSection({
     <section className="testimonials testimonials-slider module-center bg-white py-8 md:py-10 border-t border-zinc-100 font-montserrat">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
-          <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight truncate">
+          <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight">
             {displayTitle}
           </h2>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => nudge("l")}
-                aria-label="Previous reviews"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
-              >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
-              </button>
-              <button
-                onClick={() => nudge("r")}
-                aria-label="Next reviews"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
-              >
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
-              </button>
-            </div>
-
-            <Link
-              href="/reviews"
-              className="group inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-[15px] font-bold text-[#0B1528] hover:text-[#D4541A] transition-colors ml-1 sm:ml-2 whitespace-nowrap"
-            >
-              <span>View All</span>
-              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
+          <Link
+            href="/reviews"
+            className="group inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-[15px] font-bold text-[#0B1528] hover:text-[#D4541A] transition-colors whitespace-nowrap shrink-0"
+          >
+            <span>View All</span>
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
+          </Link>
         </div>
 
         {/* REVIEW CARDS HORIZONTAL SCROLL / GRID */}
         <div
           ref={scrollRef}
-          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-manipulation"
+          className="carousel-track w-full max-w-full flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x"
+          style={{ touchAction: "pan-x" }}
         >
           {displayReviews.map((rev, idx) => {
             const photoList = rev.photos || [];
@@ -266,16 +253,41 @@ export default function ReviewsSection({
                     </span>
                   </div>
 
-                  {/* COMMENT */}
-                  <p className="text-[#1B2A4A] font-normal text-xs sm:text-sm leading-snug line-clamp-3 mb-2.5 font-montserrat">
-                    {rev.comment}{" "}
-                    <button
-                      onClick={() => setSelectedReview(rev)}
-                      className="font-bold text-[#111827] hover:text-[#D4541A] transition-colors cursor-pointer inline"
+                  {/* COMMENT & TOGGLE */}
+                  <div className="mb-2.5">
+                    <p
+                      className={cn(
+                        "text-[#1B2A4A] font-normal text-xs sm:text-sm leading-snug font-montserrat transition-all",
+                        !expandedReviewIds.includes(rev.id) && "line-clamp-3",
+                      )}
                     >
-                      Read More
-                    </button>
-                  </p>
+                      {rev.comment}
+                    </p>
+                    <div className="flex items-center justify-between gap-2 mt-1.5">
+                      {rev.comment && rev.comment.length > 80 ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleReviewExpand(rev.id);
+                          }}
+                          className="font-bold text-xs text-[#D4541A] hover:underline cursor-pointer inline-flex items-center gap-0.5"
+                        >
+                          {expandedReviewIds.includes(rev.id)
+                            ? "Show Less"
+                            : "Read More"}
+                        </button>
+                      ) : <span />}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedReview(rev);
+                        }}
+                        className="font-semibold text-[11px] text-zinc-400 hover:text-[#0B1528] cursor-pointer"
+                      >
+                        Full Story
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* DYNAMIC PHOTO GALLERY GRID */}

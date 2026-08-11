@@ -331,7 +331,7 @@ interface Props {
 
 export default function UpcomingTripsClient({ trips: propTrips = [] }: Props) {
   const sortedTrips = useMemo(() => {
-    const raw = propTrips && propTrips.length > 0 ? propTrips : MOCK_TRIPS;
+    const raw = propTrips || [];
     const sorted = [...raw].sort((a, b) => {
       const orderA = typeof a.order === "number" ? a.order : 999;
       const orderB = typeof b.order === "number" ? b.order : 999;

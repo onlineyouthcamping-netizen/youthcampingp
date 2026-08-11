@@ -102,11 +102,10 @@ export default function AboutTrip({
   const cardsToRender =
     customAboutTrip?.cards && customAboutTrip.cards.length > 0
       ? customAboutTrip.cards.filter((c) => c.isVisible !== false)
-      : DEFAULT_CARDS;
+      : [];
 
   const handleToggle = () => {
-    if (isMobile) setIsExpandedInline(!isExpandedInline);
-    else setIsOpen(true);
+    setIsExpandedInline(!isExpandedInline);
   };
 
   return (
@@ -143,16 +142,31 @@ export default function AboutTrip({
 
         {/* Desktop View */}
         <div className="hidden md:block relative">
-          <p className="text-zinc-600 font-normal leading-relaxed text-sm sm:text-base font-montserrat">
-            {previewText}
-          </p>
+          {isExpandedInline ? (
+            <div
+              className="prose prose-zinc max-w-none text-zinc-600 font-normal leading-relaxed text-sm sm:text-base font-montserrat [&>p]:mb-4 [&>p:last-child]:mb-0 [&>strong]:font-bold [&>ul]:list-disc [&>ul]:pl-5 [&>ul>li]:mb-1"
+              dangerouslySetInnerHTML={{ __html: decodedDescription }}
+            />
+          ) : (
+            <p className="text-zinc-600 font-normal leading-relaxed text-sm sm:text-base font-montserrat">
+              {previewText}
+            </p>
+          )}
           {plainText.length > 280 && (
-            <button
-              onClick={handleToggle}
-              className="text-[#D4541A] font-bold hover:text-navy transition-all mt-3 float-right cursor-pointer text-sm font-montserrat"
-            >
-              Read More
-            </button>
+            <div className="flex items-center justify-end gap-3 mt-3">
+              <button
+                onClick={handleToggle}
+                className="text-[#D4541A] font-bold hover:underline transition-all cursor-pointer text-sm font-montserrat"
+              >
+                {isExpandedInline ? "Show Less" : "Read More"}
+              </button>
+              <button
+                onClick={() => setIsOpen(true)}
+                className="text-zinc-400 font-semibold hover:text-[#0B1528] transition-all cursor-pointer text-xs font-montserrat"
+              >
+                Full Window
+              </button>
+            </div>
           )}
 
           {/* Dynamic Feature Badges Bar */}

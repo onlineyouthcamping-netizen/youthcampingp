@@ -49,10 +49,8 @@ export default function InclusionsExclusions({
     "inclusions",
   );
 
-  const incList =
-    inclusions && inclusions.length > 0 ? inclusions : defaultInclusions;
-  const excList =
-    exclusions && exclusions.length > 0 ? exclusions : defaultExclusions;
+  const incList = inclusions || [];
+  const excList = exclusions || [];
 
   return (
     <div className="space-y-5 scroll-mt-[140px]" id="inclusions">

@@ -127,6 +127,8 @@ export default function Hero({
         <img
           src={activeImg}
           alt="Hero Background"
+          fetchPriority="high"
+          loading="eager"
           className="w-full h-full object-cover transition-opacity duration-1000"
         />
         <div
@@ -178,9 +180,9 @@ export default function Hero({
 
           {/* HEADLINE */}
           <h1 className="text-white font-extrabold text-[32px] sm:text-[44px] md:text-[54px] lg:text-[60px] leading-[1.15] tracking-tight font-montserrat mb-3 drop-shadow-xl">
-            <div>{displayHeadline}</div>
+            <span className="block">{displayHeadline}</span>
             {(Boolean(strikethroughWord) || rotWords.length > 0) && (
-              <div className="flex items-center gap-2.5 sm:gap-3.5 flex-nowrap mt-0.5 whitespace-nowrap">
+              <span className="flex items-center gap-2.5 sm:gap-3.5 flex-nowrap mt-0.5 whitespace-nowrap">
                 {strikethroughWord ? (
                   <span className="relative inline-block text-white whitespace-nowrap">
                     {strikethroughWord}
@@ -202,14 +204,17 @@ export default function Hero({
                 ) : null}
 
                 {rotWords.length > 0 && (
-                  <span className="inline-flex relative overflow-hidden h-[34px] sm:h-[48px] md:h-[58px] items-center whitespace-nowrap">
-                    <AnimatePresence mode="wait">
+                  <span className="inline-flex relative overflow-hidden h-[42px] sm:h-[58px] md:h-[72px] items-center whitespace-nowrap pr-2 sm:pr-3">
+                    <AnimatePresence initial={false}>
                       <motion.span
                         key={rotWords[wordIdx % rotWords.length]}
-                        initial={{ y: 25, opacity: 0 }}
+                        initial={{ y: 35, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -25, opacity: 0 }}
-                        transition={{ duration: 0.4 }}
+                        exit={{ y: -35, opacity: 0 }}
+                        transition={{
+                          duration: 0.45,
+                          ease: [0.25, 0.1, 0.25, 1.0],
+                        }}
                         className="text-[#D4541A] font-black inline-block whitespace-nowrap"
                       >
                         {rotWords[wordIdx % rotWords.length]}
@@ -217,7 +222,7 @@ export default function Hero({
                     </AnimatePresence>
                   </span>
                 )}
-              </div>
+              </span>
             )}
           </h1>
 

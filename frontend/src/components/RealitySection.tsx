@@ -75,7 +75,8 @@ export default function RealitySection({
     url: string;
     poster?: string;
   } | null>(null);
-  const displayVideos = videos && videos.length > 0 ? videos : defaultVideos;
+  const displayVideos = videos || [];
+  if (displayVideos.length === 0) return null;
   const prefersReducedMotion = useReducedMotion();
   const isMobile = useIsMobile();
   const reduceMotion = prefersReducedMotion || isMobile;

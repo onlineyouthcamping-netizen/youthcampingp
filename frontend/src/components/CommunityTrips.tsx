@@ -487,7 +487,7 @@ export default function CommunityTrips({
 
   // Sort trips strictly by their order sequence field (1, 2, 3, 4...)
   const sortedTrips = useMemo(() => {
-    const raw = propTrips && propTrips.length > 0 ? propTrips : MOCK_TRIPS;
+    const raw = propTrips || [];
     return [...raw].sort((a, b) => {
       const orderA = typeof a.order === "number" ? a.order : 999;
       const orderB = typeof b.order === "number" ? b.order : 999;
@@ -635,7 +635,7 @@ export default function CommunityTrips({
     <section className="relative overflow-hidden bg-white">
       {/* HERO SECTION WRAPPER */}
       <div
-        className="relative flex flex-col justify-center min-h-[360px] sm:min-h-[460px] md:min-h-[500px]"
+        className="relative flex flex-col justify-center min-h-[260px] sm:min-h-[340px] md:min-h-[400px]"
         style={{
           paddingTop: `${paddingTop}px`,
           paddingBottom: `${paddingBottom}px`,
@@ -672,8 +672,11 @@ export default function CommunityTrips({
                   src={currentBgPhoto}
                   alt="Group of young travellers"
                   fill
-                  className="object-cover object-center carousel-image-cinematic"
                   priority
+                  fetchPriority="high"
+                  loading="eager"
+                  sizes="100vw"
+                  className="object-cover object-center carousel-image-cinematic"
                 />
               )}
             </motion.div>
@@ -699,10 +702,10 @@ export default function CommunityTrips({
             <h2
               className={`font-montserrat font-extrabold leading-[1.15] tracking-tight mb-2 text-[32px] sm:text-5xl md:text-6xl lg:text-7xl ${isWhiteOverlay ? "text-[#0B1528]" : "text-white drop-shadow-md"}`}
             >
-              <div>{activeHeadlinePrefix}</div>
+              <span className="block">{activeHeadlinePrefix}</span>
               {(Boolean(activeStrikethroughWord) ||
                 activeRotatingWords.length > 0) && (
-                <div className="flex items-center gap-2 sm:gap-3.5 flex-nowrap mt-0.5 whitespace-nowrap">
+                <span className="flex items-center gap-2 sm:gap-3.5 flex-nowrap mt-0.5 whitespace-nowrap">
                   {Boolean(activeStrikethroughWord) && (
                     <span
                       className={`relative inline-block whitespace-nowrap ${isWhiteOverlay ? "text-[#0B1528]" : "text-white"}`}
@@ -755,7 +758,7 @@ export default function CommunityTrips({
                       </AnimatePresence>
                     </span>
                   )}
-                </div>
+                </span>
               )}
             </h2>
 
@@ -769,7 +772,7 @@ export default function CommunityTrips({
       </div>
 
       {/* Month Selector Pill Bar */}
-      <div className="-mt-12 md:-mt-14 relative z-20 px-6 sm:px-8 md:px-12 mb-1 sm:mb-1.5">
+      <div className="-mt-3 sm:-mt-5 relative z-20 px-6 sm:px-8 md:px-12 mb-1 sm:mb-1.5">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-center gap-2 sm:gap-3 bg-white border border-zinc-200/80 rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-2.5 sm:p-3.5">
             <button

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Minus, MessageCircle, HelpCircle } from "lucide-react";
+import { Plus, Minus, MessageCircle, HelpCircle, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FAQ {
@@ -44,9 +44,30 @@ const defaultFaqs: FAQ[] = [
 ];
 
 export default function TripFAQ({ faqs }: TripFAQProps) {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndices, setOpenIndices] = useState<number[]>([0]);
+  const [isAllExpanded, setIsAllExpanded] = useState(false);
 
-  const displayFaqs = faqs && faqs.length > 0 ? faqs : defaultFaqs;
+  const displayFaqs = faqs || [];
+
+  const toggleFaq = (index: number) => {
+    setOpenIndices((prev) => {
+      const next = prev.includes(index)
+        ? prev.filter((i) => i !== index)
+        : [...prev, index];
+      setIsAllExpanded(next.length === displayFaqs.length && next.length > 0);
+      return next;
+    });
+  };
+
+  const toggleExpandAll = () => {
+    if (isAllExpanded) {
+      setOpenIndices([]);
+      setIsAllExpanded(false);
+    } else {
+      setOpenIndices(displayFaqs.map((_, i) => i));
+      setIsAllExpanded(true);
+    }
+  };
 
   const handleWhatsAppClick = () => {
     const whatsappUrl = `https://wa.me/919999999999?text=${encodeURIComponent("Hi YouthCamping! I have a question regarding trip details.")}`;
@@ -55,18 +76,30 @@ export default function TripFAQ({ faqs }: TripFAQProps) {
 
   return (
     <section className="space-y-6 scroll-mt-[140px]" id="faq">
-      {/* Header System */}
-      <div>
+      {/* Header System with Expand All Toggle */}
+      <div className="flex items-center justify-between border-b border-zinc-100/90 pb-3">
         <h2 className="text-2xl sm:text-3xl font-black text-[#0B1528] tracking-tight font-montserrat leading-none">
           Frequently Asked{" "}
           <span className="text-[#D4541A] font-caveat italic">Questions</span>
         </h2>
+        <button
+          onClick={toggleExpandAll}
+          className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-[#0B1528] transition-all font-montserrat cursor-pointer shrink-0"
+        >
+          <ChevronDown
+            className={cn(
+              "w-4 h-4 text-zinc-500 transition-transform duration-200",
+              isAllExpanded ? "rotate-180" : "",
+            )}
+          />
+          {isAllExpanded ? "Collapse All" : "Expand All"}
+        </button>
       </div>
 
       {/* Accordion List */}
       <div className="space-y-3 pt-2">
         {displayFaqs.map((faq, i) => {
-          const isOpen = openIndex === i;
+          const isOpen = openIndices.includes(i);
 
           return (
             <div
@@ -77,7 +110,7 @@ export default function TripFAQ({ faqs }: TripFAQProps) {
                   ? "border-[#D4541A]/60 shadow-xs"
                   : "border-zinc-200/90 hover:border-zinc-300",
               )}
-              onClick={() => setOpenIndex(isOpen ? null : i)}
+              onClick={() => toggleFaq(i)}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3.5 flex-1 min-w-0">

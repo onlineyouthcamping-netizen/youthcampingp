@@ -105,10 +105,7 @@ export default function BlogSection({
         })
       : [];
 
-  const displayStories: BlogCardItem[] =
-    apiMappedStories.length >= 4
-      ? apiMappedStories
-      : [...apiMappedStories, ...MOCK_STORIES.slice(apiMappedStories.length)];
+  const displayStories: BlogCardItem[] = apiMappedStories;
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -130,57 +127,30 @@ export default function BlogSection({
       <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-[#E2E7ED] z-0" />
       <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         {/* HEADER ROW WITH SLIDER CONTROLS */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-10 gap-3">
-          <div className="flex items-center justify-between w-full sm:w-auto overflow-hidden">
-            <div className="flex items-baseline gap-2 min-w-0 overflow-hidden whitespace-nowrap">
-              <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight">
-                {displayTitle.toLowerCase()}
-              </h2>
-              <span className="font-caveat font-bold text-[#D4541A] text-[26px] sm:text-[34px] md:text-[40px] lg:text-[46px] leading-none shrink-0 capitalize pr-2 sm:pr-3">
-                {displaySubtitle.toLowerCase()}
-              </span>
-            </div>
-            <Link
-              href="/blogs"
-              className="group sm:hidden inline-flex items-center gap-1.5 text-xs font-bold text-[#0B1528] hover:text-[#D4541A] transition-colors"
-            >
-              <span>View All</span>
-              <ArrowRight className="w-3.5 h-3.5 text-[#D4541A] group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+        <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
+          <div className="flex items-baseline gap-2 min-w-0 overflow-hidden whitespace-nowrap">
+            <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight">
+              {displayTitle.toLowerCase()}
+            </h2>
+            <span className="font-caveat font-bold text-[#D4541A] text-[26px] sm:text-[34px] md:text-[40px] lg:text-[46px] leading-none shrink-0 capitalize pr-2 sm:pr-3">
+              {displaySubtitle.toLowerCase()}
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => nudge("l")}
-                aria-label="Previous stories"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
-              >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
-              </button>
-              <button
-                onClick={() => nudge("r")}
-                aria-label="Next stories"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
-              >
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
-              </button>
-            </div>
-
-            <Link
-              href="/blogs"
-              className="group hidden sm:inline-flex items-center gap-2 text-sm sm:text-[16px] font-bold text-[#0B1528] hover:text-[#D4541A] transition-colors ml-2"
-            >
-              <span>View All Stories</span>
-              <ArrowRight className="w-4 h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
+          <Link
+            href="/blogs"
+            className="group inline-flex items-center gap-1.5 text-xs sm:text-[15px] font-bold text-[#0B1528] hover:text-[#D4541A] transition-colors shrink-0"
+          >
+            <span>View All</span>
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D4541A] group-hover:translate-x-1 transition-transform" />
+          </Link>
         </div>
 
         {/* HORIZONTAL CAROUSEL SLIDER (1.5 CARDS PER VIEW ON MOBILE) */}
         <div
           ref={scrollRef}
-          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-manipulation"
+          className="carousel-track w-full max-w-full flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x"
+          style={{ touchAction: "pan-x" }}
         >
           {displayStories.map((story, idx) => (
             <motion.div

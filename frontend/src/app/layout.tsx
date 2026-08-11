@@ -50,6 +50,7 @@ const montserrat = Montserrat({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-montserrat",
+  display: "swap",
 });
 
 const playfair = Playfair_Display({
@@ -57,12 +58,14 @@ const playfair = Playfair_Display({
   style: ["normal", "italic"],
   weight: ["400", "600", "700"],
   variable: "--font-playfair",
+  display: "swap",
 });
 
 const caveat = Caveat({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-caveat",
+  display: "swap",
 });
 
 export const revalidate = 600;

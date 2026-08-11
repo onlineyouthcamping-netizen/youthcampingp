@@ -59,6 +59,20 @@ html {
   transform: translateZ(0);
 }
 
+/* Scoped Carousel Touch & Scroll Snap Utilities */
+.carousel-track {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+}
+
+.carousel-track > * {
+  scroll-snap-align: start;
+}
+
 :root {
   /* H1 */
   --h1-mobile: 40px;
@@ -881,21 +895,14 @@ a,
 
   .section-wrapper {
     @apply px-4 sm:px-6 md:px-10 lg:px-12;
-    padding-top: 60px !important;
-    padding-bottom: 60px !important;
-  }
-
-  @media (max-width: 1024px) {
-    .section-wrapper {
-      padding-top: 44px !important;
-      padding-bottom: 44px !important;
-    }
+    padding-top: 24px !important;
+    padding-bottom: 24px !important;
   }
 
   @media (max-width: 768px) {
     .section-wrapper {
-      padding-top: 32px !important;
-      padding-bottom: 32px !important;
+      padding-top: 16px !important;
+      padding-bottom: 16px !important;
     }
   }
 

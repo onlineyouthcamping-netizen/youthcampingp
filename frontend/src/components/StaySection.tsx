@@ -287,10 +287,7 @@ export default function StaySection({ accommodations }: StaySectionProps) {
                 {/* Full-Bleed Stay Photo with Nights Badge */}
                 <div className="relative aspect-[16/10.5] w-full overflow-hidden bg-zinc-100 shadow-2xs">
                   <OptimizedImage
-                    src={
-                      normalizeImageUrl(stay.image) ||
-                      defaultStaysList[i % defaultStaysList.length].image
-                    }
+                    src={normalizeImageUrl(stay.image)}
                     alt={stay.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />

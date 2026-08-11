@@ -63,7 +63,8 @@ export default function PhotoSlider({
     },
   ];
 
-  const list = slides.length > 0 ? slides : defaultSlides;
+  const list = slides;
+  if (!list || list.length === 0) return null;
   const infiniteList = list;
 
   return (

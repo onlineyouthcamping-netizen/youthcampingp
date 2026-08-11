@@ -218,63 +218,30 @@ export default async function Home() {
   const rawDbSections =
     page?.sections && Array.isArray(page.sections) ? page.sections : [];
 
-  const dbSections = rawDbSections.length > 0 ? rawDbSections : null;
+  const defaultDbSections = [
+    { type: "hero", visible: true, data: heroProps },
+    { type: "trips", visible: true, data: {} },
+    { type: "social_proof", visible: true, data: {} },
+    { type: "cta_banner", visible: true, data: {} },
+    { type: "destinations", visible: true, data: {} },
+    { type: "recent_photos", visible: true, data: recentPhotosData },
+    { type: "bestie", visible: true, data: {} },
+    { type: "cta_slider", visible: true, data: {} },
+    { type: "blogs", visible: true, data: {} },
+    { type: "reviews", visible: true, data: {} },
+    { type: "photo_slider", visible: true, data: {} },
+  ];
+
+  const dbSections = rawDbSections.length > 0 ? rawDbSections : defaultDbSections;
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {dbSections ? (
-        <PageRenderer
-          sections={dbSections}
-          trips={trips}
-          reviews={reviews}
-          blogs={blogs}
-        />
-      ) : (
-        <>
-          {visibleSectionKeys.map((key: string, idx: number) => {
-            const isAlternate = theme?.sectionBgAlternate ?? true;
-            const alternateClass =
-              isAlternate && idx % 2 === 1 ? "bg-[#E2E7ED]" : "bg-transparent";
-
-            if (key === "cta_banner" || key === "cta_slider") {
-              return sectionMap[key];
-            }
-
-            const spacingPx =
-              theme?.sectionSpacing != null
-                ? `${theme.sectionSpacing}px`
-                : "16px";
-
-            return (
-              <div
-                key={key}
-                className={alternateClass}
-                style={
-                  {
-                    "--section-spacing-dynamic": spacingPx,
-                    paddingTop:
-                      key === "community_trips"
-                        ? "0px"
-                        : "var(--section-spacing-dynamic)",
-                    paddingBottom: "var(--section-spacing-dynamic)",
-                  } as any
-                }
-              >
-                {sectionMap[key]}
-              </div>
-            );
-          })}
-          {!visibleSectionKeys.includes("recent_photos") && (
-            <RecentPhotosSection
-              photos={recentPhotosFormatted}
-              title={recentPhotosData.titlePrimary || recentPhotosData.title}
-              subtitle={
-                recentPhotosData.titleAccent || recentPhotosData.subtitle
-              }
-            />
-          )}
-        </>
-      )}
+      <PageRenderer
+        sections={dbSections}
+        trips={trips}
+        reviews={reviews}
+        blogs={blogs}
+      />
       <FloatingSocialBar />
     </div>
   );
