@@ -107,6 +107,8 @@ model Admin {
   paymentAccountsApproved    PaymentReceivingAccount[]  @relation("AccountApprovedByAdmin")
   linkedReceivingAccounts    PaymentReceivingAccount[]  @relation("AccountLinkedAdmin")
   departuresConfirmed        Departure[]                @relation("DepartureConfirmedBy")
+  employeeSubmissions        EmployeeCollectionSubmission[] @relation("EmployeeSubmissions")
+  submissionsRecorded        EmployeeCollectionSubmission[] @relation("SubmissionRecordedBy")
 
   @@index([tenantId])
 }
@@ -4202,6 +4204,26 @@ model StationCashHandover {
   @@index([tenantId])
   @@index([collectorId])
   @@index([tripId, departureDate])
+}
+
+// ── Track when employee submits collected funds to YouthCamping ──
+model EmployeeCollectionSubmission {
+  id                String   @id @default(cuid())
+  tenantId          String   @default("default")
+  employeeAdminId   String   // FK → Admin (person who collected funds)
+  amount            Float
+  paymentMode       String   // CASH, BANK_TRANSFER, UPI
+  referenceNumber   String?
+  notes             String?
+  recordedByAdminId String   // FK → Admin (admin who recorded this submission)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  employeeAdmin     Admin    @relation("EmployeeSubmissions", fields: [employeeAdminId], references: [id], onDelete: Cascade)
+  recordedBy        Admin    @relation("SubmissionRecordedBy", fields: [recordedByAdminId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([employeeAdminId])
 }
 
 // ==========================================

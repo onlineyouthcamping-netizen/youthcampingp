@@ -7,6 +7,9 @@ const {
   approveEntry,
   rejectEntry,
   getReports,
+  getPersonalCollections,
+  getPersonCollectionDetails,
+  recordEmployeeSubmission,
 } = require("../controllers/accountingController");
 const { authenticate, requirePermission } = require("../middleware/auth");
 
@@ -34,5 +37,22 @@ router.post(
 
 // Analytics & Reports
 router.get("/reports", requirePermission("accounting.view"), getReports);
+
+// Personal Collections / Employee Collections
+router.get(
+  "/personal-collections",
+  requirePermission("accounting.view"),
+  getPersonalCollections,
+);
+router.get(
+  "/personal-collections/:adminId",
+  requirePermission("accounting.view"),
+  getPersonCollectionDetails,
+);
+router.post(
+  "/personal-collections/submit",
+  requirePermission("accounting.submit"),
+  recordEmployeeSubmission,
+);
 
 module.exports = router;
