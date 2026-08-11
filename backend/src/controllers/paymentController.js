@@ -168,7 +168,7 @@ exports.addClientPayment = async (req, res) => {
     const totalVerified = allVerified.reduce((s, r) => s + r.amount, 0);
     const remaining = Math.max(0, booking.totalAmount - totalVerified);
 
-    const updateData: any = {
+    const updateData = {
       advancePaid: totalVerified,
       remainingAmount: remaining,
       paymentStatus:
