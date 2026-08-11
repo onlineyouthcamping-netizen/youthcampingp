@@ -438,22 +438,48 @@ exports.getReports = async (req, res) => {
       where.booking = { tripId };
     }
 
-    // Fetch approved and pending entries separately to calculate aggregates
-    const entries = await prisma.accountingEntry.findMany({
-      where,
-      include: {
-        booking: {
-          select: {
-            bookingId: true,
-            tripId: true,
-            tripName: true,
-            totalAmount: true,
-            salesAdminId: true,
+    const [entries, paidBookings] = await Promise.all([
+      prisma.accountingEntry.findMany({
+        where,
+        include: {
+          booking: {
+            select: {
+              bookingId: true,
+              tripId: true,
+              tripName: true,
+              totalAmount: true,
+              salesAdminId: true,
+            },
           },
+          salesperson: { select: { id: true, name: true } },
         },
-        salesperson: { select: { id: true, name: true } },
-      },
-    });
+      }),
+      prisma.booking.findMany({
+        where: {
+          tenantId: req.user.tenantId || "default",
+          advancePaid: { gt: 0 },
+          ...(startDate || endDate
+            ? {
+                createdAt: {
+                  ...(startDate ? { gte: new Date(startDate) } : {}),
+                  ...(endDate ? { lte: new Date(endDate) } : {}),
+                },
+              }
+            : {}),
+          ...(salespersonId ? { salesAdminId: salespersonId } : {}),
+          ...(tripId ? { tripId } : {}),
+        },
+        select: {
+          id: true,
+          bookingId: true,
+          tripName: true,
+          advancePaid: true,
+          paymentMode: true,
+          createdAt: true,
+          salesAdmin: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
 
     // 1. Total pending collections
     const pendingTotal = entries
@@ -472,6 +498,32 @@ exports.getReports = async (req, res) => {
     const cashTripwise = {};
     const onlineDatewise = {};
     const onlineTripwise = {};
+
+    // Process direct booking payments
+    paidBookings.forEach((b) => {
+      const amount = Number(b.advancePaid || 0);
+      if (amount <= 0) return;
+      const tripName = b.tripName || "Unknown Trip";
+      const dateStr = new Date(b.createdAt).toISOString().split("T")[0];
+
+      tripRevenueMap[tripName] = (tripRevenueMap[tripName] || 0) + amount;
+
+      const spName = b.salesAdmin?.name || "Website / Direct";
+      salesPerformanceMap[spName] = (salesPerformanceMap[spName] || 0) + amount;
+
+      const date = new Date(b.createdAt);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      monthlyTrendMap[monthKey] = (monthlyTrendMap[monthKey] || 0) + amount;
+
+      const isCash = b.paymentMode === "CASH";
+      if (isCash) {
+        cashDatewise[dateStr] = (cashDatewise[dateStr] || 0) + amount;
+        cashTripwise[tripName] = (cashTripwise[tripName] || 0) + amount;
+      } else {
+        onlineDatewise[dateStr] = (onlineDatewise[dateStr] || 0) + amount;
+        onlineTripwise[tripName] = (onlineTripwise[tripName] || 0) + amount;
+      }
+    });
 
     entries.forEach((e) => {
       if (e.status === "APPROVED") {
