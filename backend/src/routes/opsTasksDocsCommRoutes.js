@@ -6,6 +6,7 @@ const {
   createChecklistTask,
   updateChecklistTask,
   deleteChecklistTask,
+  getAllOperationsTasks,
   getOpsDocuments,
   createOpsDocument,
   verifyOpsDocument,
@@ -18,6 +19,7 @@ const {
 router.use(authenticate);
 
 // Tasks/Checklists Routes
+router.get("/all-tasks", requirePermission("ops.view"), getAllOperationsTasks);
 router.get("/tasks/:tripId", requirePermission("ops.view"), getChecklistTasks);
 router.post(
   "/tasks/:tripId",

@@ -89,9 +89,6 @@ for (const variableName of ["DATABASE_URL", "DIRECT_URL"]) {
       .replace(/^["'\\]+|["'\\]+$/g, "")
       .trim();
   }
-  if (value.includes(":6543")) {
-    value = value.replace(":6543", ":5432");
-  }
   process.env[variableName] = value;
 
   const host = parseDatabaseHost(value);

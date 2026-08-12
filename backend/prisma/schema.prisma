@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -329,6 +330,7 @@ model Trip {
   opsMiscExpenses       OpsMiscExpense[]
   opsSeatConfigs        OpsSeatConfig[]
   opsChecklists         OpsTripChecklist[]
+  opsSopTemplates       OpsSopTemplate[]
   opsIncidents          OpsIncidentLog[]
   opsRoomAllocations    OpsRoomAllocation[]
   opsVehicleAllocations OpsVehicleAllocation[]
@@ -1227,7 +1229,10 @@ enum OpsBookingStatus {
 
 enum OpsSOPStage {
   PRE_TRIP_30D
+  PRE_TRIP_21D
+  PRE_TRIP_14D
   PRE_TRIP_7D
+  PRE_TRIP_3D
   PRE_TRIP_1D
   DEPARTURE_DAY
   DURING_TRIP
@@ -1750,29 +1755,113 @@ model OpsSOPTemplate {
   @@index([tenantId, destination])
 }
 
-// ── TRIP-WISE CHECKLIST ITEM ──
-model OpsTripChecklist {
-  id            String      @id @default(cuid())
-  tenantId      String      @default("default")
-  tripId        String
-  departureDate DateTime    @db.Date
-  stage         OpsSOPStage
-  taskName      String
-  isCompleted   Boolean     @default(false)
-  completedById String?
-  completedAt   DateTime?
-  notes         String?
-  assignedTo    String? // OPERATIONS, GUIDE, FINANCE, etc.
-  priority      String      @default("MEDIUM") // LOW, MEDIUM, HIGH
-  dueDate       DateTime?
-  status        String      @default("Pending") // Pending, In Progress, Completed, Overdue
-  remarks       String?     @db.Text
+// ── TRIP-WISE SOP MASTER TEMPLATE ──
+model OpsSopTemplate {
+  id               String   @id @default(cuid())
+  tenantId         String   @default("default")
+  tripId           String
+  name             String
+  description      String?  @db.Text
+  activeVersionId  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  trip        Trip                   @relation(fields: [tripId], references: [id], onDelete: Restrict)
-  completedBy Admin?                 @relation("ChecklistCompletedByAdmin", fields: [completedById], references: [id], onDelete: Restrict)
-  activities  OpsChecklistActivity[]
+  trip             Trip            @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  versions         OpsSopVersion[]
+  checklists       OpsTripChecklist[]
+
+  @@unique([tenantId, tripId])
+  @@index([tenantId])
+  @@index([tripId])
+}
+
+// ── TRIP-WISE SOP VERSION ──
+model OpsSopVersion {
+  id            String   @id @default(cuid())
+  tenantId      String   @default("default")
+  templateId    String
+  versionNumber Int      @default(1)
+  versionLabel  String   @default("v1")
+  status        String   @default("ACTIVE") // DRAFT, ACTIVE, ARCHIVED
+  createdById   String?
+  activatedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  template      OpsSopTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  taskTemplates OpsSopTaskTemplate[]
+  checklists    OpsTripChecklist[]
+
+  @@unique([templateId, versionNumber])
+  @@index([tenantId])
+  @@index([templateId])
+}
+
+// ── TRIP-WISE SOP TASK TEMPLATE ──
+model OpsSopTaskTemplate {
+  id               String      @id @default(cuid())
+  tenantId         String      @default("default")
+  versionId        String
+  taskName         String
+  description      String?     @db.Text
+  stage            OpsSOPStage @default(PRE_TRIP_7D)
+  relativeOffset   Int         @default(-7) // Days relative to departure date (e.g. -30, -7, 0, 1)
+  priority         String      @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  isRequired       Boolean     @default(true)
+  defaultAssignee  String?     @default("OPERATIONS") // OPERATIONS, GUIDE, TRANSPORT_DESK, SALES_EXEC, TICKETING, FINANCE
+  instructions     String?     @db.Text
+  verificationReq  String?     // VOUCHER, PHOTO, LOG, PNR
+  sortOrder        Int         @default(0)
+  active           Boolean     @default(true)
+  dependencyTaskId String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  version          OpsSopVersion       @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  checklists       OpsTripChecklist[]
+
+  @@index([tenantId])
+  @@index([versionId, stage])
+}
+
+// ── TRIP-WISE CHECKLIST ITEM (ACTUAL TASK INSTANCES FOR DEPARTURE) ──
+model OpsTripChecklist {
+  id                String      @id @default(cuid())
+  tenantId          String      @default("default")
+  tripId            String
+  departureDate     DateTime    @db.Date
+  sopTemplateId     String?
+  sopVersionId      String?
+  sopTaskTemplateId String?
+  source            String      @default("SOP") // SOP, MANUAL
+  stage             OpsSOPStage
+  taskName          String
+  relativeOffset    Int?
+  isRequired        Boolean     @default(true)
+  sortOrder         Int         @default(0)
+  dependencyTaskId  String?
+  isCompleted       Boolean     @default(false)
+  completedById     String?
+  completedAt       DateTime?
+  notes             String?     @db.Text
+  assignedTo        String?     // OPERATIONS, GUIDE, FINANCE, etc.
+  priority          String      @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  dueDate           DateTime?
+  status            String      @default("Pending") // Pending, In Progress, Completed, Overdue, Blocked, Skipped
+  remarks           String?     @db.Text
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @default(now()) @updatedAt
+
+  trip              Trip                @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  sopTemplate       OpsSopTemplate?     @relation(fields: [sopTemplateId], references: [id], onDelete: SetNull)
+  sopVersion        OpsSopVersion?      @relation(fields: [sopVersionId], references: [id], onDelete: SetNull)
+  sopTaskTemplate   OpsSopTaskTemplate? @relation(fields: [sopTaskTemplateId], references: [id], onDelete: SetNull)
+  completedBy       Admin?              @relation("ChecklistCompletedByAdmin", fields: [completedById], references: [id], onDelete: Restrict)
+  activities        OpsChecklistActivity[]
 
   @@index([tripId, departureDate, stage])
+  @@index([sopVersionId])
+  @@index([sopTaskTemplateId])
 }
 
 // ── CHECKLIST ITEM ACTIVITY LOG ──

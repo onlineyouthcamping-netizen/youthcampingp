@@ -195,6 +195,57 @@ exports.deleteChecklistTask = async (req, res) => {
   }
 };
 
+exports.getAllOperationsTasks = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId || "default";
+    const { assignee, source, status, priority, tripId, search } = req.query;
+
+    const where = { tenantId };
+
+    if (tripId && tripId !== "ALL") {
+      where.tripId = tripId;
+    }
+
+    if (source && source !== "ALL") {
+      where.source = source;
+    }
+
+    if (priority && priority !== "ALL") {
+      where.priority = priority;
+    }
+
+    if (status && status !== "ALL") {
+      where.status = status;
+    }
+
+    if (assignee && assignee !== "ALL") {
+      where.assignedTo = assignee;
+    }
+
+    if (search && search.trim()) {
+      where.OR = [
+        { taskName: { contains: search, mode: "insensitive" } },
+        { notes: { contains: search, mode: "insensitive" } },
+        { remarks: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const tasks = await prisma.opsTripChecklist.findMany({
+      where,
+      orderBy: [
+        { isCompleted: "asc" },
+        { dueDate: "asc" },
+        { id: "desc" },
+      ],
+    });
+
+    return res.json({ success: true, data: tasks });
+  } catch (err) {
+    console.error("getAllOperationsTasks error:", err);
+    return res.status(500).json({ success: false, message: "Failed to fetch all tasks" });
+  }
+};
+
 // ── DOCUMENTS ENDPOINTS ──
 exports.getOpsDocuments = async (req, res) => {
   try {
