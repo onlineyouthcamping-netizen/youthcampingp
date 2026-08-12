@@ -64,11 +64,11 @@ exports.setupCORS = (app) => {
     );
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, Accept, X-Requested-With, Origin, x-tenant-id, X-Tenant-Id, Cache-Control, Pragma",
+      "Content-Type, Authorization, Accept, X-Requested-With, Origin, x-tenant-id, X-Tenant-Id, x-access-token, X-Access-Token, Cache-Control, Pragma, *"
     );
     res.setHeader(
       "Access-Control-Exposed-Headers",
-      "Content-Range, X-Total-Count, Authorization",
+      "Content-Range, X-Total-Count, Authorization, x-access-token"
     );
 
     if (req.method === "OPTIONS") {
