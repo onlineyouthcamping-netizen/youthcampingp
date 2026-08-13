@@ -179,14 +179,43 @@ exports.addClientPayment = async (req, res) => {
             : "Unpaid",
     };
 
+    // Auto-confirm booking if not already confirmed or cancelled upon receiving verified payment
+    if (booking.status !== "confirmed" && booking.status !== "cancelled" && totalVerified > 0) {
+      updateData.status = "confirmed";
+    }
+
     if (collectorAdminId) {
       updateData.salesAdminId = collectorAdminId;
     }
 
-    await prisma.booking.update({
+    const updatedBooking = await prisma.booking.update({
       where: { id: booking.id },
       data: updateData,
     });
+
+    // Auto-log confirmation email if booking just became confirmed
+    if (updateData.status === "confirmed" && booking.status !== "confirmed") {
+      try {
+        const templates = require("../lib/email");
+        if (templates && templates.confirmation) {
+          const templateData = templates.confirmation(updatedBooking);
+          await prisma.emailLog.create({
+            data: {
+              tenantId,
+              bookingId: updatedBooking.bookingId || updatedBooking.id,
+              recipientEmail: updatedBooking.email || "",
+              subject: templateData.subject,
+              body: templateData.html,
+              status: "SENT",
+              sentAt: new Date(),
+              metadata: { type: "confirmation", autoTriggeredOnPayment: true },
+            },
+          });
+        }
+      } catch (emailErr) {
+        console.error("Auto email log on payment error:", emailErr);
+      }
+    }
 
     return res.json({ success: true, data: receipt });
   } catch (err) {
