@@ -275,31 +275,46 @@ exports.createTaskTemplate = async (req, res) => {
       sortOrder,
     } = req.body;
 
-    if (!taskName) {
+    if (!taskName || !taskName.trim()) {
       return res.status(400).json({ success: false, message: "taskName is required" });
     }
+
+    // Verify version exists
+    const version = await prisma.opsSopVersion.findUnique({
+      where: { id: versionId },
+    });
+    if (!version) {
+      return res.status(404).json({ success: false, message: `SOP Version ${versionId} not found` });
+    }
+
+    // Safe number parsing to prevent Prisma NaN errors
+    const numOffset = parseInt(relativeOffset, 10);
+    const safeOffset = isNaN(numOffset) ? -7 : numOffset;
+
+    const numSort = parseInt(sortOrder, 10);
+    const safeSort = isNaN(numSort) ? 0 : numSort;
 
     const task = await prisma.opsSopTaskTemplate.create({
       data: {
         tenantId,
         versionId,
-        taskName,
+        taskName: taskName.trim(),
         description: description || null,
         stage: stage || "PRE_TRIP_7D",
-        relativeOffset: relativeOffset !== undefined ? parseInt(relativeOffset, 10) : -7,
+        relativeOffset: safeOffset,
         priority: priority || "MEDIUM",
         isRequired: isRequired !== undefined ? Boolean(isRequired) : true,
         defaultAssignee: defaultAssignee || "OPERATIONS",
         instructions: instructions || null,
         verificationReq: verificationReq || null,
-        sortOrder: sortOrder !== undefined ? parseInt(sortOrder, 10) : 0,
+        sortOrder: safeSort,
       },
     });
 
     return res.status(201).json({ success: true, data: task });
   } catch (err) {
     console.error("createTaskTemplate error:", err);
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: err.message || "Failed to create task template" });
   }
 };
 
@@ -309,27 +324,34 @@ exports.updateTaskTemplate = async (req, res) => {
     const { taskId } = req.params;
     const data = req.body;
 
+    const updateData = {};
+    if (data.taskName !== undefined) updateData.taskName = data.taskName.trim();
+    if (data.description !== undefined) updateData.description = data.description || null;
+    if (data.stage !== undefined) updateData.stage = data.stage;
+    if (data.relativeOffset !== undefined) {
+      const parsed = parseInt(data.relativeOffset, 10);
+      if (!isNaN(parsed)) updateData.relativeOffset = parsed;
+    }
+    if (data.priority !== undefined) updateData.priority = data.priority;
+    if (data.isRequired !== undefined) updateData.isRequired = Boolean(data.isRequired);
+    if (data.defaultAssignee !== undefined) updateData.defaultAssignee = data.defaultAssignee;
+    if (data.instructions !== undefined) updateData.instructions = data.instructions || null;
+    if (data.verificationReq !== undefined) updateData.verificationReq = data.verificationReq || null;
+    if (data.sortOrder !== undefined) {
+      const parsedSort = parseInt(data.sortOrder, 10);
+      if (!isNaN(parsedSort)) updateData.sortOrder = parsedSort;
+    }
+    if (data.active !== undefined) updateData.active = Boolean(data.active);
+
     const task = await prisma.opsSopTaskTemplate.update({
       where: { id: taskId },
-      data: {
-        taskName: data.taskName,
-        description: data.description,
-        stage: data.stage,
-        relativeOffset: data.relativeOffset !== undefined ? parseInt(data.relativeOffset, 10) : undefined,
-        priority: data.priority,
-        isRequired: data.isRequired,
-        defaultAssignee: data.defaultAssignee,
-        instructions: data.instructions,
-        verificationReq: data.verificationReq,
-        sortOrder: data.sortOrder !== undefined ? parseInt(data.sortOrder, 10) : undefined,
-        active: data.active,
-      },
+      data: updateData,
     });
 
     return res.json({ success: true, data: task });
   } catch (err) {
     console.error("updateTaskTemplate error:", err);
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: err.message || "Failed to update task template" });
   }
 };
 
