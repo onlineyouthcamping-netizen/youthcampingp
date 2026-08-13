@@ -18,6 +18,15 @@ async function main() {
     return;
   }
 
+  const realImages = [
+    'https://vl-prod-static.b-cdn.net/system/images/000/888/076/6f012c2f939c45fd491d86b3d33b0cbb/original/IMG_3309.jpg',
+    'https://www.youthcamping.in/system/images/000/787/631/0bb3888fc4691faec634a98da33a1830/original/Untitled_design__22_.jpg',
+    'https://www.youthcamping.in/system/images/000/787/774/d87cfa734abe02e2f9f30667d5104d45/original/Untitled_design__25_.jpg',
+    'https://www.youthcamping.in/system/images/000/787/877/6d489b3b6c434fe4f28cf52029f87fee/original/Untitled_design__27_.jpg',
+    'https://www.youthcamping.in/system/images/000/787/617/0584482e182e9ab64e9223acc28a6ba1/original/Untitled_design__13_.jpg',
+    'https://www.youthcamping.in/system/images/000/787/886/12ef64016f1d4804482c8755b751fc41/original/Untitled_design__30_.jpg'
+  ];
+
   const existing = await prisma.trip.findFirst({
     where: {
       OR: [
@@ -29,7 +38,15 @@ async function main() {
   });
 
   if (existing) {
-    console.log('Trip already exists:', existing.id, existing.title);
+    await prisma.trip.update({
+      where: { id: existing.id },
+      data: {
+        heroImage: realImages[0],
+        images: realImages,
+        status: 'published'
+      }
+    });
+    console.log('✅ UPDATED PHOTOS FOR EXISTING TRIP:', existing.id, existing.title);
     return;
   }
 
@@ -44,11 +61,8 @@ async function main() {
       duration: '08 Nights / 09 Days',
       location: 'Himachal Pradesh',
       description: 'Experience the ultimate summer getaway to Manali, Kasol, Solang Valley, Atal Tunnel, Bhrigu Lake, and Amritsar Golden Temple.',
-      heroImage: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?q=80&w=1200',
-      images: [
-        'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?q=80&w=1200',
-        'https://images.unsplash.com/photo-1605649487212-47bdab064df7?q=80&w=1200'
-      ],
+      heroImage: realImages[0],
+      images: realImages,
       status: 'published',
       departureCity: 'Ahmedabad/Delhi',
       inclusions: tripData.inclusions || [],
@@ -66,7 +80,7 @@ async function main() {
     }
   });
 
-  console.log('🎉 SUCCESSFULLY RESTORED DELETED TRIP:', newTrip.id, '->', newTrip.title);
+  console.log('🎉 SUCCESSFULLY RESTORED DELETED TRIP WITH PHOTOS:', newTrip.id, '->', newTrip.title);
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
