@@ -423,6 +423,12 @@ function hasPermission(roleOrUser, permission) {
     userPerms.forEach((p) => combined.add(p));
   }
 
+  if (Array.isArray(permission)) {
+    return permission.some((p) => hasPermission(roleOrUser, p));
+  }
+
+  if (typeof permission !== "string") return false;
+
   if (combined.has(permission)) return true;
 
   // Check aliases
@@ -455,7 +461,17 @@ function hasPermission(roleOrUser, permission) {
     (combined.has("vendors.edit") ||
       combined.has("vendors.create") ||
       combined.has("ops.manage") ||
-      combined.has("operations.edit"))
+      combined.has("operations.edit") ||
+      combined.has("operations.view"))
+  ) {
+    return true;
+  }
+  if (
+    (permission.startsWith("documents.") || permission.includes("documents")) &&
+    (combined.has("ops.view") ||
+      combined.has("operations.view") ||
+      combined.has("ops.manage") ||
+      combined.has("documents.view"))
   ) {
     return true;
   }
