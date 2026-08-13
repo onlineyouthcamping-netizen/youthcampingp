@@ -430,6 +430,7 @@ exports.getHotelBookings = async (req, res) => {
     if (!ctx) return;
     const bookings = await prisma.opsHotelBooking.findMany({
       where: ctx.where,
+      orderBy: { updatedAt: "asc" },
       include: { vendor: true, overrides: true },
     });
     if (!bookings || bookings.length === 0) {
