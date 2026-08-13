@@ -250,9 +250,18 @@ exports.getDirectoryVendors = async (req, res, next) => {
     const startIndex = total === 0 ? 0 : skip + 1;
     const endIndex = Math.min(skip + limitNum, total);
 
+    const formattedVendors = vendors.map((v) => {
+      if (v.guideRates && typeof v.guideRates === "string") {
+        try {
+          v.guideRates = JSON.parse(v.guideRates);
+        } catch {}
+      }
+      return v;
+    });
+
     res.json({
       success: true,
-      data: vendors,
+      data: formattedVendors,
       pagination: {
         total,
         page: pageNum,
@@ -703,11 +712,22 @@ exports.updateDirectoryVendor = async (req, res, next) => {
             ? tags
             : JSON.stringify(tags)
           : undefined,
+        guideRates: req.body.guideRates
+          ? typeof req.body.guideRates === "string"
+            ? req.body.guideRates
+            : JSON.stringify(req.body.guideRates)
+          : undefined,
         notes: notes || undefined,
         isActive: isActive !== undefined ? isActive : undefined,
         isPreferred: isPreferred !== undefined ? isPreferred : undefined,
       },
     });
+
+    if (vendor.guideRates && typeof vendor.guideRates === "string") {
+      try {
+        vendor.guideRates = JSON.parse(vendor.guideRates);
+      } catch {}
+    }
 
     res.json({ success: true, data: vendor });
   } catch (error) {

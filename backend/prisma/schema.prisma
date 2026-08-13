@@ -1319,6 +1319,7 @@ model OpsVendor {
   updatedAt            DateTime      @updatedAt
 
   tags                 String?       // JSON list of tags e.g. ["Budget", "Preferred", "Pet Friendly"]
+  guideRates           String?       @db.Text // JSON list of guide daily rates
   performanceScore     Float?        @default(95.0)
   complaintCount       Int?          @default(0)
   lateCheckinCount     Int?          @default(0)
