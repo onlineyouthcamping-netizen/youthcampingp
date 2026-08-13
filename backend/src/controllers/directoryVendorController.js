@@ -727,13 +727,98 @@ exports.updateDirectoryVendor = async (req, res, next) => {
       },
     });
 
-    if (vendor.guideRates && typeof vendor.guideRates === "string") {
+    if (req.body.rooms || req.body.vendorRooms) {
+      const roomList = req.body.rooms || req.body.vendorRooms;
+      if (Array.isArray(roomList)) {
+        await prisma.opsVendorRoom.deleteMany({
+          where: { vendorId: req.params.vendorId },
+        });
+        if (roomList.length > 0) {
+          await prisma.opsVendorRoom.createMany({
+            data: roomList.map((r) => ({
+              vendorId: req.params.vendorId,
+              roomName: r.name || r.roomName || "Standard Room",
+              capacity: parseInt(r.cap || r.capacity || 4),
+              baseRate: Number(r.doubleRate || r.base || r.baseRate || 0),
+              extraMattressRate: Number(
+                r.tripleRate || r.extraMattressRate || 0,
+              ),
+              notes: JSON.stringify({
+                tripleRate: r.tripleRate || 0,
+                quadRate: r.quadRate || 0,
+                totalRooms: r.totalRooms || 1,
+              }),
+            })),
+          });
+        }
+      }
+    }
+
+    if (req.body.seasons || req.body.seasonalRates) {
+      const seasonList = req.body.seasons || req.body.seasonalRates;
+      if (Array.isArray(seasonList)) {
+        await prisma.opsVendorSeasonalRate.deleteMany({
+          where: { vendorId: req.params.vendorId },
+        });
+        if (seasonList.length > 0) {
+          await prisma.opsVendorSeasonalRate.createMany({
+            data: seasonList.map((s) => ({
+              vendorId: req.params.vendorId,
+              seasonName: s.name || s.seasonName || "Peak Season",
+              twinRate: Number(s.twin || s.twinRate || 0),
+              tripleRate: Number(s.triple || s.tripleRate || 0),
+              quadRate: Number(s.quad || s.quadRate || 0),
+            })),
+          });
+        }
+      }
+    }
+
+    if (req.body.contacts || req.body.vendorContacts) {
+      const contactList = req.body.contacts || req.body.vendorContacts;
+      if (Array.isArray(contactList)) {
+        await prisma.opsVendorContact.deleteMany({
+          where: { vendorId: req.params.vendorId },
+        });
+        if (contactList.length > 0) {
+          await prisma.opsVendorContact.createMany({
+            data: contactList.map((c) => ({
+              vendorId: req.params.vendorId,
+              name: c.name || "Contact",
+              role: c.role || "General Contact",
+              phone: c.phone || "",
+              whatsapp: c.whatsapp || c.phone || "",
+              email: c.email || null,
+              isPrimary: c.isPrimary === true,
+            })),
+          });
+        }
+      }
+    }
+
+    const updatedVendor = await prisma.opsVendor.findUnique({
+      where: { id: req.params.vendorId },
+      include: {
+        vendorRooms: true,
+        seasonalRates: true,
+        destinations: true,
+        vendorContacts: true,
+        contracts: true,
+        vehicleMaster: true,
+        routePricingGroups: { include: { vehicleRates: true } },
+      },
+    });
+
+    if (
+      updatedVendor.guideRates &&
+      typeof updatedVendor.guideRates === "string"
+    ) {
       try {
-        vendor.guideRates = JSON.parse(vendor.guideRates);
+        updatedVendor.guideRates = JSON.parse(updatedVendor.guideRates);
       } catch {}
     }
 
-    res.json({ success: true, data: vendor });
+    res.json({ success: true, data: updatedVendor });
   } catch (error) {
     next(error);
   }
