@@ -230,7 +230,7 @@ exports.getDirectoryVendors = async (req, res, next) => {
           vendorContacts: true,
           contracts: true,
           vehicleMaster: true,
-          routePricingGroups: { include: { routeRates: true } },
+          routePricingGroups: { include: { vehicleRates: true } },
           transportFleet: true,
           transportRates: true,
           tripVendors: {
