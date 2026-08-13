@@ -114,18 +114,25 @@ exports.getDirectoryVendors = async (req, res, next) => {
     const limitNum = parseInt(limit) || 10;
     const skip = (pageNum - 1) * limitNum;
 
-    const where = tenantId === "default" ? { tenantId: "default" } : { OR: [{ tenantId }, { tenantId: "default" }] };
+    // Use AND array so each dimension of filtering is fully independent
+    const andClauses = [];
 
-    // Trip-scoped filtering enforced at backend query level
-    if (tripId && tripId !== "ALL" && tripId !== "GLOBAL") {
-      where.tripVendors = {
-        some: {
-          tripId: tripId,
-        },
-      };
+    // ── 1. Tenant scope ──────────────────────────────────────
+    if (tenantId === "default") {
+      andClauses.push({ tenantId: "default" });
+    } else {
+      andClauses.push({ OR: [{ tenantId }, { tenantId: "default" }] });
     }
 
-    // Category / Type filter
+    // ── 2. Trip-scoped filter ────────────────────────────────
+    // ONLY show vendors explicitly assigned via OpsTripVendor — no city guessing
+    if (tripId && tripId !== "ALL" && tripId !== "GLOBAL") {
+      andClauses.push({
+        tripVendors: { some: { tripId } },
+      });
+    }
+
+    // ── 3. Category / Type filter ────────────────────────────
     const activeType = type || category;
     if (activeType && activeType !== "ALL") {
       const parts = activeType
@@ -133,7 +140,6 @@ exports.getDirectoryVendors = async (req, res, next) => {
         .map((t) => t.trim().toUpperCase())
         .filter(Boolean);
 
-      // Map friendly category identifiers if passed
       let resolvedTypes = [...parts];
       if (parts.includes("ACCOMMODATION")) {
         resolvedTypes = [...resolvedTypes.filter((t) => t !== "ACCOMMODATION"), ...ACCOMMODATION_TYPES];
@@ -146,59 +152,64 @@ exports.getDirectoryVendors = async (req, res, next) => {
       }
 
       if (resolvedTypes.length > 1) {
-        where.type = { in: resolvedTypes };
+        andClauses.push({ type: { in: resolvedTypes } });
       } else if (resolvedTypes.length === 1) {
-        where.type = resolvedTypes[0];
+        andClauses.push({ type: resolvedTypes[0] });
       }
     }
 
-    if (state && state !== "ALL") where.state = state;
+    // ── 4. State filter ──────────────────────────────────────
+    if (state && state !== "ALL") {
+      andClauses.push({ state });
+    }
 
+    // ── 5. Destination / City filter ─────────────────────────
     const activeDest = destination || city;
     if (activeDest && activeDest !== "ALL") {
-      where.OR = [
-        { city: { contains: activeDest, mode: "insensitive" } },
-        { location: { contains: activeDest, mode: "insensitive" } },
-        { area: { contains: activeDest, mode: "insensitive" } },
-        { destinations: { some: { name: { contains: activeDest, mode: "insensitive" } } } },
-      ];
+      andClauses.push({
+        OR: [
+          { city: { contains: activeDest, mode: "insensitive" } },
+          { location: { contains: activeDest, mode: "insensitive" } },
+          { area: { contains: activeDest, mode: "insensitive" } },
+          { destinations: { some: { name: { contains: activeDest, mode: "insensitive" } } } },
+        ],
+      });
     }
 
+    // ── 6. Active status filter ──────────────────────────────
     if (isActive === "false" || isActive === false) {
-      where.isActive = false;
-    } else if (isActive === "ALL" || isActive === "all" || isActive === "both") {
-      // Return both active and inactive vendors
-    } else {
-      // Default: Active vendors only
-      where.isActive = true;
+      andClauses.push({ isActive: false });
+    } else if (isActive !== "ALL" && isActive !== "all" && isActive !== "both") {
+      andClauses.push({ isActive: true }); // Default: active only
     }
 
+    // ── 7. Full-text search ──────────────────────────────────
     if (search && search.trim()) {
       const q = search.trim();
-      const searchOR = [
-        { name: { contains: q, mode: "insensitive" } },
-        { contactPerson: { contains: q, mode: "insensitive" } },
-        { phone: { contains: q, mode: "insensitive" } },
-        { alternatePhone: { contains: q, mode: "insensitive" } },
-        { email: { contains: q, mode: "insensitive" } },
-        { gstin: { contains: q, mode: "insensitive" } },
-        { panNumber: { contains: q, mode: "insensitive" } },
-        { city: { contains: q, mode: "insensitive" } },
-        { state: { contains: q, mode: "insensitive" } },
-      ];
-
-      if (where.OR) {
-        where.AND = [{ OR: where.OR }, { OR: searchOR }];
-        delete where.OR;
-      } else {
-        where.OR = searchOR;
-      }
+      andClauses.push({
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { contactPerson: { contains: q, mode: "insensitive" } },
+          { phone: { contains: q, mode: "insensitive" } },
+          { alternatePhone: { contains: q, mode: "insensitive" } },
+          { email: { contains: q, mode: "insensitive" } },
+          { gstin: { contains: q, mode: "insensitive" } },
+          { panNumber: { contains: q, mode: "insensitive" } },
+          { city: { contains: q, mode: "insensitive" } },
+          { state: { contains: q, mode: "insensitive" } },
+        ],
+      });
     }
 
-    // Calculate live category counts for the current scope (trip vs global)
-    const baseScopeWhere = { ...where };
-    delete baseScopeWhere.type;
-    delete baseScopeWhere.AND; // Keep scope intact for category counts
+    const where = andClauses.length === 1 ? andClauses[0] : { AND: andClauses };
+
+    // ── Base scope for category tab counts ──
+    // Use only tenant + trip scope clauses (exclude type/search/destination clauses)
+    const baseScopeClauses = andClauses.slice(0, tripId && tripId !== "ALL" && tripId !== "GLOBAL" ? 2 : 1);
+    // Also add active-status clause if present (always include it in count scope)
+    const activeClause = andClauses.find((c) => c.isActive !== undefined);
+    if (activeClause) baseScopeClauses.push(activeClause);
+    const baseScopeWhere = baseScopeClauses.length === 1 ? baseScopeClauses[0] : { AND: baseScopeClauses };
 
     const [
       vendors,
@@ -272,7 +283,7 @@ exports.getDirectoryVendors = async (req, res, next) => {
 exports.getTripVendorTrips = async (req, res, next) => {
   try {
     const tenantId = req.user?.tenantId || "default";
-    const tenantWhere = tenantId === "default" ? { tenantId: "default" } : { OR: [{ tenantId }, { tenantId: "default" }] };
+    const tenantWhere = !tenantId || tenantId === "default" ? {} : { OR: [{ tenantId }, { tenantId: "default" }] };
     const trips = await prisma.trip.findMany({
       where: tenantWhere,
       select: {
@@ -541,8 +552,11 @@ exports.createDirectoryVendor = async (req, res, next) => {
       type,
       accommodationType,
       contactPerson,
-      phone,
-      alternatePhone,
+      // Accept both field name variants from frontend form
+      phone: phoneRaw,
+      contactNumber,       // frontend form sends this
+      alternatePhone: altPhoneRaw,
+      alternateNumber,     // frontend form sends this
       whatsappNumber,
       email,
       gstin,
@@ -553,6 +567,9 @@ exports.createDirectoryVendor = async (req, res, next) => {
       address,
       paymentTerms,
       creditDays,
+      priority,
+      rating,
+      preferred,
       bankName,
       accountNumber,
       ifscCode,
@@ -561,31 +578,44 @@ exports.createDirectoryVendor = async (req, res, next) => {
       tripId,
     } = req.body;
 
+    const phone = phoneRaw || contactNumber || null;
+    const alternatePhone = altPhoneRaw || alternateNumber || null;
+    const tenantId = req.user?.tenantId || "default";
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: "Vendor name is required" });
+    }
+    if (!type) {
+      return res.status(400).json({ success: false, message: "Vendor type is required" });
+    }
+
     const vendor = await prisma.opsVendor.create({
       data: {
+        tenantId,
         vendorCode: vendorCode || `VND-${Date.now()}`,
         name,
         type: type || "HOTEL",
-        accommodationType,
-        contactPerson,
-        phone,
-        alternatePhone,
-        whatsappNumber,
-        email,
-        gstin,
-        panNumber,
-        state,
-        city,
-        area,
-        address,
-        paymentTerms,
-        creditDays: creditDays ? parseInt(creditDays) : null,
-        bankName,
-        accountNumber,
-        ifscCode,
-        notes,
+        accommodationType: accommodationType || undefined,
+        contactPerson: contactPerson || undefined,
+        phone: phone || undefined,
+        alternatePhone: alternatePhone || undefined,
+        whatsappNumber: whatsappNumber || undefined,
+        email: email || undefined,
+        gstin: gstin || undefined,
+        panNumber: panNumber || undefined,
+        state: state || undefined,
+        city: city || undefined,
+        area: area || undefined,
+        address: address || undefined,
+        paymentTerms: paymentTerms || undefined,
+        creditDays: creditDays ? parseInt(creditDays) : undefined,
+        bankName: bankName || undefined,
+        accountNumber: accountNumber || undefined,
+        ifscCode: ifscCode || undefined,
+        notes: notes || undefined,
+        isPreferred: preferred === true || preferred === "true",
         isActive: true,
-        vendorContacts: {
+        vendorContacts: contacts.length > 0 ? {
           create: contacts.map((c) => ({
             name: c.name || c.contactName,
             role: c.role || c.designation || "General Contact",
@@ -594,13 +624,14 @@ exports.createDirectoryVendor = async (req, res, next) => {
             email: c.email || null,
             isPrimary: c.isPrimary || false,
           })),
-        },
+        } : undefined,
       },
       include: { vendorContacts: true },
     });
 
     res.status(201).json({ success: true, data: vendor });
   } catch (error) {
+    console.error("createDirectoryVendor error:", error);
     next(error);
   }
 };

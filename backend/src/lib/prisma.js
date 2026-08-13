@@ -20,16 +20,9 @@ if (process.env.NODE_ENV === "test") {
   }
 }
 
-const { Pool } = require("pg");
-const { PrismaPg } = require("@prisma/adapter-pg");
-
-const pool = new Pool({ connectionString: dbUrl, max: 10 });
-const adapter = new PrismaPg(pool);
-
 const prisma =
   global.prisma ||
   new PrismaClient({
-    adapter,
     log: ["error"],
   });
 

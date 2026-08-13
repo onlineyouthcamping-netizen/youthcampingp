@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const contractCtrl = require("../controllers/vendorContractController");
+const routePricingCtrl = require("../controllers/routePricingController");
 const {
   createVendor,
   getVendors,
@@ -204,6 +205,24 @@ router.post(
   requirePermission("vendors.rates.manage"),
   dirCtrl.createDirectoryMiscCharge,
 );
+
+// ── VEHICLE MASTER & ROUTE PRICING ROUTES ──
+router.get("/directory/:vendorId/vehicles", requirePermission("vendors.view"), routePricingCtrl.getVendorVehicles);
+router.post("/directory/:vendorId/vehicles", requirePermission("vendors.edit"), routePricingCtrl.createVendorVehicle);
+router.patch("/directory/vehicles/:vehicleId", requirePermission("vendors.edit"), routePricingCtrl.updateVendorVehicle);
+router.delete("/directory/vehicles/:vehicleId", requirePermission("vendors.edit"), routePricingCtrl.deleteVendorVehicle);
+
+router.get("/directory/:vendorId/route-pricing", requirePermission("vendors.view"), routePricingCtrl.getRoutePricingGroups);
+router.post("/directory/:vendorId/route-pricing", requirePermission("vendors.rates.manage"), routePricingCtrl.createRoutePricingGroup);
+router.patch("/directory/route-pricing/:groupId", requirePermission("vendors.rates.manage"), routePricingCtrl.updateRoutePricingGroup);
+router.delete("/directory/route-pricing/:groupId", requirePermission("vendors.rates.manage"), routePricingCtrl.deleteRoutePricingGroup);
+router.post("/directory/route-pricing/:groupId/duplicate", requirePermission("vendors.rates.manage"), routePricingCtrl.duplicateRoutePricingGroup);
+
+router.post("/directory/route-pricing/:groupId/rates", requirePermission("vendors.rates.manage"), routePricingCtrl.addVehicleRate);
+router.patch("/directory/route-pricing/rates/:rateId", requirePermission("vendors.rates.manage"), routePricingCtrl.updateVehicleRate);
+router.delete("/directory/route-pricing/rates/:rateId", requirePermission("vendors.rates.manage"), routePricingCtrl.deleteVehicleRate);
+
+router.get("/directory/route-pricing/lookup", requirePermission("vendors.view"), routePricingCtrl.lookupRateForDeparture);
 
 // Trip-Vendor Endpoints
 router.get(

@@ -25,7 +25,8 @@ app.use("/api", require("./middleware/metrics"));
 app.use("/api", apiNoStore);
 
 // Health Check (Before all other routes)
-app.use("/api", require("../routes/health"));
+app.use("/health", require("../routes/health"));
+app.use("/api/health", require("../routes/health"));
 
 // 2. Security & Middleware
 app.use(
@@ -83,15 +84,6 @@ const authLimiter = rateLimit({
 app.use("/api", globalLimiter);
 app.use("/api/admin/login", authLimiter);
 app.use("/api/users/login", authLimiter);
-
-// Request Timeout (30s hard limit) + Circuit Breaker (5 fails → 503 for 60s)
-app.use("/api", require("./middleware/requestTimeout"));
-app.use("/api", require("./middleware/circuitBreaker"));
-
-// Custom 7 API Endpoints Middlewares
-app.use("/api", require("../middleware/logging"));
-app.use("/api", require("../middleware/corsHandler"));
-app.use("/api", require("../middleware/rateLimit"));
 
 // 3. Import & Mount Routes
 app.use("/api/health", require("../routes/health"));

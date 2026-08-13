@@ -1342,6 +1342,9 @@ model OpsVendor {
   ledgerEntries        OpsVendorLedger[]
   priceHistory         OpsVendorPriceHistory[]
   timelineEntries      OpsVendorTimeline[]
+  // NEW — Vehicle Master & Route Pricing
+  vehicleMaster        OpsVendorVehicle[]
+  routePricingGroups   OpsRoutePricingGroup[]
 
   @@index([tenantId])
 }
@@ -3409,6 +3412,120 @@ model OpsAccommodationRate {
   @@index([city])
   @@index([sharingType])
 }
+
+// ── VEHICLE MASTER (per vendor) ──────────────────────────────────────────────
+// Authoritative vehicle records for a transport vendor.
+// This replaces hardcoded fleet data in the UI.
+model OpsVendorVehicle {
+  id                 String    @id @default(cuid())
+  tenantId           String    @default("default")
+  vendorId           String
+
+  // Identity
+  vehicleName        String    // e.g. "20 Seater Tempo Traveller"
+  vehicleCode        String?   // internal ref code e.g. "PB-08-TR-2001"
+  plateNumber        String?   // registration plate
+  vehicleCategory    String    @default("TEMPO_TRAVELLER") // TEMPO_TRAVELLER | SUV | SEDAN | BUS | OTHER
+
+  // Capacity
+  advertisedCapacity Int       @default(17)
+  sellableSeats      Int       @default(16)
+
+  // Features
+  hasAC              Boolean   @default(true)
+  fuelType           String?   @default("Diesel")
+  luggageCapacity    String?   // "3 Large Bags" or "150 KG"
+  notes              String?   @db.Text
+
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  vendor             OpsVendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vehicleRates       OpsVehicleRate[]
+
+  @@index([tenantId])
+  @@index([vendorId])
+}
+
+// ── ROUTE PRICING GROUP ───────────────────────────────────────────────────────
+// One contract header per route (e.g. "WINTER SPITI — Kotkapura → Kotkapura, 8 Days")
+// Contains multiple per-vehicle rates below.
+model OpsRoutePricingGroup {
+  id                  String    @id @default(cuid())
+  tenantId            String    @default("default")
+  vendorId            String
+
+  // Route identity
+  routeName           String    // user-facing label e.g. "WINTER SPITI"
+  tripName            String?   // trip/destination name e.g. "Spiti Valley"
+  pickupLocation      String    // e.g. "Kotkapura"
+  dropLocation        String    // e.g. "Kotkapura" (same = round trip)
+  destination         String?   // primary destination area
+
+  // Contract terms
+  season              String?   // WINTER | SUMMER | MONSOON | ALL_YEAR
+  durationDays        Int       @default(1)
+  durationNights      Int       @default(0)
+  pickupDropIncluded  Boolean   @default(true)
+
+  // Validity
+  validFrom           DateTime? @db.Date
+  validTo             DateTime? @db.Date
+
+  notes               String?   @db.Text
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  vendor              OpsVendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vehicleRates        OpsVehicleRate[]
+
+  @@index([tenantId])
+  @@index([vendorId])
+}
+
+// ── VEHICLE RATE (per vehicle per route pricing group) ───────────────────────
+// One row per vehicle type per route contract.
+// e.g. 20-Seater = ₹80,000 / 18 sellable seats = ₹4,444 PP
+model OpsVehicleRate {
+  id                    String    @id @default(cuid())
+  tenantId              String    @default("default")
+  routePricingGroupId   String
+  vehicleId             String    // FK → OpsVendorVehicle
+
+  // Snapshot of vehicle name at time of creation (for display even if vehicle renamed)
+  vehicleNameSnapshot   String
+
+  // Pricing
+  totalVehicleAmount    Decimal   @db.Decimal(12, 2)
+  sellableSeats         Int       // can differ from OpsVendorVehicle.sellableSeats
+  suggestedPP           Decimal?  @db.Decimal(12, 2) // computed = totalVehicleAmount / sellableSeats
+  negotiatedPP          Decimal?  @db.Decimal(12, 2) // admin override
+
+  // Passenger constraints
+  minimumPassengers     Int?      @default(1)
+  maximumPassengers     Int?      // null = full sellable capacity
+
+  // Extra charges
+  extraPickupDropAmount Decimal   @default(0) @db.Decimal(12, 2)
+  extraDayAmount        Decimal   @default(0) @db.Decimal(12, 2)
+
+  notes                 String?   @db.Text
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  routePricingGroup     OpsRoutePricingGroup @relation(fields: [routePricingGroupId], references: [id], onDelete: Cascade)
+  vehicle               OpsVendorVehicle     @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  // Prevent duplicate active rate for same vehicle in same route group
+  @@unique([routePricingGroupId, vehicleId])
+  @@index([tenantId])
+  @@index([routePricingGroupId])
+  @@index([vehicleId])
+}
+
 
 model OpsTransportRate {
   id                   String                         @id @default(cuid())

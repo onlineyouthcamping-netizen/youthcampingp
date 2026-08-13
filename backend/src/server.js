@@ -89,7 +89,7 @@ async function startServer() {
       process.exit(1);
     }
 
-    server = app.listen(PORT, () => {
+    server = app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 SERVER RUNNING ON PRIMARY PORT ${PORT}`);
     });
     server.on("error", (err) => {
