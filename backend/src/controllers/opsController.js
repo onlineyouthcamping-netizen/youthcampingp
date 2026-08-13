@@ -911,6 +911,31 @@ exports.createHotelBooking = async (req, res) => {
             data: dataObj,
             include: { overrides: true },
           });
+        } else if (dataObj.checkIn) {
+          const existingByDate = await tx.opsHotelBooking.findFirst({
+            where: {
+              tripId: ctx.tripId,
+              departureDate: ctx.departureDate,
+              checkIn: dataObj.checkIn,
+            },
+          });
+          if (existingByDate) {
+            booking = await tx.opsHotelBooking.update({
+              where: { id: existingByDate.id },
+              data: dataObj,
+              include: { overrides: true },
+            });
+          } else {
+            booking = await tx.opsHotelBooking.create({
+              data: {
+                tenantId: ctx.tenantId,
+                tripId: ctx.tripId,
+                departureDate: ctx.departureDate,
+                ...dataObj,
+              },
+              include: { overrides: true },
+            });
+          }
         } else {
           booking = await tx.opsHotelBooking.create({
             data: {
