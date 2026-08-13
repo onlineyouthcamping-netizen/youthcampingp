@@ -851,12 +851,17 @@ exports.createHotelBooking = async (req, res) => {
         const exRate = parseFloat(h.extraBedRate ?? h.extraPersonRate ?? 0);
 
         let calculatedCost = 0;
-        if (h.pricingMethod === "manual") {
-          calculatedCost = parseFloat(h.totalAmount || 0);
+        if (h.totalAmount !== undefined && h.totalAmount !== null && Number(h.totalAmount) > 0) {
+          calculatedCost = parseFloat(h.totalAmount);
         } else {
-          const twinCost = dRooms * dRate * nights;
-          const tripleCost = tRooms * tRate * nights;
-          const quadCost = qRooms * qRate * nights;
+          const isPerPerson = (h.pricingMethod || "per-person").toLowerCase() === "per-person";
+          const twinPax = isPerPerson ? 2 : 1;
+          const triplePax = isPerPerson ? 3 : 1;
+          const quadPax = isPerPerson ? 4 : 1;
+
+          const twinCost = dRooms * twinPax * dRate * nights;
+          const tripleCost = tRooms * triplePax * tRate * nights;
+          const quadCost = qRooms * quadPax * qRate * nights;
           const extraBedCost = exPax * exRate * nights;
           calculatedCost = twinCost + tripleCost + quadCost + extraBedCost;
         }

@@ -740,12 +740,12 @@ exports.updateDirectoryVendor = async (req, res, next) => {
               roomName: r.name || r.roomName || "Standard Room",
               capacity: parseInt(r.cap || r.capacity || 4),
               baseRate: Number(r.doubleRate || r.base || r.baseRate || 0),
-              extraMattressRate: Number(
-                r.tripleRate || r.extraMattressRate || 0,
-              ),
+              extraMattressRate: Number(r.extraBedRate || r.extraMattressRate || 0),
               notes: JSON.stringify({
+                doubleRate: r.doubleRate || r.base || r.baseRate || 0,
                 tripleRate: r.tripleRate || 0,
                 quadRate: r.quadRate || 0,
+                extraBedRate: r.extraBedRate || r.extraMattressRate || 0,
                 totalRooms: r.totalRooms || 1,
               }),
             })),
