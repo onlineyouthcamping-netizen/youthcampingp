@@ -257,33 +257,6 @@ exports.activateSopVersion = async (req, res) => {
 // 2. SOP TASK TEMPLATE MANAGERS
 // ─────────────────────────────────────────────────────────
 
-const VALID_SOP_STAGES = [
-  "PRE_TRIP_30D",
-  "PRE_TRIP_21D",
-  "PRE_TRIP_14D",
-  "PRE_TRIP_7D",
-  "PRE_TRIP_3D",
-  "PRE_TRIP_1D",
-  "DEPARTURE_DAY",
-  "DURING_TRIP",
-  "POST_TRIP",
-];
-
-function sanitizeSopStage(stage, relativeOffset) {
-  if (!stage) return "PRE_TRIP_7D";
-  if (VALID_SOP_STAGES.includes(stage)) return stage;
-  const offset = parseInt(relativeOffset, 10) || 0;
-  if (offset > 1) return "POST_TRIP";
-  if (offset === 1) return "DURING_TRIP";
-  if (offset === 0) return "DEPARTURE_DAY";
-  if (offset <= -30) return "PRE_TRIP_30D";
-  if (offset <= -21) return "PRE_TRIP_21D";
-  if (offset <= -14) return "PRE_TRIP_14D";
-  if (offset <= -7) return "PRE_TRIP_7D";
-  if (offset <= -3) return "PRE_TRIP_3D";
-  return "PRE_TRIP_1D";
-}
-
 // POST /api/ops/sops/versions/:versionId/tasks - Create task template inside SOP version
 exports.createTaskTemplate = async (req, res) => {
   try {
@@ -321,15 +294,13 @@ exports.createTaskTemplate = async (req, res) => {
     const numSort = parseInt(sortOrder, 10);
     const safeSort = isNaN(numSort) ? 0 : numSort;
 
-    const safeStage = sanitizeSopStage(stage, safeOffset);
-
     const task = await prisma.opsSopTaskTemplate.create({
       data: {
         tenantId,
         versionId,
         taskName: taskName.trim(),
         description: description || null,
-        stage: safeStage,
+        stage: stage || "PRE_TRIP_7D",
         relativeOffset: safeOffset,
         priority: priority || "MEDIUM",
         isRequired: isRequired !== undefined ? Boolean(isRequired) : true,
@@ -361,7 +332,7 @@ exports.updateTaskTemplate = async (req, res) => {
       if (!isNaN(parsed)) updateData.relativeOffset = parsed;
     }
     if (data.stage !== undefined) {
-      updateData.stage = sanitizeSopStage(data.stage, updateData.relativeOffset || data.relativeOffset);
+      updateData.stage = data.stage;
     }
     if (data.priority !== undefined) updateData.priority = data.priority;
     if (data.isRequired !== undefined) updateData.isRequired = Boolean(data.isRequired);

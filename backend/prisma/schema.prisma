@@ -1747,13 +1747,13 @@ model OpsSeatConfig {
 
 // ── TRIP SOP LIBRARY ──
 model OpsSOPTemplate {
-  id          String      @id @default(cuid())
-  tenantId    String      @default("default")
+  id          String   @id @default(cuid())
+  tenantId    String   @default("default")
   destination String
-  stage       OpsSOPStage
+  stage       String   @default("PRE_TRIP_7D")
   taskName    String
-  description String?     @db.Text
-  createdAt   DateTime    @default(now())
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
 
   @@index([tenantId, destination])
 }
@@ -1802,23 +1802,23 @@ model OpsSopVersion {
 
 // ── TRIP-WISE SOP TASK TEMPLATE ──
 model OpsSopTaskTemplate {
-  id               String      @id @default(cuid())
-  tenantId         String      @default("default")
+  id               String   @id @default(cuid())
+  tenantId         String   @default("default")
   versionId        String
   taskName         String
-  description      String?     @db.Text
-  stage            OpsSOPStage @default(PRE_TRIP_7D)
-  relativeOffset   Int         @default(-7) // Days relative to departure date (e.g. -30, -7, 0, 1)
-  priority         String      @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
-  isRequired       Boolean     @default(true)
-  defaultAssignee  String?     @default("OPERATIONS") // OPERATIONS, GUIDE, TRANSPORT_DESK, SALES_EXEC, TICKETING, FINANCE
-  instructions     String?     @db.Text
-  verificationReq  String?     // VOUCHER, PHOTO, LOG, PNR
-  sortOrder        Int         @default(0)
-  active           Boolean     @default(true)
+  description      String?  @db.Text
+  stage            String   @default("PRE_TRIP_7D")
+  relativeOffset   Int      @default(-7) // Days relative to departure date (e.g. -30, -7, 0, 1)
+  priority         String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  isRequired       Boolean  @default(true)
+  defaultAssignee  String?  @default("OPERATIONS") // OPERATIONS, GUIDE, TRANSPORT_DESK, SALES_EXEC, TICKETING, FINANCE
+  instructions     String?  @db.Text
+  verificationReq  String?  // VOUCHER, PHOTO, LOG, PNR
+  sortOrder        Int      @default(0)
+  active           Boolean  @default(true)
   dependencyTaskId String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   version          OpsSopVersion       @relation(fields: [versionId], references: [id], onDelete: Cascade)
   checklists       OpsTripChecklist[]
@@ -1829,15 +1829,15 @@ model OpsSopTaskTemplate {
 
 // ── TRIP-WISE CHECKLIST ITEM (ACTUAL TASK INSTANCES FOR DEPARTURE) ──
 model OpsTripChecklist {
-  id                String      @id @default(cuid())
-  tenantId          String      @default("default")
+  id                String   @id @default(cuid())
+  tenantId          String   @default("default")
   tripId            String
-  departureDate     DateTime    @db.Date
+  departureDate     DateTime @db.Date
   sopTemplateId     String?
   sopVersionId      String?
   sopTaskTemplateId String?
-  source            String      @default("SOP") // SOP, MANUAL
-  stage             OpsSOPStage
+  source            String   @default("SOP") // SOP, MANUAL
+  stage             String   @default("PRE_TRIP_7D")
   taskName          String
   relativeOffset    Int?
   isRequired        Boolean     @default(true)
