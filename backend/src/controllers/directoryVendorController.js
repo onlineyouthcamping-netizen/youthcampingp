@@ -283,6 +283,9 @@ exports.getTripScopedVendorDirectory = async (req, res, next) => {
           sharingTypes: true,
           totalRooms: true,
           notes: true,
+          vendorContacts: true,
+          vendorRooms: true,
+          seasonalRates: true,
           destinations: {
             select: { id: true, destinationName: true, state: true },
           },
@@ -1007,6 +1010,7 @@ exports.updateDirectoryVendor = async (req, res, next) => {
         bankName: bankName || undefined,
         accountNumber: accountNumber || undefined,
         ifscCode: ifscCode || undefined,
+        upiId: req.body.upiId || undefined,
         starRating: starRating ? parseInt(starRating) : undefined,
         checkInTime: checkInTime || undefined,
         checkOutTime: checkOutTime || undefined,
@@ -1025,6 +1029,10 @@ exports.updateDirectoryVendor = async (req, res, next) => {
           ? typeof req.body.guideRates === "string"
             ? req.body.guideRates
             : JSON.stringify(req.body.guideRates)
+          : req.body.activityRates
+          ? typeof req.body.activityRates === "string"
+            ? req.body.activityRates
+            : JSON.stringify(req.body.activityRates)
           : undefined,
         notes: notes || undefined,
         isActive: isActive !== undefined ? isActive : undefined,
