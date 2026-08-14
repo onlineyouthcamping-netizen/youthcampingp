@@ -1026,7 +1026,7 @@ exports.getTransportFleet = async (req, res) => {
           ...veh,
           tariff: applicable
             ? {
-                amount: Number(applicable.amount || applicable.rate || 0),
+                amount: Number(applicable.totalVehicleCost ?? applicable.amount ?? applicable.rate ?? 0),
                 rateBasis: applicable.rateBasis || "PER_VEHICLE",
               }
             : null,
