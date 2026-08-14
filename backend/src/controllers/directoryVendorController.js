@@ -158,21 +158,39 @@ exports.getTripScopedVendorDirectory = async (req, res, next) => {
         .map((t) => t.trim().toUpperCase())
         .filter(Boolean);
       let resolvedTypes = [...parts];
-      if (parts.includes("ACCOMMODATION")) {
+      if (parts.includes("ACCOMMODATION") || parts.includes("ACCOMMODATIONS")) {
         resolvedTypes = [
-          ...resolvedTypes.filter((t) => t !== "ACCOMMODATION"),
+          ...resolvedTypes.filter((t) => !["ACCOMMODATION", "ACCOMMODATIONS"].includes(t)),
           ...ACCOMMODATION_TYPES,
         ];
       }
-      if (parts.includes("RESTAURANTS")) {
+      if (parts.includes("RESTAURANTS") || parts.includes("RESTAURANT") || parts.includes("FOOD")) {
         resolvedTypes = [
-          ...resolvedTypes.filter((t) => t !== "RESTAURANTS"),
+          ...resolvedTypes.filter((t) => !["RESTAURANTS", "RESTAURANT", "FOOD"].includes(t)),
           ...RESTAURANT_TYPES,
         ];
       }
-      if (parts.includes("OTHER")) {
+      if (parts.includes("GUIDES") || parts.includes("GUIDE")) {
         resolvedTypes = [
-          ...resolvedTypes.filter((t) => t !== "OTHER"),
+          ...resolvedTypes.filter((t) => !["GUIDES", "GUIDE"].includes(t)),
+          ...GUIDE_TYPES,
+        ];
+      }
+      if (parts.includes("ACTIVITIES") || parts.includes("ACTIVITY")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => !["ACTIVITIES", "ACTIVITY"].includes(t)),
+          ...ACTIVITIES_TYPES,
+        ];
+      }
+      if (parts.includes("TRANSPORT") || parts.includes("TRANSPORTS")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => !["TRANSPORT", "TRANSPORTS"].includes(t)),
+          ...TRANSPORT_TYPES,
+        ];
+      }
+      if (parts.includes("OTHER") || parts.includes("OTHERS")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => !["OTHER", "OTHERS"].includes(t)),
           ...OTHER_TYPES,
         ];
       }
@@ -231,12 +249,16 @@ exports.getTripScopedVendorDirectory = async (req, res, next) => {
           name: true,
           vendorCode: true,
           type: true,
+          accommodationType: true,
           city: true,
           location: true,
           state: true,
+          address: true,
+          fullAddress: true,
           contactPerson: true,
           phone: true,
           alternatePhone: true,
+          whatsappNumber: true,
           email: true,
           gstin: true,
           panNumber: true,
@@ -244,7 +266,22 @@ exports.getTripScopedVendorDirectory = async (req, res, next) => {
           isPreferred: true,
           rating: true,
           starRating: true,
+          performanceScore: true,
+          paymentTerms: true,
+          creditDays: true,
+          bankName: true,
+          accountNumber: true,
+          ifscCode: true,
+          upiId: true,
+          checkInTime: true,
+          checkOutTime: true,
+          mealPlans: true,
+          guideRates: true,
+          tags: true,
+          amenities: true,
           roomTypes: true,
+          sharingTypes: true,
+          totalRooms: true,
           notes: true,
           destinations: {
             select: { id: true, destinationName: true, state: true },
@@ -379,14 +416,41 @@ exports.getDirectoryVendors = async (req, res, next) => {
         .filter(Boolean);
 
       let resolvedTypes = [...parts];
-      if (parts.includes("ACCOMMODATION")) {
-        resolvedTypes = [...resolvedTypes.filter((t) => t !== "ACCOMMODATION"), ...ACCOMMODATION_TYPES];
+      if (parts.includes("ACCOMMODATION") || parts.includes("ACCOMMODATIONS")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => !["ACCOMMODATION", "ACCOMMODATIONS"].includes(t)),
+          ...ACCOMMODATION_TYPES,
+        ];
       }
-      if (parts.includes("RESTAURANTS")) {
-        resolvedTypes = [...resolvedTypes.filter((t) => t !== "RESTAURANTS"), ...RESTAURANT_TYPES];
+      if (parts.includes("RESTAURANTS") || parts.includes("RESTAURANT") || parts.includes("FOOD")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => !["RESTAURANTS", "RESTAURANT", "FOOD"].includes(t)),
+          ...RESTAURANT_TYPES,
+        ];
       }
-      if (parts.includes("OTHER")) {
-        resolvedTypes = [...resolvedTypes.filter((t) => t !== "OTHER"), ...OTHER_TYPES];
+      if (parts.includes("GUIDES") || parts.includes("GUIDE")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => !["GUIDES", "GUIDE"].includes(t)),
+          ...GUIDE_TYPES,
+        ];
+      }
+      if (parts.includes("ACTIVITIES") || parts.includes("ACTIVITY")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => !["ACTIVITIES", "ACTIVITY"].includes(t)),
+          ...ACTIVITIES_TYPES,
+        ];
+      }
+      if (parts.includes("TRANSPORT") || parts.includes("TRANSPORTS")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => !["TRANSPORT", "TRANSPORTS"].includes(t)),
+          ...TRANSPORT_TYPES,
+        ];
+      }
+      if (parts.includes("OTHER") || parts.includes("OTHERS")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => !["OTHER", "OTHERS"].includes(t)),
+          ...OTHER_TYPES,
+        ];
       }
 
       if (resolvedTypes.length > 1) {
