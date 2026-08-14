@@ -1019,7 +1019,47 @@ exports.updateDirectoryVendor = async (req, res, next) => {
             ? req.body.mealTariffs
             : JSON.stringify(req.body.mealTariffs)
           : mealPlans || undefined,
-        amenities: amenities || undefined,
+        amenities: amenities !== undefined ? amenities : undefined,
+        roomTypes:
+          req.body.fleetTypes !== undefined
+            ? req.body.fleetTypes
+            : req.body.seatingCapacity !== undefined
+              ? req.body.seatingCapacity
+              : req.body.activityTypes !== undefined
+                ? req.body.activityTypes
+                : req.body.roomTypes !== undefined
+                  ? req.body.roomTypes
+                  : undefined,
+        sharingTypes:
+          req.body.cuisines !== undefined
+            ? req.body.cuisines
+            : req.body.languages !== undefined
+              ? req.body.languages
+              : req.body.sharingTypes !== undefined
+                ? req.body.sharingTypes
+                : undefined,
+        earlyCheckInPolicy:
+          req.body.operatingHours !== undefined
+            ? req.body.operatingHours
+            : req.body.certifications !== undefined
+              ? req.body.certifications
+              : req.body.earlyCheckInPolicy !== undefined
+                ? req.body.earlyCheckInPolicy
+                : undefined,
+        lateCheckOutPolicy:
+          req.body.tollParkingPolicy !== undefined
+            ? req.body.tollParkingPolicy
+            : req.body.experience !== undefined
+              ? req.body.experience
+              : req.body.lateCheckOutPolicy !== undefined
+                ? req.body.lateCheckOutPolicy
+                : undefined,
+        website:
+          req.body.guideRole !== undefined
+            ? req.body.guideRole
+            : req.body.website !== undefined
+              ? req.body.website
+              : undefined,
         tags: tags
           ? typeof tags === "string"
             ? tags
@@ -1034,7 +1074,12 @@ exports.updateDirectoryVendor = async (req, res, next) => {
             ? req.body.activityRates
             : JSON.stringify(req.body.activityRates)
           : undefined,
-        notes: notes || undefined,
+        notes:
+          req.body.notes !== undefined
+            ? req.body.notes
+            : req.body.routesCovered !== undefined
+              ? req.body.routesCovered
+              : undefined,
         isActive: isActive !== undefined ? isActive : undefined,
         isPreferred: isPreferred !== undefined ? isPreferred : undefined,
       },
