@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const { prisma } = require("../lib/prisma");
 const {
   hasPermission,
+  getRolePermissions,
   ROLE_PERMISSIONS,
   PERMISSIONS,
 } = require("../config/permissions");
@@ -115,9 +116,15 @@ const authenticate = async (req, res, next) => {
           .status(403)
           .json({ success: false, message: "Account is deactivated" });
       }
+      const userRole = (user.role || "").trim().toLowerCase();
+      const defaultUserPerms =
+        userRole === "superadmin"
+          ? [...PERMISSIONS]
+          : getRolePermissions(user.role);
       req.user = {
         id: user.id,
         role: user.role,
+        permissions: defaultUserPerms,
         tenantId: user.tenantId || "default",
       };
       req.admin = req.user;
@@ -155,10 +162,11 @@ const authenticate = async (req, res, next) => {
       }
     }
 
+    const adminRole = (admin.role || "").trim().toLowerCase();
     const defaultPerms =
-      admin.role === "superadmin"
+      adminRole === "superadmin"
         ? [...PERMISSIONS]
-        : [...(ROLE_PERMISSIONS[admin.role] || [])];
+        : getRolePermissions(admin.role);
     const customPerms = Array.isArray(admin.customPermissions)
       ? admin.customPermissions
       : [];

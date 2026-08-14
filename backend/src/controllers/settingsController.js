@@ -436,11 +436,16 @@ exports.getProfile = async (req, res, next) => {
         .json({ success: false, message: "User profile not found" });
     }
 
-    const { ROLE_PERMISSIONS, PERMISSIONS } = require("../config/permissions");
+    const {
+      ROLE_PERMISSIONS,
+      PERMISSIONS,
+      getRolePermissions,
+    } = require("../config/permissions");
+    const adminRole = (admin.role || "").trim().toLowerCase();
     let permissions =
-      admin.role === "superadmin"
+      adminRole === "superadmin"
         ? PERMISSIONS || []
-        : ROLE_PERMISSIONS[admin.role] || [];
+        : getRolePermissions(admin.role);
     if (Array.isArray(admin.customPermissions)) {
       permissions = Array.from(
         new Set([...permissions, ...admin.customPermissions]),

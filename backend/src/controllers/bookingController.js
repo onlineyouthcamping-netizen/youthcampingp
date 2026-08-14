@@ -1687,6 +1687,17 @@ exports.updateBooking = async (req, res, next) => {
         ipAddress: req.ip || null,
       });
 
+      let activityDetails = `Booking details updated for ${booking.name || beforeBooking.name || req.params.id}`;
+      if (updateData.status && updateData.status !== beforeBooking.status) {
+        activityDetails = `Booking status changed from '${beforeBooking.status}' to '${updateData.status}'`;
+      } else if (isReassignment) {
+        activityDetails = `Sales owner reassigned to ${updateData.salesAdminId}`;
+      } else if (isPaymentUpdate) {
+        activityDetails = `Payment status changed from '${beforeBooking.paymentStatus}' to '${updateData.paymentStatus}'`;
+      } else if (isPriceGstChange) {
+        activityDetails = `Pricing updated (Base: ₹${updateData.baseAmount ?? beforeBooking.baseAmount}, GST: ₹${updateData.gstAmount ?? beforeBooking.gstAmount})`;
+      }
+
       await logBookingActivity({
         bookingId: req.params.id,
         action: updateData.status ? "STATUS_CHANGE" : "DETAILS_UPDATE",

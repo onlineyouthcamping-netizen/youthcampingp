@@ -3,7 +3,11 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { logAction } = require("../utils/auditLogger");
 const { sanitizeUser } = require("../utils/sanitize");
-const { ROLE_PERMISSIONS, PERMISSIONS } = require("../config/permissions");
+const {
+  ROLE_PERMISSIONS,
+  PERMISSIONS,
+  getRolePermissions,
+} = require("../config/permissions");
 
 const crypto = require("crypto");
 const getSecretHash = () =>
@@ -95,10 +99,11 @@ exports.adminLogin = async (req, res, next) => {
           console.error("⚠️ [Auth] Failed to log action:", err.message),
         );
 
+        const adminRole = (admin.role || "").trim().toLowerCase();
         const defaultPerms =
-          admin.role === "superadmin"
+          adminRole === "superadmin"
             ? PERMISSIONS || []
-            : ROLE_PERMISSIONS[admin.role] || [];
+            : getRolePermissions(admin.role);
         const customPerms = Array.isArray(admin.customPermissions)
           ? admin.customPermissions
           : [];
@@ -181,10 +186,11 @@ exports.getMe = async (req, res, next) => {
     }
 
     // Role-based permissions calculation (shallow clone to prevent mutating global ROLE_PERMISSIONS)
+    const adminRole = (admin.role || "").trim().toLowerCase();
     let permissions =
-      admin.role === "superadmin"
+      adminRole === "superadmin"
         ? [...PERMISSIONS]
-        : [...(ROLE_PERMISSIONS[admin.role] || [])];
+        : [...getRolePermissions(admin.role)];
     if (Array.isArray(admin.customPermissions)) {
       admin.customPermissions.forEach((p) => {
         if (!permissions.includes(p)) permissions.push(p);

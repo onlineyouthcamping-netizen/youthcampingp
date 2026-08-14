@@ -517,8 +517,15 @@ function hasPermission(roleOrUser, permission) {
   return false;
 }
 
+function getRolePermissions(role) {
+  if (!role) return [];
+  const normalized = String(role).trim().toLowerCase();
+  return ROLE_PERMISSIONS[normalized] || ROLE_PERMISSIONS[role] || [];
+}
+
 module.exports = {
   PERMISSIONS,
   ROLE_PERMISSIONS,
   hasPermission,
+  getRolePermissions,
 };
