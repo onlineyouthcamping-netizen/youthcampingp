@@ -988,21 +988,45 @@ exports.getTransportFleet = async (req, res) => {
         },
       },
     });
+
     if (includeRates) {
+      // Find any directory vendor IDs if OpsVendor was not resolved
+      const unlinkedVendorIds = fleet
+        .filter((veh) => !veh.vendor && veh.vendorId)
+        .map((veh) => veh.vendorId);
+
+      const dirRatesMap = {};
+      if (unlinkedVendorIds.length > 0) {
+        try {
+          const dirRates = await prisma.directoryVendorTransportRate.findMany({
+            where: { vendorId: { in: unlinkedVendorIds } },
+          });
+          dirRates.forEach((r) => {
+            if (!dirRatesMap[r.vendorId]) dirRatesMap[r.vendorId] = [];
+            dirRatesMap[r.vendorId].push(r);
+          });
+        } catch (dirErr) {
+          console.warn("Directory vendor transport rate lookup notice:", dirErr.message);
+        }
+      }
+
       // Resolve applicable tariff for each vehicle based on route and vehicle type
       const resolvedFleet = fleet.map((veh) => {
-        const rates = veh.vendor?.transportRates || [];
+        const rates =
+          veh.vendor?.transportRates && veh.vendor.transportRates.length > 0
+            ? veh.vendor.transportRates
+            : dirRatesMap[veh.vendorId] || [];
         const applicable = rates.find(
           (r) =>
-            (!r.route || r.route === veh.route) &&
-            r.vehicleType === veh.vehicleType &&
+            (!r.route || r.route === veh.route || r.routeName === veh.route) &&
+            (r.vehicleType === veh.vehicleType) &&
             (r.status === 'ACTIVE' || !r.status),
         );
         return {
           ...veh,
           tariff: applicable
             ? {
-                amount: applicable.rate || applicable.amount || 0,
+                amount: Number(applicable.amount || applicable.rate || 0),
                 rateBasis: applicable.rateBasis || "PER_VEHICLE",
               }
             : null,
@@ -1015,7 +1039,7 @@ exports.getTransportFleet = async (req, res) => {
     console.error("getTransportFleet error:", err);
     return res
       .status(500)
-      .json({ success: false, message: "Failed to fetch transport fleet" });
+      .json({ success: false, message: "Failed to fetch transport fleet: " + err.message });
   }
 };
 
