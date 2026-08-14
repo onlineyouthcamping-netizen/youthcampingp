@@ -92,10 +92,14 @@ const guardBookingUpdateFields = (req, res, next) => {
   }
 
   if (role === "operations") {
-    // Allow updating only operational fields
+    // Allow updating operational & passenger manifest fields
     const OPERATIONS_ALLOWED = [
+      "passengers",
+      "numberOfTravelers",
+      "sourceMeta",
       "roomAllocation",
       "roomType",
+      "roomSharing",
       "guideAssignment",
       "pickupStatus",
       "pickupCity",
@@ -103,6 +107,13 @@ const guardBookingUpdateFields = (req, res, next) => {
       "notes",
       "adminNotes",
       "travelStatus",
+      "trainTicketStatus",
+      "trainOption",
+      "trainClass",
+      "foodPreference",
+      "status",
+      "joiningDate",
+      "departureDate",
     ];
 
     const violations = bodyKeys.filter((k) => !OPERATIONS_ALLOWED.includes(k));

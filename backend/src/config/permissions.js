@@ -10,6 +10,11 @@ const PERMISSIONS = [
   "trips.publish",
   "trips.archive",
   "trips.delete",
+  "departures.view",
+  "departures.create",
+  "departures.edit",
+  "departures.manage",
+  "departures.delete",
   "bookings.view",
   "bookings.create",
   "bookings.edit",
@@ -158,6 +163,11 @@ const ROLE_PERMISSIONS = {
     "trips.edit",
     "trips.publish",
     "trips.archive",
+    "departures.view",
+    "departures.create",
+    "departures.edit",
+    "departures.manage",
+    "departures.delete",
     "design.view",
     "design.edit",
     "bookings.view",
@@ -252,6 +262,7 @@ const ROLE_PERMISSIONS = {
   sales: [
     "dashboard.view",
     "trips.view",
+    "departures.view",
     "bookings.view",
     "bookings.create",
     "bookings.edit",
@@ -289,6 +300,10 @@ const ROLE_PERMISSIONS = {
   operations: [
     "dashboard.view",
     "trips.view",
+    "departures.view",
+    "departures.create",
+    "departures.edit",
+    "departures.manage",
     "bookings.view",
     "bookings.edit",
     "operations.view",
@@ -355,6 +370,7 @@ const ROLE_PERMISSIONS = {
 
   guide: [
     "trips.view",
+    "departures.view",
     "bookings.view",
     "operations.view",
     "operations.edit",
@@ -436,6 +452,16 @@ function hasPermission(roleOrUser, permission) {
   if (combined.has(permission)) return true;
 
   // Check aliases
+  if (
+    permission.startsWith("departures.") &&
+    (combined.has("trips.view") ||
+      combined.has("operations.view") ||
+      combined.has("ops.view") ||
+      combined.has("bookings.view") ||
+      combined.has("departures.view"))
+  ) {
+    return true;
+  }
   if (
     (permission === "ops.view" || permission === "operations.view") &&
     (combined.has("ops.view") ||
