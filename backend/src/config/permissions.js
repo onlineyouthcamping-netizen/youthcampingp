@@ -451,65 +451,37 @@ function hasPermission(roleOrUser, permission) {
 
   if (combined.has(permission)) return true;
 
-  // Check aliases
-  if (
-    permission.startsWith("departures.") &&
-    (combined.has("trips.view") ||
-      combined.has("operations.view") ||
-      combined.has("ops.view") ||
-      combined.has("bookings.view") ||
-      combined.has("departures.view"))
-  ) {
+  // Precise legacy synonym aliases
+  if (permission === "departures.view" && (combined.has("operations.view") || combined.has("ops.view"))) {
     return true;
   }
   if (
     (permission === "ops.view" || permission === "operations.view") &&
-    (combined.has("ops.view") ||
-      combined.has("operations.view") ||
-      combined.has("trips.view"))
+    (combined.has("ops.view") || combined.has("operations.view"))
   ) {
     return true;
   }
   if (
-    (permission === "guides.view" || permission === "guides.manage") &&
-    (combined.has("ops.view") ||
-      combined.has("operations.view") ||
-      combined.has("guides.view"))
+    (permission === "ops.manage" || permission === "operations.edit") &&
+    (combined.has("ops.manage") || combined.has("operations.edit"))
+  ) {
+    return true;
+  }
+  if (
+    permission === "guides.view" &&
+    (combined.has("ops.view") || combined.has("operations.view"))
   ) {
     return true;
   }
   if (
     (permission === "vendors.view" || permission === "vendors.payments.view") &&
-    (combined.has("ops.view") ||
-      combined.has("operations.view") ||
-      combined.has("vendors.view"))
+    (combined.has("ops.view") || combined.has("operations.view"))
   ) {
     return true;
   }
   if (
-    permission.startsWith("vendors.") &&
-    (combined.has("vendors.edit") ||
-      combined.has("vendors.create") ||
-      combined.has("ops.manage") ||
-      combined.has("operations.edit") ||
-      combined.has("operations.view"))
-  ) {
-    return true;
-  }
-  if (
-    (permission.startsWith("documents.") || permission.includes("documents")) &&
-    (combined.has("ops.view") ||
-      combined.has("operations.view") ||
-      combined.has("ops.manage") ||
-      combined.has("documents.view"))
-  ) {
-    return true;
-  }
-  if (
-    permission === "bookings.view" &&
-    (combined.has("bookings.view") ||
-      combined.has("inquiries.view") ||
-      combined.has("quotations.view"))
+    (permission === "company_documents.view" || permission === "documents.view") &&
+    (combined.has("company_documents.view") || combined.has("documents.view"))
   ) {
     return true;
   }
