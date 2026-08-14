@@ -11,9 +11,13 @@ const {
   deleteVendorPayment,
   getPaymentsDashboardStats,
   getBookingPayments,
+  getAllVendorPayablesQueue,
 } = require("../controllers/paymentController");
 
 router.use(authenticate);
+
+// Global Payables Queue
+router.get("/vendor-payables-queue", requirePermission("ops.view"), getAllVendorPayablesQueue);
 
 // Client Receivables Routes
 router.get("/client/:tripId", requirePermission("ops.view"), getClientPayments);

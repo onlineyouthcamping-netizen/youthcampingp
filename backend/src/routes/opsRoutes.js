@@ -307,5 +307,10 @@ router.post(
   requirePermission("ops.allocate"),
   saveManualAllocations,
 );
+router.post(
+  "/allocations/manual",
+  requirePermission("ops.allocate"),
+  saveManualAllocations,
+);
 
 module.exports = router;

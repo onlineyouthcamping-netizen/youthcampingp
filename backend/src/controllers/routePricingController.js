@@ -173,11 +173,9 @@ exports.updateRoutePricingGroup = async (req, res, next) => {
 exports.deleteRoutePricingGroup = async (req, res, next) => {
   try {
     const { groupId } = req.params;
-    await prisma.$transaction([
-      prisma.opsVehicleRate.updateMany({ where: { routePricingGroupId: groupId }, data: { isActive: false } }),
-      prisma.opsRoutePricingGroup.update({ where: { id: groupId }, data: { isActive: false } }),
-    ]);
-    res.json({ success: true, message: "Route pricing group deactivated" });
+    await prisma.opsVehicleRate.deleteMany({ where: { routePricingGroupId: groupId } });
+    await prisma.opsRoutePricingGroup.deleteMany({ where: { id: groupId } });
+    res.json({ success: true, message: "Route pricing group deleted successfully" });
   } catch (error) { next(error); }
 };
 

@@ -95,6 +95,247 @@ const RESTAURANT_TYPES = ["RESTAURANT", "FOOD"];
 const GUIDE_TYPES = ["GUIDE"];
 const OTHER_TYPES = ["OTHER"];
 
+/**
+ * GET /api/trips/:tripId/vendor-directory
+ * Trip-scoped vendor directory endpoint: returns only active tab category vendors, categoryCounts, and trip metadata in 1 fast query.
+ */
+exports.getTripScopedVendorDirectory = async (req, res, next) => {
+  try {
+    const { tripId } = req.params;
+    const {
+      type,
+      category,
+      search,
+      destination,
+      city,
+      isActive,
+      page = 1,
+      limit = 50,
+    } = req.query;
+    const tenantId = req.user?.tenantId || "default";
+    const tenantWhere =
+      !tenantId || tenantId === "default"
+        ? {}
+        : { OR: [{ tenantId }, { tenantId: "default" }] };
+
+    // 1. Fetch minimal trip metadata
+    const trip = await prisma.trip.findUnique({
+      where: { id: tripId },
+      select: {
+        id: true,
+        title: true,
+        shortName: true,
+        location: true,
+        departureCity: true,
+        _count: { select: { opsTripVendors: true } },
+      },
+    });
+
+    if (!trip) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
+    }
+
+    // 2. Base scope: strictly scoped to this tripId
+    const baseScopeWhere = {
+      ...tenantWhere,
+      tripVendors: { some: { tripId } },
+    };
+
+    if (isActive === "false" || isActive === false) {
+      baseScopeWhere.isActive = false;
+    } else if (isActive !== "ALL" && isActive !== "all" && isActive !== "both") {
+      baseScopeWhere.isActive = true;
+    }
+
+    // 3. Category / Type filter
+    const andClauses = [{ ...baseScopeWhere }];
+    const activeType = type || category;
+    if (activeType && activeType !== "ALL") {
+      const parts = activeType
+        .split(",")
+        .map((t) => t.trim().toUpperCase())
+        .filter(Boolean);
+      let resolvedTypes = [...parts];
+      if (parts.includes("ACCOMMODATION")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => t !== "ACCOMMODATION"),
+          ...ACCOMMODATION_TYPES,
+        ];
+      }
+      if (parts.includes("RESTAURANTS")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => t !== "RESTAURANTS"),
+          ...RESTAURANT_TYPES,
+        ];
+      }
+      if (parts.includes("OTHER")) {
+        resolvedTypes = [
+          ...resolvedTypes.filter((t) => t !== "OTHER"),
+          ...OTHER_TYPES,
+        ];
+      }
+
+      if (resolvedTypes.length > 1) {
+        andClauses.push({ type: { in: resolvedTypes } });
+      } else if (resolvedTypes.length === 1) {
+        andClauses.push({ type: resolvedTypes[0] });
+      }
+    }
+
+    // 4. Destination filter
+    const activeDest = destination || city;
+    if (activeDest && activeDest !== "ALL") {
+      andClauses.push({
+        OR: [
+          { city: { contains: activeDest, mode: "insensitive" } },
+          { location: { contains: activeDest, mode: "insensitive" } },
+          { area: { contains: activeDest, mode: "insensitive" } },
+          {
+            destinations: {
+              some: { name: { contains: activeDest, mode: "insensitive" } },
+            },
+          },
+        ],
+      });
+    }
+
+    // 5. Search filter
+    if (search && search.trim()) {
+      const q = search.trim();
+      andClauses.push({
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { contactPerson: { contains: q, mode: "insensitive" } },
+          { phone: { contains: q, mode: "insensitive" } },
+          { alternatePhone: { contains: q, mode: "insensitive" } },
+          { email: { contains: q, mode: "insensitive" } },
+          { gstin: { contains: q, mode: "insensitive" } },
+          { city: { contains: q, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    const where = andClauses.length === 1 ? andClauses[0] : { AND: andClauses };
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 50;
+    const skip = (pageNum - 1) * limitNum;
+
+    // 6. Fast parallel execution: Vendors + Category Counts (single groupBy)
+    const [vendors, total, groupCounts] = await Promise.all([
+      prisma.opsVendor.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          vendorCode: true,
+          type: true,
+          city: true,
+          location: true,
+          state: true,
+          contactPerson: true,
+          phone: true,
+          alternatePhone: true,
+          email: true,
+          gstin: true,
+          panNumber: true,
+          isActive: true,
+          isPreferred: true,
+          rating: true,
+          starRating: true,
+          roomTypes: true,
+          notes: true,
+          destinations: {
+            select: { id: true, destinationName: true, state: true },
+          },
+          vehicleMaster: {
+            select: {
+              id: true,
+              vehicleName: true,
+              advertisedCapacity: true,
+              sellableSeats: true,
+              isActive: true,
+            },
+          },
+          routePricingGroups: {
+            where: { isActive: true },
+            include: {
+              vehicleRates: {
+                where: { isActive: true },
+                include: { vehicle: true },
+              },
+            },
+          },
+          tripVendors: {
+            where: { tripId },
+            select: { id: true, preferred: true, priority: true, notes: true },
+          },
+        },
+        skip,
+        take: limitNum,
+        orderBy: { name: "asc" },
+      }),
+      prisma.opsVendor.count({ where }),
+      prisma.opsVendor.groupBy({
+        by: ["type"],
+        where: baseScopeWhere,
+        _count: { id: true },
+      }),
+    ]);
+
+    const categoryCounts = {
+      total: 0,
+      accommodation: 0,
+      transport: 0,
+      activities: 0,
+      restaurants: 0,
+      guides: 0,
+      other: 0,
+    };
+
+    groupCounts.forEach((g) => {
+      const cnt = g._count.id;
+      categoryCounts.total += cnt;
+      if (ACCOMMODATION_TYPES.includes(g.type))
+        categoryCounts.accommodation += cnt;
+      else if (TRANSPORT_TYPES.includes(g.type))
+        categoryCounts.transport += cnt;
+      else if (ACTIVITIES_TYPES.includes(g.type))
+        categoryCounts.activities += cnt;
+      else if (RESTAURANT_TYPES.includes(g.type))
+        categoryCounts.restaurants += cnt;
+      else if (GUIDE_TYPES.includes(g.type)) categoryCounts.guides += cnt;
+      else categoryCounts.other += cnt;
+    });
+
+    const allCities = vendors.map((v) => v.city || v.location).filter(Boolean);
+    const destNames = vendors.flatMap((v) => (v.destinations || []).map((d) => d.destinationName)).filter(Boolean);
+    const destinations = Array.from(new Set([trip.location, ...allCities, ...destNames].filter(Boolean)));
+
+    res.json({
+      success: true,
+      data: vendors,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(total / limitNum) || 1,
+      },
+      categoryCounts,
+      destinations,
+      trip: {
+        id: trip.id,
+        title: trip.title,
+        location: trip.location,
+        vendorCount: trip._count?.opsTripVendors || 0,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getDirectoryVendors = async (req, res, next) => {
   try {
     const {
@@ -125,11 +366,8 @@ exports.getDirectoryVendors = async (req, res, next) => {
     }
 
     // ── 2. Trip-scoped filter ────────────────────────────────
-    // ONLY show vendors explicitly assigned via OpsTripVendor — no city guessing
     if (tripId && tripId !== "ALL" && tripId !== "GLOBAL") {
-      andClauses.push({
-        tripVendors: { some: { tripId } },
-      });
+      andClauses.push({ tripVendors: { some: { tripId } } });
     }
 
     // ── 3. Category / Type filter ────────────────────────────
@@ -211,28 +449,15 @@ exports.getDirectoryVendors = async (req, res, next) => {
     if (activeClause) baseScopeClauses.push(activeClause);
     const baseScopeWhere = baseScopeClauses.length === 1 ? baseScopeClauses[0] : { AND: baseScopeClauses };
 
-    const [
-      vendors,
-      total,
-      accommodationCount,
-      transportCount,
-      activitiesCount,
-      restaurantsCount,
-      guidesCount,
-      otherCount,
-    ] = await Promise.all([
+    const [vendors, total, groupCounts] = await Promise.all([
       prisma.opsVendor.findMany({
         where,
         include: {
           vendorRooms: true,
-          seasonalRates: true,
           destinations: true,
           vendorContacts: true,
-          contracts: true,
           vehicleMaster: true,
           routePricingGroups: { include: { vehicleRates: true } },
-          transportFleet: true,
-          transportRates: true,
           tripVendors: {
             include: { trip: { select: { id: true, title: true } } },
           },
@@ -242,17 +467,37 @@ exports.getDirectoryVendors = async (req, res, next) => {
         orderBy: { name: "asc" },
       }),
       prisma.opsVendor.count({ where }),
-      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: ACCOMMODATION_TYPES } } }),
-      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: TRANSPORT_TYPES } } }),
-      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: ACTIVITIES_TYPES } } }),
-      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: RESTAURANT_TYPES } } }),
-      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: GUIDE_TYPES } } }),
-      prisma.opsVendor.count({ where: { ...baseScopeWhere, type: { in: OTHER_TYPES } } }),
+      prisma.opsVendor.groupBy({
+        by: ["type"],
+        where: baseScopeWhere,
+        _count: { id: true },
+      }),
     ]);
 
     const pages = Math.ceil(total / limitNum) || 1;
     const startIndex = total === 0 ? 0 : skip + 1;
     const endIndex = Math.min(skip + limitNum, total);
+
+    const categoryCounts = {
+      total: 0,
+      accommodation: 0,
+      transport: 0,
+      activities: 0,
+      restaurants: 0,
+      guides: 0,
+      other: 0,
+    };
+
+    groupCounts.forEach((g) => {
+      const cnt = g._count.id;
+      categoryCounts.total += cnt;
+      if (ACCOMMODATION_TYPES.includes(g.type)) categoryCounts.accommodation += cnt;
+      else if (TRANSPORT_TYPES.includes(g.type)) categoryCounts.transport += cnt;
+      else if (ACTIVITIES_TYPES.includes(g.type)) categoryCounts.activities += cnt;
+      else if (RESTAURANT_TYPES.includes(g.type)) categoryCounts.restaurants += cnt;
+      else if (GUIDE_TYPES.includes(g.type)) categoryCounts.guides += cnt;
+      else categoryCounts.other += cnt;
+    });
 
     const formattedVendors = vendors.map((v) => {
       if (v.guideRates && typeof v.guideRates === "string") {
@@ -274,15 +519,7 @@ exports.getDirectoryVendors = async (req, res, next) => {
         startIndex,
         endIndex,
       },
-      categoryCounts: {
-        total,
-        accommodation: accommodationCount,
-        transport: transportCount,
-        activities: activitiesCount,
-        restaurants: restaurantsCount,
-        guides: guidesCount,
-        other: otherCount,
-      },
+      categoryCounts,
     });
   } catch (error) {
     next(error);
@@ -709,7 +946,11 @@ exports.updateDirectoryVendor = async (req, res, next) => {
         starRating: starRating ? parseInt(starRating) : undefined,
         checkInTime: checkInTime || undefined,
         checkOutTime: checkOutTime || undefined,
-        mealPlans: mealPlans || undefined,
+        mealPlans: req.body.mealTariffs
+          ? typeof req.body.mealTariffs === "string"
+            ? req.body.mealTariffs
+            : JSON.stringify(req.body.mealTariffs)
+          : mealPlans || undefined,
         amenities: amenities || undefined,
         tags: tags
           ? typeof tags === "string"

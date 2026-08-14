@@ -9,6 +9,9 @@ const { logBookingActivity } = require("../utils/bookingActivityLogger");
 const { verifySignedPayload } = require("./bookingLinkController");
 const cache = require("../lib/cache");
 const { hasPermission } = require("../config/permissions");
+const { PAYMENT_STATUS, normalizePaymentStatus } = require("../utils/paymentStatus");
+const { validateBookingStatusTransition, BOOKING_STATUS } = require("../utils/bookingStatus");
+const { resolveTenantId } = require("../utils/tenantContext");
 
 // Helper to safely parse dates and avoid crashes with "Invalid Date"
 const safeParseDate = (dateVal) => {
@@ -1047,6 +1050,14 @@ exports.createBooking = async (req, res, next) => {
     const isAdmin =
       req.user && (req.user.role === "admin" || req.user.role === "superadmin");
 
+    // For non-admin callers (public/sales without financial permission),
+    // financial state is decided server-side from actual payment records.
+    // Client-supplied payment status / amounts are NEVER accepted.
+    const canSetFinancials =
+      isAdmin ||
+      (req.user && hasPermission(req.user, "bookings.financial_edit"));
+    const clientPaymentStatus = canSetFinancials ? req.body.paymentStatus : null;
+
     // Optional link attribution + expiry enforcement
     let sourceLink = null;
     let linkMetadata = null;
@@ -1193,12 +1204,20 @@ exports.createBooking = async (req, res, next) => {
               mobile: linkedPhone,
               tripId,
               tripName: targetTrip ? targetTrip.title : "Manual Booking",
-              amount: calculations.amount,
+              amount: canSetFinancials ? calculations.amount : 0,
               totalAmount: calculations.totalAmount,
-              advancePaid: calculations.advancePaid,
-              remainingAmount: calculations.remainingAmount,
+              // Collected money is decided from verified payment records only.
+              // Public callers (or sales without financial_edit) get 0 collected
+              // and UNPAID; amounts are recomputed when a payment is verified.
+              advancePaid: canSetFinancials ? calculations.advancePaid : 0,
+              remainingAmount: calculations.totalAmount,
               status: "pending",
-              paymentStatus: "Pending / Manual Verification",
+              // Canonical payment status. A brand-new booking has no verified
+              // payment records yet → always UNPAID regardless of what the
+              // client sent (financial fields are server-authoritative).
+              paymentStatus: canSetFinancials && clientPaymentStatus
+                ? normalizePaymentStatus(clientPaymentStatus)
+                : PAYMENT_STATUS.UNPAID,
               paymentMode: paymentMode || "UPI",
               notes: notes || req.body.specialRequests || "",
               adminNotes: req.body.specialRequests || notes || "",
@@ -1568,6 +1587,23 @@ exports.updateBooking = async (req, res, next) => {
         where: { id: req.params.id },
       });
     }
+    if (!beforeBooking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    // Status changes through the generic update endpoint must obey the
+    // booking lifecycle rules (use /bookings/:id/status for transitions).
+    if (updateData.status !== undefined && updateData.status !== beforeBooking.status) {
+      const transitionError = validateBookingStatusTransition(
+        beforeBooking.status,
+        updateData.status,
+      );
+      if (transitionError) {
+        return res.status(400).json({ success: false, message: transitionError });
+      }
+    }
 
     const ALLOWED_BOOKING_FIELDS = new Set([
       "tripId",
@@ -1749,11 +1785,12 @@ exports.deleteBooking = async (req, res, next) => {
 
     // Spec: "reject" should move to Cancelled state (not hard-delete),
     // so the booking lifecycle remains auditable.
+    // Note: payment status is intentionally left untouched — rejection is a
+    // booking-status operation, not a financial one.
     await prisma.booking.updateMany({
       where: { id, tenantId },
       data: {
         status: "cancelled",
-        paymentStatus: "Cancelled",
       },
     });
 
@@ -1764,7 +1801,7 @@ exports.deleteBooking = async (req, res, next) => {
       entityType: "booking",
       entityId: id,
       beforeData: booking,
-      afterData: { status: "cancelled", paymentStatus: "Cancelled" },
+      afterData: { status: "cancelled" },
       ipAddress: req.ip || null,
     });
 
@@ -1812,6 +1849,19 @@ exports.confirmBooking = async (req, res, next) => {
         });
     }
 
+    // Financial values set here must pass through server-side validation.
+    // paymentStatus is normalized to the canonical vocabulary (UNPAID/PARTIAL/PAID/REFUNDED).
+    const canonicalPaymentStatus = normalizePaymentStatus(
+      paymentStatus || (targetAdvance > 0 ? PAYMENT_STATUS.PARTIAL : PAYMENT_STATUS.UNPAID),
+    );
+    // advancePaid > 0 with a full payment → PAID; remaining amount decides PARTIAL vs PAID.
+    const resolvedPaymentStatus =
+      targetAdvance > 0 && targetAdvance >= targetTotal
+        ? PAYMENT_STATUS.PAID
+        : targetAdvance > 0
+          ? PAYMENT_STATUS.PARTIAL
+          : canonicalPaymentStatus;
+
     const role = req.user?.role;
     const where = { id: req.params.id, tenantId: req.user.tenantId };
     /* all sales allowed */
@@ -1828,7 +1878,8 @@ exports.confirmBooking = async (req, res, next) => {
       advancePaid: targetAdvance,
       remainingAmount: targetTotal - targetAdvance,
       paymentMode,
-      paymentStatus,
+      paymentStatus: resolvedPaymentStatus,
+      payment_status: resolvedPaymentStatus.toLowerCase(),
       email: email || undefined,
       trainTicketStatus: trainTicketStatus || undefined,
     };
@@ -2272,11 +2323,13 @@ exports.submitBookingForm = async (req, res, next) => {
               depositGst: calculations.depositGst,
               amount: calculations.amount,
               totalAmount: calculations.totalAmount,
-              advancePaid: calculations.advancePaid,
-              remainingAmount: calculations.remainingAmount,
-              status: req.body.status || "pending",
-              paymentStatus: calculations.paymentStatus,
-              paymentMode: req.body.paymentMode || null,
+              advancePaid: 0,
+              remainingAmount: calculations.totalAmount,
+              // Public submissions can never set their own status/payment
+              // state — always pending + UNPAID until an admin verifies a payment.
+              status: "pending",
+              paymentStatus: PAYMENT_STATUS.UNPAID,
+              paymentMode: null,
               notes: req.body.notes || null,
               passengers: {
                 details: {
@@ -2402,8 +2455,8 @@ exports.confirmPayment = async (req, res, next) => {
     const updatedBooking = await prisma.booking.update({
       where: { id },
       data: {
-        payment_status: "confirmed",
-        paymentStatus: "Paid",
+        payment_status: "paid",
+        paymentStatus: PAYMENT_STATUS.PAID,
       },
     });
 
@@ -2414,7 +2467,7 @@ exports.confirmPayment = async (req, res, next) => {
       entityType: "booking",
       entityId: id,
       beforeData: booking,
-      afterData: { payment_status: "confirmed", paymentStatus: "Paid" },
+      afterData: { payment_status: "paid", paymentStatus: PAYMENT_STATUS.PAID },
       ipAddress: req.ip || null,
     });
 
@@ -2912,7 +2965,7 @@ exports.cancelBookingWithRefund = async (req, res, next) => {
     const { id } = req.params;
     const { reason, cancellationCharges, refundAmount, refundPaymentMode } =
       req.body;
-    const tenantId = req.user.tenantId;
+    const tenantId = resolveTenantId(req);
     const role = req.user?.role;
 
     const whereCondition = role === "superadmin" || role === "admin"
@@ -2921,6 +2974,7 @@ exports.cancelBookingWithRefund = async (req, res, next) => {
 
     const booking = await prisma.booking.findFirst({
       where: whereCondition,
+      include: { tripRef: true },
     });
 
     if (!booking) {
@@ -2929,40 +2983,115 @@ exports.cancelBookingWithRefund = async (req, res, next) => {
         .json({ success: false, message: "Booking not found." });
     }
 
-    const charges = parseFloat(cancellationCharges) || 0;
-    const refund = parseFloat(refundAmount) || 0;
+    // ── Guard: already cancelled/rejected bookings cannot be cancelled again ──
+    if (booking.status === "cancelled" || booking.status === "rejected") {
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message: "Booking is already cancelled. No further cancellation allowed.",
+        });
+    }
 
-    // 1. Update Booking status to cancelled, record cancellation charges and refund amount
-    const updatedBooking = await prisma.booking.update({
-      where: { id: booking.id },
-      data: {
-        status: "cancelled",
-        paymentStatus: "Cancelled",
-        notes:
-          `${booking.notes || ""}\n[Cancellation Reason: ${reason || "Not provided"} | Charges: ₹${charges} | Refunded: ₹${refund} (${refundPaymentMode || "UPI"})]`.trim(),
-        remainingAmount: 0,
+    const charges = parseFloat(cancellationCharges) || 0;
+    const requestedRefund = parseFloat(refundAmount);
+    const hasRefundRequested = refundAmount !== undefined &&
+      refundAmount !== null &&
+      String(refundAmount).trim() !== "";
+    const refund = hasRefundRequested ? requestedRefund : 0;
+
+    // ── REFUND VALIDATION (server-authoritative, never trust the client) ──
+    // Collected amount is derived from actual verified payment records.
+    const paymentTotals = await sumVerifiedPaymentsForBooking(prisma, booking.id);
+    const collectedFromRecords = paymentTotals.sum;
+    // Legacy bookings may have advancePaid recorded without payment rows.
+    const collected = Math.max(collectedFromRecords, Number(booking.advancePaid) || 0);
+
+    if (hasRefundRequested && Number.isNaN(requestedRefund)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid refundAmount provided" });
+    }
+
+    if (hasRefundRequested && refund <= 0) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Refund amount must be greater than zero",
+        });
+    }
+
+    if (hasRefundRequested && collected <= 0) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Cannot process refund: no payment was collected for this booking",
+        });
+    }
+
+    const refundableAmount = Math.min(collected, Number(booking.advancePaid) || collected);
+    if (hasRefundRequested && refund > refundableAmount) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: `Refund amount ₹${refund} exceeds collected/refundable amount ₹${refundableAmount}`,
+        });
+    }
+
+    // ── Duplicate refund prevention ──
+    const existingRefund = await prisma.accountingEntry.findFirst({
+      where: {
+        bookingId: booking.bookingId,
+        referenceNumber: { contains: `REFUND-${booking.bookingId}` },
       },
     });
+    if (existingRefund) {
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message: "A refund has already been recorded for this booking",
+        });
+    }
 
-    // 2. Automatically Cancel associated Train Tickets
-    try {
+    // ── Atomic: cancel booking + cancel tickets + record refund accounting entry ──
+    const refundApplied = refund > 0;
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedBooking = await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: "cancelled",
+          paymentStatus: refundApplied ? PAYMENT_STATUS.REFUNDED : normalizePaymentStatus(booking.paymentStatus),
+          notes:
+            `${booking.notes || ""}\n[Cancellation Reason: ${reason || "Not provided"} | Charges: ₹${charges} | Refunded: ₹${refund} (${refundPaymentMode || "UPI"})]`.trim(),
+          remainingAmount: 0,
+        },
+      });
+
+      // Cancel associated train tickets
       if (booking.bookingId) {
-        const trainTickets = await prisma.trainTicket.findMany({
+        const trainTickets = await tx.trainTicket.findMany({
           where: { bookingId: booking.bookingId },
         });
 
         if (trainTickets.length > 0) {
-          await prisma.trainTicket.updateMany({
+          await tx.trainTicket.updateMany({
             where: { bookingId: booking.bookingId },
             data: {
               ticketStatus: "CANCELLED",
               cancellationReason: `Booking Cancelled: ${reason || "No reason specified"}`,
-              refundAmount: refund / trainTickets.length,
+              ...(refundApplied
+                ? { refundAmount: Math.min(refund / trainTickets.length, trainTickets.reduce((s, t) => s + (Number(t.cost) || 0), 0) || refund) }
+                : {}),
             },
           });
 
           for (const ticket of trainTickets) {
-            await prisma.trainTicketHistory.create({
+            await tx.trainTicketHistory.create({
               data: {
                 ticketId: ticket.id,
                 action: "CANCEL",
@@ -2975,13 +3104,9 @@ exports.cancelBookingWithRefund = async (req, res, next) => {
           }
         }
       }
-    } catch (ticketErr) {
-      console.warn("[CANCEL] Train ticket cancellation warning:", ticketErr.message);
-    }
 
-    // 3. Record Refund in Accounting Ledger (if refund amount > 0)
-    if (refund > 0 && booking.bookingId) {
-      try {
+      // Record refund in accounting ledger (only after validation passed above)
+      if (refundApplied && booking.bookingId) {
         let normalizedPaymentMode = "UPI";
         if (refundPaymentMode) {
           const upper = String(refundPaymentMode).toUpperCase();
@@ -2990,25 +3115,25 @@ exports.cancelBookingWithRefund = async (req, res, next) => {
           else normalizedPaymentMode = "UPI";
         }
 
-        await prisma.accountingEntry.create({
+        await tx.accountingEntry.create({
           data: {
             tenantId: booking.tenantId || tenantId || "default",
             bookingId: booking.bookingId,
             amount: refund,
             paymentMode: normalizedPaymentMode,
-            referenceNumber: `REFUND-${booking.bookingId}`,
+            referenceNumber: `REFUND-${booking.bookingId}-${Date.now()}`,
             notes: `Refund for Cancelled Booking #${booking.bookingId} (${booking.fullName || "Customer"}). Reason: ${reason || "Not specified"}`,
             status: "APPROVED",
             salespersonId: booking.salesAdminId || req.user.id,
             actionedById: req.user.id,
           },
         });
-      } catch (accErr) {
-        console.warn("[CANCEL] Accounting entry creation warning:", accErr.message);
       }
-    }
 
-    // 4. Log booking activity
+      return updatedBooking;
+    });
+
+    // Log booking activity (best-effort, outside the money transaction)
     try {
       await logBookingActivity({
         bookingId: booking.id,
@@ -3020,23 +3145,110 @@ exports.cancelBookingWithRefund = async (req, res, next) => {
       console.warn("[CANCEL] Activity log warning:", actErr.message);
     }
 
-    // 5. Trigger email notification (cancellation)
-    try {
-      const { sendEmail } = require("../services/emailService");
-      await sendEmail(booking.id, "cancellation", {
-        reason: reason || "Not specified",
-        refundAmount: refund,
-        cancellationCharges: charges,
-      });
-    } catch (e) {
-      console.error("Failed to send cancellation email:", e.message);
+    // Send cancellation email using the real email architecture (lib/email).
+    if (booking.email) {
+      try {
+        const { sendEmail, templates } = require("../lib/email");
+        const templateData = templates.cancellation(result);
+        await sendEmail({
+          to: booking.email,
+          subject: templateData.subject,
+          html: templateData.html,
+          type: "cancellation",
+          bookingId: booking.id,
+          prisma,
+          attachments: [],
+        });
+      } catch (emailErr) {
+        // Never crash the cancellation, but do not silently swallow: log with full context.
+        console.error("[CANCEL] Failed to send cancellation email:", {
+          bookingId: booking.id,
+          reason: emailErr.message,
+        });
+      }
     }
 
     return res.json({
       success: true,
       message:
         "Booking cancelled, tickets cancelled, and refund recorded successfully.",
-      booking: updatedBooking,
+      booking: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Plain booking status update — separate responsibility from cancellation.
+ * Only mutates `status`. Never touches payments, refunds, amounts, or emails.
+ *
+ * Allowed transitions (see utils/bookingStatus.js):
+ *   pending → confirmed, pending → cancelled, confirmed → cancelled
+ */
+exports.updateBookingStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const tenantId = resolveTenantId(req);
+    const role = req.user?.role;
+
+    if (!status) {
+      return res
+        .status(400)
+        .json({ success: false, message: "status is required" });
+    }
+
+    const whereCondition = role === "superadmin" || role === "admin"
+      ? { OR: [{ id }, { bookingId: id }] }
+      : { OR: [{ id, tenantId }, { bookingId: id, tenantId }] };
+
+    const booking = await prisma.booking.findFirst({ where: whereCondition });
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found." });
+    }
+
+    const transitionError = validateBookingStatusTransition(
+      booking.status,
+      status,
+    );
+    if (transitionError) {
+      return res.status(400).json({ success: false, message: transitionError });
+    }
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id: booking.id },
+      data: { status },
+    });
+
+    try {
+      await logAction({
+        tenantId,
+        actorUserId: req.user.id,
+        action: "booking_status_update",
+        entityType: "booking",
+        entityId: booking.id,
+        beforeData: { status: booking.status },
+        afterData: { status },
+        ipAddress: req.ip || null,
+      });
+
+      await logBookingActivity({
+        bookingId: booking.id,
+        action: "STATUS_CHANGE",
+        details: `Booking status changed from "${booking.status}" to "${status}"`,
+        performedByAdminId: req.user.id,
+      });
+    } catch (logErr) {
+      console.error("Non-critical logging error in updateBookingStatus:", logErr);
+    }
+
+    return res.json({
+      success: true,
+      message: "Booking status updated",
+      data: updatedBooking,
     });
   } catch (error) {
     next(error);

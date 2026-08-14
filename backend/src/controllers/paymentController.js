@@ -1,4 +1,6 @@
 const { prisma } = require("../lib/prisma");
+const { PAYMENT_STATUS } = require("../utils/paymentStatus");
+const { resolveTenantId } = require("../utils/tenantContext");
 
 function normalizeDepartureDateIndia(dateInput) {
   if (!dateInput) return null;
@@ -127,7 +129,7 @@ exports.addClientPayment = async (req, res) => {
       status,
       remarks,
     } = req.body;
-    const tenantId = req.user?.tenantId || "default";
+    const tenantId = resolveTenantId(req);
 
     const booking = await prisma.booking.findFirst({
       where: {
@@ -172,11 +174,17 @@ exports.addClientPayment = async (req, res) => {
       advancePaid: totalVerified,
       remainingAmount: remaining,
       paymentStatus:
-        remaining === 0
-          ? "Paid"
+        remaining === 0 && totalVerified > 0
+          ? PAYMENT_STATUS.PAID
           : totalVerified > 0
-            ? "Partially Paid"
-            : "Unpaid",
+            ? PAYMENT_STATUS.PARTIAL
+            : PAYMENT_STATUS.UNPAID,
+      payment_status:
+        remaining === 0 && totalVerified > 0
+          ? "paid"
+          : totalVerified > 0
+            ? "partial"
+            : "unpaid",
     };
 
     // Auto-confirm booking if not already confirmed or cancelled upon receiving verified payment
@@ -269,11 +277,17 @@ exports.verifyClientPayment = async (req, res) => {
           advancePaid: totalVerified,
           remainingAmount: remaining,
           paymentStatus:
-            remaining === 0
-              ? "Paid"
+            remaining === 0 && totalVerified > 0
+              ? PAYMENT_STATUS.PAID
               : totalVerified > 0
-                ? "Partially Paid"
-                : "Unpaid",
+                ? PAYMENT_STATUS.PARTIAL
+                : PAYMENT_STATUS.UNPAID,
+          payment_status:
+            remaining === 0 && totalVerified > 0
+              ? "paid"
+              : totalVerified > 0
+                ? "partial"
+                : "unpaid",
         },
       });
     }
@@ -628,5 +642,133 @@ exports.getPaymentsDashboardStats = async (req, res) => {
         success: false,
         message: "Failed to compute payment dashboard stats",
       });
+  }
+};
+
+exports.getAllVendorPayablesQueue = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId || "default";
+
+    // 1. Fetch all hotel bookings
+    const hotelBookings = await prisma.opsHotelBooking.findMany({
+      where: { tenantId },
+      include: { trip: { select: { id: true, title: true, slug: true } } },
+    });
+
+    // 2. Fetch all transport fleet
+    const transportFleet = await prisma.opsTransportFleet.findMany({
+      where: { tenantId },
+      include: {
+        vendor: { select: { id: true, name: true, type: true } },
+        trip: { select: { id: true, title: true, slug: true } },
+      },
+    });
+
+    // 3. Fetch all recorded vendor payments
+    const opsPayments = await prisma.opsVendorPayment.findMany({
+      where: { tenantId },
+    });
+
+    // Aggregate by (vendorName, tripId, category)
+    const queueMap = new Map();
+
+    hotelBookings.forEach((h) => {
+      const vName = (h.hotelName || "Hotel Vendor").trim();
+      const tripTitle = h.trip?.title || "Spiti Valley Road Trip";
+      const tripCode = h.tripId || "SPT-1";
+      const key = `${vName.toLowerCase()}_HOTEL_${h.tripId}`;
+
+      const total = Number(h.totalAmount || 0);
+      const paid = Number(h.advancePaid || 0);
+      const bal = Number(h.balanceAmount ?? (total - paid));
+
+      if (queueMap.has(key)) {
+        const existing = queueMap.get(key);
+        existing.totalAmount += total;
+        existing.paidAmount += paid;
+        existing.balanceAmount += bal;
+      } else {
+        queueMap.set(key, {
+          id: h.id,
+          vendorId: { name: vName, type: "HOTELS" },
+          vendorName: vName,
+          category: "HOTELS",
+          tripName: tripTitle,
+          tripCode: tripCode,
+          tripId: h.tripId,
+          totalAmount: total,
+          paidAmount: paid,
+          balanceAmount: bal,
+          dueDate: h.checkIn ? h.checkIn.toISOString().split("T")[0] : null,
+          paymentStatus: paid >= total && total > 0 ? "paid" : paid > 0 ? "partial" : "pending",
+        });
+      }
+    });
+
+    transportFleet.forEach((t) => {
+      const vName = (t.vendor?.name || t.notes || t.driverName || "Transport Vendor").trim();
+      const tripTitle = t.trip?.title || "Spiti Valley Road Trip";
+      const tripCode = t.tripId || "SPT-1";
+      const key = `${vName.toLowerCase()}_TRANSPORT_${t.tripId}`;
+
+      const total = Number(t.totalAmount || 0);
+      const paid = Number(t.advancePaid || 0);
+      const bal = Number(t.balanceAmount ?? (total - paid));
+
+      if (queueMap.has(key)) {
+        const existing = queueMap.get(key);
+        existing.totalAmount += total;
+        existing.paidAmount += paid;
+        existing.balanceAmount += bal;
+      } else {
+        queueMap.set(key, {
+          id: t.id,
+          vendorId: { name: vName, type: "TRANSPORT" },
+          vendorName: vName,
+          category: "TRANSPORT",
+          tripName: tripTitle,
+          tripCode: tripCode,
+          tripId: t.tripId,
+          totalAmount: total,
+          paidAmount: paid,
+          balanceAmount: bal,
+          dueDate: t.departureDate ? t.departureDate.toISOString().split("T")[0] : null,
+          paymentStatus: paid >= total && total > 0 ? "paid" : paid > 0 ? "partial" : "pending",
+        });
+      }
+    });
+
+    opsPayments.forEach((p) => {
+      const vName = (p.vendorName || "Vendor").trim();
+      const cat = (p.category || "OTHER").toUpperCase();
+      const key = `${vName.toLowerCase()}_${cat}_${p.tripId}`;
+
+      const total = Number(p.agreedAmount || 0);
+      const paid = Number(p.advancePaid || 0);
+      const bal = Number(p.remainingPayable ?? (total - paid));
+
+      if (!queueMap.has(key)) {
+        queueMap.set(key, {
+          id: p.id,
+          vendorId: { name: vName, type: cat },
+          vendorName: vName,
+          category: cat,
+          tripName: "Spiti Valley Road Trip",
+          tripCode: "SPT-1",
+          tripId: p.tripId,
+          totalAmount: total,
+          paidAmount: paid,
+          balanceAmount: bal,
+          dueDate: p.paymentDate ? p.paymentDate.toISOString().split("T")[0] : null,
+          paymentStatus: paid >= total && total > 0 ? "paid" : paid > 0 ? "partial" : "pending",
+        });
+      }
+    });
+
+    const result = Array.from(queueMap.values());
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    console.error("getAllVendorPayablesQueue error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };

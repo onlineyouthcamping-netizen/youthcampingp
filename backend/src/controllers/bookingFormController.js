@@ -1,6 +1,8 @@
 const { prisma } = require("../lib/prisma");
 const { syncBookingToSheets } = require("../utils/googleSheetsSync");
 const { generateBookingId } = require("../utils/bookingIdGenerator");
+const { PAYMENT_STATUS } = require("../utils/paymentStatus");
+const { resolveTenantId } = require("../utils/tenantContext");
 
 const fs = require("fs");
 const path = require("path");
@@ -149,7 +151,8 @@ exports.createPublicBooking = async (req, res, next) => {
         .json({ success: false, message: "Name, phone and trip are required" });
     }
 
-    // 1. Determine tripId
+    // 1. Determine tripId — exact match only. Never fall back to an arbitrary
+    // trip: wrong-trip booking = wrong pricing and corrupted inventory data.
     let finalTripId = tripId;
     let trip = null;
 
@@ -161,20 +164,14 @@ exports.createPublicBooking = async (req, res, next) => {
       trip = await prisma.trip.findFirst({ where: { title: tripName } });
     }
 
-    // Fallback trip ID to prevent Foreign Key constraint failure
     if (!trip) {
-      const anyTrip = await prisma.trip.findFirst();
-      if (anyTrip) {
-        trip = anyTrip;
-        finalTripId = anyTrip.id;
-      } else {
-        throw new Error(
-          "Database configuration error: No trips found in inventory.",
-        );
-      }
-    } else {
-      finalTripId = trip.id;
+      return res.status(400).json({
+        success: false,
+        message:
+          "Selected Trip is invalid or no longer exists in the system",
+      });
     }
+    finalTripId = trip.id;
 
     // Look up associated booking link if present to retain internal notes
     let linkedInternalNote =
@@ -195,6 +192,8 @@ exports.createPublicBooking = async (req, res, next) => {
     const finalNotes = specialRequests || linkedInternalNote || "";
     const finalAdminNotes = linkedInternalNote || specialRequests || "";
 
+    const tenantId = resolveTenantId(req);
+
     let booking;
     let attempts = 0;
     const maxAttempts = 3;
@@ -203,12 +202,17 @@ exports.createPublicBooking = async (req, res, next) => {
       try {
         const currentBookingId = generateBookingId();
         // 3. Save to Prisma
+        //
+        // SECURITY: this is a public/unauthenticated endpoint. Financial state
+        // is ALWAYS set server-side: a fresh booking has no verified payment
+        // records, so paymentStatus = UNPAID and advancePaid = 0 regardless of
+        // what the client sends. Client-supplied amounts are ignored.
         booking = await prisma.booking.create({
           data: {
             bookingId: currentBookingId,
-            tenantId: "default",
+            tenantId,
             tripId: finalTripId,
-            tripName: tripName,
+            tripName: trip.title,
             name,
             fullName: name,
             phone,
@@ -216,36 +220,26 @@ exports.createPublicBooking = async (req, res, next) => {
             email,
             numberOfTravelers:
               parseInt(numberOfTravelers) || participantsList?.length || 1,
-            baseAmount: parseFloat(baseAmount) || 0,
-            gstAmount: parseFloat(gstAmount) || 0,
-            totalAmount: parseFloat(totalAmount) || 0,
-            amount: parseFloat(totalAmount) || 0,
-            advancePaid:
-              req.body.advancePaid !== undefined
-                ? parseFloat(req.body.advancePaid)
+            totalAmount:
+              trip.price !== undefined && trip.price !== null
+                ? Number(trip.price) || 0
                 : 0,
-            remainingAmount:
-              req.body.remainingAmount !== undefined
-                ? parseFloat(req.body.remainingAmount)
-                : (parseFloat(totalAmount) || 0) -
-                  (req.body.advancePaid ? parseFloat(req.body.advancePaid) : 0),
+            amount: 0,
+            baseAmount: 0,
+            gstAmount: 0,
+            advancePaid: 0,
+            remainingAmount: 0,
             departureDate: (() => {
               if (!date) return null;
               const d = new Date(date);
               return isNaN(d.getTime()) ? null : d;
             })(),
             pickupCity: pickupCity || null,
-            skipDays:
-              req.body.skipDays !== undefined ? parseInt(req.body.skipDays) : 0,
-            adjustedPrice:
-              req.body.adjustedPrice !== undefined
-                ? parseFloat(req.body.adjustedPrice)
-                : null,
-            joiningDate: req.body.joiningDate
-              ? new Date(req.body.joiningDate)
-              : null,
+            skipDays: 0,
+            adjustedPrice: null,
+            joiningDate: null,
             status: "pending",
-            paymentStatus: req.body.paymentStatus || "Pending",
+            paymentStatus: PAYMENT_STATUS.UNPAID,
             notes: finalNotes,
             adminNotes: finalAdminNotes,
             sourceBookingLinkId: sourceBookingLinkId || null,

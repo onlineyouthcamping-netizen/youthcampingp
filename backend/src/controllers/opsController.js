@@ -3238,8 +3238,12 @@ exports.saveManualAllocations = async (req, res) => {
     // Resolve trip
     const trip = await prisma.trip.findFirst({
       where: {
-        tenantId,
-        OR: [{ id: tripId }, { slug: tripId }, { shortName: tripId }],
+        OR: [
+          { id: tripId },
+          { slug: tripId },
+          { shortName: tripId },
+          { title: { contains: tripId, mode: "insensitive" } },
+        ],
       },
       select: { id: true },
     });
@@ -3463,6 +3467,75 @@ exports.saveManualAllocations = async (req, res) => {
           },
         });
         savedVehicles.push(record);
+      }
+
+      // ── AUTO-RECALCULATE HOTEL COSTS & ROOM COUNTS FROM SAVED ROOM ALLOCATIONS ──
+      const roomPaxMap = {};
+      for (const r of roomAllocations) {
+        if (!r.roomNumber || r.roomNumber === "—" || r.roomNumber === "Unassigned") continue;
+        roomPaxMap[r.roomNumber] = (roomPaxMap[r.roomNumber] || 0) + 1;
+      }
+
+      let dCount = 0;
+      let tCount = 0;
+      let qCount = 0;
+      let exCount = 0;
+
+      for (const [, count] of Object.entries(roomPaxMap)) {
+        if (count === 2 || count === 1) {
+          dCount += 1;
+        } else if (count === 3) {
+          tCount += 1;
+        } else if (count === 4) {
+          qCount += 1;
+        } else if (count > 4) {
+          qCount += 1;
+          exCount += (count - 4);
+        }
+      }
+
+      const totalPhysicalRooms = Object.keys(roomPaxMap).length;
+
+      // Find and update all existing hotel bookings for this departure
+      const existingHotelBookings = await tx.opsHotelBooking.findMany({
+        where: {
+          tripId: resolvedTripId,
+          departureDate,
+        },
+      });
+
+      for (const hb of existingHotelBookings) {
+        const dRate = hb.doubleRate ?? 1200;
+        const tRate = hb.tripleRate ?? 1200;
+        const qRate = hb.quadRate ?? 1200;
+        const exRate = hb.extraBedRate ?? 800;
+        const nights = hb.nightsCount || 1;
+
+        const isPerPerson = (hb.pricingMethod || "per-person").toLowerCase() === "per-person";
+        const dMult = isPerPerson ? 2 : 1;
+        const tMult = isPerPerson ? 3 : 1;
+        const qMult = isPerPerson ? 4 : 1;
+
+        const calculatedStayCost = ((dCount * dMult * dRate) +
+                                    (tCount * tMult * tRate) +
+                                    (qCount * qMult * qRate) +
+                                    (exCount * exRate)) * nights;
+
+        const newTotalAmount = calculatedStayCost > 0 ? calculatedStayCost : hb.totalAmount;
+        const newBalanceAmount = newTotalAmount - (hb.advancePaid || 0);
+
+        await tx.opsHotelBooking.update({
+          where: { id: hb.id },
+          data: {
+            doubleRoomsCount: dCount,
+            tripleRoomsCount: tCount,
+            quadRoomsCount: qCount,
+            extraPersonsCount: exCount,
+            numberOfRooms: totalPhysicalRooms > 0 ? totalPhysicalRooms : hb.numberOfRooms,
+            totalAmount: newTotalAmount,
+            balanceAmount: newBalanceAmount,
+          },
+        });
       }
 
       // Write audit record

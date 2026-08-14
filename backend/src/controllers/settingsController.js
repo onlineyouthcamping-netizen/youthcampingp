@@ -1049,7 +1049,7 @@ exports.deleteAccount = async (req, res, next) => {
 
     if (
       admin.role === "superadmin" &&
-      admin.email === "hemal.patel@youthcamping.online"
+      require("../config/superadmin").isProtectedSuperadminEmail(admin.email)
     ) {
       return res
         .status(403)

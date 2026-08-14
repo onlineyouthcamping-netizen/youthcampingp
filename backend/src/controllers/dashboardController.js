@@ -102,7 +102,9 @@ exports.getStats = async (req, res, next) => {
       prisma.booking.aggregate({
         where: {
           ...bookingWhere,
-          paymentStatus: { in: ["Paid", "Confirmed", "paid", "confirmed"] },
+          paymentStatus: {
+            in: ["PAID", "Paid", "paid", "Confirmed", "confirmed"],
+          },
         },
         _sum: {
           amount: true,
@@ -111,7 +113,9 @@ exports.getStats = async (req, res, next) => {
       prisma.booking.aggregate({
         where: {
           ...bookingWhere,
-          paymentStatus: { in: ["Pending", "Partial", "pending", "partial"] },
+          paymentStatus: {
+            in: ["PARTIAL", "UNPAID", "Partial", "partial", "Pending", "pending", "Pending / Manual Verification"],
+          },
         },
         _sum: {
           amount: true,
@@ -137,7 +141,7 @@ exports.getStats = async (req, res, next) => {
           SUM(amount) AS revenue
         FROM "Booking"
         WHERE "tenantId" = ${tenantId}
-          AND "paymentStatus" IN ('Paid', 'Confirmed', 'paid', 'confirmed')
+          AND "paymentStatus" IN ('PAID', 'Paid', 'paid', 'Confirmed', 'confirmed')
           AND "createdAt" >= NOW() - INTERVAL '12 months'
         GROUP BY DATE_TRUNC('month', "createdAt")
         ORDER BY DATE_TRUNC('month', "createdAt") ASC

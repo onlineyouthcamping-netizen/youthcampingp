@@ -1,6 +1,31 @@
 /**
  * Field-level Mutation Guard Middlewares
+ *
+ * Financial fields on bookings require explicit permission
+ * (bookings.financial_edit / bookings.refund). Role-based restrictions here
+ * are REAL security, not UX hiding — the backend is the enforcement point.
  */
+
+const FINANCIAL_BOOKING_FIELDS = [
+  "totalAmount",
+  "amount",
+  "advancePaid",
+  "remainingAmount",
+  "baseAmount",
+  "gstAmount",
+  "depositGst",
+  "adjustedPrice",
+  "basePrice",
+  "paymentStatus",
+  "payment_status",
+  "payment_method",
+  "upi_reference",
+  "refundAmount",
+  "cancellationCharges",
+  "discount",
+  "discountAmount",
+  "depositPerPax",
+];
 
 const guardBookingUpdateFields = (req, res, next) => {
   if (!req.user) {
@@ -13,6 +38,32 @@ const guardBookingUpdateFields = (req, res, next) => {
   }
 
   const bodyKeys = Object.keys(req.body);
+
+  // Sales can modify booking details but NOT financial fields and NOT ownership
+  if (role === "sales") {
+    const hasFinancialEdit = req.hasPermission
+      ? req.hasPermission("bookings.financial_edit")
+      : false;
+
+    if (req.body.salesAdminId !== undefined) {
+      return res.status(403).json({
+        success: false,
+        message: "Sales users cannot modify booking ownership (salesAdminId)",
+      });
+    }
+
+    if (!hasFinancialEdit) {
+      const violations = bodyKeys.filter((k) =>
+        FINANCIAL_BOOKING_FIELDS.includes(k),
+      );
+      if (violations.length > 0) {
+        return res.status(403).json({
+          success: false,
+          message: `Sales users cannot modify financial fields: ${violations.join(", ")}`,
+        });
+      }
+    }
+  }
 
   if (role === "finance") {
     // Allow updating only payment-related fields
@@ -63,16 +114,6 @@ const guardBookingUpdateFields = (req, res, next) => {
     }
   }
 
-  if (role === "sales") {
-    // Sales can modify booking details but NOT salesAdminId or price fields
-    if (req.body.salesAdminId !== undefined) {
-      return res.status(403).json({
-        success: false,
-        message: "Sales users cannot modify booking ownership (salesAdminId)",
-      });
-    }
-  }
-
   if (role === "viewer" || role === "guide") {
     return res.status(403).json({
       success: false,
@@ -85,4 +126,5 @@ const guardBookingUpdateFields = (req, res, next) => {
 
 module.exports = {
   guardBookingUpdateFields,
+  FINANCIAL_BOOKING_FIELDS,
 };

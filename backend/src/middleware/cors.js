@@ -2,34 +2,72 @@ const cors = require("cors");
 
 /**
  * Explicit CORS Configuration Middleware
+ *
+ * Allowed origins come from the ALLOWED_ORIGINS environment variable
+ * (comma-separated). When not set, defaults to the production domains plus
+ * localhost for development. The blanket "allow everything" fallback has been
+ * removed: unknown origins are rejected in production.
  */
-const allowedOrigins = [
-  "https://admin.youthcamping.online",
+
+const DEFAULT_ALLOWED_ORIGINS = [
   "https://youthcamping.online",
   "https://www.youthcamping.online",
-  "http://localhost:8080",
-  "http://localhost:5173",
-  "http://localhost:3000",
+  "https://admin.youthcamping.online",
   "https://ycadmin.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:5173",
+  "http://localhost:8080",
+  "http://localhost:8081",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:8080",
+  "http://127.0.0.1:8081",
+];
+
+const getAllowedOrigins = () => {
+  const envOrigins = (process.env.ALLOWED_ORIGINS || "").trim();
+  if (envOrigins) {
+    const list = envOrigins
+      .split(",")
+      .map((o) => o.trim())
+      .filter((o) => o.length > 0);
+    return Array.from(new Set([...list, ...DEFAULT_ALLOWED_ORIGINS]));
+  }
+  return DEFAULT_ALLOWED_ORIGINS;
+};
+
+const DEV_ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:5173",
+  "http://localhost:8080",
+  "http://localhost:8081",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:8080",
+  "http://127.0.0.1:8081",
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
 
-    // Check if origin matches allowed list or subdomains
-    if (
-      allowedOrigins.includes(origin) ||
-      origin.endsWith(".youthcamping.online") ||
-      origin.includes("localhost") ||
-      origin.includes("127.0.0.1")
-    ) {
+    const allowed = getAllowedOrigins();
+
+    if (allowed.includes(origin) || origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      return callback(null, true);
+    }
+    // Subdomains of the primary domain
+    if (origin.endsWith(".youthcamping.online")) {
       return callback(null, true);
     }
 
-    // Default allow origin dynamically to prevent CORS blocks on admin tool
-    return callback(null, true);
+    console.warn(`[CORS] Blocked origin: ${origin}`);
+    return callback(new Error("Not allowed by CORS"), false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
@@ -38,46 +76,15 @@ const corsOptions = {
     "Authorization",
     "Accept",
     "X-Requested-With",
-    "Origin",
-    "x-tenant-id",
-    "X-Tenant-Id",
-    "Cache-Control",
-    "Pragma",
   ],
-  exposedHeaders: ["Content-Range", "X-Total-Count", "Authorization"],
-  maxAge: 86400,
+  maxAge: 86400, // 24 hours preflight cache in browser
 };
 
-exports.setupCORS = (app) => {
-  // Always set CORS headers early to guarantee they are present even during error responses
-  app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
-      res.setHeader("Access-Control-Allow-Credentials", "true");
-    } else {
-      res.setHeader("Access-Control-Allow-Origin", "*");
-    }
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-    );
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, Accept, X-Requested-With, Origin, x-tenant-id, X-Tenant-Id, x-access-token, X-Access-Token, Cache-Control, Pragma, *"
-    );
-    res.setHeader(
-      "Access-Control-Exposed-Headers",
-      "Content-Range, X-Total-Count, Authorization, x-access-token"
-    );
-
-    if (req.method === "OPTIONS") {
-      return res.status(204).end();
-    }
-    next();
-  });
-
-  // Pre-flight for all routes via cors package
+const setupCORS = (app) => {
   app.use(cors(corsOptions));
   app.options("*", cors(corsOptions));
 };
+
+module.exports = setupCORS;
+module.exports.setupCORS = setupCORS;
+module.exports.getAllowedOrigins = getAllowedOrigins;

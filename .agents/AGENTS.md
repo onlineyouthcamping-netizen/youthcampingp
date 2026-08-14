@@ -43,6 +43,22 @@ Everything in YouthCamping OS revolves around **Bookings**. The Booking workspac
 #### 5. Accounting & Expenses
 * Revenue, collections, outstanding payments, vendor invoices, refunds, Daily Cash Closing, and trip-wise profit calculation.
 
+#### 6. Trip-Wise Vendor Directory (LOCKED ARCHITECTURE)
+* **Strict Trip Scoping:** Every vendor directory is 100% scoped to a specific Trip (e.g. `MKA-1`, `SPT-1`). No global vendor lists, no cross-trip inheritance, and no cross-trip leaking.
+* **Hierarchy:**
+  ```
+  TRIP
+   │
+   └── Vendor Directory
+        ├── Accommodation (Hotels, Resorts, Homestays contracted for this trip)
+        ├── Transport (Vendor, Vehicle, Capacity, Route, Price Sheet)
+        ├── Activities (Trip-specific activities)
+        ├── Guides (Trek Leaders & Local Guides)
+        └── Other Vendors (Restaurants & En-route Meals)
+  ```
+* **Independent Rates & Fleets:** Transport routes, vehicle availability, seating capacity, and negotiated tariffs are strictly independent per trip (e.g., Delhi ↔ Manali ₹6,500 in `MKA-1` vs Manali ↔ Kaza ₹9,000 in `SPT-1`).
+* **Safe Operations:** Modifying, unlinking, or deleting route contracts or rates within one trip has zero effect on any other trip.
+
 ---
 
 ### Audit & Traceability Rules

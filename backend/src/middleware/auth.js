@@ -5,6 +5,9 @@ const {
   ROLE_PERMISSIONS,
   PERMISSIONS,
 } = require("../config/permissions");
+const {
+  isProtectedSuperadminIdentity,
+} = require("../config/superadmin");
 
 const FORBIDDEN_SYNTHETIC_IDENTITIES = new Set([
   "root_admin_bypass",
@@ -389,7 +392,15 @@ const requireFounder = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ success: false, message: "Unauthenticated" });
   }
-  return next();
+  if (
+    req.user.role === "superadmin" ||
+    isProtectedSuperadminIdentity({ email: req.user.email, name: req.user.name })
+  ) {
+    return next();
+  }
+  return res
+    .status(403)
+    .json({ success: false, message: "Founder privileges required" });
 };
 
 const requireAdmin = (req, res, next) => {

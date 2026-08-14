@@ -238,6 +238,16 @@ const mockHotelVendors = [
   },
 ];
 
+// ── DEV-ONLY MOCK GUARD ─────────────────────────────────────────────
+// The mock departure stays / hotel vendors below are development scaffolds.
+// They must NEVER be served in production — real data comes from the DB.
+const isMockDataEnabled = process.env.NODE_ENV !== "production";
+const mockDisabledResponse = (res) =>
+  res.status(404).json({
+    success: false,
+    message: "Mock departure data is disabled in production",
+  });
+
 let mockDepartureStays = [
   {
     id: "STAY-1",
@@ -343,6 +353,7 @@ let mockDepartureStays = [
 
 // 9. Get all Hotel Master properties
 router.get("/admin/hotels", optionalAuthenticate, async (req, res) => {
+  if (!isMockDataEnabled) return mockDisabledResponse(res);
   const { city } = req.query;
   const filtered = city
     ? mockHotels.filter((h) => h.city.toLowerCase() === city.toLowerCase())
@@ -373,6 +384,7 @@ router.post("/admin/hotels", optionalAuthenticate, async (req, res) => {
 
 // 10. Get Hotel-Vendor contracts (supports filtering by hotelId or vendorId)
 router.get("/admin/hotel-vendors", optionalAuthenticate, async (req, res) => {
+  if (!isMockDataEnabled) return mockDisabledResponse(res);
   const { hotelId, vendorId } = req.query;
   let filtered = mockHotelVendors;
   if (hotelId) filtered = filtered.filter((hv) => hv.hotelId === hotelId);
@@ -404,6 +416,7 @@ router.get(
   "/admin/departure-stays/:departureId",
   optionalAuthenticate,
   async (req, res) => {
+    if (!isMockDataEnabled) return mockDisabledResponse(res);
     const { departureId } = req.params;
     const stays = mockDepartureStays.filter(
       (s) => s.departureId === departureId || departureId === "all",
@@ -418,6 +431,7 @@ router.post(
   optionalAuthenticate,
   async (req, res) => {
     try {
+      if (!isMockDataEnabled) return mockDisabledResponse(res);
       const newStay = {
         id: `STAY-${Date.now()}`,
         departureId: req.body.departureId || "SPT-1",
@@ -475,6 +489,7 @@ router.put(
   "/admin/departure-stays/:id",
   optionalAuthenticate,
   async (req, res) => {
+    if (!isMockDataEnabled) return mockDisabledResponse(res);
     const { id } = req.params;
     const idx = mockDepartureStays.findIndex((s) => s.id === id);
     if (idx === -1)

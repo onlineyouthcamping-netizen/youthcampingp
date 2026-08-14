@@ -165,13 +165,9 @@ exports.getMe = async (req, res, next) => {
 
 exports.getAllUsers = async (req, res, next) => {
   try {
-    const email = (req.user?.email || "").toLowerCase().trim();
-    const name = (req.user?.name || "").toLowerCase().trim();
-    if (
-      !email.includes("hemal") &&
-      !name.includes("hemal") &&
-      email !== "hemal.patel@youthcamping.online"
-    ) {
+    // Founder-only module: authorization is centralized in config/superadmin.js
+    const { isProtectedSuperadminIdentity } = require("../config/superadmin");
+    if (!isProtectedSuperadminIdentity({ email: req.user?.email, name: req.user?.name })) {
       return res
         .status(403)
         .json({
@@ -204,13 +200,8 @@ exports.getAllUsers = async (req, res, next) => {
 
 exports.updateUserRole = async (req, res, next) => {
   try {
-    const email = (req.user?.email || "").toLowerCase().trim();
-    const name = (req.user?.name || "").toLowerCase().trim();
-    if (
-      !email.includes("hemal") &&
-      !name.includes("hemal") &&
-      email !== "hemal.patel@youthcamping.online"
-    ) {
+    const { isProtectedSuperadminIdentity } = require("../config/superadmin");
+    if (!isProtectedSuperadminIdentity({ email: req.user?.email, name: req.user?.name })) {
       return res
         .status(403)
         .json({

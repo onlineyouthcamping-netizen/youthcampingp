@@ -756,7 +756,7 @@ exports.cancel = async (req, res) => {
           data: {
             advancePaid: newPaid,
             remainingAmount: Math.max(0, finalAmount - newPaid),
-            paymentStatus: newPaid <= 0 ? "Pending" : "PARTIAL",
+            paymentStatus: newPaid <= 0 ? "UNPAID" : "PARTIAL",
           },
         });
       }

@@ -62,6 +62,35 @@ router.get(
   getTrip,
 );
 
+// ── Trip-Scoped Vendor Directory Endpoints ──
+const dirCtrl = require("../controllers/directoryVendorController");
+const routePricingCtrl = require("../controllers/routePricingController");
+
+router.get(
+  "/:tripId/vendor-directory",
+  authenticate,
+  requirePermission("vendors.view"),
+  dirCtrl.getTripScopedVendorDirectory,
+);
+router.get(
+  "/:tripId/vendor-directory/destinations",
+  authenticate,
+  requirePermission("vendors.view"),
+  dirCtrl.getTripDestinations,
+);
+router.get(
+  "/:tripId/vendor-directory/transport/:vendorId/vehicles",
+  authenticate,
+  requirePermission("vendors.view"),
+  routePricingCtrl.getVendorVehicles,
+);
+router.get(
+  "/:tripId/vendor-directory/transport/:vendorId/routes",
+  authenticate,
+  requirePermission("vendors.view"),
+  routePricingCtrl.getRoutePricingGroups,
+);
+
 // Admin routes
 router.post("/", authenticate, requirePermission("trips.create"), createTrip);
 router.post(

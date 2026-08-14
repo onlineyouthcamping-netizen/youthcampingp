@@ -27,6 +27,7 @@ const {
   downloadPassengerDocument,
   deletePassengerDocument,
   cancelBookingWithRefund,
+  updateBookingStatus,
 } = require("../controllers/bookingController");
 const documentUpload = require("../middleware/documentUpload");
 const {
@@ -202,14 +203,14 @@ router.delete("/:id/documents/:docId", authenticate, deletePassengerDocument);
 router.post(
   "/:id/cancel",
   authenticate,
-  requirePermission("bookings.edit"),
+  requirePermission("bookings.refund"),
   cancelBookingWithRefund,
 );
 router.post(
   "/:id/status",
   authenticate,
   requirePermission("bookings.edit"),
-  cancelBookingWithRefund,
+  updateBookingStatus,
 );
 router.delete(
   "/:id",
