@@ -377,6 +377,20 @@ async function main() {
         status: "CONFIRMED",
         isCancelled: false,
       },
+      {
+        id: "p-prince-8",
+        name: "Riddhi",
+        fullName: "Gondaliya Riddhi Viththalbhai",
+        age: 27,
+        gender: "Female",
+        phone: "7046104371",
+        email: "gondaliyariddhi7046@gmail.com",
+        trainOption: "3 TIER AC TRAIN",
+        roomSharing: "Quad Sharing",
+        foodPreference: "Normal Food",
+        status: "CONFIRMED",
+        isCancelled: false,
+      },
     ],
   };
 
@@ -390,12 +404,12 @@ async function main() {
       email: "prince8128@gmail.com",
       age: 23,
       gender: "Male",
-      numberOfTravelers: 7,
-      totalAmount: 161000,
-      amount: 35000,
-      advancePaid: 35000,
-      remainingAmount: 126000,
-      paymentMode: "OFFICE CASH",
+      numberOfTravelers: 8,
+      totalAmount: 184000,
+      amount: 40000,
+      advancePaid: 40000,
+      remainingAmount: 144000,
+      paymentMode: "OFFICE CASH / CHAKABHAI",
       payment_method: "cash",
       paymentStatus: "Partial",
       departureDate: depDate,
@@ -404,8 +418,8 @@ async function main() {
       trainTicketStatus: "CONFIRMED",
       trainTicketRequired: true,
       passengers: princePassengers,
-      notes: "Payment Date: 15/07/2026, Txn ID: OFFICE CASH",
-      adminNotes: "08 SEP SPITI - Prince Group (7 Pax)",
+      notes: "Payment Date: 15/07/2026 (Prince: ₹35,000 OFFICE CASH) + 03/08/2026 (Riddhi: ₹5,000 CHAKABHAI)",
+      adminNotes: "08 SEP SPITI - Prince Group (8 Pax, including Riddhi)",
       createdAt: new Date("2026-07-15T12:00:00.000Z"),
     },
     create: {
@@ -420,12 +434,12 @@ async function main() {
       email: "prince8128@gmail.com",
       age: 23,
       gender: "Male",
-      numberOfTravelers: 7,
-      totalAmount: 161000,
-      amount: 35000,
-      advancePaid: 35000,
-      remainingAmount: 126000,
-      paymentMode: "OFFICE CASH",
+      numberOfTravelers: 8,
+      totalAmount: 184000,
+      amount: 40000,
+      advancePaid: 40000,
+      remainingAmount: 144000,
+      paymentMode: "OFFICE CASH / CHAKABHAI",
       payment_method: "cash",
       paymentStatus: "Partial",
       departureDate: depDate,
@@ -434,26 +448,62 @@ async function main() {
       trainTicketStatus: "CONFIRMED",
       trainTicketRequired: true,
       passengers: princePassengers,
-      notes: "Payment Date: 15/07/2026, Txn ID: OFFICE CASH",
-      adminNotes: "08 SEP SPITI - Prince Group (7 Pax)",
+      notes: "Payment Date: 15/07/2026 (Prince: ₹35,000 OFFICE CASH) + 03/08/2026 (Riddhi: ₹5,000 CHAKABHAI)",
+      adminNotes: "08 SEP SPITI - Prince Group (8 Pax, including Riddhi)",
       createdAt: new Date("2026-07-15T12:00:00.000Z"),
     },
   });
-  console.log("✅ Saved Prince Booking:", prince.bookingId);
+  console.log("✅ Created Prince Group Booking (8 Pax including Riddhi)");
 
   await prisma.trainTicket.deleteMany({ where: { bookingId: prince.bookingId } });
-  for (const p of princePassengers.persons) {
+  const princeTravelers = ["Prince", "Sneha", "Saumya", "Vanshika", "Manav", "Hemal", "Lakhan", "Riddhi"];
+  for (const tName of princeTravelers) {
     await prisma.trainTicket.create({
       data: {
         tenantId: "default",
         bookingId: prince.bookingId,
-        travelerName: p.name,
+        travelerName: tName,
         sourceStation: "Ahmedabad",
         destinationStation: "Kalka / Chandigarh",
         berthType: "3AC",
         ticketStatus: "CONFIRMED",
         approvalStatus: "APPROVED",
       },
+    });
+  }
+
+  // Clean up any standalone Riddhi booking to prevent duplicates
+  const duplicateIds = ["BK-SPITI-08SEP-RIDDHI", "BK-BJR4QDZ4LW5D"];
+  const dupBookings = await prisma.booking.findMany({
+    where: { bookingId: { in: duplicateIds } },
+    select: { id: true, bookingId: true },
+  });
+  const dupInternalIds = dupBookings.map((b) => b.id);
+  const dupBookingIds = dupBookings.map((b) => b.bookingId);
+
+  if (dupInternalIds.length > 0) {
+    await prisma.opsRoomAllocation.deleteMany({
+      where: { bookingId: { in: dupBookingIds } },
+    });
+    for (const bId of dupInternalIds) {
+      await prisma.opsVehicleAllocation.deleteMany({ where: { bookingId: bId } });
+      await prisma.passengerActivityAllocation.deleteMany({ where: { bookingId: bId } });
+      await prisma.bookingDocument.deleteMany({ where: { bookingId: bId } });
+      await prisma.bookingAttachment.deleteMany({ where: { bookingId: bId } });
+      await prisma.bookingTask.deleteMany({ where: { bookingId: bId } });
+      await prisma.bookingActivityLog.deleteMany({ where: { bookingId: bId } });
+      await prisma.trainTicketGroup.deleteMany({ where: { bookingId: bId } });
+      await prisma.trainTicketRequest.deleteMany({ where: { bookingId: bId } });
+      await prisma.bookingVerification.deleteMany({ where: { bookingId: bId } });
+      await prisma.accountingEntry.deleteMany({ where: { bookingId: bId } });
+      await prisma.opsClientPayment.deleteMany({ where: { bookingId: bId } });
+      await prisma.stationPaymentCollection.deleteMany({ where: { bookingId: bId } });
+    }
+    await prisma.trainTicket.deleteMany({
+      where: { bookingId: { in: duplicateIds } },
+    });
+    await prisma.booking.deleteMany({
+      where: { id: { in: dupInternalIds } },
     });
   }
 
@@ -516,108 +566,7 @@ async function main() {
     console.log("✅ Updated Harsh & Ruchi Booking");
   }
 
-  // 6. UPSERT RIDDHI (BK-SPITI-08SEP-RIDDHI)
-  const riddhiBookingId = "BK-SPITI-08SEP-RIDDHI";
-  const rPassengers = {
-    details: {
-      roomType: "Quad Sharing",
-      trainClass: "3 TIER AC TRAIN",
-      trainOption: "3 TIER AC TRAIN",
-      ticketStatus: "CONFIRMED",
-    },
-    persons: [
-      {
-        id: "p-riddhi-1",
-        name: "Riddhi",
-        fullName: "Gondaliya Riddhi Viththalbhai",
-        age: 27,
-        gender: "Female",
-        phone: "7046104371",
-        email: "gondaliyariddhi7046@gmail.com",
-        trainOption: "3 TIER AC TRAIN",
-        roomSharing: "Quad Sharing",
-        foodPreference: "Normal Food",
-        status: "CONFIRMED",
-        isCancelled: false,
-      },
-    ],
-  };
-  const riddhi = await prisma.booking.upsert({
-    where: { bookingId: riddhiBookingId },
-    update: {
-      tripId: trip.id,
-      tripName: trip.title,
-      name: "Riddhi",
-      fullName: "Gondaliya Riddhi Viththalbhai",
-      phone: "7046104371",
-      mobile: "7046104371",
-      email: "gondaliyariddhi7046@gmail.com",
-      age: 27,
-      gender: "Female",
-      numberOfTravelers: 1,
-      totalAmount: 23000,
-      amount: 5000,
-      advancePaid: 5000,
-      remainingAmount: 18000,
-      paymentMode: "CHAKABHAI",
-      payment_method: "upi",
-      paymentStatus: "Partial",
-      departureDate: depDate,
-      pickupCity: "Ahmedabad",
-      status: "confirmed",
-      trainTicketStatus: "CONFIRMED",
-      trainTicketRequired: true,
-      passengers: rPassengers,
-      notes: "Payment Date: 03/08/2026, Txn ID: CHAKABHAI",
-      adminNotes: "08 SEP SPITI - Riddhi (1 Pax, Quad Sharing Female)",
-      createdAt: new Date("2026-08-03T10:00:00.000Z"),
-    },
-    create: {
-      bookingId: riddhiBookingId,
-      tenantId: "default",
-      tripId: trip.id,
-      tripName: trip.title,
-      name: "Riddhi",
-      fullName: "Gondaliya Riddhi Viththalbhai",
-      phone: "7046104371",
-      mobile: "7046104371",
-      email: "gondaliyariddhi7046@gmail.com",
-      age: 27,
-      gender: "Female",
-      numberOfTravelers: 1,
-      totalAmount: 23000,
-      amount: 5000,
-      advancePaid: 5000,
-      remainingAmount: 18000,
-      paymentMode: "CHAKABHAI",
-      payment_method: "upi",
-      paymentStatus: "Partial",
-      departureDate: depDate,
-      pickupCity: "Ahmedabad",
-      status: "confirmed",
-      trainTicketStatus: "CONFIRMED",
-      trainTicketRequired: true,
-      passengers: rPassengers,
-      notes: "Payment Date: 03/08/2026, Txn ID: CHAKABHAI",
-      adminNotes: "08 SEP SPITI - Riddhi (1 Pax, Quad Sharing Female)",
-      createdAt: new Date("2026-08-03T10:00:00.000Z"),
-    },
-  });
-  console.log("✅ Saved Riddhi Booking:", riddhi.bookingId);
 
-  await prisma.trainTicket.deleteMany({ where: { bookingId: riddhi.bookingId } });
-  await prisma.trainTicket.create({
-    data: {
-      tenantId: "default",
-      bookingId: riddhi.bookingId,
-      travelerName: "Riddhi",
-      sourceStation: "Ahmedabad",
-      destinationStation: "Kalka / Chandigarh",
-      berthType: "3AC",
-      ticketStatus: "CONFIRMED",
-      approvalStatus: "APPROVED",
-    },
-  });
 
   // 7. UPDATE MEET (BK-JTUSUME2C7WL)
   const meet = await prisma.booking.findUnique({ where: { bookingId: "BK-JTUSUME2C7WL" } });
