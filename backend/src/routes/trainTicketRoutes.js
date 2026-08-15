@@ -12,6 +12,8 @@ const {
   reopenTicket,
   cancelTicket,
   rebookTicket,
+  recordRefund,
+  getFinanceSummary,
   bulkUpdateTickets,
   getApprovalsQueue,
   getAlerts,
@@ -27,6 +29,13 @@ const { authenticate, requirePermission } = require("../middleware/auth");
 
 // All routes require authentication
 router.use(authenticate);
+
+// Finance & Analytics Summary
+router.get(
+  "/finance-summary",
+  requirePermission("tickets.view"),
+  getFinanceSummary,
+);
 
 // Approvals & Alerts (specific routes before parameterized ones)
 router.get("/approvals", requirePermission("tickets.view"), getApprovalsQueue);
@@ -131,6 +140,11 @@ router.post(
   "/:ticketId/rebook",
   requirePermission("tickets.create"),
   rebookTicket,
+);
+router.post(
+  "/:ticketId/record-refund",
+  requirePermission("tickets.edit"),
+  recordRefund,
 );
 
 module.exports = router;

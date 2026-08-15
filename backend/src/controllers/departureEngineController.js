@@ -95,7 +95,40 @@ exports.getPassengerStatistics = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Missing tripId or date" });
     }
 
-    const stats = await readinessEngine.calculateReadiness(tripId, date);
+    const [readiness, paxData] = await Promise.all([
+      readinessEngine.calculateReadiness(tripId, date),
+      readinessEngine.getDeparturePassengerStats(tripId, date),
+    ]);
+
+    const allPax = paxData.allPassengers || [];
+    const malePax = allPax.filter((p) => String(p.gender || "").toLowerCase().startsWith("m"));
+    const femalePax = allPax.filter((p) => String(p.gender || "").toLowerCase().startsWith("f"));
+    const twinPax = allPax.filter((p) => {
+      const rs = String(p.roomSharing || "").toLowerCase();
+      return rs.includes("double") || rs.includes("twin");
+    });
+    const twinPairs = Math.floor(twinPax.length / 2);
+
+    const stats = {
+      summary: {
+        total: allPax.length,
+        men: malePax.length,
+        women: femalePax.length,
+        twinPairs,
+        guides: 1,
+        drivers: 1,
+      },
+      groups: {
+        male: malePax,
+        female: femalePax,
+        pairs: Array(twinPairs).fill(null),
+      },
+      readiness: {
+        status: readiness.status === "READY" ? "Ready" : "Action Required",
+        reason: readiness.status === "READY" ? "Manifest Verified" : `${readiness.missingItems?.length || 0} Action Items`,
+      },
+      warnings: readiness.missingItems || [],
+    };
 
     res.json({
       success: true,

@@ -516,7 +516,7 @@ exports.getReports = async (req, res) => {
       where.booking = { tripId };
     }
 
-    const [entries, paidBookings] = await Promise.all([
+    const [entries, paidBookings, trainTickets] = await Promise.all([
       prisma.accountingEntry.findMany({
         where,
         include: {
@@ -557,6 +557,31 @@ exports.getReports = async (req, res) => {
           salesAdmin: { select: { id: true, name: true } },
         },
       }),
+      prisma.trainTicket.findMany({
+        where: {
+          tenantId: req.user.tenantId || "default",
+          ...(startDate || endDate
+            ? {
+                createdAt: {
+                  ...(startDate ? { gte: new Date(startDate) } : {}),
+                  ...(endDate ? { lte: new Date(endDate) } : {}),
+                },
+              }
+            : {}),
+          ...(tripId ? { booking: { tripId } } : {}),
+        },
+        select: {
+          id: true,
+          ticketAmount: true,
+          ticketStatus: true,
+          paidBy: true,
+          railwayCancellationCharge: true,
+          ycCancellationCharge: true,
+          refundAmount: true,
+          refundStatus: true,
+          booking: { select: { tripId: true, tripName: true } },
+        },
+      }),
     ]);
 
     // 1. Total pending collections
@@ -576,6 +601,44 @@ exports.getReports = async (req, res) => {
     const cashTripwise = {};
     const onlineDatewise = {};
     const onlineTripwise = {};
+
+    // 5. Live Train Ticket Cost Center Groupings
+    const tripTrainCostMap = {};
+    let totalTrainCost = 0;
+    let confirmedTrainCost = 0;
+    let cancelledTrainCost = 0;
+    let railwayCancellationCharges = 0;
+    let ycCancellationCharges = 0;
+    let refundsCompleted = 0;
+    let companyPaidTrainCost = 0;
+
+    trainTickets.forEach((t) => {
+      const amt = Number(t.ticketAmount || 0);
+      const tripName = t.booking?.tripName || "Unknown Trip";
+      const rCharge = Number(t.railwayCancellationCharge || 0);
+      const yCharge = Number(t.ycCancellationCharge || 0);
+      const refAmt = Number(t.refundAmount || 0);
+      const isCompany = t.paidBy !== "CUSTOMER";
+
+      if (isCompany) {
+        companyPaidTrainCost += amt;
+        tripTrainCostMap[tripName] = (tripTrainCostMap[tripName] || 0) + amt;
+      }
+      totalTrainCost += amt;
+
+      if (t.ticketStatus === "CONFIRMED" || t.ticketStatus === "BOOKED") {
+        confirmedTrainCost += amt;
+      } else if (t.ticketStatus === "CANCELLED") {
+        cancelledTrainCost += amt;
+        railwayCancellationCharges += rCharge;
+        ycCancellationCharges += yCharge;
+        if (t.refundStatus === "COMPLETED") {
+          refundsCompleted += refAmt;
+        }
+      }
+    });
+
+    const netCompanyTrainCost = confirmedTrainCost + railwayCancellationCharges + ycCancellationCharges - refundsCompleted;
 
     // Process direct booking payments
     paidBookings.forEach((b) => {
@@ -634,7 +697,11 @@ exports.getReports = async (req, res) => {
 
     // Format reports
     const revenuePerTrip = Object.entries(tripRevenueMap).map(
-      ([tripName, amount]) => ({ tripName, amount }),
+      ([tripName, amount]) => ({
+        tripName,
+        amount,
+        trainTicketCost: tripTrainCostMap[tripName] || 0,
+      }),
     );
     const salespersonCollection = Object.entries(salesPerformanceMap).map(
       ([salespersonName, amount]) => ({ salespersonName, amount }),
@@ -668,6 +735,16 @@ exports.getReports = async (req, res) => {
         cashCollectionTripwise,
         onlineCollectionDatewise,
         onlineCollectionTripwise,
+        trainTicketSummary: {
+          totalTrainCost,
+          confirmedTrainCost,
+          cancelledTrainCost,
+          railwayCancellationCharges,
+          ycCancellationCharges,
+          refundsCompleted,
+          companyPaidTrainCost,
+          netCompanyTrainCost,
+        },
       },
     });
   } catch (err) {

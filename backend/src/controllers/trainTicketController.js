@@ -169,6 +169,8 @@ exports.createTicket = async (req, res) => {
       seatNumber,
       berthType,
       ticketAmount,
+      paidBy,
+      fareBreakdown,
       amountMode,
       internalNote,
       ticketBookingPerson,
@@ -222,6 +224,8 @@ exports.createTicket = async (req, res) => {
         approvalStatus: "DRAFT",
         isLocked: false,
         ticketAmount: new Prisma.Decimal(ticketAmount || 0),
+        paidBy: paidBy || "COMPANY",
+        fareBreakdown: fareBreakdown || null,
         amountMode: amountMode || null,
         refundAmount: new Prisma.Decimal(0),
         internalNote: internalNote || null,
@@ -385,6 +389,7 @@ exports.autoGenerateTickets = async (req, res) => {
         "DEPARTURE",
       );
       if (!existingSet.has(depKey)) {
+        const depCost = depTmpl?.estimatedTicketCost ? Number(depTmpl.estimatedTicketCost) : 0;
         const ticket = await prisma.trainTicket.create({
           data: {
             tenantId: req.user.tenantId,
@@ -402,7 +407,8 @@ exports.autoGenerateTickets = async (req, res) => {
             ticketStatus: "PENDING",
             approvalStatus: "DRAFT",
             isLocked: false,
-            ticketAmount: new Prisma.Decimal(0),
+            ticketAmount: new Prisma.Decimal(depCost),
+            paidBy: "COMPANY",
             refundAmount: new Prisma.Decimal(0),
             internalNote: depTmpl
               ? `Auto-generated departure from template: ${depTmpl.trainName || depTmpl.trainNumber || "Unknown"}. Passenger: ${passengerRef || "N/A"}`
@@ -410,7 +416,7 @@ exports.autoGenerateTickets = async (req, res) => {
           },
         });
         await logHistory(ticket.id, "CREATE", req, {
-          notes: "Auto-generated departure ticket",
+          notes: `Auto-generated departure ticket. Internal Cost: ₹${depCost}`,
         });
         createdTickets.push(ticket);
         existingSet.add(depKey);
@@ -426,6 +432,7 @@ exports.autoGenerateTickets = async (req, res) => {
         "RETURN",
       );
       if (!existingSet.has(retKey)) {
+        const retCost = retTmpl?.estimatedTicketCost ? Number(retTmpl.estimatedTicketCost) : 0;
         const ticket = await prisma.trainTicket.create({
           data: {
             tenantId: req.user.tenantId,
@@ -443,7 +450,8 @@ exports.autoGenerateTickets = async (req, res) => {
             ticketStatus: "PENDING",
             approvalStatus: "DRAFT",
             isLocked: false,
-            ticketAmount: new Prisma.Decimal(0),
+            ticketAmount: new Prisma.Decimal(retCost),
+            paidBy: "COMPANY",
             refundAmount: new Prisma.Decimal(0),
             internalNote: retTmpl
               ? `Auto-generated return from template: ${retTmpl.trainName || retTmpl.trainNumber || "Unknown"}. Passenger: ${passengerRef || "N/A"}`
@@ -451,7 +459,7 @@ exports.autoGenerateTickets = async (req, res) => {
           },
         });
         await logHistory(ticket.id, "CREATE", req, {
-          notes: "Auto-generated return ticket",
+          notes: `Auto-generated return ticket. Internal Cost: ₹${retCost}`,
         });
         createdTickets.push(ticket);
         existingSet.add(retKey);
@@ -525,10 +533,16 @@ exports.updateTicket = async (req, res) => {
       seatNumber,
       berthType,
       ticketAmount,
+      paidBy,
+      fareBreakdown,
       amountMode,
       internalNote,
       ticketBookingPerson,
       ticketStatus,
+      railwayCancellationCharge,
+      ycCancellationCharge,
+      refundStatus,
+      refundAmount,
     } = req.body;
 
     const updateData = {};
@@ -548,6 +562,15 @@ exports.updateTicket = async (req, res) => {
     if (berthType !== undefined) updateData.berthType = berthType;
     if (ticketAmount !== undefined)
       updateData.ticketAmount = new Prisma.Decimal(ticketAmount || 0);
+    if (paidBy !== undefined) updateData.paidBy = paidBy;
+    if (fareBreakdown !== undefined) updateData.fareBreakdown = fareBreakdown;
+    if (railwayCancellationCharge !== undefined)
+      updateData.railwayCancellationCharge = new Prisma.Decimal(railwayCancellationCharge || 0);
+    if (ycCancellationCharge !== undefined)
+      updateData.ycCancellationCharge = new Prisma.Decimal(ycCancellationCharge || 0);
+    if (refundStatus !== undefined) updateData.refundStatus = refundStatus;
+    if (refundAmount !== undefined)
+      updateData.refundAmount = new Prisma.Decimal(refundAmount || 0);
     if (amountMode !== undefined) updateData.amountMode = amountMode;
     if (internalNote !== undefined) updateData.internalNote = internalNote;
     if (ticketBookingPerson !== undefined)
@@ -844,15 +867,19 @@ exports.reopenTicket = async (req, res) => {
 exports.cancelTicket = async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const { reason, refundAmount } = req.body;
+    const {
+      reason,
+      railwayCancellationCharge,
+      ycCancellationCharge,
+      refundAmount,
+      notes,
+    } = req.body;
 
     if (!reason || reason.trim() === "") {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Cancel requires a cancellation reason",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Cancel requires a cancellation reason",
+      });
     }
 
     const isOwner = await checkTicketOwnership(ticketId, req.user);
@@ -869,22 +896,34 @@ exports.cancelTicket = async (req, res) => {
         .json({ success: false, message: "Ticket not found" });
     }
 
-    // Cancelled ticket is never deleted
+    const rCharge = Number(railwayCancellationCharge || 0);
+    const yCharge = Number(ycCancellationCharge || 0);
+    const origAmount = Number(ticket.ticketAmount || 0);
+    const calculatedRefund =
+      refundAmount !== undefined
+        ? Number(refundAmount)
+        : Math.max(0, origAmount - rCharge - yCharge);
+
+    // Cancelled ticket is never deleted. All fields and historical numbers are preserved.
     const updated = await prisma.trainTicket.update({
       where: { id: ticketId },
       data: {
         ticketStatus: "CANCELLED",
         cancellationReason: reason,
-        refundAmount: new Prisma.Decimal(
-          refundAmount !== undefined ? refundAmount : 0,
-        ),
+        railwayCancellationCharge: new Prisma.Decimal(rCharge),
+        ycCancellationCharge: new Prisma.Decimal(yCharge),
+        refundAmount: new Prisma.Decimal(calculatedRefund),
+        refundStatus: calculatedRefund > 0 ? "PENDING" : "NONE",
+        internalNote: notes
+          ? `${ticket.internalNote ? ticket.internalNote + " | " : ""}${notes}`
+          : ticket.internalNote,
       },
     });
 
     await logHistory(ticketId, "CANCEL", req, {
       fromStatus: ticket.ticketStatus,
       toStatus: "CANCELLED",
-      notes: reason,
+      notes: `Reason: ${reason}. Railway Charge: ₹${rCharge}, YC Charge: ₹${yCharge}, Refund Due: ₹${calculatedRefund}`,
     });
 
     return res.json({
@@ -920,33 +959,74 @@ exports.rebookTicket = async (req, res) => {
         .json({ success: false, message: "Ticket not found" });
     }
 
-    // Rebook creates a new ticket row
+    const {
+      reason,
+      newTrainName,
+      newTrainNumber,
+      newJourneyDate,
+      newSource,
+      newDestination,
+      newCoach,
+      newSeat,
+      newClass,
+      newTicketAmount,
+      railwayCancellationCharge,
+      ycCancellationCharge,
+      notes,
+    } = req.body;
+
+    const rCharge = Number(railwayCancellationCharge || 0);
+    const yCharge = Number(ycCancellationCharge || 0);
+    const oldCost = Number(oldTicket.ticketAmount || 0);
+    const oldRefund = Math.max(0, oldCost - rCharge - yCharge);
+
+    const newCost = Number(newTicketAmount !== undefined ? newTicketAmount : oldCost);
+    // Net additional cost on reticketing = newCost - oldRefund
+    const netAdjustment = newCost - oldRefund;
+
+    // 1. Mark old ticket as CANCELLED with deduction parameters if not already
+    await prisma.trainTicket.update({
+      where: { id: oldTicket.id },
+      data: {
+        ticketStatus: "CANCELLED",
+        cancellationReason: reason || "Reticketed to new schedule/train",
+        railwayCancellationCharge: new Prisma.Decimal(rCharge),
+        ycCancellationCharge: new Prisma.Decimal(yCharge),
+        refundAmount: new Prisma.Decimal(oldRefund),
+        refundStatus: oldRefund > 0 ? "PENDING" : "NONE",
+      },
+    });
+
+    // 2. Rebook creates a new ticket row linked to oldTicket
     const newTicket = await prisma.trainTicket.create({
       data: {
         tenantId: req.user.tenantId,
         bookingId: oldTicket.bookingId,
         travelerName: oldTicket.travelerName,
         passengerReference: oldTicket.passengerReference,
-        pnr: null, // Reset details for rebooking
-        trainName: oldTicket.trainName,
-        trainNumber: oldTicket.trainNumber,
-        journeyDate: oldTicket.journeyDate,
-        sourceStation: oldTicket.sourceStation,
-        destinationStation: oldTicket.destinationStation,
-        coach: null,
-        seatNumber: null,
-        berthType: null,
+        pnr: null,
+        trainName: newTrainName || oldTicket.trainName,
+        trainNumber: newTrainNumber || oldTicket.trainNumber,
+        journeyDate: newJourneyDate ? new Date(newJourneyDate) : oldTicket.journeyDate,
+        sourceStation: newSource || oldTicket.sourceStation,
+        destinationStation: newDestination || oldTicket.destinationStation,
+        coach: newCoach || null,
+        seatNumber: newSeat || null,
+        berthType: newClass || oldTicket.berthType,
         ticketStatus: "PENDING",
         approvalStatus: "DRAFT",
         isLocked: false,
-        ticketAmount: oldTicket.ticketAmount,
+        ticketAmount: new Prisma.Decimal(newCost),
+        paidBy: oldTicket.paidBy || "COMPANY",
         amountMode: oldTicket.amountMode,
         refundAmount: new Prisma.Decimal(0),
+        reticketAdjustment: new Prisma.Decimal(netAdjustment),
         supersedesTicketId: oldTicket.id,
+        internalNote: `Reticketed from Ticket ${oldTicket.id.slice(-6)}. Net Adjustment: ₹${netAdjustment}. ${notes || ""}`,
       },
     });
 
-    // Link old ticket to new ticket
+    // 3. Link old ticket to new ticket
     await prisma.trainTicket.update({
       where: { id: oldTicket.id },
       data: {
@@ -954,11 +1034,13 @@ exports.rebookTicket = async (req, res) => {
       },
     });
 
-    await logHistory(oldTicket.id, "REBOOKED", req, {
-      notes: `Superseded by ticket: ${newTicket.id}`,
+    await logHistory(oldTicket.id, "RETICKETED", req, {
+      fromStatus: oldTicket.ticketStatus,
+      toStatus: "CANCELLED",
+      notes: `Superseded by ticket: ${newTicket.id}. Railway Charge: ₹${rCharge}, YC Charge: ₹${yCharge}, Old Refund: ₹${oldRefund}`,
     });
     await logHistory(newTicket.id, "CREATE", req, {
-      notes: `Supersedes ticket: ${oldTicket.id}`,
+      notes: `Supersedes ticket: ${oldTicket.id}. New Cost: ₹${newCost}, Net Adjustment: ₹${netAdjustment}`,
     });
 
     return res.status(201).json({
@@ -966,14 +1048,188 @@ exports.rebookTicket = async (req, res) => {
       data: {
         oldTicketId: oldTicket.id,
         newTicket,
+        financials: {
+          originalCost: oldCost,
+          railwayCancellationCharge: rCharge,
+          ycCancellationCharge: yCharge,
+          refundDue: oldRefund,
+          newCost,
+          netAdjustment,
+        },
       },
-      message: "Ticket rebooked successfully",
+      message: "Ticket reticketed successfully",
     });
   } catch (err) {
     console.error("rebookTicket error:", err);
     return res
       .status(500)
       .json({ success: false, message: "Failed to rebook ticket" });
+  }
+};
+
+/**
+ * POST /api/train-tickets/:ticketId/record-refund
+ */
+exports.recordRefund = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const { refundStatus, transactionRef, amount, notes } = req.body;
+
+    const ticket = await prisma.trainTicket.findUnique({
+      where: { id: ticketId },
+      include: { booking: true },
+    });
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: "Ticket not found" });
+    }
+
+    const updated = await prisma.trainTicket.update({
+      where: { id: ticketId },
+      data: {
+        refundStatus: refundStatus || "COMPLETED",
+        refundCompletedAt: refundStatus === "COMPLETED" ? new Date() : null,
+        refundTransactionRef: transactionRef || null,
+        refundAmount: amount !== undefined ? new Prisma.Decimal(amount) : ticket.refundAmount,
+      },
+    });
+
+    await logHistory(ticketId, "REFUND_UPDATE", req, {
+      notes: `Refund status updated to ${refundStatus}. Ref: ${transactionRef || "N/A"}. Amount: ₹${Number(updated.refundAmount)}. ${notes || ""}`,
+    });
+
+    return res.json({
+      success: true,
+      data: updated,
+      message: "Ticket refund recorded successfully",
+    });
+  } catch (err) {
+    console.error("recordRefund error:", err);
+    return res.status(500).json({ success: false, message: "Failed to record ticket refund" });
+  }
+};
+
+/**
+ * GET /api/train-tickets/finance-summary
+ */
+exports.getFinanceSummary = async (req, res) => {
+  try {
+    const { tripId, departureDate, status, paidBy } = req.query;
+    const tenantId = req.user?.tenantId || "default";
+
+    const where = {
+      tenantId,
+      ...(paidBy ? { paidBy } : {}),
+      ...(status ? { ticketStatus: status } : {}),
+    };
+
+    if (tripId || departureDate) {
+      where.booking = {
+        ...(tripId ? { tripId } : {}),
+        ...(departureDate ? { departureDate: new Date(departureDate) } : {}),
+      };
+    }
+
+    const tickets = await prisma.trainTicket.findMany({
+      where,
+      include: {
+        booking: {
+          select: {
+            id: true,
+            bookingId: true,
+            tripId: true,
+            tripName: true,
+            departureDate: true,
+            fullName: true,
+            name: true,
+            totalAmount: true,
+            advancePaid: true,
+            remainingAmount: true,
+          },
+        },
+        supersedes: {
+          select: {
+            id: true,
+            pnr: true,
+            ticketAmount: true,
+            ticketStatus: true,
+          },
+        },
+        supersededBy: {
+          select: {
+            id: true,
+            pnr: true,
+            ticketAmount: true,
+            ticketStatus: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Financial Aggregations
+    let totalCost = 0;
+    let confirmedCost = 0;
+    let pendingCost = 0;
+    let cancelledCost = 0;
+    let railwayCancellationCharges = 0;
+    let ycCancellationCharges = 0;
+    let refundsPending = 0;
+    let refundsCompleted = 0;
+    let companyPaidCost = 0;
+    let customerPaidCost = 0;
+
+    tickets.forEach((t) => {
+      const amt = Number(t.ticketAmount || 0);
+      const rCharge = Number(t.railwayCancellationCharge || 0);
+      const yCharge = Number(t.ycCancellationCharge || 0);
+      const refAmt = Number(t.refundAmount || 0);
+      const isCompany = t.paidBy !== "CUSTOMER";
+
+      totalCost += amt;
+      if (isCompany) companyPaidCost += amt;
+      else customerPaidCost += amt;
+
+      if (t.ticketStatus === "CONFIRMED" || t.ticketStatus === "BOOKED") {
+        confirmedCost += amt;
+      } else if (t.ticketStatus === "CANCELLED") {
+        cancelledCost += amt;
+        railwayCancellationCharges += rCharge;
+        ycCancellationCharges += yCharge;
+        if (t.refundStatus === "COMPLETED") {
+          refundsCompleted += refAmt;
+        } else if (t.refundStatus === "PENDING" || t.refundStatus === "INITIATED") {
+          refundsPending += refAmt;
+        }
+      } else {
+        pendingCost += amt;
+      }
+    });
+
+    const netCompanyCost = confirmedCost + railwayCancellationCharges + ycCancellationCharges - refundsCompleted;
+
+    return res.json({
+      success: true,
+      data: {
+        summary: {
+          totalTickets: tickets.length,
+          totalCost,
+          confirmedCost,
+          pendingCost,
+          cancelledCost,
+          railwayCancellationCharges,
+          ycCancellationCharges,
+          refundsPending,
+          refundsCompleted,
+          companyPaidCost,
+          customerPaidCost,
+          netCompanyCost,
+        },
+        tickets,
+      },
+    });
+  } catch (err) {
+    console.error("getFinanceSummary error:", err);
+    return res.status(500).json({ success: false, message: "Failed to fetch ticketing finance summary" });
   }
 };
 
@@ -1656,6 +1912,12 @@ exports.createTemplate = async (req, res) => {
           : null,
         boardingPoint: sanitizedData.boardingPoint || null,
         droppingPoint: sanitizedData.droppingPoint || null,
+        estimatedTicketCost:
+          sanitizedData.estimatedTicketCost !== undefined &&
+          sanitizedData.estimatedTicketCost !== null &&
+          sanitizedData.estimatedTicketCost !== ""
+            ? new Prisma.Decimal(sanitizedData.estimatedTicketCost)
+            : null,
         flightAirline: sanitizedData.flightAirline || null,
         flightNumber: sanitizedData.flightNumber || null,
         flightOrigin: sanitizedData.flightOrigin || null,
@@ -1726,6 +1988,7 @@ exports.updateTemplate = async (req, res) => {
       journeyDate,
       boardingPoint,
       droppingPoint,
+      estimatedTicketCost,
       flightAirline,
       flightNumber,
       flightOrigin,
@@ -1831,6 +2094,12 @@ exports.updateTemplate = async (req, res) => {
           boardingPoint !== undefined ? boardingPoint : template.boardingPoint,
         droppingPoint:
           droppingPoint !== undefined ? droppingPoint : template.droppingPoint,
+        estimatedTicketCost:
+          estimatedTicketCost !== undefined
+            ? estimatedTicketCost !== null && estimatedTicketCost !== ""
+              ? new Prisma.Decimal(estimatedTicketCost)
+              : null
+            : template.estimatedTicketCost,
         flightAirline: flightAirline !== undefined ? flightAirline : null,
         flightNumber: flightNumber !== undefined ? flightNumber : null,
         flightOrigin: flightOrigin !== undefined ? flightOrigin : null,
