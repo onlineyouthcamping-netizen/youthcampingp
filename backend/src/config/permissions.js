@@ -163,6 +163,7 @@ const ROLE_PERMISSIONS = {
     "trips.edit",
     "trips.publish",
     "trips.archive",
+    "trips.delete",
     "departures.view",
     "departures.create",
     "departures.edit",
@@ -208,6 +209,9 @@ const ROLE_PERMISSIONS = {
     "tickets.bulk",
     "tickets.templates.manage",
     "tickets.alerts.view",
+    "accounting.view",
+    "accounting.submit",
+    "accounting.approve",
     "ops.view",
     "ops.manage",
     "ops.allocate",
@@ -300,6 +304,8 @@ const ROLE_PERMISSIONS = {
   operations: [
     "dashboard.view",
     "trips.view",
+    "trips.create",
+    "trips.edit",
     "departures.view",
     "departures.create",
     "departures.edit",
@@ -309,6 +315,7 @@ const ROLE_PERMISSIONS = {
     "operations.view",
     "operations.edit",
     "guides.view",
+    "guides.manage",
     "tickets.view",
     "tickets.create",
     "tickets.edit",
@@ -329,6 +336,16 @@ const ROLE_PERMISSIONS = {
     "vendors.create",
     "vendors.edit",
     "vendors.import",
+    "vendors.activate",
+    "vendors.delete",
+    "vendors.deactivate",
+    "vendors.payments.view",
+    "vendors.payments.manage",
+    "vendors.mapping.manage",
+    "vendors.costing.calculate",
+    "vendors.rates.manage",
+    "vendors.rate.manage",
+    "vendors.trip.assign",
     "package.vendor.select",
     "ops.vendor.allocate",
     "ops.vendor.confirm",
@@ -452,6 +469,30 @@ function hasPermission(roleOrUser, permission) {
   if (combined.has(permission)) return true;
 
   // Precise legacy synonym aliases
+  if (
+    (permission === "view_trip" || permission === "trips.view") &&
+    (combined.has("trips.view") || combined.has("view_trip") || combined.has("operations.view") || combined.has("ops.view"))
+  ) {
+    return true;
+  }
+  if (
+    (permission === "edit_trip" || permission === "trips.edit") &&
+    (combined.has("trips.edit") || combined.has("edit_trip") || combined.has("operations.edit") || combined.has("ops.manage"))
+  ) {
+    return true;
+  }
+  if (
+    (permission === "create_trip" || permission === "trips.create") &&
+    (combined.has("trips.create") || combined.has("create_trip") || combined.has("operations.edit") || combined.has("ops.manage"))
+  ) {
+    return true;
+  }
+  if (
+    (permission === "delete_trip" || permission === "trips.delete") &&
+    (combined.has("trips.delete") || combined.has("delete_trip"))
+  ) {
+    return true;
+  }
   if (permission === "departures.view" && (combined.has("operations.view") || combined.has("ops.view"))) {
     return true;
   }
@@ -468,14 +509,40 @@ function hasPermission(roleOrUser, permission) {
     return true;
   }
   if (
-    permission === "guides.view" &&
-    (combined.has("ops.view") || combined.has("operations.view"))
+    (permission === "guides.view" || permission === "guides.manage") &&
+    (combined.has("ops.view") || combined.has("operations.view") || combined.has("ops.manage") || combined.has("operations.edit") || combined.has("guides.view") || combined.has("guides.manage"))
   ) {
     return true;
   }
   if (
     (permission === "vendors.view" || permission === "vendors.payments.view") &&
-    (combined.has("ops.view") || combined.has("operations.view"))
+    (combined.has("ops.view") || combined.has("operations.view") || combined.has("vendors.view"))
+  ) {
+    return true;
+  }
+  if (
+    (permission === "vendors.rates.manage" ||
+      permission === "vendors.rate.manage" ||
+      permission === "vendors.edit" ||
+      permission === "vendors.create" ||
+      permission === "vendors.mapping.manage" ||
+      permission === "vendors.trip.assign" ||
+      permission === "vendors.costing.calculate" ||
+      permission === "vendors.payments.manage" ||
+      permission === "vendors.activate" ||
+      permission === "vendors.deactivate" ||
+      permission === "vendors.delete") &&
+    (combined.has("vendors.rates.manage") ||
+      combined.has("vendors.rate.manage") ||
+      combined.has("vendors.edit") ||
+      combined.has("ops.manage") ||
+      combined.has("operations.edit"))
+  ) {
+    return true;
+  }
+  if (
+    (permission === "tickets.manage" || permission === "tickets.edit") &&
+    (combined.has("tickets.manage") || combined.has("tickets.edit") || combined.has("tickets.approve") || combined.has("ops.manage") || combined.has("operations.edit"))
   ) {
     return true;
   }
