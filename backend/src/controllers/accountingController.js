@@ -748,11 +748,39 @@ exports.getPersonalCollections = async (req, res) => {
 
     const accountIds = accounts.map((a) => a.id);
 
+    const { startDate, endDate } = req.query;
+    let dateFilter = null;
+    if (startDate || endDate) {
+      try {
+        const dObj = {};
+        if (startDate) {
+          const s = new Date(startDate);
+          if (!isNaN(s.getTime())) {
+            s.setHours(0, 0, 0, 0);
+            dObj.gte = s;
+          }
+        }
+        if (endDate) {
+          const e = new Date(endDate);
+          if (!isNaN(e.getTime())) {
+            e.setHours(23, 59, 59, 999);
+            dObj.lte = e;
+          }
+        }
+        if (Object.keys(dObj).length > 0) {
+          dateFilter = dObj;
+        }
+      } catch (dErr) {
+        console.warn("Invalid date range in getPersonalCollections:", dErr);
+      }
+    }
+
     const [clientPayments, stationPayments, submissions] = await Promise.all([
       prisma.opsClientPayment.findMany({
         where: {
           tenantId,
-          status: "Verified",
+          status: { not: "Rejected" },
+          ...(dateFilter ? { createdAt: dateFilter } : {}),
         },
         select: {
           id: true,
@@ -765,7 +793,8 @@ exports.getPersonalCollections = async (req, res) => {
       prisma.stationPaymentCollection.findMany({
         where: {
           tenantId,
-          status: { not: "REVERSED" },
+          isReversed: false,
+          ...(dateFilter ? { collectedAt: dateFilter } : {}),
         },
         select: {
           id: true,
@@ -779,6 +808,7 @@ exports.getPersonalCollections = async (req, res) => {
         where: {
           tenantId,
           accountId: { in: accountIds },
+          ...(dateFilter ? { createdAt: dateFilter } : {}),
         },
         select: {
           id: true,
@@ -951,7 +981,7 @@ exports.getPersonCollectionDetails = async (req, res) => {
             where: {
               tenantId,
               receivingAccountId: account.id,
-              status: { not: "REVERSED" },
+              isReversed: false,
             },
             include: {
               collectedBy: { select: { id: true, name: true, email: true } },

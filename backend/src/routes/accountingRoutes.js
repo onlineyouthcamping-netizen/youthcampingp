@@ -38,9 +38,14 @@ router.post(
 // Analytics & Reports
 router.get("/reports", requirePermission("accounting.view"), getReports);
 
-// Personal Collections / Employee Collections
+// Personal Collections / Collection Accounts
 router.get(
   "/personal-collections",
+  requirePermission("accounting.view"),
+  getPersonalCollections,
+);
+router.get(
+  "/collection-accounts",
   requirePermission("accounting.view"),
   getPersonalCollections,
 );
@@ -49,8 +54,18 @@ router.get(
   requirePermission("accounting.view"),
   getPersonCollectionDetails,
 );
+router.get(
+  "/collection-accounts/:adminId",
+  requirePermission("accounting.view"),
+  getPersonCollectionDetails,
+);
 router.post(
   "/personal-collections/submit",
+  requirePermission("accounting.submit"),
+  recordEmployeeSubmission,
+);
+router.post(
+  "/collection-accounts/submit",
   requirePermission("accounting.submit"),
   recordEmployeeSubmission,
 );

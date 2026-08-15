@@ -100,7 +100,7 @@ exports.getAccounts = async (req, res) => {
         where: {
           tenantId,
           collectionAccountId: { in: accountIds },
-          status: "Verified",
+          status: { not: "Rejected" },
         },
         select: { collectionAccountId: true, amount: true, createdAt: true },
       }),
@@ -108,7 +108,7 @@ exports.getAccounts = async (req, res) => {
         where: {
           tenantId,
           receivingAccountId: { in: accountIds },
-          status: { not: "REVERSED" },
+          isReversed: false,
         },
         select: { receivingAccountId: true, amount: true, createdAt: true },
       }),
@@ -415,10 +415,10 @@ exports.getAccountLedger = async (req, res) => {
 
     const totalCollected =
       clientPayments
-        .filter((p) => p.status === "Verified")
+        .filter((p) => p.status !== "Rejected")
         .reduce((s, p) => s + (Number(p.amount) || 0), 0) +
       stationPayments
-        .filter((p) => p.status !== "REVERSED")
+        .filter((p) => !p.isReversed)
         .reduce((s, p) => s + (Number(p.amount) || 0), 0);
 
     const totalSubmitted = submissions.reduce(
