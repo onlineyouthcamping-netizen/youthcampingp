@@ -21,10 +21,14 @@ exports.calculatePassengerStatistics = async (tripId, departureDateStr) => {
     }
   });
 
-  const activeBookings = bookings.filter(b => {
+  const targetDateKey = String(departureDateStr || "").substring(0, 10);
+  const activeBookings = bookings.filter((b) => {
     if (!b.departureDate) return false;
-    const dateStr = b.departureDate.toISOString().substring(0, 10);
-    return dateStr === departureDateStr;
+    const dateStr =
+      b.departureDate instanceof Date
+        ? b.departureDate.toISOString().substring(0, 10)
+        : String(b.departureDate).substring(0, 10);
+    return dateStr === targetDateKey;
   });
 
   const payload = {

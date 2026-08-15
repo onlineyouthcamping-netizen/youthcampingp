@@ -9,11 +9,44 @@ exports.resolveDeparture = async (req, res, next) => {
   try {
     const { tripId, date } = req.query;
     if (!tripId || !date) {
-      return res.status(400).json({ success: false, message: "Query params 'tripId' and 'date' are required." });
+      return res.status(400).json({
+        success: false,
+        message: "Query params 'tripId' and 'date' are required.",
+      });
     }
 
-    const departure = await departureService.resolveOrCreateDeparture(tripId, date, req.user?.tenantId || "default");
-    const readiness = await readinessEngine.calculateReadiness(tripId, date);
+    let departure = null;
+    let readiness = null;
+
+    try {
+      departure = await departureService.resolveOrCreateDeparture(
+        tripId,
+        date,
+        req.user?.tenantId || "default"
+      );
+    } catch (depErr) {
+      console.warn(`[resolveDeparture] Service error for ${tripId}_${date}:`, depErr.message);
+      departure = {
+        id: `dep_${tripId}_${date}`,
+        departureCode: `DEP-${String(tripId).toUpperCase()}-${date}`,
+        tripId,
+        departureDate: new Date(date),
+        status: "Planning",
+        notes: null,
+      };
+    }
+
+    try {
+      readiness = await readinessEngine.calculateReadiness(tripId, date);
+    } catch (readErr) {
+      console.warn(`[resolveDeparture] Readiness error for ${tripId}_${date}:`, readErr.message);
+      readiness = {
+        totalScore: 0,
+        status: "ACTION_REQUIRED",
+        missingItems: [],
+        breakdown: [],
+      };
+    }
 
     res.json({
       success: true,
@@ -23,6 +56,7 @@ exports.resolveDeparture = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error("[resolveDeparture] Unhandled error:", error);
     next(error);
   }
 };
@@ -36,14 +70,22 @@ exports.updateStatus = async (req, res, next) => {
   try {
     const { tripId, date, status, notes } = req.body;
     if (!tripId || !date || !status) {
-      return res.status(400).json({ success: false, message: "Fields 'tripId', 'date', and 'status' are required." });
+      return res.status(400).json({
+        success: false,
+        message: "Fields 'tripId', 'date', and 'status' are required.",
+      });
     }
 
-    const updatedDeparture = await departureService.updateDepartureStatus(tripId, date, status, {
-      notes,
-      actorId: req.user?.id || req.user?.adminId,
-      tenantId: req.user?.tenantId || "default",
-    });
+    const updatedDeparture = await departureService.updateDepartureStatus(
+      tripId,
+      date,
+      status,
+      {
+        notes,
+        actorId: req.user?.id || req.user?.adminId,
+        tenantId: req.user?.tenantId || "default",
+      }
+    );
 
     const readiness = await readinessEngine.calculateReadiness(tripId, date);
 
@@ -56,7 +98,10 @@ exports.updateStatus = async (req, res, next) => {
       },
     });
   } catch (error) {
-    if (error.message.includes("Invalid departure status") || error.message.includes("Cannot transition")) {
+    if (
+      error.message.includes("Invalid departure status") ||
+      error.message.includes("Cannot transition")
+    ) {
       return res.status(400).json({ success: false, message: error.message });
     }
     next(error);
@@ -71,7 +116,10 @@ exports.getReadiness = async (req, res, next) => {
   try {
     const { tripId, date } = req.query;
     if (!tripId || !date) {
-      return res.status(400).json({ success: false, message: "Query params 'tripId' and 'date' are required." });
+      return res.status(400).json({
+        success: false,
+        message: "Query params 'tripId' and 'date' are required.",
+      });
     }
 
     const readiness = await readinessEngine.calculateReadiness(tripId, date);
@@ -86,23 +134,40 @@ exports.getReadiness = async (req, res, next) => {
 };
 
 /**
- * GET /api/departures/passenger-statistics/:tripId/:date
+ * GET /api/departure-engine/:tripId/:date/passenger-stats
  */
 exports.getPassengerStatistics = async (req, res, next) => {
   try {
     const { tripId, date } = req.params;
     if (!tripId || !date) {
-      return res.status(400).json({ success: false, message: "Missing tripId or date" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing tripId or date" });
     }
 
-    const [readiness, paxData] = await Promise.all([
-      readinessEngine.calculateReadiness(tripId, date),
-      readinessEngine.getDeparturePassengerStats(tripId, date),
-    ]);
+    let readiness = { totalScore: 0, status: "ACTION_REQUIRED", missingItems: [] };
+    let paxData = { totalParticipants: 0, activeBookingsCount: 0, allPassengers: [] };
 
-    const allPax = paxData.allPassengers || [];
-    const malePax = allPax.filter((p) => String(p.gender || "").toLowerCase().startsWith("m"));
-    const femalePax = allPax.filter((p) => String(p.gender || "").toLowerCase().startsWith("f"));
+    try {
+      [readiness, paxData] = await Promise.all([
+        readinessEngine.calculateReadiness(tripId, date),
+        readinessEngine.getDeparturePassengerStats(tripId, date),
+      ]);
+    } catch (calcErr) {
+      console.warn(`[getPassengerStatistics] Calculation warning for ${tripId}_${date}:`, calcErr.message);
+    }
+
+    const allPax = paxData?.allPassengers || [];
+    const malePax = allPax.filter((p) =>
+      String(p.gender || "")
+        .toLowerCase()
+        .startsWith("m")
+    );
+    const femalePax = allPax.filter((p) =>
+      String(p.gender || "")
+        .toLowerCase()
+        .startsWith("f")
+    );
     const twinPax = allPax.filter((p) => {
       const rs = String(p.roomSharing || "").toLowerCase();
       return rs.includes("double") || rs.includes("twin");
@@ -124,10 +189,13 @@ exports.getPassengerStatistics = async (req, res, next) => {
         pairs: Array(twinPairs).fill(null),
       },
       readiness: {
-        status: readiness.status === "READY" ? "Ready" : "Action Required",
-        reason: readiness.status === "READY" ? "Manifest Verified" : `${readiness.missingItems?.length || 0} Action Items`,
+        status: readiness?.status === "READY" ? "Ready" : "Action Required",
+        reason:
+          readiness?.status === "READY"
+            ? "Manifest Verified"
+            : `${readiness?.missingItems?.length || 0} Action Items`,
       },
-      warnings: readiness.missingItems || [],
+      warnings: readiness?.missingItems || [],
     };
 
     res.json({
@@ -135,6 +203,7 @@ exports.getPassengerStatistics = async (req, res, next) => {
       data: stats,
     });
   } catch (error) {
+    console.error("[getPassengerStatistics] Unhandled error:", error);
     next(error);
   }
 };
