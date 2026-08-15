@@ -981,25 +981,19 @@ exports.getTransportFleet = async (req, res) => {
     const fleet = await prisma.opsTransportFleet.findMany({
       where: ctx.where,
       include: {
-        vendor: {
-          include: {
-            transportRates: true,
-          },
-        },
+        vendor: true,
       },
     });
 
     if (includeRates) {
-      // Find any directory vendor IDs if OpsVendor was not resolved
-      const unlinkedVendorIds = fleet
-        .filter((veh) => !veh.vendor && veh.vendorId)
-        .map((veh) => veh.vendorId);
+      // Collect vendor IDs to lookup directory transport rates
+      const vendorIds = Array.from(new Set(fleet.map((veh) => veh.vendorId).filter(Boolean)));
 
       const dirRatesMap = {};
-      if (unlinkedVendorIds.length > 0) {
+      if (vendorIds.length > 0) {
         try {
           const dirRates = await prisma.directoryVendorTransportRate.findMany({
-            where: { vendorId: { in: unlinkedVendorIds } },
+            where: { vendorId: { in: vendorIds } },
           });
           dirRates.forEach((r) => {
             if (!dirRatesMap[r.vendorId]) dirRatesMap[r.vendorId] = [];
@@ -1012,10 +1006,7 @@ exports.getTransportFleet = async (req, res) => {
 
       // Resolve applicable tariff for each vehicle based on route and vehicle type
       const resolvedFleet = fleet.map((veh) => {
-        const rates =
-          veh.vendor?.transportRates && veh.vendor.transportRates.length > 0
-            ? veh.vendor.transportRates
-            : dirRatesMap[veh.vendorId] || [];
+        const rates = dirRatesMap[veh.vendorId] || [];
         const applicable = rates.find(
           (r) =>
             (!r.route || r.route === veh.route || r.routeName === veh.route) &&
