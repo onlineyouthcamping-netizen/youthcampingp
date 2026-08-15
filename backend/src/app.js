@@ -137,6 +137,7 @@ app.use(
   require("./routes/trainTicketTemplateRoutes"),
 );
 app.use("/api/accounting", require("./routes/accountingRoutes"));
+app.use("/api/finance", require("./routes/financeRoutes"));
 app.use("/api/ops", require("./routes/opsRoutes"));
 app.use("/api/ops/payments", require("./routes/paymentRoutes"));
 app.use("/api/ops/tasks-docs-comm", require("./routes/opsTasksDocsCommRoutes"));

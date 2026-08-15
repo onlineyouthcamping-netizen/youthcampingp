@@ -324,6 +324,14 @@ exports.approveEntry = async (req, res) => {
         });
     }
 
+    // Separation of duties: Creator cannot approve their own entry
+    if (entry.salespersonId === req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Separation of Duties violation: A salesperson or creator cannot approve their own payment entry. Another Finance Controller or Admin must verify this transaction.",
+      });
+    }
+
     // 1. Update entry status
     const updated = await prisma.accountingEntry.update({
       where: { id },

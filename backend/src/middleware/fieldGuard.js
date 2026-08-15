@@ -65,7 +65,7 @@ const guardBookingUpdateFields = (req, res, next) => {
     }
   }
 
-  if (role === "finance") {
+  if (role === "finance" || role === "finance_controller") {
     // Allow updating only payment-related fields
     const FINANCE_ALLOWED = [
       "paymentStatus",
@@ -86,7 +86,7 @@ const guardBookingUpdateFields = (req, res, next) => {
     if (violations.length > 0) {
       return res.status(403).json({
         success: false,
-        message: `Finance is not allowed to modify: ${violations.join(", ")}`,
+        message: `Finance Controller is not allowed to modify operational data: ${violations.join(", ")}`,
       });
     }
   }

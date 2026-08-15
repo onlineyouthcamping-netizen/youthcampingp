@@ -112,6 +112,19 @@ model Admin {
   submissionsRecorded        EmployeeCollectionSubmission[] @relation("SubmissionRecordedBy")
   accountSubmissionsRecorded CollectionAccountSubmission[] @relation("AccountSubmissionRecordedBy")
 
+  // Finance Module Relations
+  createdRefunds          RefundTransaction[] @relation("RefundCreatedByAdmin")
+  approvedRefunds         RefundTransaction[] @relation("RefundApprovedByAdmin")
+  appliedCreditNotes      CreditNoteUsage[]   @relation("CreditNoteAppliedByAdmin")
+  createdCoupons          Coupon[]            @relation("CouponCreatedByAdmin")
+  createdFinanceTickets   Ticket[]            @relation("TicketCreatedByAdmin")
+  verifiedFinanceTickets  Ticket[]            @relation("TicketVerifiedByAdmin")
+  assignedFinanceServices ServiceRegistry[]   @relation("ServiceAssignedToAdmin")
+  verifiedFinanceServices ServiceRegistry[]   @relation("ServiceVerifiedByAdmin")
+  taskAllotmentsAssigned  TaskAllotment[]     @relation("TaskAssignedToAdmin")
+  taskAllotmentsCreated   TaskAllotment[]     @relation("TaskCreatedByAdmin")
+  taskCommentsAuthored    TaskComment[]       @relation("TaskCommentAuthor")
+
   @@index([tenantId])
 }
 
@@ -456,6 +469,15 @@ model Booking {
   attachments              BookingAttachment[]
   passengerActivityAllocations PassengerActivityAllocation[]
 
+  // Finance Module Relations
+  refundTransactions    RefundTransaction[]
+  creditNoteUsages      CreditNoteUsage[]
+  couponRedemptions     CouponRedemption[]
+  financeTickets        Ticket[]
+  registeredServices    ServiceRegistry[]
+  taskAllotments        TaskAllotment[]
+  tripAccounting        TripAccounting?
+
   @@index([tenantId])
   @@index([status])
   @@index([paymentStatus])
@@ -748,6 +770,8 @@ enum AdminRole {
   sales
   operations
   finance
+  finance_controller
+  FINANCE_CONTROLLER
   guide
   viewer
   BOOKING_VERIFIER
@@ -770,20 +794,27 @@ model TripAssignment {
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  tenantId    String?  @default("default")
-  actorUserId String?
-  action      String
-  entityType  String?
-  entityId    String?
-  beforeData  Json?
-  afterData   Json?
-  ipAddress   String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String?  @default("default")
+  actorUserId   String?
+  bookingId     String?
+  action        String
+  entityType    String?
+  entityId      String?
+  changeSummary String?  @db.Text
+  beforeData    Json?
+  afterData     Json?
+  oldValue      Json?
+  newValue      Json?
+  ipAddress     String?
+  userAgent     String?  @db.Text
+  changedBy     String?
+  createdAt     DateTime @default(now())
 
   @@index([tenantId, createdAt])
   @@index([actorUserId, createdAt])
   @@index([entityType, entityId])
+  @@index([bookingId])
 }
 
 // ==========================================
@@ -948,6 +979,11 @@ model TrainTicket {
   groupId              String?
   templateId           String?
   ticketFileUrl        String?
+  paidBy                    String?
+  railwayCancellationCharge Decimal?                  @default(0.00) @db.Decimal(10, 2)
+  refundStatus              String?
+  reticketAdjustment        Decimal?                  @default(0.00) @db.Decimal(10, 2)
+  ycCancellationCharge      Decimal?                  @default(0.00) @db.Decimal(10, 2)
 
   // Relations
   booking      Booking               @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
@@ -998,9 +1034,10 @@ model TrainTemplate {
   tenantId           String    @default("default")
   tripId             String?
   tripTitle          String?
-  departureDate      DateTime?
+  departureDate       DateTime?
+  estimatedTicketCost Decimal?  @default(0.00) @db.Decimal(10, 2)
   
-  scope              String    @default("TRIP") // "TRIP" | "DEPARTURE"
+  scope               String    @default("TRIP") // "TRIP" | "DEPARTURE"
   transportMode      String    @default("TRAIN") // "TRAIN" | "FLIGHT" | "BUS"
   
   // Train/Bus Fields
@@ -4979,5 +5016,268 @@ model Departure {
   @@unique([tripId, departureDate])
   @@index([tenantId, tripId, departureDate])
   @@map("departures")
+}
+
+// ==========================================
+// FINANCE MODULE BACKEND MODELS
+// ==========================================
+
+model RefundTransaction {
+  id                      String            @id @default(cuid())
+  tenantId                String            @default("default")
+  bookingId               String
+  originalAmountPaid      Float             @default(0)
+  refundReason            String            @default("CUSTOMER_CANCELLATION") // CUSTOMER_CANCELLATION, TRIP_RESCHEDULE, OVERPAYMENT, OPERATIONAL_ISSUE, DISPUTE, OTHER
+  refundReasonText        String?           @db.Text
+  refundMethod            String            @default("CASH_REFUND") // CASH_REFUND, CREDIT_NOTE, HYBRID
+  refundAmount            Float             @default(0) // Cash / Bank transfer / UPI portion
+  refundDate              DateTime?
+  refundReference         String?           // Bank UTR / Cash reference
+  creditNoteAmount        Float             @default(0) // Credit note portion
+  creditNoteValidityStart DateTime?
+  creditNoteValidityEnd   DateTime?
+  creditNoteStatus        String            @default("ACTIVE") // ACTIVE, PARTIALLY_USED, EXHAUSTED, EXPIRED, CANCELLED
+  refundPolicyApplied     String?
+  status                  String            @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, PROCESSING, COMPLETED, REJECTED, FAILED, CANCELLED
+  gatewayMetadata         Json?             // Metadata for payment mode, bank info, UTR
+  createdById             String
+  approvedById            String?
+  approvedDate            DateTime?
+  rejectionReason         String?           @db.Text
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  booking      Booking           @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  createdBy    Admin             @relation("RefundCreatedByAdmin", fields: [createdById], references: [id])
+  approvedBy   Admin?            @relation("RefundApprovedByAdmin", fields: [approvedById], references: [id], onDelete: SetNull)
+  creditUsages CreditNoteUsage[]
+
+  @@index([tenantId])
+  @@index([bookingId])
+  @@index([status])
+  @@index([createdById])
+  @@index([approvedById])
+}
+
+model CreditNoteUsage {
+  id                  String   @id @default(cuid())
+  tenantId            String   @default("default")
+  refundTransactionId String
+  targetBookingId     String
+  amountUsed          Float
+  balanceBefore       Float
+  balanceAfter        Float
+  appliedById         String
+  notes               String?  @db.Text
+  createdAt           DateTime @default(now())
+
+  refundTransaction RefundTransaction @relation(fields: [refundTransactionId], references: [id], onDelete: Cascade)
+  targetBooking     Booking           @relation(fields: [targetBookingId], references: [bookingId], onDelete: Cascade)
+  appliedBy         Admin             @relation("CreditNoteAppliedByAdmin", fields: [appliedById], references: [id])
+
+  @@index([tenantId])
+  @@index([refundTransactionId])
+  @@index([targetBookingId])
+  @@index([appliedById])
+}
+
+model Coupon {
+  id                String             @id @default(cuid())
+  tenantId          String             @default("default")
+  code              String             @unique
+  description       String?            @db.Text
+  discountType      String             @default("PERCENTAGE") // PERCENTAGE, FIXED
+  discountValue     Float
+  maxDiscountAmount Float?
+  minBookingAmount  Float?
+  applicableTripIds Json?              // Null = all trips, or ["tripId1", "tripId2"]
+  maxUsesTotal      Int?
+  maxUsesPerUser    Int?               @default(1)
+  currentUsesCount  Int                @default(0)
+  validFrom         DateTime
+  validUntil        DateTime
+  status            String             @default("ACTIVE") // ACTIVE, INACTIVE, EXPIRED
+  createdById       String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  createdBy   Admin              @relation("CouponCreatedByAdmin", fields: [createdById], references: [id])
+  redemptions CouponRedemption[]
+
+  @@index([tenantId])
+  @@index([code])
+  @@index([status])
+  @@index([createdById])
+}
+
+model CouponRedemption {
+  id             String   @id @default(cuid())
+  tenantId       String   @default("default")
+  couponId       String
+  bookingId      String
+  customerPhone  String?
+  originalAmount Float
+  discountAmount Float
+  finalAmount    Float
+  redeemedAt     DateTime @default(now())
+
+  coupon  Coupon  @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([couponId])
+  @@index([bookingId])
+}
+
+model Ticket {
+  id                String    @id @default(cuid())
+  tenantId          String    @default("default")
+  bookingId         String?
+  type              String    @default("TRAIN") // TRAIN, FLIGHT, BUS, CAB, OTHER
+  pnr               String?
+  ticketNumber      String?
+  passengers        Json?
+  documentUrl       String?
+  provider          String?
+  journeyDate       DateTime?
+  arrivalDate       DateTime?
+  source            String?
+  destination       String?
+  cost              Float     @default(0)
+  packageAllowance  Float?
+  ticketingMargin   Float?
+  status            String    @default("PENDING_VERIFICATION") // PENDING_VERIFICATION, VERIFIED, ISSUED, CONFIRMED, CANCELLED, REFUNDED
+  confirmationEmail String?
+  notes             String?   @db.Text
+  createdById       String
+  verifiedById      String?
+  verifiedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  booking    Booking? @relation(fields: [bookingId], references: [bookingId], onDelete: SetNull)
+  createdBy  Admin    @relation("TicketCreatedByAdmin", fields: [createdById], references: [id])
+  verifiedBy Admin?   @relation("TicketVerifiedByAdmin", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([bookingId])
+  @@index([pnr])
+  @@index([type])
+  @@index([status])
+  @@index([journeyDate])
+}
+
+model ServiceRegistry {
+  id              String    @id @default(cuid())
+  tenantId        String    @default("default")
+  bookingId       String
+  serviceType     String    @default("TRAIN") // TRAIN, FLIGHT, VISA, HOTEL, INSURANCE, TRANSPORT, OTHER
+  serviceName     String
+  vendorId        String?
+  costPrice       Float     @default(0)
+  sellingPrice    Float     @default(0)
+  status          String    @default("PENDING") // PENDING, BOOKED, VERIFIED, CANCELLED
+  confirmationRef String?
+  notes           String?   @db.Text
+  assignedStaffId String?
+  verifiedById    String?
+  verifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  booking       Booking @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  assignedStaff Admin?  @relation("ServiceAssignedToAdmin", fields: [assignedStaffId], references: [id], onDelete: SetNull)
+  verifiedBy    Admin?  @relation("ServiceVerifiedByAdmin", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([bookingId])
+  @@index([serviceType])
+  @@index([status])
+  @@index([vendorId])
+}
+
+model TaskAllotment {
+  id           String        @id @default(cuid())
+  tenantId     String        @default("default")
+  title        String
+  description  String?       @db.Text
+  taskType     String        @default("OTHER") // HOTEL_BOOKING, TRANSPORT_ARRANGE, VISA_FOLLOW_UP, GUIDE_CONFIRM, PAYMENT_COLLECT, SERVICE_VERIFY, REFUND_PROCESS, OTHER
+  priority     String        @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status       String        @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED
+  bookingId    String?
+  tripId       String?
+  vendorId     String?
+  serviceId    String?
+  assignedToId String
+  assignedById String
+  deadline     DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  booking    Booking?      @relation(fields: [bookingId], references: [bookingId], onDelete: SetNull)
+  assignedTo Admin         @relation("TaskAssignedToAdmin", fields: [assignedToId], references: [id])
+  assignedBy Admin         @relation("TaskCreatedByAdmin", fields: [assignedById], references: [id])
+  comments   TaskComment[]
+
+  @@index([tenantId])
+  @@index([bookingId])
+  @@index([assignedToId])
+  @@index([assignedById])
+  @@index([status])
+  @@index([priority])
+  @@index([deadline])
+}
+
+model TaskComment {
+  id         String   @id @default(cuid())
+  tenantId   String   @default("default")
+  taskId     String
+  authorId   String
+  comment    String   @db.Text
+  isInternal Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  task   TaskAllotment @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author Admin         @relation("TaskCommentAuthor", fields: [authorId], references: [id])
+
+  @@index([tenantId])
+  @@index([taskId])
+  @@index([authorId])
+}
+
+model TripAccounting {
+  id                String    @id @default(cuid())
+  tenantId          String    @default("default")
+  bookingId         String    @unique
+  tripId            String?
+  departureDate     DateTime?
+  sellingPrice      Float     @default(0)
+  discountApplied   Float     @default(0)
+  couponDiscount    Float     @default(0)
+  creditNoteApplied Float     @default(0)
+  netRevenue        Float     @default(0)
+  advancePaid       Float     @default(0)
+  finalPayment      Float     @default(0)
+  totalPaid         Float     @default(0)
+  balanceDue        Float     @default(0)
+  cashRefund        Float     @default(0)
+  creditIssued      Float     @default(0)
+  totalCost         Float     @default(0)
+  grossProfit       Float     @default(0)
+  paymentStatus     String    @default("PENDING")
+  refundStatus      String    @default("NONE")
+  isSnapshotClosed  Boolean   @default(false)
+  snapshotClosedAt  DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([bookingId])
+  @@index([tripId])
+  @@index([paymentStatus])
+  @@index([refundStatus])
 }
 

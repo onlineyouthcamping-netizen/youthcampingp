@@ -19,25 +19,37 @@ async function logAction({
   action,
   entityType,
   entityId,
+  bookingId = null,
+  changeSummary = null,
   beforeData = null,
   afterData = null,
+  oldValue = null,
+  newValue = null,
   ipAddress = null,
+  userAgent = null,
+  changedBy = null,
 }) {
   try {
     // Redact sensitive details (passwords, hashes, secrets, reset tokens)
-    const cleanBefore = beforeData ? redactSensitive(beforeData) : null;
-    const cleanAfter = afterData ? redactSensitive(afterData) : null;
+    const cleanBefore = beforeData ? redactSensitive(beforeData) : (oldValue ? redactSensitive(oldValue) : null);
+    const cleanAfter = afterData ? redactSensitive(afterData) : (newValue ? redactSensitive(newValue) : null);
 
     const log = await prisma.auditLog.create({
       data: {
         tenantId,
-        actorUserId,
+        actorUserId: actorUserId || null,
+        bookingId: bookingId || null,
         action,
-        entityType,
-        entityId,
+        entityType: entityType || null,
+        entityId: entityId || null,
+        changeSummary: changeSummary || null,
         beforeData: cleanBefore,
         afterData: cleanAfter,
-        ipAddress,
+        oldValue: cleanBefore,
+        newValue: cleanAfter,
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        changedBy: changedBy || null,
       },
     });
     return log;
