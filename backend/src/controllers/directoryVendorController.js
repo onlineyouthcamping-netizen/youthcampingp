@@ -298,6 +298,7 @@ exports.getTripScopedVendorDirectory = async (req, res, next) => {
               isActive: true,
             },
           },
+          transportRates: true,
           routePricingGroups: {
             where: { isActive: true },
             include: {
@@ -524,7 +525,14 @@ exports.getDirectoryVendors = async (req, res, next) => {
           destinations: true,
           vendorContacts: true,
           vehicleMaster: true,
-          routePricingGroups: { include: { vehicleRates: true } },
+          transportRates: true,
+          routePricingGroups: {
+            include: {
+              vehicleRates: {
+                include: { vehicle: true },
+              },
+            },
+          },
           tripVendors: {
             include: { trip: { select: { id: true, title: true } } },
           },

@@ -12,6 +12,10 @@ const { hasPermission } = require("../config/permissions");
 const { PAYMENT_STATUS, normalizePaymentStatus } = require("../utils/paymentStatus");
 const { validateBookingStatusTransition, BOOKING_STATUS } = require("../utils/bookingStatus");
 const { resolveTenantId } = require("../utils/tenantContext");
+const {
+  findConfirmedRoomFields,
+  mergePassengerPreferences,
+} = require("../utils/roomAllocationAuthority");
 
 // Helper to safely parse dates and avoid crashes with "Invalid Date"
 const safeParseDate = (dateVal) => {
@@ -785,12 +789,12 @@ async function buildBookingOpsSummary(booking, tenantId, authScope = "admin") {
         : null,
       tripId && departureDate
         ? prisma.opsRoomAllocation.count({
-            where: { tripId, departureDate, bookingId },
+            where: { tripId, departureDate, bookingId, allocationStatus: "ACTIVE" },
           })
         : 0,
       tripId && departureDate
         ? prisma.opsVehicleAllocation.count({
-            where: { tripId, departureDate, bookingId },
+            where: { tripId, departureDate, bookingId, allocationStatus: "ACTIVE" },
           })
         : 0,
       tripId && departureDate
@@ -1385,6 +1389,17 @@ exports.updateBooking = async (req, res, next) => {
     if (email !== undefined) updateData.email = email;
 
     // Only touch passengers json mapping if custom fields or passengers array are explicitly present
+    const confirmedRoomFields = findConfirmedRoomFields(req.body);
+    if (confirmedRoomFields.length > 0) {
+      return res.status(409).json({
+        success: false,
+        code: "CONFIRMED_ROOM_VIA_OPS_REQUIRED",
+        message:
+          "Confirmed room numbers must be saved via POST /ops/auto-allocate/manual-save. Booking updates may only change room preferences (roomType, coupleWith, groupId).",
+        fields: confirmedRoomFields,
+      });
+    }
+
     const hasPassengerCustomFields = [
       "trainClass",
       "ticketStatus",
@@ -1393,7 +1408,6 @@ exports.updateBooking = async (req, res, next) => {
       "foodPreference",
       "mealPreference",
       "dietary",
-      "roomAllocation",
       "guideAssignment",
       "pickupStatus",
       "travelStatus",
@@ -1420,67 +1434,76 @@ exports.updateBooking = async (req, res, next) => {
         }
       }
 
-      let safeDetails = {};
-      let safePersons = [];
-      if (Array.isArray(currentPassengers)) {
-        safePersons = currentPassengers;
-      } else if (currentPassengers && typeof currentPassengers === "object") {
-        safeDetails =
-          currentPassengers.details &&
-          typeof currentPassengers.details === "object" &&
-          !Array.isArray(currentPassengers.details)
-            ? currentPassengers.details
-            : {};
-        safePersons = Array.isArray(currentPassengers.persons)
-          ? currentPassengers.persons
-          : [];
-      }
+      // Nested preference payload: deep-merge without wiping unrelated keys
+      if (
+        req.body.passengers &&
+        typeof req.body.passengers === "object" &&
+        !Array.isArray(req.body.passengers)
+      ) {
+        updateData.passengers = mergePassengerPreferences(
+          currentPassengers,
+          req.body.passengers,
+        );
+      } else {
+        let safeDetails = {};
+        let safePersons = [];
+        if (Array.isArray(currentPassengers)) {
+          safePersons = currentPassengers;
+        } else if (currentPassengers && typeof currentPassengers === "object") {
+          safeDetails =
+            currentPassengers.details &&
+            typeof currentPassengers.details === "object" &&
+            !Array.isArray(currentPassengers.details)
+              ? currentPassengers.details
+              : {};
+          safePersons = Array.isArray(currentPassengers.persons)
+            ? currentPassengers.persons
+            : [];
+        }
 
-      updateData.passengers = {
-        details: {
-          ...safeDetails,
-          ...(req.body.trainClass !== undefined && {
-            trainClass: req.body.trainClass,
-          }),
-          ...(req.body.ticketStatus !== undefined && {
-            ticketStatus: req.body.ticketStatus,
-          }),
-          ...(req.body.roomType !== undefined && {
-            roomType: req.body.roomType,
-          }),
-          ...(req.body.basePrice !== undefined && {
-            basePrice: req.body.basePrice,
-          }),
-          ...(req.body.gstAmount !== undefined && {
-            gstAmount: req.body.gstAmount,
-          }),
-          ...(req.body.foodPreference !== undefined && {
-            foodPreference: req.body.foodPreference,
-          }),
-          ...(req.body.mealPreference !== undefined && {
-            mealPreference: req.body.mealPreference,
-          }),
-          ...(req.body.dietary !== undefined && { dietary: req.body.dietary }),
-          ...(req.body.roomAllocation !== undefined && {
-            roomAllocation: req.body.roomAllocation,
-          }),
-          ...(req.body.guideAssignment !== undefined && {
-            guideAssignment: req.body.guideAssignment,
-          }),
-          ...(req.body.pickupStatus !== undefined && {
-            pickupStatus: req.body.pickupStatus,
-          }),
-          ...(req.body.travelStatus !== undefined && {
-            travelStatus: req.body.travelStatus,
-          }),
-          ...(req.body.participantNotes !== undefined && {
-            participantNotes: req.body.participantNotes,
-          }),
-        },
-        persons: Array.isArray(req.body.passengers)
-          ? req.body.passengers
-          : safePersons,
-      };
+        updateData.passengers = {
+          details: {
+            ...safeDetails,
+            ...(req.body.trainClass !== undefined && {
+              trainClass: req.body.trainClass,
+            }),
+            ...(req.body.ticketStatus !== undefined && {
+              ticketStatus: req.body.ticketStatus,
+            }),
+            ...(req.body.roomType !== undefined && {
+              roomType: req.body.roomType,
+            }),
+            ...(req.body.basePrice !== undefined && {
+              basePrice: req.body.basePrice,
+            }),
+            ...(req.body.gstAmount !== undefined && {
+              gstAmount: req.body.gstAmount,
+            }),
+            ...(req.body.foodPreference !== undefined && {
+              foodPreference: req.body.foodPreference,
+            }),
+            ...(req.body.mealPreference !== undefined && {
+              mealPreference: req.body.mealPreference,
+            }),
+            ...(req.body.dietary !== undefined && { dietary: req.body.dietary }),
+            ...(req.body.guideAssignment !== undefined && {
+              guideAssignment: req.body.guideAssignment,
+            }),
+            ...(req.body.pickupStatus !== undefined && {
+              pickupStatus: req.body.pickupStatus,
+            }),
+            ...(req.body.travelStatus !== undefined && {
+              travelStatus: req.body.travelStatus,
+            }),
+            ...(req.body.participantNotes !== undefined && {
+              participantNotes: req.body.participantNotes,
+            }),
+          },
+          persons: Array.isArray(req.body.passengers)
+            ? req.body.passengers
+            : safePersons,
+        };
+      }
     }
 
     if (updateData.ticketStatus !== undefined) {
@@ -1591,6 +1614,25 @@ exports.updateBooking = async (req, res, next) => {
       return res
         .status(404)
         .json({ success: false, message: "Booking not found" });
+    }
+
+    if (updateData.departureDate !== undefined) {
+      const nextDate = safeParseDate(updateData.departureDate);
+      const prevDate = beforeBooking.departureDate
+        ? new Date(beforeBooking.departureDate)
+        : null;
+      const nextKey = nextDate ? nextDate.toISOString().slice(0, 10) : null;
+      const prevKey = prevDate && !isNaN(prevDate.getTime())
+        ? prevDate.toISOString().slice(0, 10)
+        : null;
+      if (nextKey !== prevKey) {
+        return res.status(409).json({
+          success: false,
+          code: "BOOKING_TRANSFER_REQUIRED",
+          message:
+            "Changing a booking departureDate requires a dedicated booking transfer. To reschedule the whole departure, use PUT /api/departures/reschedule.",
+        });
+      }
     }
 
     // Status changes through the generic update endpoint must obey the

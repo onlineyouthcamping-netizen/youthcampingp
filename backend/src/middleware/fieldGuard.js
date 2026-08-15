@@ -93,11 +93,12 @@ const guardBookingUpdateFields = (req, res, next) => {
 
   if (role === "operations") {
     // Allow updating operational & passenger manifest fields
+    // Confirmed room numbers / whole-departure date moves are not allowed here.
+    // Use ops manual-save for rooms and /departures/reschedule for date moves.
     const OPERATIONS_ALLOWED = [
       "passengers",
       "numberOfTravelers",
       "sourceMeta",
-      "roomAllocation",
       "roomType",
       "roomSharing",
       "guideAssignment",
@@ -113,7 +114,6 @@ const guardBookingUpdateFields = (req, res, next) => {
       "foodPreference",
       "status",
       "joiningDate",
-      "departureDate",
     ];
 
     const violations = bodyKeys.filter((k) => !OPERATIONS_ALLOWED.includes(k));

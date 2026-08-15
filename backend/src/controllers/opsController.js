@@ -1,5 +1,13 @@
 const { prisma } = require("../lib/prisma");
 const { runAutoAllocation } = require("../utils/autoAllocationEngine");
+const {
+  mapTripVendorRates,
+  mapVehicleRatesFromGroups,
+  mapLegacyTransportRates,
+  mergeRateMaps,
+  attachTariffsToFleet,
+} = require("../utils/resolveOpsTransportTariff");
+const { mirrorConfirmedRooms } = require("../utils/roomAllocationAuthority");
 const opsSummaryCache = new Map();
 
 /**
@@ -986,19 +994,44 @@ exports.getTransportFleet = async (req, res) => {
     });
 
     if (includeRates) {
-      // Collect vendor IDs to lookup rates
-      const vendorIds = Array.from(new Set(fleet.map((veh) => veh.vendorId).filter(Boolean)));
+      // OpsVendor IDs only — never DirectoryVendorTransportRate
+      const vendorIds = Array.from(
+        new Set(fleet.map((veh) => veh.vendorId).filter(Boolean)),
+      );
 
-      const opsRatesMap = {};
-      const dirRatesMap = {};
-
+      let ratesByVendor = {};
       if (vendorIds.length > 0) {
         try {
-          // 1. Primary: Lookup OpsRoutePricingGroup and OpsVehicleRate
+          const tripVendors = await prisma.opsTripVendor.findMany({
+            where: {
+              tripId: ctx.where.tripId,
+              vendorId: { in: vendorIds },
+              active: true,
+              OR: [{ category: "TRANSPORT" }, { category: null }],
+            },
+            include: {
+              rates: {
+                where: {
+                  active: true,
+                  rateType: "TRANSPORT",
+                },
+              },
+            },
+            orderBy: [{ preferred: "desc" }, { priority: "desc" }],
+          });
+          ratesByVendor = mapTripVendorRates(
+            tripVendors,
+            ctx.where.departureDate,
+          );
+        } catch (tripRateErr) {
+          console.warn("Trip transport rate lookup notice:", tripRateErr.message);
+        }
+
+        try {
           const routeGroups = await prisma.opsRoutePricingGroup.findMany({
             where: {
               vendorId: { in: vendorIds },
-              ...(ctx.where.tripId ? { tripId: ctx.where.tripId } : {}),
+              isActive: true,
             },
             include: {
               vehicleRates: {
@@ -1007,77 +1040,32 @@ exports.getTransportFleet = async (req, res) => {
               },
             },
           });
-
-          routeGroups.forEach((rg) => {
-            if (!opsRatesMap[rg.vendorId]) opsRatesMap[rg.vendorId] = [];
-            (rg.vehicleRates || []).forEach((vr) => {
-              opsRatesMap[rg.vendorId].push({
-                routeName: rg.routeName || rg.routeGroupKey,
-                vehicleType: vr.vehicle?.vehicleType || vr.vehicleNameSnapshot,
-                capacity: vr.vehicle?.capacity || vr.sellableSeats,
-                totalAmount: Number(vr.totalVehicleAmount || 0),
-                suggestedPP: Number(vr.suggestedPP || 0),
-                negotiatedPP: Number(vr.negotiatedPP || 0),
-              });
-            });
-          });
+          ratesByVendor = mergeRateMaps(
+            ratesByVendor,
+            mapVehicleRatesFromGroups(routeGroups),
+          );
         } catch (opsErr) {
           console.warn("Ops vehicle rate lookup notice:", opsErr.message);
         }
 
         try {
-          // 2. Fallback: Directory vendor transport rate lookup
-          const dirRates = await prisma.directoryVendorTransportRate.findMany({
-            where: { vendorId: { in: vendorIds } },
+          const legacyRates = await prisma.opsTransportRate.findMany({
+            where: {
+              vendorId: { in: vendorIds },
+              active: true,
+            },
           });
-          dirRates.forEach((r) => {
-            if (!dirRatesMap[r.vendorId]) dirRatesMap[r.vendorId] = [];
-            dirRatesMap[r.vendorId].push(r);
-          });
-        } catch (dirErr) {
-          console.warn("Directory vendor transport rate lookup notice:", dirErr.message);
+          ratesByVendor = mergeRateMaps(
+            ratesByVendor,
+            mapLegacyTransportRates(legacyRates),
+          );
+        } catch (legacyErr) {
+          console.warn("Ops transport rate lookup notice:", legacyErr.message);
         }
       }
 
-      // Resolve applicable tariff for each vehicle based on route and vehicle type
-      const resolvedFleet = fleet.map((veh) => {
-        const opsRates = opsRatesMap[veh.vendorId] || [];
-        const dirRates = dirRatesMap[veh.vendorId] || [];
-
-        // Try OpsVehicleRate first
-        const applicableOps = opsRates.find(
-          (r) =>
-            (!veh.route || !r.routeName || r.routeName.toLowerCase().includes(veh.route.toLowerCase()) || veh.route.toLowerCase().includes(r.routeName.toLowerCase())) &&
-            (!veh.vehicleType || !r.vehicleType || r.vehicleType.toLowerCase() === veh.vehicleType.toLowerCase()),
-        );
-
-        // Try Directory rate fallback
-        const applicableDir = !applicableOps
-          ? dirRates.find(
-              (r) =>
-                (!r.route || r.route === veh.route || r.routeName === veh.route) &&
-                (r.vehicleType === veh.vehicleType) &&
-                (r.status === 'ACTIVE' || !r.status),
-            )
-          : null;
-
-        const resolvedCost = applicableOps
-          ? applicableOps.totalAmount
-          : applicableDir
-            ? Number(applicableDir.totalVehicleCost ?? applicableDir.amount ?? applicableDir.rate ?? 0)
-            : Number(veh.totalAmount ?? 0);
-
-        return {
-          ...veh,
-          totalAmount: resolvedCost || veh.totalAmount,
-          tariff: resolvedCost
-            ? {
-                amount: resolvedCost,
-                rateBasis: "PER_VEHICLE",
-              }
-            : null,
-        };
-      });
+      // Additive tariff only — do not mutate departure snapshot totalAmount
+      const resolvedFleet = attachTariffsToFleet(fleet, ratesByVendor);
       return res.json({ success: true, data: resolvedFleet });
     }
     return res.json({ success: true, data: fleet });
@@ -3632,6 +3620,25 @@ exports.saveManualAllocations = async (req, res) => {
           },
         },
       });
+
+      // Mirror confirmed room numbers into booking JSON for legacy displays only
+      const roomsByBooking = {};
+      for (const r of savedRooms) {
+        if (!roomsByBooking[r.bookingId]) roomsByBooking[r.bookingId] = [];
+        roomsByBooking[r.bookingId].push(r);
+      }
+      for (const [bookingCode, allocations] of Object.entries(roomsByBooking)) {
+        const booking = await tx.booking.findFirst({
+          where: { bookingId: bookingCode },
+          select: { id: true, passengers: true, updatedAt: true },
+        });
+        if (!booking) continue;
+        const mirrored = mirrorConfirmedRooms(booking.passengers, allocations);
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: { passengers: mirrored },
+        });
+      }
     });
 
     return res.json({
