@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/api";
+import { useWheelPassThrough } from "@/lib/useWheelPassThrough";
 
 const DestinationInquiryModal = dynamic(
   () => import("./DestinationInquiryModal"),
@@ -102,6 +103,7 @@ export default function Destinations({
 }: DestinationsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedDest, setSelectedDest] = useState<Destination | null>(null);
+  useWheelPassThrough(scrollRef);
 
   const displayItems: Destination[] =
     Array.isArray(destinations) && destinations.length > 0
@@ -142,7 +144,7 @@ export default function Destinations({
 
   return (
     <section
-      className="popular-destinations popular-section destinations-grid py-4 sm:py-5 font-montserrat overflow-hidden"
+      className="popular-destinations popular-section destinations-grid pt-4 pb-2 sm:pt-5 sm:pb-2 font-montserrat overflow-hidden"
       style={{ backgroundColor: "#E2E7ED" }}
     >
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
@@ -180,8 +182,7 @@ export default function Destinations({
         {/* DESTINATION PORTRAIT CARDS SLIDER WITH NAME OVERLAY & INQUIRY FORM CLICK */}
         <div
           ref={scrollRef}
-          className="carousel-track w-full max-w-full flex gap-3.5 sm:gap-5 overflow-x-auto no-scrollbar py-2 px-1 scroll-smooth snap-x snap-mandatory touch-pan-x"
-          style={{ touchAction: "pan-x" }}
+          className="carousel-track w-full max-w-full flex gap-3.5 sm:gap-5 overflow-x-auto no-scrollbar py-2 px-1 scroll-smooth snap-x snap-mandatory"
         >
           {displayItems.map((item, idx) => (
             <motion.div

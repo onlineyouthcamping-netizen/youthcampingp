@@ -10,11 +10,27 @@ export function useWheelPassThrough(ref: RefObject<HTMLElement | null>) {
     if (!element) return;
 
     const handleWheel = (e: WheelEvent) => {
-      // If user is scrolling vertically with mouse wheel/trackpad
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && Math.abs(e.deltaY) > 2) {
-        window.scrollBy({
-          top: e.deltaY,
-          behavior: "instant" as ScrollBehavior,
+      const absX = Math.abs(e.deltaX);
+      const absY = Math.abs(e.deltaY);
+
+      // Shift+wheel: scroll the carousel horizontally.
+      if (e.shiftKey && absY > 0) {
+        element.scrollLeft += e.deltaY;
+        return;
+      }
+
+      // Vertical-dominant: never preventDefault. If the overflow-x
+      // container swallowed the wheel without moving the page, forward it.
+      if (absY > absX && absY > 2) {
+        const deltaY = e.deltaY;
+        const before = window.scrollY;
+        requestAnimationFrame(() => {
+          if (window.scrollY === before) {
+            window.scrollBy({
+              top: deltaY,
+              behavior: "instant" as ScrollBehavior,
+            });
+          }
         });
       }
     };

@@ -314,6 +314,7 @@ const ROLE_PERMISSIONS = {
     "bookings.edit",
     "bookings.approve",
     "payments.view",
+    "accounting.submit",
     "inquiries.view",
     "inquiries.create",
     "inquiries.edit",

@@ -514,7 +514,7 @@ export default function BookingOptions({
           </div>
         )}
         {/* Departure Dates Section (Month-Wise & Auto-Removing Ended Months) */}
-        <div className="space-y-4 pt-3 border-t border-zinc-100">
+        <div className="space-y-2 pt-3 border-t border-zinc-100">
           <div className="flex items-center justify-between">
             <h2 className="text-xs sm:text-sm font-bold text-[#0B1528] font-montserrat flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-[#F97316]" />
@@ -532,29 +532,36 @@ export default function BookingOptions({
           </div>
 
           {/* Month Tabs (Auto-purges ended months) */}
-          <div className="month-tabs flex items-center gap-[12px] overflow-x-auto no-scrollbar pb-1">
-            {months.map((month) => (
-              <button
-                key={month}
-                type="button"
-                onClick={() => setActiveMonth(month)}
-                className={cn(
-                  "month-tab flex-1 min-w-[80px] text-center relative px-3.5 py-1.5 rounded-xl border text-xs font-bold font-montserrat transition-all shrink-0 cursor-pointer",
-                  activeMonth === month
-                    ? "border-[#F97316] text-[#F97316] bg-orange-50/50 ring-1 ring-[#F97316]"
-                    : "border-zinc-200 text-zinc-500 hover:border-zinc-300 bg-white",
-                )}
-              >
-                {month}
-                {activeMonth === month && (
-                  <span className="ml-1.5 inline-block w-1.5 h-1.5 bg-[#F97316] rounded-full" />
-                )}
-              </button>
-            ))}
+          <div className="month-tabs flex items-center gap-2 overflow-x-auto no-scrollbar">
+            {months.map((month) => {
+              const isActive = activeMonth === month;
+              return (
+                <button
+                  key={month}
+                  type="button"
+                  onClick={() => setActiveMonth(month)}
+                  aria-pressed={isActive}
+                  className={cn(
+                    "month-tab inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl border text-xs font-bold font-montserrat transition-all shrink-0 cursor-pointer whitespace-nowrap appearance-none",
+                    isActive
+                      ? "border-[#F97316] text-[#F97316] bg-orange-50 ring-1 ring-[#F97316]"
+                      : "border-zinc-200 text-zinc-500 hover:border-zinc-300 bg-white",
+                  )}
+                >
+                  <span className="relative z-[1]">{month}</span>
+                  {isActive && (
+                    <span
+                      aria-hidden
+                      className="w-1.5 h-1.5 bg-[#F97316] rounded-full shrink-0"
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* Date Chips for Selected Month */}
-          <div className="date-grid grid grid-cols-5 sm:grid-cols-7 gap-2 pt-1">
+          <div className="date-grid grid grid-cols-5 sm:grid-cols-7 gap-2">
             {(groupedDates[activeMonth] || []).map((ad, i) => {
               const hasOverride = trip.departurePriceOverrides?.some(
                 (o: any) => o.departureDate === ad.date && o.isActive,

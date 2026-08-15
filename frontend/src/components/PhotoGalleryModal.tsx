@@ -125,17 +125,17 @@ export default function PhotoGalleryModal({
           ))}
         </div>
 
-        {/* Photo Grid — Clean Masonry-style */}
+        {/* Photo Grid — Uniform equal cells for easy scrolling */}
         <main className="flex-1 overflow-y-auto px-3 sm:px-5 py-3 no-scrollbar bg-zinc-50/40">
           {currentPhotos.length > 0 && (
-            <div className="columns-2 sm:columns-3 gap-2.5 max-w-5xl mx-auto pb-10">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-w-5xl mx-auto pb-10">
               {currentPhotos.map((photo, i) => (
                 <motion.div
                   key={`${activeTab}-${i}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03, duration: 0.25 }}
-                  className="relative mb-2.5 rounded-xl overflow-hidden bg-zinc-100 group break-inside-avoid"
+                  className="relative aspect-square rounded-xl overflow-hidden bg-zinc-100 group"
                 >
                   <OptimizedImage
                     src={
@@ -144,9 +144,9 @@ export default function PhotoGalleryModal({
                         : normalizeImageUrl(photo.url) || FALLBACK
                     }
                     alt={photo.caption || `Photo ${i + 1}`}
-                    className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     width={600}
-                    height={400}
+                    height={600}
                   />
                   {photo.caption && (
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 pt-4">

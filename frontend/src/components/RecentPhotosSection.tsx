@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, X, ChevronLeft, ChevronRight, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { normalizeImageUrl } from "@/lib/api";
+import { useWheelPassThrough } from "@/lib/useWheelPassThrough";
 
 interface RecentPhoto {
   id: string;
@@ -80,6 +81,7 @@ export default function RecentPhotosSection({
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  useWheelPassThrough(scrollRef);
   const animationFrameRef = useRef<number | null>(null);
 
   const rawPhotos = photos && Array.isArray(photos) ? photos : [];
@@ -179,8 +181,7 @@ export default function RecentPhotosSection({
           onMouseUp={() => setIsDragging(false)}
           onTouchStart={() => setIsDragging(true)}
           onTouchEnd={() => setIsDragging(false)}
-          className="w-full max-w-full flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 touch-pan-x cursor-grab active:cursor-grabbing select-none"
-          style={{ touchAction: "pan-x" }}
+          className="w-full max-w-full flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 cursor-grab active:cursor-grabbing select-none"
         >
           {marqueePhotos.map((photo, idx) => {
             const actualIndex = idx % displayPhotos.length;

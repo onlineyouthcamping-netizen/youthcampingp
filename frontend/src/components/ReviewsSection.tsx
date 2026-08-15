@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useWheelPassThrough } from "@/lib/useWheelPassThrough";
 
 interface GoogleReviewItem {
   id: string;
@@ -115,6 +116,7 @@ export default function ReviewsSection({
       ? "What Travelers Say"
       : title;
   const scrollRef = useRef<HTMLDivElement>(null);
+  useWheelPassThrough(scrollRef);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [selectedReview, setSelectedReview] = useState<GoogleReviewItem | null>(
     null,
@@ -168,7 +170,7 @@ export default function ReviewsSection({
   };
 
   return (
-    <section className="testimonials testimonials-slider module-center bg-white py-8 md:py-10 border-t border-zinc-100 font-montserrat">
+    <section className="testimonials testimonials-slider module-center bg-white pt-3 pb-8 md:pt-4 md:pb-10 font-montserrat">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
           <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight">
@@ -187,8 +189,7 @@ export default function ReviewsSection({
         {/* REVIEW CARDS HORIZONTAL SCROLL / GRID */}
         <div
           ref={scrollRef}
-          className="carousel-track w-full max-w-full flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x"
-          style={{ touchAction: "pan-x" }}
+          className="carousel-track w-full max-w-full flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory"
         >
           {displayReviews.map((rev, idx) => {
             const photoList = rev.photos || [];

@@ -13,6 +13,7 @@ import { Review } from "@/types";
 import { normalizeImageUrl } from "@/lib/api";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import { cn } from "@/lib/utils";
+import { useWheelPassThrough } from "@/lib/useWheelPassThrough";
 
 interface TripReviewsProps {
   reviews?: Review[];
@@ -83,6 +84,7 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
     );
   };
   const scrollRef = useRef<HTMLDivElement>(null);
+  useWheelPassThrough(scrollRef);
 
   const scrollByAmount = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -181,8 +183,7 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
       {/* Horizontal Scrollable Review Cards */}
       <div
         ref={scrollRef}
-        className="carousel-track w-full max-w-full flex overflow-x-auto no-scrollbar gap-3 sm:gap-4 py-2.5 pb-4 scroll-smooth snap-x snap-mandatory touch-pan-x"
-        style={{ touchAction: "pan-x" }}
+        className="carousel-track w-full max-w-full flex overflow-x-auto no-scrollbar gap-3 sm:gap-4 py-2.5 pb-4 scroll-smooth snap-x snap-mandatory"
       >
         {displayList.map((rev) => (
           <div

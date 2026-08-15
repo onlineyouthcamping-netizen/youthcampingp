@@ -53,9 +53,9 @@ export default function InclusionsExclusions({
   const excList = exclusions || [];
 
   return (
-    <div className="space-y-5 scroll-mt-[140px]" id="inclusions">
+    <div className="space-y-2.5 scroll-mt-[140px]" id="inclusions">
       {/* Header System — Title + Tab Switcher inline */}
-      <div className="flex items-center justify-between gap-3 flex-wrap border-b border-zinc-100/90 pb-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap border-b border-zinc-100/90 pb-2">
         <h2 className="text-xl sm:text-2xl font-black text-[#0B1528] tracking-tight font-montserrat leading-none shrink-0">
           Inclusions &{" "}
           <span className="text-[#D4541A] font-caveat italic">Exclusions</span>
@@ -94,7 +94,7 @@ export default function InclusionsExclusions({
       </div>
 
       {/* Main Content Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pt-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Inclusions Card */}
         <div
           className={cn(
@@ -102,16 +102,11 @@ export default function InclusionsExclusions({
             activeTab === "inclusions" ? "flex" : "hidden md:flex",
           )}
         >
-          {/* Inclusions Header */}
-          <div className="bg-emerald-50/70 border-b border-emerald-100/90 px-4 sm:px-5 py-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4.5 h-4.5 text-emerald-600" />
-              <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-emerald-950 font-montserrat">
-                Package Inclusions
-              </span>
-            </div>
-            <span className="text-xs font-bold bg-white text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200/80 font-montserrat">
-              {incList.length} Included
+          {/* Inclusions Header — count lives on the toggle; section title already says Inclusions */}
+          <div className="bg-emerald-50/70 border-b border-emerald-100/90 px-4 sm:px-5 py-2.5 flex items-center gap-2">
+            <ShieldCheck className="w-4.5 h-4.5 text-emerald-600" />
+            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-emerald-950 font-montserrat">
+              Included
             </span>
           </div>
 
@@ -138,16 +133,11 @@ export default function InclusionsExclusions({
             activeTab === "exclusions" ? "flex" : "hidden md:flex",
           )}
         >
-          {/* Exclusions Header */}
-          <div className="bg-rose-50/70 border-b border-rose-100/90 px-4 sm:px-5 py-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4.5 h-4.5 text-rose-600" />
-              <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-rose-950 font-montserrat">
-                Package Exclusions
-              </span>
-            </div>
-            <span className="text-xs font-bold bg-white text-rose-700 px-2.5 py-0.5 rounded-full border border-rose-200/80 font-montserrat">
-              {excList.length} Excluded
+          {/* Exclusions Header — count lives on the toggle; section title already says Exclusions */}
+          <div className="bg-rose-50/70 border-b border-rose-100/90 px-4 sm:px-5 py-2.5 flex items-center gap-2">
+            <AlertCircle className="w-4.5 h-4.5 text-rose-600" />
+            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-rose-950 font-montserrat">
+              Excluded
             </span>
           </div>
 

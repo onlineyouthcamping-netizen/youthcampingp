@@ -23,8 +23,12 @@ exports.getVerificationStatus = async (req, res) => {
 
     const queryStart = Date.now();
     const booking = await prisma.booking.findFirst({
-      where: { bookingId, tenantId: req.user.tenantId },
+      where: {
+        OR: [{ bookingId }, { id: bookingId }],
+        tenantId: req.user.tenantId,
+      },
       select: {
+        id: true,
         bookingId: true,
         trainTicketRequired: true,
         trainTicketStatus: true,
@@ -183,6 +187,8 @@ exports.submitForVerification = async (req, res) => {
 /**
  * GET /api/booking-verifications/queue
  * Get verification queue with pagination and status filter.
+ * Auto-includes bookings that have uploaded documents but no formal
+ * verification submission (so verifiers see them without a manual submit step).
  */
 exports.getVerificationQueue = async (req, res) => {
   const start = Date.now();
@@ -204,68 +210,134 @@ exports.getVerificationQueue = async (req, res) => {
       where.status = req.query.status;
     }
 
-    // Allow all staff roles to see all verifications in queue
-
-    const cacheKey = `verification_count_${JSON.stringify(where)}`;
-    let totalPromise;
-    const cachedCount = countCache.get(cacheKey);
-    if (cachedCount && Date.now() < cachedCount.expiresAt) {
-      totalPromise = Promise.resolve(cachedCount.count);
-    } else {
-      totalPromise = prisma.bookingVerification.count({ where }).then((c) => {
-        countCache.set(cacheKey, { count: c, expiresAt: Date.now() + 30000 });
-        return c;
-      });
-    }
-
     const queryStart = Date.now();
-    const [verifications, total] = await Promise.all([
-      prisma.bookingVerification.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { updatedAt: "desc" },
+
+    // ── 1. Fetch formal verification records ──
+    const verifications = await prisma.bookingVerification.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        bookingId: true,
+        status: true,
+        submittedAt: true,
+        verifiedAt: true,
+        verifiedByAdminId: true,
+        booking: {
+          select: {
+            id: true,
+            bookingId: true,
+            name: true,
+            fullName: true,
+            phone: true,
+            tripName: true,
+            totalAmount: true,
+            status: true,
+            departureDate: true,
+            trainTicketRequired: true,
+            trainTicketStatus: true,
+            salesAdminId: true,
+            numberOfTravelers: true,
+            paymentStatus: true,
+            salesAdmin: { select: { id: true, name: true } },
+            documents: { select: { id: true } },
+          },
+        },
+        verifiedBy: { select: { id: true, name: true } },
+      },
+    });
+
+    // ── 2. Find bookings with documents but NO formal verification record ──
+    // Only auto-surface when no status filter is applied (ALL view) or filter is PENDING_VERIFICATION
+    let pseudoVerifications = [];
+    const statusFilter = req.query.status;
+    if (!statusFilter || statusFilter === "PENDING_VERIFICATION") {
+      // Get bookingIds already in the verifications table
+      const alreadyVerifiedBookingIds = new Set(verifications.map((v) => v.bookingId));
+
+      // Find all bookings that have at least one uploaded document
+      const bookingsWithDocs = await prisma.booking.findMany({
+        where: {
+          tenantId: req.user.tenantId,
+          status: { notIn: ["cancelled", "rejected"] },
+          documents: { some: {} }, // has at least one BookingDocument
+        },
         select: {
           id: true,
           bookingId: true,
+          name: true,
+          fullName: true,
+          phone: true,
+          tripName: true,
+          totalAmount: true,
           status: true,
-          submittedAt: true,
-          verifiedAt: true,
-          verifiedByAdminId: true,
-          booking: {
-            select: {
-              bookingId: true,
-              name: true,
-              fullName: true,
-              phone: true,
-              tripName: true,
-              totalAmount: true,
-              status: true,
-              departureDate: true,
-              trainTicketRequired: true,
-              trainTicketStatus: true,
-              salesAdminId: true,
-              numberOfTravelers: true,
-              paymentStatus: true,
-              salesAdmin: { select: { id: true, name: true } },
-            },
+          departureDate: true,
+          trainTicketRequired: true,
+          trainTicketStatus: true,
+          salesAdminId: true,
+          numberOfTravelers: true,
+          paymentStatus: true,
+          salesAdmin: { select: { id: true, name: true } },
+          documents: {
+            select: { id: true, createdAt: true, uploadedBy: true },
+            orderBy: { createdAt: "desc" },
           },
-          verifiedBy: { select: { id: true, name: true } },
         },
-      }),
-      totalPromise,
-    ]);
+      });
+
+      // Build pseudo-verification entries for bookings not already in the queue
+      pseudoVerifications = bookingsWithDocs
+        .filter((b) => !alreadyVerifiedBookingIds.has(b.bookingId))
+        .map((b) => ({
+          id: `auto-${b.bookingId}`,
+          bookingId: b.bookingId,
+          status: "PENDING_VERIFICATION",
+          submittedAt: b.documents[0]?.createdAt || null,
+          verifiedAt: null,
+          verifiedByAdminId: null,
+          isPseudoDoc: true, // flag so frontend can handle if needed
+          submittedBy: { name: b.documents[0]?.uploadedBy || "Agent" },
+          booking: {
+            id: b.id,
+            bookingId: b.bookingId,
+            name: b.name,
+            fullName: b.fullName,
+            phone: b.phone,
+            tripName: b.tripName,
+            totalAmount: b.totalAmount,
+            status: b.status,
+            departureDate: b.departureDate,
+            trainTicketRequired: b.trainTicketRequired,
+            trainTicketStatus: b.trainTicketStatus,
+            salesAdminId: b.salesAdminId,
+            numberOfTravelers: b.numberOfTravelers,
+            paymentStatus: b.paymentStatus,
+            salesAdmin: b.salesAdmin,
+          },
+          verifiedBy: null,
+        }));
+    }
+
+    // ── 3. Merge: formal verifications first, then auto-surfaced ones ──
+    const allItems = [...verifications, ...pseudoVerifications];
+
+    // Apply pagination on the merged list
+    const total = allItems.length;
+    const paginated = allItems.slice(skip, skip + limit);
     const queryDuration = Date.now() - queryStart;
+
+    // Invalidate count cache since we're now computing dynamically
+    countCache.clear();
 
     const resData = {
       success: true,
       data: {
-        verifications,
+        verifications: paginated,
         pagination: {
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit),
+          totalPages: Math.ceil(total / limit) || 1,
         },
       },
     };
@@ -274,7 +346,7 @@ exports.getVerificationQueue = async (req, res) => {
       const duration = Date.now() - start;
       const payloadBytes = Buffer.byteLength(JSON.stringify(resData));
       console.log(
-        `[METRICS] getVerificationQueue - Total: ${duration}ms, Query: ${queryDuration}ms, Rows: ${verifications.length}, Payload: ${payloadBytes} bytes`,
+        `[METRICS] getVerificationQueue - Total: ${duration}ms, Query: ${queryDuration}ms, Rows: ${paginated.length} (${verifications.length} formal + ${pseudoVerifications.length} auto), Payload: ${payloadBytes} bytes`,
       );
     }
 
@@ -286,6 +358,7 @@ exports.getVerificationQueue = async (req, res) => {
       .json({ success: false, message: "Failed to fetch verification queue" });
   }
 };
+
 
 /**
  * POST /api/booking-verifications/:bookingId/action
@@ -306,7 +379,7 @@ exports.performVerificationAction = async (req, res) => {
         });
     }
 
-    const verification = await prisma.bookingVerification.findFirst({
+    let verification = await prisma.bookingVerification.findFirst({
       where: {
         bookingId,
         tenantId: req.user.tenantId,
@@ -314,12 +387,30 @@ exports.performVerificationAction = async (req, res) => {
     });
 
     if (!verification) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Verification record not found for this booking",
-        });
+      const booking = await prisma.booking.findFirst({
+        where: {
+          OR: [{ bookingId }, { id: bookingId }],
+          tenantId: req.user.tenantId,
+        },
+      });
+
+      if (!booking) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+            message: "Verification record or booking not found",
+          });
+      }
+
+      verification = await prisma.bookingVerification.create({
+        data: {
+          tenantId: req.user.tenantId,
+          bookingId: booking.bookingId,
+          status: "PENDING_VERIFICATION",
+          submittedAt: new Date(),
+        },
+      });
     }
 
     // Map action to verification status

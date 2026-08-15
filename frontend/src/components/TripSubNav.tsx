@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -9,13 +9,13 @@ interface TripSubNavProps {
 }
 
 export default function TripSubNav({ sections }: TripSubNavProps) {
-  const [activeSection, setActiveSection] = useState("");
+  const [activeSection, setActiveSection] = useState(sections[0]?.id ?? "");
   const [isSticky, setIsSticky] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const navRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const isDraggingRef = useRef(false);
@@ -23,54 +23,45 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
   const scrollLeftRef = useRef(0);
   const hasDraggedRef = useRef(false);
 
-  const checkScrollState = () => {
+  const checkScrollState = useCallback(() => {
     const el = scrollContainerRef.current;
-    if (el) {
-      setCanScrollLeft(el.scrollLeft > 4);
-      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
-    }
-  };
-
-  useEffect(() => {
-    // Use IntersectionObserver on a sentinel element for reliable sticky detection
-    const sentinel = sentinelRef.current;
-    if (sentinel) {
-      const stickyObserver = new IntersectionObserver(
-        ([entry]) => {
-          setIsSticky(!entry.isIntersecting);
-        },
-        { threshold: 0 },
-      );
-      stickyObserver.observe(sentinel);
-      return () => stickyObserver.disconnect();
-    }
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
   }, []);
 
   useEffect(() => {
-    // Active Section Observer
-    const observerOptions = {
-      root: null,
-      rootMargin: "-20% 0px -70% 0px",
-      threshold: 0,
-    };
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const stickyObserver = new IntersectionObserver(
+      ([entry]) => {
+        setIsSticky(!entry.isIntersecting);
+      },
+      { threshold: 0 },
+    );
+    stickyObserver.observe(sentinel);
+    return () => stickyObserver.disconnect();
+  }, []);
 
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    };
-
+  useEffect(() => {
     const observer = new IntersectionObserver(
-      observerCallback,
-      observerOptions,
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: "-20% 0px -70% 0px",
+        threshold: 0,
+      },
     );
     sections.forEach((section) => {
       const element = document.getElementById(section.id);
       if (element) observer.observe(element);
     });
-
     return () => observer.disconnect();
   }, [sections]);
 
@@ -80,70 +71,82 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
 
     checkScrollState();
     const handleScroll = () => checkScrollState();
-    const handleResize = () => checkScrollState();
-
     el.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", checkScrollState);
+
+    const ro = new ResizeObserver(() => checkScrollState());
+    ro.observe(el);
+
+    const fontsReady = document.fonts?.ready?.then(() => checkScrollState());
 
     return () => {
       el.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", checkScrollState);
+      ro.disconnect();
+      void fontsReady;
     };
-  }, [sections]);
+  }, [sections, checkScrollState]);
 
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
 
     const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        const canScroll =
-          (e.deltaY > 0 && canScrollRight) || (e.deltaY < 0 && canScrollLeft);
-        if (canScroll) {
-          e.preventDefault();
-          el.scrollLeft += e.deltaY;
-        }
+      const absX = Math.abs(e.deltaX);
+      const absY = Math.abs(e.deltaY);
+
+      // Shift+wheel is a desktop horizontal-scroll convention.
+      if (e.shiftKey && absY > 0) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+        return;
       }
+
+      // Vertical-dominant: do not preventDefault — let the page scroll.
+      if (absY >= absX) return;
     };
 
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleWheel);
-  }, [canScrollLeft, canScrollRight]);
+  }, []);
 
-  // Horizontal Scroll Sync: Center the active tab
   useEffect(() => {
-    if (activeSection && scrollContainerRef.current) {
-      const activeBtn = scrollContainerRef.current.querySelector(
-        `[data-section="${activeSection}"]`,
-      );
-      if (activeBtn) {
-        const container = scrollContainerRef.current;
-        const btnLeft = (activeBtn as HTMLElement).offsetLeft;
-        const btnWidth = (activeBtn as HTMLElement).offsetWidth;
-        const containerWidth = container.offsetWidth;
+    if (!activeSection || !scrollContainerRef.current) return;
+    const activeBtn = scrollContainerRef.current.querySelector(
+      `[data-section="${activeSection}"]`,
+    );
+    if (!activeBtn) return;
 
-        container.scrollTo({
-          left: btnLeft - containerWidth / 2 + btnWidth / 2,
-          behavior: "smooth",
-        });
-      }
-    }
+    const container = scrollContainerRef.current;
+    const btnLeft = (activeBtn as HTMLElement).offsetLeft;
+    const btnWidth = (activeBtn as HTMLElement).offsetWidth;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    container.scrollTo({
+      left: btnLeft - container.offsetWidth / 2 + btnWidth / 2,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
   }, [activeSection]);
 
   const scrollToSection = (id: string) => {
+    setActiveSection(id);
     const element = document.getElementById(id);
-    if (element) {
-      const isMob = window.innerWidth < 768;
-      const offset = isMob ? 142 : 160;
-      const elementPosition =
-        element.getBoundingClientRect().top + window.pageYOffset;
-      const offsetPosition = elementPosition - offset;
+    if (!element) return;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth",
-      });
-    }
+    const isMob = window.innerWidth < 768;
+    const offset = isMob ? 124 : 128;
+    const elementPosition =
+      element.getBoundingClientRect().top + window.pageYOffset;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    window.scrollTo({
+      top: elementPosition - offset,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -174,40 +177,38 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
 
   const scrollByAmount = (direction: "left" | "right") => {
     const el = scrollContainerRef.current;
-    if (el) {
-      const scrollAmount = el.clientWidth * 0.6;
-      el.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
+    if (!el) return;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    el.scrollBy({
+      left: direction === "left" ? -(el.clientWidth * 0.6) : el.clientWidth * 0.6,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
   };
 
   return (
     <>
-      {/* Sentinel — when this scrolls out of view, the nav becomes sticky */}
-      <div ref={sentinelRef} className="h-0" />
+      <div ref={sentinelRef} className="h-0" aria-hidden="true" />
 
-      <div
+      <nav
         ref={navRef}
+        aria-label="On this trip"
         className={cn(
-          "sticky top-[80px] z-[9990] bg-white transition-all group/subnav mb-2 py-1.5",
-          isSticky
-            ? "shadow-xs border-b border-zinc-200/90"
-            : "border-b border-zinc-100/60",
+          "sticky top-[80px] z-[9990] bg-white",
+          isSticky && "shadow-[0_6px_16px_-12px_rgba(11,21,40,0.45)]",
         )}
       >
-        <div className="relative w-full flex items-center">
-          {/* Left Arrow & Fade */}
+        <div className="relative">
           {canScrollLeft && (
-            <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pr-4 bg-gradient-to-r from-white via-white/90 to-transparent pointer-events-none">
+            <div className="absolute left-0 inset-y-0 z-20 w-12 bg-gradient-to-r from-white via-white/85 to-transparent pointer-events-none flex items-center">
               <button
                 type="button"
                 onClick={() => scrollByAmount("left")}
-                aria-label="Scroll left"
-                className="pointer-events-auto flex items-center justify-center w-7 h-7 rounded-full bg-white border border-zinc-200 shadow-md text-zinc-700 hover:text-[#D4541A] hover:border-[#D4541A] transition-all cursor-pointer"
+                aria-label="Show previous sections"
+                className="pointer-events-auto ml-0 flex items-center justify-center w-6 h-6 rounded-full border border-zinc-200/70 bg-white text-zinc-500 hover:text-[#D4541A] hover:border-[#D4541A]/50 transition-colors cursor-pointer"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" strokeWidth={2.4} />
               </button>
             </div>
           )}
@@ -218,56 +219,66 @@ export default function TripSubNav({ sections }: TripSubNavProps) {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUpOrLeave}
             onMouseLeave={handleMouseUpOrLeave}
-            className="flex items-center gap-6 md:gap-9 overflow-x-auto no-scrollbar pb-3 pt-1 w-full select-none cursor-grab active:cursor-grabbing scroll-smooth touch-pan-x"
+            className="relative z-[1] flex items-end gap-5 overflow-x-auto no-scrollbar w-full select-none overscroll-x-contain scroll-smooth"
           >
-            {sections.map((section, idx) => (
-              <button
-                key={section.id}
-                data-section={section.id}
-                onClick={(e) => {
-                  if (hasDraggedRef.current) {
-                    e.preventDefault();
-                    return;
-                  }
-                  scrollToSection(section.id);
-                }}
-                className={cn(
-                  "group relative text-xs sm:text-sm font-bold capitalize tracking-wide whitespace-nowrap py-1 transition-all font-montserrat cursor-pointer shrink-0",
-                  idx === 0 ? "pl-0" : "",
-                  activeSection === section.id
-                    ? "text-[#D4541A]"
-                    : "text-zinc-500 hover:text-[#0B1528]",
-                )}
-              >
-                {section.label}
-                {/* Animated Underline */}
-                <span
+            {sections.map((section) => {
+              const isActive = activeSection === section.id;
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  data-section={section.id}
+                  aria-current={isActive ? "location" : undefined}
+                  onClick={(e) => {
+                    if (hasDraggedRef.current) {
+                      e.preventDefault();
+                      return;
+                    }
+                    scrollToSection(section.id);
+                  }}
                   className={cn(
-                    "absolute -bottom-[12px] left-0 w-full h-[3px] bg-[#D4541A] rounded-full transition-all duration-300 transform origin-center",
-                    activeSection === section.id
-                      ? "scale-x-100 opacity-100"
-                      : "scale-x-0 opacity-0 group-hover:scale-x-50 group-hover:opacity-50",
+                    "group relative shrink-0 whitespace-nowrap pb-2 pt-1.5 font-montserrat text-[11px] sm:text-xs font-semibold tracking-[0.1em] transition-colors cursor-pointer",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4541A]",
+                    isActive
+                      ? "text-[#D4541A]"
+                      : "text-zinc-400 hover:text-[#0B1528]",
                   )}
-                />
-              </button>
-            ))}
+                >
+                  {section.label}
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "absolute left-1/2 -translate-x-1/2 bottom-0 z-[1] h-[2.5px] w-[14px] rounded-full bg-[#D4541A] transition-transform duration-200 origin-center",
+                      isActive
+                        ? "scale-x-100 opacity-100"
+                        : "scale-x-0 opacity-100 group-hover:scale-x-75 group-hover:opacity-40",
+                    )}
+                  />
+                </button>
+              );
+            })}
           </div>
 
-          {/* Right Arrow & Fade */}
           {canScrollRight && (
-            <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center pl-4 bg-gradient-to-l from-white via-white/90 to-transparent pointer-events-none">
+            <div className="absolute right-0 inset-y-0 z-20 w-12 bg-gradient-to-l from-white via-white/85 to-transparent pointer-events-none flex items-center justify-end">
               <button
                 type="button"
                 onClick={() => scrollByAmount("right")}
-                aria-label="Scroll right"
-                className="pointer-events-auto flex items-center justify-center w-7 h-7 rounded-full bg-white border border-zinc-200 shadow-md text-zinc-700 hover:text-[#D4541A] hover:border-[#D4541A] transition-all cursor-pointer"
+                aria-label="Show more sections"
+                className="pointer-events-auto mr-0 flex items-center justify-center w-6 h-6 rounded-full border border-zinc-200/70 bg-white text-zinc-500 hover:text-[#D4541A] hover:border-[#D4541A]/50 transition-colors cursor-pointer"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" strokeWidth={2.4} />
               </button>
             </div>
           )}
+
+          {/* Trail path — the index sits on this line */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-zinc-200/90"
+          />
         </div>
-      </div>
+      </nav>
     </>
   );
 }

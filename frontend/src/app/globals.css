@@ -64,7 +64,7 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
 }
@@ -1331,14 +1331,24 @@ article h3 {
 /* SECTION 3: DATE PICKER & MONTH TABS */
 .month-tabs {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
   overflow-x: auto;
 }
 
 .month-tab {
-  flex: 1;
-  min-width: 80px;
+  flex: 0 0 auto;
+  min-width: max-content;
   text-align: center;
+  white-space: nowrap;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Prevent any inherited/global ::before/::after from reprinting the month name */
+.month-tab::before,
+.month-tab::after {
+  content: none !important;
 }
 
 .date-grid {

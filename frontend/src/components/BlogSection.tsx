@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Blog } from "@/types";
+import { useWheelPassThrough } from "@/lib/useWheelPassThrough";
 
 interface BlogCardItem {
   id: string;
@@ -108,6 +109,7 @@ export default function BlogSection({
   const displayStories: BlogCardItem[] = apiMappedStories;
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  useWheelPassThrough(scrollRef);
 
   const nudge = (dir: "l" | "r") => {
     if (scrollRef.current) {
@@ -149,8 +151,7 @@ export default function BlogSection({
         {/* HORIZONTAL CAROUSEL SLIDER (1.5 CARDS PER VIEW ON MOBILE) */}
         <div
           ref={scrollRef}
-          className="carousel-track w-full max-w-full flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-pan-x"
-          style={{ touchAction: "pan-x" }}
+          className="carousel-track w-full max-w-full flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory"
         >
           {displayStories.map((story, idx) => (
             <motion.div

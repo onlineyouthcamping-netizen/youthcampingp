@@ -42,8 +42,8 @@ export default async function TripDetailPage({
   const durationStr = formatDuration(trip.duration, "08 N / 09 D");
 
   return (
-    <div className="bg-white min-h-screen font-montserrat pb-20 lg:pb-0">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10 pt-[84px] pb-8 space-y-4 md:space-y-6">
+    <div className="bg-white min-h-screen font-montserrat">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10 pt-[84px] pb-3 md:pb-4 space-y-4 md:space-y-6">
         {/* 1. Photo Gallery Grid (At top of page below header) */}
         <TripGallerySection trip={trip} />
 
@@ -98,54 +98,53 @@ export default async function TripDetailPage({
           })()}
         </div>
 
-        {/* 3. Quick Info Bar (Full Width) */}
-        <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-8 gap-y-3 gap-x-4 py-4 my-4 border-y border-zinc-200/80 w-full relative z-10 bg-white">
-          {[
-            { label: "Duration", val: durationStr, icon: Clock3 },
-            {
-              label: "Difficulty",
-              val: trip.difficulty
-                ? trip.difficulty.charAt(0).toUpperCase() +
-                  trip.difficulty.slice(1)
-                : "Easy to Moderate",
-              icon: Mountain,
-            },
-            {
-              label: "Age Group",
-              val: trip.ageLimit || "12-35 Years",
-              icon: Backpack,
-            },
-            {
-              label: "Max Altitude",
-              val: trip.maxAltitude || "10,000 ft",
-              icon: MountainSnow,
-            },
-          ].map((info, i) => (
-            <div key={i} className="flex items-center gap-2.5">
-              <info.icon className="w-[18px] h-[18px] text-[#0B1528] stroke-[1.8] shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[#0B1528] font-semibold text-[13px] sm:text-sm leading-tight font-montserrat truncate">
-                  {info.val}
-                </p>
-                <p className="text-zinc-400 font-medium text-[11px] leading-tight font-montserrat mt-0.5">
-                  {info.label}
-                </p>
+        {/* 3–4. Meta chips + section index + detail (tight stack, no floating band) */}
+        <div>
+          <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-8 gap-y-3 gap-x-4 py-2.5 sm:py-3 border-t border-zinc-200/80 w-full relative z-10 bg-white">
+            {[
+              { label: "Duration", val: durationStr, icon: Clock3 },
+              {
+                label: "Difficulty",
+                val: trip.difficulty
+                  ? trip.difficulty.charAt(0).toUpperCase() +
+                    trip.difficulty.slice(1)
+                  : "Easy to Moderate",
+                icon: Mountain,
+              },
+              {
+                label: "Age Group",
+                val: trip.ageLimit || "12-35 Years",
+                icon: Backpack,
+              },
+              {
+                label: "Max Altitude",
+                val: trip.maxAltitude || "10,000 ft",
+                icon: MountainSnow,
+              },
+            ].map((info, i) => (
+              <div key={i} className="flex items-center gap-2.5">
+                <info.icon className="w-[18px] h-[18px] text-[#0B1528] stroke-[1.8] shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[#0B1528] font-semibold text-[13px] sm:text-sm leading-tight font-montserrat truncate">
+                    {info.val}
+                  </p>
+                  <p className="text-zinc-400 font-medium text-[11px] leading-tight font-montserrat mt-0.5">
+                    {info.label}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* 4. Main 12-Column Layout Grid (Tab SubNav + Detailed View | Sidebar Booking Card) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 pt-2">
-          {/* Left Column (8 Cols): Tab SubNav & Detailed Section Content */}
-          <div className="lg:col-span-8 space-y-3 min-w-0">
-            <TripSubNav sections={navSections} />
-            <TripDetailView trip={trip} />
+            ))}
           </div>
 
-          {/* Right Column (4 Cols): Sticky Booking Sidebar */}
-          <div className="lg:col-span-4 relative min-w-0">
-            <StickyBookingCard trip={trip} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+            <div className="lg:col-span-8 min-w-0">
+              <TripSubNav sections={navSections} />
+              <TripDetailView trip={trip} />
+            </div>
+
+            <div className="lg:col-span-4 relative min-w-0">
+              <StickyBookingCard trip={trip} />
+            </div>
           </div>
         </div>
       </div>

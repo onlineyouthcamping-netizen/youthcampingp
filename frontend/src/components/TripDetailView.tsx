@@ -24,29 +24,29 @@ export default function TripDetailView({ trip }: TripDetailViewProps) {
   }, [trip.id]);
 
   return (
-    <div className="lg:col-span-8 space-y-7 md:space-y-8">
-      <div id="about" className="scroll-mt-[140px] md:scroll-mt-[160px]">
+    <div className="lg:col-span-8 space-y-7 md:space-y-8 pt-2.5 md:pt-3">
+      <div id="about" className="scroll-mt-[124px] md:scroll-mt-[128px]">
         <AboutTrip
           description={trip.description || ""}
           customAboutTrip={(trip as any).customSections?.aboutTrip}
         />
       </div>
 
-      <div id="itinerary" className="scroll-mt-[140px] md:scroll-mt-[160px]">
+      <div id="itinerary" className="scroll-mt-[124px] md:scroll-mt-[128px]">
         <TripBookingSection
           trip={trip}
           onDateSelect={(date) => setSelectedDate(date)}
         />
       </div>
 
-      <div id="inclusions" className="scroll-mt-[140px] md:scroll-mt-[160px]">
+      <div id="inclusions" className="scroll-mt-[124px] md:scroll-mt-[128px]">
         <InclusionsExclusions
           inclusions={trip.inclusions || []}
           exclusions={trip.exclusions || []}
         />
       </div>
 
-      <div id="highlights" className="scroll-mt-[140px] md:scroll-mt-[160px]">
+      <div id="highlights" className="scroll-mt-[124px] md:scroll-mt-[128px]">
         <TripHighlightsList
           items={
             trip.highlights &&
@@ -65,18 +65,18 @@ export default function TripDetailView({ trip }: TripDetailViewProps) {
       {trip.accommodations &&
         Array.isArray(trip.accommodations) &&
         trip.accommodations.length > 0 && (
-          <div id="stay" className="scroll-mt-[140px] md:scroll-mt-[160px]">
+          <div id="stay" className="scroll-mt-[124px] md:scroll-mt-[128px]">
             <StaySection accommodations={trip.accommodations} />
           </div>
         )}
 
-      <div id="reviews" className="scroll-mt-[140px] md:scroll-mt-[160px]">
+      <div id="reviews" className="scroll-mt-[124px] md:scroll-mt-[128px]">
         <TripReviews reviews={trip.reviews || []} />
       </div>
 
       <ReviewReels reels={trip.reels || []} />
 
-      <div id="faqs" className="scroll-mt-[140px] md:scroll-mt-[160px]">
+      <div id="faqs" className="scroll-mt-[124px] md:scroll-mt-[128px]">
         <TripFAQ faqs={trip.faqs || []} />
       </div>
 

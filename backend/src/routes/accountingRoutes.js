@@ -17,13 +17,13 @@ const { authenticate, requirePermission } = require("../middleware/auth");
 router.use(authenticate);
 
 // CRUD routes
-router.get("/entries", requirePermission("accounting.view"), getEntries);
+router.get("/entries", requirePermission(["accounting.view", "payments.view"]), getEntries);
 router.get(
   "/entries/:id/history",
-  requirePermission("accounting.view"),
+  requirePermission(["accounting.view", "payments.view"]),
   getEntryHistory,
 );
-router.post("/entries", requirePermission("accounting.submit"), createEntry);
+router.post("/entries", requirePermission(["accounting.submit", "payments.view"]), createEntry);
 router.post(
   "/entries/:id/approve",
   requirePermission("accounting.approve"),

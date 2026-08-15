@@ -43,6 +43,33 @@ interface StaySectionProps {
   accommodations?: Accommodation[];
 }
 
+const STAY_TYPE_WORDS = [
+  "cottage",
+  "cottages",
+  "hotel",
+  "homestay",
+  "camp",
+  "camping",
+  "resort",
+  "villa",
+  "tent",
+  "tents",
+];
+
+function isRedundantStayTypeChip(amenity: string, stay: Accommodation) {
+  const text = amenity.toLowerCase().trim();
+  if (!text) return true;
+  const name = (stay.name || "").toLowerCase();
+  const type = (stay.type || "").toLowerCase();
+  const isTypeWord = STAY_TYPE_WORDS.includes(text);
+  if (!isTypeWord) return false;
+  if (name.includes(text.replace(/s$/, "")) || name.includes(text)) return true;
+  if (type && (type.includes(text) || text.includes(type.replace(/s$/, "")))) {
+    return name.includes(type.replace(/s$/, "")) || name.includes(type);
+  }
+  return false;
+}
+
 const defaultStaysList: Accommodation[] = [
   {
     name: "Boutique Alpine Resort & Spa",
@@ -224,11 +251,7 @@ export default function StaySection({ accommodations }: StaySectionProps) {
   const [selectedStay, setSelectedStay] = useState<Accommodation | null>(null);
   const [activeCategory, setActiveCategory] = useState("All");
 
-  if (!accommodations || accommodations.length === 0) {
-    return null;
-  }
-
-  const staysList = accommodations;
+  const staysList = accommodations || [];
 
   const modalCategories = useMemo(() => {
     if (!selectedStay) return ["All"];
@@ -256,6 +279,19 @@ export default function StaySection({ accommodations }: StaySectionProps) {
     if (activeCategory === "All") return gallery;
     return gallery.filter((img) => img && img.category === activeCategory);
   }, [selectedStay, activeCategory]);
+
+  const highlightAmenities = useMemo(() => {
+    if (!selectedStay?.amenities) return [];
+    return selectedStay.amenities.filter(
+      (amenity) =>
+        Boolean(String(amenity || "").trim()) &&
+        !isRedundantStayTypeChip(String(amenity), selectedStay),
+    );
+  }, [selectedStay]);
+
+  if (staysList.length === 0) {
+    return null;
+  }
 
   return (
     <section className="space-y-6 scroll-mt-[140px]" id="stay">
@@ -315,17 +351,24 @@ export default function StaySection({ accommodations }: StaySectionProps) {
                   {/* Highlights Pills on Main Card */}
                   {stay.amenities && stay.amenities.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1.5">
-                      {stay.amenities.slice(0, 3).map((amenity, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center gap-1 bg-orange-50/80 border border-orange-200/60 text-[9px] font-bold text-[#D4541A] px-1.5 py-0.5 rounded-md font-montserrat"
-                        >
-                          <CheckCircle2 className="w-2.5 h-2.5 text-[#D4541A] shrink-0" />
-                          <span className="truncate max-w-[90px]">
-                            {amenity}
+                      {stay.amenities
+                        .filter(
+                          (amenity) =>
+                            Boolean(String(amenity || "").trim()) &&
+                            !isRedundantStayTypeChip(String(amenity), stay),
+                        )
+                        .slice(0, 3)
+                        .map((amenity, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 bg-orange-50/80 border border-orange-200/60 text-[9px] font-bold text-[#D4541A] px-1.5 py-0.5 rounded-md font-montserrat"
+                          >
+                            <CheckCircle2 className="w-2.5 h-2.5 text-[#D4541A] shrink-0" />
+                            <span className="truncate max-w-[90px]">
+                              {amenity}
+                            </span>
                           </span>
-                        </span>
-                      ))}
+                        ))}
                     </div>
                   )}
                 </div>
@@ -401,8 +444,8 @@ export default function StaySection({ accommodations }: StaySectionProps) {
               </div>
 
               {/* Category Filter Pills (Interior / Rooms, Bathroom, Dining Area, Views) */}
-              <div className="px-4 sm:px-6 pt-3 pb-2 border-b border-zinc-100 bg-[#F8F9FA] shrink-0">
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              <div className="px-4 sm:px-6 pt-2 pb-1.5 border-b border-zinc-100 bg-[#F8F9FA] shrink-0">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
                   {modalCategories.map((cat) => (
                     <button
                       key={cat}
@@ -431,69 +474,76 @@ export default function StaySection({ accommodations }: StaySectionProps) {
                 </div>
               </div>
 
-              {/* Modal Body with Extra Bottom Scroll Padding so bottom photos are 100% unclipped */}
-              <div className="p-4 sm:p-6 pb-12 sm:pb-16 overflow-y-auto flex-1 custom-scrollbar space-y-5">
+              {/* Modal body: tight section gaps + extra bottom pad so last blocks clear the Next.js N / floating widgets */}
+              <div className="px-4 pt-3 pb-24 sm:px-6 sm:pt-4 sm:pb-28 overflow-y-auto flex-1 custom-scrollbar space-y-3">
                 {/* Amenities Highlights Bar */}
-                {selectedStay.amenities &&
-                  selectedStay.amenities.length > 0 && (
-                    <div className="p-4 bg-orange-50/40 border border-orange-100 rounded-2xl">
-                      <p className="text-xs font-bold text-[#0B1528] uppercase tracking-wider font-montserrat mb-2">
-                        Key Stay Highlights:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedStay.amenities.map((amenity, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-1.5 bg-white border border-orange-200/80 rounded-lg px-2.5 py-1 text-xs font-semibold text-zinc-700 font-montserrat shadow-2xs"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#D4541A]" />
-                            <span>{amenity}</span>
-                          </div>
-                        ))}
-                      </div>
+                {highlightAmenities.length > 0 && (
+                  <div className="p-3 bg-orange-50/40 border border-orange-100 rounded-2xl h-fit">
+                    <p className="text-xs font-bold text-[#0B1528] uppercase tracking-wider font-montserrat mb-1.5">
+                      Key Stay Highlights:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {highlightAmenities.map((amenity, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-1.5 bg-white border border-orange-200/80 rounded-lg px-2.5 py-1 text-xs font-semibold text-zinc-700 font-montserrat shadow-2xs"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#D4541A]" />
+                          <span>{amenity}</span>
+                        </div>
+                      ))}
                     </div>
-                  )}
+                  </div>
+                )}
 
                 {/* Meals Menu Breakdown Section */}
                 {((selectedStay as any).mealsBreakdown ||
                   (selectedStay as any).meals) && (
-                  <div className="p-4 bg-zinc-50 border border-zinc-200/80 rounded-2xl space-y-3">
+                  <div className="p-3 bg-zinc-50 border border-zinc-200/80 rounded-2xl space-y-2.5 h-fit">
                     <p className="text-xs font-bold text-[#0B1528] uppercase tracking-wider font-montserrat flex items-center gap-2">
                       <Utensils className="w-4 h-4 text-[#D4541A]" />
                       <span>Food & Meals Menu Breakdown</span>
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-montserrat">
-                      {(selectedStay as any).mealsBreakdown?.breakfast && (
-                        <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
-                          <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">
-                            Breakfast
-                          </span>
-                          <p className="text-zinc-600 font-medium leading-relaxed">
-                            {(selectedStay as any).mealsBreakdown.breakfast}
-                          </p>
-                        </div>
-                      )}
-                      {(selectedStay as any).mealsBreakdown?.lunch && (
-                        <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
-                          <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">
-                            Lunch
-                          </span>
-                          <p className="text-zinc-600 font-medium leading-relaxed">
-                            {(selectedStay as any).mealsBreakdown.lunch}
-                          </p>
-                        </div>
-                      )}
-                      {(selectedStay as any).mealsBreakdown?.dinner && (
-                        <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
-                          <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">
-                            Dinner
-                          </span>
-                          <p className="text-zinc-600 font-medium leading-relaxed">
-                            {(selectedStay as any).mealsBreakdown.dinner}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    {((selectedStay as any).mealsBreakdown?.breakfast ||
+                      (selectedStay as any).mealsBreakdown?.lunch ||
+                      (selectedStay as any).mealsBreakdown?.dinner) ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-montserrat">
+                        {(selectedStay as any).mealsBreakdown?.breakfast && (
+                          <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
+                            <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">
+                              Breakfast
+                            </span>
+                            <p className="text-zinc-600 font-medium leading-relaxed">
+                              {(selectedStay as any).mealsBreakdown.breakfast}
+                            </p>
+                          </div>
+                        )}
+                        {(selectedStay as any).mealsBreakdown?.lunch && (
+                          <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
+                            <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">
+                              Lunch
+                            </span>
+                            <p className="text-zinc-600 font-medium leading-relaxed">
+                              {(selectedStay as any).mealsBreakdown.lunch}
+                            </p>
+                          </div>
+                        )}
+                        {(selectedStay as any).mealsBreakdown?.dinner && (
+                          <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
+                            <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">
+                              Dinner
+                            </span>
+                            <p className="text-zinc-600 font-medium leading-relaxed">
+                              {(selectedStay as any).mealsBreakdown.dinner}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-zinc-600 font-medium font-montserrat leading-relaxed">
+                        {(selectedStay as any).meals}
+                      </p>
+                    )}
                     {(selectedStay as any).disclaimer && (
                       <p className="text-[11px] text-zinc-500 italic pt-1 font-montserrat leading-relaxed">
                         {(selectedStay as any).disclaimer}
