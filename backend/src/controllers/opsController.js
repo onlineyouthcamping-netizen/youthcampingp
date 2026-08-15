@@ -986,12 +986,47 @@ exports.getTransportFleet = async (req, res) => {
     });
 
     if (includeRates) {
-      // Collect vendor IDs to lookup directory transport rates
+      // Collect vendor IDs to lookup rates
       const vendorIds = Array.from(new Set(fleet.map((veh) => veh.vendorId).filter(Boolean)));
 
+      const opsRatesMap = {};
       const dirRatesMap = {};
+
       if (vendorIds.length > 0) {
         try {
+          // 1. Primary: Lookup OpsRoutePricingGroup and OpsVehicleRate
+          const routeGroups = await prisma.opsRoutePricingGroup.findMany({
+            where: {
+              vendorId: { in: vendorIds },
+              ...(ctx.where.tripId ? { tripId: ctx.where.tripId } : {}),
+            },
+            include: {
+              vehicleRates: {
+                where: { isActive: true },
+                include: { vehicle: true },
+              },
+            },
+          });
+
+          routeGroups.forEach((rg) => {
+            if (!opsRatesMap[rg.vendorId]) opsRatesMap[rg.vendorId] = [];
+            (rg.vehicleRates || []).forEach((vr) => {
+              opsRatesMap[rg.vendorId].push({
+                routeName: rg.routeName || rg.routeGroupKey,
+                vehicleType: vr.vehicle?.vehicleType || vr.vehicleNameSnapshot,
+                capacity: vr.vehicle?.capacity || vr.sellableSeats,
+                totalAmount: Number(vr.totalVehicleAmount || 0),
+                suggestedPP: Number(vr.suggestedPP || 0),
+                negotiatedPP: Number(vr.negotiatedPP || 0),
+              });
+            });
+          });
+        } catch (opsErr) {
+          console.warn("Ops vehicle rate lookup notice:", opsErr.message);
+        }
+
+        try {
+          // 2. Fallback: Directory vendor transport rate lookup
           const dirRates = await prisma.directoryVendorTransportRate.findMany({
             where: { vendorId: { in: vendorIds } },
           });
@@ -1006,19 +1041,39 @@ exports.getTransportFleet = async (req, res) => {
 
       // Resolve applicable tariff for each vehicle based on route and vehicle type
       const resolvedFleet = fleet.map((veh) => {
-        const rates = dirRatesMap[veh.vendorId] || [];
-        const applicable = rates.find(
+        const opsRates = opsRatesMap[veh.vendorId] || [];
+        const dirRates = dirRatesMap[veh.vendorId] || [];
+
+        // Try OpsVehicleRate first
+        const applicableOps = opsRates.find(
           (r) =>
-            (!r.route || r.route === veh.route || r.routeName === veh.route) &&
-            (r.vehicleType === veh.vehicleType) &&
-            (r.status === 'ACTIVE' || !r.status),
+            (!veh.route || !r.routeName || r.routeName.toLowerCase().includes(veh.route.toLowerCase()) || veh.route.toLowerCase().includes(r.routeName.toLowerCase())) &&
+            (!veh.vehicleType || !r.vehicleType || r.vehicleType.toLowerCase() === veh.vehicleType.toLowerCase()),
         );
+
+        // Try Directory rate fallback
+        const applicableDir = !applicableOps
+          ? dirRates.find(
+              (r) =>
+                (!r.route || r.route === veh.route || r.routeName === veh.route) &&
+                (r.vehicleType === veh.vehicleType) &&
+                (r.status === 'ACTIVE' || !r.status),
+            )
+          : null;
+
+        const resolvedCost = applicableOps
+          ? applicableOps.totalAmount
+          : applicableDir
+            ? Number(applicableDir.totalVehicleCost ?? applicableDir.amount ?? applicableDir.rate ?? 0)
+            : Number(veh.totalAmount ?? 0);
+
         return {
           ...veh,
-          tariff: applicable
+          totalAmount: resolvedCost || veh.totalAmount,
+          tariff: resolvedCost
             ? {
-                amount: Number(applicable.totalVehicleCost ?? applicable.amount ?? applicable.rate ?? 0),
-                rateBasis: applicable.rateBasis || "PER_VEHICLE",
+                amount: resolvedCost,
+                rateBasis: "PER_VEHICLE",
               }
             : null,
         };
