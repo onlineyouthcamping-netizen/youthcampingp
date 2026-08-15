@@ -89,11 +89,22 @@ exports.getEntries = async (req, res) => {
           updatedAt: true,
           booking: {
             select: {
+              id: true,
               bookingId: true,
               name: true,
               fullName: true,
+              email: true,
+              phone: true,
+              mobile: true,
+              tripId: true,
               tripName: true,
               totalAmount: true,
+              advancePaid: true,
+              remainingAmount: true,
+              paymentStatus: true,
+              payment_status: true,
+              paymentMode: true,
+              departureDate: true,
               adjustedPrice: true,
               numberOfTravelers: true,
               salesAdminId: true,
@@ -148,24 +159,15 @@ exports.getEntryHistory = async (req, res) => {
 
     const history = await prisma.accountingEntryLog.findMany({
       where: { accountingEntryId: entry.id },
-      select: {
-        id: true,
-        accountingEntryId: true,
-        action: true,
-        notes: true,
-        actorId: true,
-        createdAt: true,
-        actor: { select: { id: true, name: true } },
-      },
+      include: { actor: { select: { id: true, name: true, role: true } } },
       orderBy: { createdAt: "desc" },
-      take: 100,
     });
     return res.json({ success: true, data: history });
   } catch (err) {
     console.error("getEntryHistory error:", err);
     return res
       .status(500)
-      .json({ success: false, message: "Failed to fetch accounting history" });
+      .json({ success: false, message: "Failed to fetch entry history" });
   }
 };
 
@@ -186,8 +188,31 @@ exports.createEntry = async (req, res) => {
         });
     }
 
-    // 1. Verify salesperson owns this booking or has admin rights
-    const hasAccess = await checkBookingOwnership(bookingId, req.user);
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Amount must be a positive number" });
+    }
+
+    // 1. Verify booking exists
+    const booking = await prisma.booking.findFirst({
+      where: {
+        OR: [{ bookingId }, { id: bookingId }],
+        tenantId: req.user.tenantId || "default",
+      },
+    });
+
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Target booking not found" });
+    }
+
+    const targetBookingId = booking.bookingId || booking.id;
+
+    // 2. Verify salesperson owns this booking or has admin rights
+    const hasAccess = await checkBookingOwnership(targetBookingId, req.user);
     if (!hasAccess) {
       return res
         .status(403)
@@ -197,12 +222,12 @@ exports.createEntry = async (req, res) => {
         });
     }
 
-    // 2. Prevent fake/ghost duplicate entry check (same amount, mode, ref inside 5 mins)
+    // 3. Prevent fake/ghost duplicate entry check (same amount, mode, ref inside 5 mins)
     const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000);
     const existingDuplicate = await prisma.accountingEntry.findFirst({
       where: {
-        bookingId,
-        amount: parseFloat(amount),
+        bookingId: targetBookingId,
+        amount: parsedAmount,
         paymentMode,
         referenceNumber: referenceNumber || null,
         createdAt: { gte: fiveMinsAgo },
@@ -217,12 +242,12 @@ exports.createEntry = async (req, res) => {
       });
     }
 
-    // 3. Create the pending entry
+    // 4. Create the pending entry
     const entry = await prisma.accountingEntry.create({
       data: {
         tenantId: req.user.tenantId || "default",
-        bookingId,
-        amount: parseFloat(amount),
+        bookingId: targetBookingId,
+        amount: parsedAmount,
         paymentMode,
         referenceNumber,
         notes,
@@ -230,31 +255,26 @@ exports.createEntry = async (req, res) => {
         salespersonId:
           req.user.role === "sales"
             ? req.user.id
-            : req.body.salespersonId || req.user.id,
+            : req.body.salespersonId || booking.salesAdminId || req.user.id,
       },
     });
 
-    // 4. Write immutable history log
+    // 5. Write immutable history log
     await prisma.accountingEntryLog.create({
       data: {
         accountingEntryId: entry.id,
         action: "SUBMIT",
-        notes: `Submitted payment entry of ₹${amount} via ${paymentMode}`,
+        notes: `Submitted payment entry of ₹${parsedAmount.toLocaleString("en-IN")} via ${paymentMode}`,
         actorId: req.user.id,
       },
     });
 
-    const bookingRecord = await prisma.booking.findUnique({
-      where: { bookingId },
+    await logBookingActivity({
+      bookingId: booking.id,
+      action: "PAYMENT_SUBMITTED",
+      details: `Ledger payment of ₹${parsedAmount.toLocaleString("en-IN")} via ${paymentMode} submitted for approval by ${req.user.name || "System"}`,
+      performedByAdminId: req.user.id,
     });
-    if (bookingRecord) {
-      await logBookingActivity({
-        bookingId: bookingRecord.id,
-        action: "PAYMENT_SUBMITTED",
-        details: `Ledger payment of ₹${amount} via ${paymentMode} submitted for approval by salesperson ${req.user.name || "System"}`,
-        performedByAdminId: req.user.id,
-      });
-    }
 
     return res.status(201).json({ success: true, data: entry });
   } catch (err) {
@@ -292,7 +312,7 @@ exports.approveEntry = async (req, res) => {
         });
     }
 
-    // Update status
+    // 1. Update entry status
     const updated = await prisma.accountingEntry.update({
       where: { id },
       data: {
@@ -301,24 +321,70 @@ exports.approveEntry = async (req, res) => {
       },
     });
 
-    // Write immutable history log
+    // 2. Write immutable history log
     await prisma.accountingEntryLog.create({
       data: {
         accountingEntryId: entry.id,
         action: "APPROVE",
-        notes: "Approved payment entry",
+        notes: `Approved payment entry of ₹${entry.amount.toLocaleString("en-IN")} via ${entry.paymentMode}`,
         actorId: req.user.id,
       },
     });
 
-    const bookingRecord = await prisma.booking.findUnique({
-      where: { bookingId: updated.bookingId },
+    // 3. Atomically synchronize target booking and client payment receipts
+    const booking = await prisma.booking.findFirst({
+      where: {
+        OR: [{ bookingId: updated.bookingId }, { id: updated.bookingId }],
+      },
     });
-    if (bookingRecord) {
+
+    if (booking) {
+      const targetBookingId = booking.bookingId || booking.id;
+
+      // Upsert verified receipt in OpsClientPayment
+      await prisma.opsClientPayment.create({
+        data: {
+          tenantId: booking.tenantId || "default",
+          bookingId: targetBookingId,
+          amount: updated.amount,
+          paymentMode: updated.paymentMode,
+          transactionId: updated.referenceNumber || `ACC-${updated.id}`,
+          status: "Verified",
+          collectedBy: req.user?.name || req.user?.email || "Finance",
+          remarks: updated.notes || "Approved via Accounting Hub",
+        },
+      });
+
+      // Compute total verified receipts for this booking
+      const allVerified = await prisma.opsClientPayment.findMany({
+        where: {
+          bookingId: { in: [booking.id, booking.bookingId] },
+          status: "Verified",
+        },
+      });
+
+      const totalVerified = allVerified.reduce((sum, r) => sum + (r.amount || 0), 0);
+      const totalAmount = Number(booking.totalAmount || 0);
+      const remaining = Math.max(0, totalAmount - totalVerified);
+
+      const isFullyPaid = remaining === 0 && totalVerified > 0;
+      const isPartial = totalVerified > 0 && !isFullyPaid;
+
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: {
+          advancePaid: totalVerified,
+          remainingAmount: remaining,
+          paymentStatus: isFullyPaid ? "Paid" : isPartial ? "Partial" : "Pending",
+          payment_status: isFullyPaid ? "paid" : isPartial ? "partial" : "pending",
+          ...(isFullyPaid && booking.status === "pending" ? { status: "confirmed" } : {}),
+        },
+      });
+
       await logBookingActivity({
-        bookingId: bookingRecord.id,
+        bookingId: booking.id,
         action: "PAYMENT_APPROVED",
-        details: `Ledger payment of ₹${updated.amount} approved by manager ${req.user.name || "System"}`,
+        details: `Payment entry of ₹${updated.amount.toLocaleString("en-IN")} via ${updated.paymentMode} approved by ${req.user.name || "Finance"}. Total Paid: ₹${totalVerified.toLocaleString("en-IN")}, Remaining: ₹${remaining.toLocaleString("en-IN")}`,
         performedByAdminId: req.user.id,
       });
     }

@@ -201,6 +201,34 @@ exports.addClientPayment = async (req, res) => {
       data: updateData,
     });
 
+    // Auto-sync into AccountingEntry for full accounting ledger visibility
+    if (receipt.status === "Verified") {
+      try {
+        const rawMode = String(paymentMode || "UPI").toUpperCase();
+        const normalizedMode = rawMode.includes("CASH")
+          ? "CASH"
+          : rawMode.includes("BANK") || rawMode.includes("NEFT") || rawMode.includes("IMPS")
+            ? "BANK_TRANSFER"
+            : "UPI";
+
+        await prisma.accountingEntry.create({
+          data: {
+            tenantId,
+            bookingId: targetBookingId,
+            amount: parseFloat(amount) || 0,
+            paymentMode: normalizedMode,
+            referenceNumber: transactionId || `PAY-${receipt.id}`,
+            notes: remarks || "Recorded via Booking Workspace",
+            status: "APPROVED",
+            salespersonId: collectorAdminId || req.user?.id,
+            actionedById: req.user?.id,
+          },
+        });
+      } catch (entryErr) {
+        console.warn("AccountingEntry auto-sync skipped:", entryErr.message);
+      }
+    }
+
     // Auto-log confirmation email if booking just became confirmed
     if (updateData.status === "confirmed" && booking.status !== "confirmed") {
       try {
