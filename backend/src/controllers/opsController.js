@@ -328,7 +328,7 @@ exports.upsertDayItinerary = async (req, res) => {
 // ── TRIP EXPENSE GRID ──
 exports.getTripExpenses = async (req, res) => {
   try {
-    const ctx = await parseDepartureFilter(req, res, true);
+    const ctx = await parseDepartureFilter(req, res, false);
     if (!ctx) return;
     const expenses = await prisma.opsTripExpense.findMany({
       where: ctx.where,
