@@ -122,6 +122,20 @@ const sendEmail = async ({
           metadata: { messageId: info.messageId, hasAttachment: !!attachments },
         },
       });
+      try {
+        await prisma.emailLog.create({
+          data: {
+            tenantId: "default",
+            bookingId,
+            recipient: to,
+            subject,
+            body: htmlContent || textContent || `Sent template: ${type}`,
+            templateName: type ? type.replace(/_/g, " ").toUpperCase() : "Booking Email",
+            status: "SENT",
+            sentAt: new Date(),
+          },
+        });
+      } catch (_) {}
     }
 
     return info;
@@ -143,6 +157,21 @@ const sendEmail = async ({
           error: error.message,
         },
       });
+      try {
+        await prisma.emailLog.create({
+          data: {
+            tenantId: "default",
+            bookingId,
+            recipient: to,
+            subject,
+            body: htmlContent || textContent || `Failed template: ${type}`,
+            templateName: type ? type.replace(/_/g, " ").toUpperCase() : "Booking Email",
+            status: "FAILED",
+            error: error.message,
+            sentAt: new Date(),
+          },
+        });
+      } catch (_) {}
     }
     throw error;
   }

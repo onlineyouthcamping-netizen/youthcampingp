@@ -16,20 +16,58 @@ exports.getBookingLogs = async (req, res, next) => {
       return res.json({ success: true, data: [] });
     }
 
-    const logs = await prisma.emailLog.findMany({
-      where: {
-        tenantId,
-        OR: [{ bookingId: booking.id }, { bookingId: booking.bookingId }],
-      },
-      include: {
-        sender: {
-          select: { name: true, email: true },
+    const [logs, legacyLogs] = await Promise.all([
+      prisma.emailLog.findMany({
+        where: {
+          tenantId,
+          OR: [{ bookingId: booking.id }, { bookingId: booking.bookingId }],
         },
-      },
-      orderBy: { sentAt: "desc" },
+        include: {
+          sender: {
+            select: { name: true, email: true },
+          },
+        },
+        orderBy: { sentAt: "desc" },
+      }),
+      prisma.bookingEmailLog.findMany({
+        where: {
+          OR: [{ bookingId: booking.id }, { bookingId: booking.bookingId }],
+        },
+        orderBy: { sentAt: "desc" },
+      }),
+    ]);
+
+    const mappedLegacyLogs = legacyLogs.map((l) => {
+      let bodyText = "";
+      if (l.metadata && typeof l.metadata === "object") {
+        bodyText = l.metadata.body || JSON.stringify(l.metadata, null, 2);
+      } else if (typeof l.metadata === "string") {
+        bodyText = l.metadata;
+      }
+      return {
+        id: l.id,
+        recipient: l.recipient,
+        subject: l.subject || `Booking Notification (${l.type})`,
+        body: bodyText || `Email Type: ${l.type}`,
+        templateName: l.type ? l.type.replace(/_/g, " ").toUpperCase() : "Booking Confirmation",
+        status: (l.status || "success").toUpperCase(),
+        error: l.error || undefined,
+        isTest: false,
+        ccCount: 0,
+        bccCount: 0,
+        sentAt: l.sentAt || new Date().toISOString(),
+        sender: {
+          name: "System / Automated",
+          email: "system@youthcamping.online",
+        },
+      };
     });
 
-    res.json({ success: true, data: logs });
+    const combinedLogs = [...logs, ...mappedLegacyLogs].sort(
+      (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime(),
+    );
+
+    res.json({ success: true, data: combinedLogs });
   } catch (err) {
     next(err);
   }
