@@ -110,6 +110,7 @@ model Admin {
   departuresConfirmed        Departure[]                @relation("DepartureConfirmedBy")
   employeeSubmissions        EmployeeCollectionSubmission[] @relation("EmployeeSubmissions")
   submissionsRecorded        EmployeeCollectionSubmission[] @relation("SubmissionRecordedBy")
+  accountSubmissionsRecorded CollectionAccountSubmission[] @relation("AccountSubmissionRecordedBy")
 
   @@index([tenantId])
 }
@@ -1145,15 +1146,16 @@ enum AccountingEntryStatus {
 
 // ── NEW: Accounting Entry Model ──
 model AccountingEntry {
-  id              String                @id @default(cuid())
-  tenantId        String                @default("default")
-  bookingId       String
-  amount          Float
-  paymentMode     AccountingPaymentMode
-  referenceNumber String?
-  status          AccountingEntryStatus @default(PENDING)
-  notes           String?               @db.Text
-  rejectionReason String?               @db.Text
+  id                  String                 @id @default(cuid())
+  tenantId            String                 @default("default")
+  bookingId           String
+  amount              Float
+  paymentMode         AccountingPaymentMode
+  collectionAccountId String?
+  referenceNumber     String?
+  status              AccountingEntryStatus  @default(PENDING)
+  notes               String?                @db.Text
+  rejectionReason     String?                @db.Text
 
   salespersonId String
   actionedById  String?
@@ -1161,14 +1163,16 @@ model AccountingEntry {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  booking     Booking              @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
-  salesperson Admin                @relation("SalesAccountingEntries", fields: [salespersonId], references: [id])
-  actionedBy  Admin?               @relation("ActionedAccountingEntries", fields: [actionedById], references: [id])
-  history     AccountingEntryLog[]
+  booking           Booking                  @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  salesperson       Admin                    @relation("SalesAccountingEntries", fields: [salespersonId], references: [id])
+  actionedBy        Admin?                   @relation("ActionedAccountingEntries", fields: [actionedById], references: [id])
+  collectionAccount PaymentReceivingAccount? @relation(fields: [collectionAccountId], references: [id], onDelete: SetNull)
+  history           AccountingEntryLog[]
 
   @@index([tenantId])
   @@index([bookingId])
   @@index([salespersonId])
+  @@index([collectionAccountId])
   @@index([status])
 }
 
@@ -3255,24 +3259,28 @@ model OpsVendorPayment {
 
 // ── NEW: CLIENT RECEIPTS/PAYMENTS TRACKER ──
 model OpsClientPayment {
-  id            String    @id @default(cuid())
-  tenantId      String    @default("default")
-  bookingId     String
-  amount        Float     @default(0)
-  paymentMode   String?
-  transactionId String?
-  paymentDate   DateTime?
-  proofUrl      String?
-  status        String    @default("Pending Verification") // Unpaid, Partially Paid, Paid, Pending Verification, Verified, Rejected, Refunded
-  collectedBy   String?
-  remarks       String?   @db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                  String                   @id @default(cuid())
+  tenantId            String                   @default("default")
+  bookingId           String
+  amount              Float                    @default(0)
+  paymentMode         String?
+  collectionAccountId String?
+  transactionId       String?
+  paymentDate         DateTime?
+  proofUrl            String?
+  status              String                   @default("Pending Verification") // Unpaid, Partially Paid, Paid, Pending Verification, Verified, Rejected, Refunded
+  collectedBy         String?                  // Legacy display name
+  recordedByUserId    String?                  // Audit admin who recorded payment
+  remarks             String?                  @db.Text
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
 
-  booking Booking @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  booking           Booking                  @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
+  collectionAccount PaymentReceivingAccount? @relation(fields: [collectionAccountId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([bookingId])
+  @@index([collectionAccountId])
 }
 
 // ── DEPARTURE-WISE DOCUMENTS ──
@@ -4270,42 +4278,76 @@ enum StationHandoverStatus {
 }
 
 enum ReceivingAccountType {
+  COMPANY
+  INDIVIDUAL
   BANK
   UPI
+  CASH
+  CARD
+  OTHER
 }
 
 enum ReceivingAccountOwnership {
   COMPANY
   STAFF
   PARTNER
+  INDIVIDUAL
+  OTHER
 }
 
-// ── Approved accounts that can receive station payments ──
+// ── Approved accounts that can receive client & station payments ──
 model PaymentReceivingAccount {
-  id                  String                   @id @default(cuid())
-  tenantId            String                   @default("default")
-  accountName         String                   // Display name shown in dropdowns
+  id                  String                      @id @default(cuid())
+  tenantId            String                      @default("default")
+  accountName         String                      // Display name shown in dropdowns
   accountHolderName   String
-  accountType         ReceivingAccountType
-  ownershipType       ReceivingAccountOwnership
+  accountType         ReceivingAccountType        @default(COMPANY)
+  ownershipType       ReceivingAccountOwnership?  @default(COMPANY)
+  paymentMethods      String[]                    @default(["UPI", "BANK_TRANSFER"])
   bankName            String?
-  maskedAccountNumber String?                  // e.g. XXXX9482
-  upiId               String?                  // Masked UPI ID: abc***@okaxis
-  linkedAdminId       String?                  // FK → Admin (for STAFF accounts)
-  isApproved          Boolean                  @default(false)
-  isActive            Boolean                  @default(true)
+  accountNumber       String?
+  maskedAccountNumber String?                     // e.g. XXXX9482
+  ifsc                String?
+  upiId               String?                     // Masked UPI ID: abc***@okaxis
+  description         String?                     @db.Text
+  linkedAdminId       String?                     // FK → Admin (for STAFF accounts)
+  isApproved          Boolean                     @default(true)
+  isActive            Boolean                     @default(true)
   createdByAdminId    String?
   approvedByAdminId   String?
-  createdAt           DateTime                 @default(now())
-  updatedAt           DateTime                 @updatedAt
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
 
-  linkedAdmin         Admin?                   @relation("AccountLinkedAdmin", fields: [linkedAdminId], references: [id], onDelete: SetNull)
-  createdBy           Admin?                   @relation("AccountCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
-  approvedBy          Admin?                   @relation("AccountApprovedByAdmin", fields: [approvedByAdminId], references: [id], onDelete: SetNull)
+  linkedAdmin         Admin?                      @relation("AccountLinkedAdmin", fields: [linkedAdminId], references: [id], onDelete: SetNull)
+  createdBy           Admin?                      @relation("AccountCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  approvedBy          Admin?                      @relation("AccountApprovedByAdmin", fields: [approvedByAdminId], references: [id], onDelete: SetNull)
   collections         StationPaymentCollection[]
+  clientPayments      OpsClientPayment[]
+  accountingEntries   AccountingEntry[]
+  accountSubmissions  CollectionAccountSubmission[]
 
   @@index([tenantId])
   @@index([tenantId, isActive, isApproved])
+}
+
+// ── Track when collection account funds are submitted/transferred to company ──
+model CollectionAccountSubmission {
+  id                String                  @id @default(cuid())
+  tenantId          String                  @default("default")
+  accountId         String                  // FK → PaymentReceivingAccount
+  amount            Float
+  paymentMode       String                  // CASH, BANK_TRANSFER, UPI, CARD
+  referenceNumber   String?
+  notes             String?                 @db.Text
+  recordedByAdminId String                  // FK → Admin (admin who recorded this submission)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  account           PaymentReceivingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  recordedBy        Admin                   @relation("AccountSubmissionRecordedBy", fields: [recordedByAdminId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([accountId])
 }
 
 // ── One record per payment event — immutable once created ──

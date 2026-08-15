@@ -13,8 +13,17 @@ const {
   getBookingPayments,
   getAllVendorPayablesQueue,
 } = require("../controllers/paymentController");
+const collectionAccountController = require("../controllers/collectionAccountController");
 
 router.use(authenticate);
+
+// Collection Accounts Routes
+router.get("/accounts", collectionAccountController.getAccounts);
+router.post("/accounts", collectionAccountController.createAccount);
+router.put("/accounts/:id", collectionAccountController.updateAccount);
+router.delete("/accounts/:id", collectionAccountController.deleteAccount);
+router.get("/accounts/:id/ledger", collectionAccountController.getAccountLedger);
+router.post("/accounts/:id/submit", collectionAccountController.recordAccountSubmission);
 
 // Global Payables Queue
 router.get("/vendor-payables-queue", requirePermission("ops.view"), getAllVendorPayablesQueue);

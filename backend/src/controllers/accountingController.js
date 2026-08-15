@@ -79,6 +79,17 @@ exports.getEntries = async (req, res) => {
           bookingId: true,
           amount: true,
           paymentMode: true,
+          collectionAccountId: true,
+          collectionAccount: {
+            select: {
+              id: true,
+              accountName: true,
+              accountHolderName: true,
+              accountType: true,
+              upiId: true,
+              bankName: true,
+            },
+          },
           referenceNumber: true,
           status: true,
           notes: true,
@@ -177,7 +188,7 @@ exports.getEntryHistory = async (req, res) => {
  */
 exports.createEntry = async (req, res) => {
   try {
-    const { bookingId, amount, paymentMode, referenceNumber, notes } = req.body;
+    const { bookingId, amount, paymentMode, collectionAccountId, referenceNumber, notes } = req.body;
 
     if (!bookingId || !amount || !paymentMode) {
       return res
@@ -249,8 +260,9 @@ exports.createEntry = async (req, res) => {
         bookingId: targetBookingId,
         amount: parsedAmount,
         paymentMode,
-        referenceNumber,
-        notes,
+        collectionAccountId: collectionAccountId || null,
+        referenceNumber: referenceNumber || null,
+        notes: notes || null,
         status: "PENDING",
         salespersonId:
           req.user.role === "sales"
@@ -668,177 +680,182 @@ exports.getReports = async (req, res) => {
 
 /**
  * GET /api/accounting/personal-collections
- * Fetch summary of collections per person/employee
+ * Fetch summary of collections per Collection Account (and staff audit metadata)
  */
 exports.getPersonalCollections = async (req, res) => {
   try {
     const tenantId = req.user.tenantId || "default";
 
-    // Parse optional date range filters
-    const { startDate, endDate } = req.query;
-    let dateFilter = {};
-    if (startDate || endDate) {
-      dateFilter = {};
-      if (startDate) dateFilter.gte = new Date(startDate);
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        dateFilter.lte = end;
-      }
+    // Ensure default accounts exist
+    const accountCount = await prisma.paymentReceivingAccount.count({
+      where: { tenantId },
+    });
+
+    if (accountCount === 0) {
+      await prisma.paymentReceivingAccount.createMany({
+        data: [
+          {
+            tenantId,
+            accountName: "YouthCamping Company Account",
+            accountHolderName: "Youth Camping Adventures Pvt Ltd",
+            accountType: "COMPANY",
+            ownershipType: "COMPANY",
+            paymentMethods: ["UPI", "BANK_TRANSFER", "CARD", "OTHER"],
+            bankName: "HDFC Bank",
+            accountNumber: "50200084920192",
+            maskedAccountNumber: "XXXX0192",
+            ifsc: "HDFC0001234",
+            upiId: "youthcamping@hdfcbank",
+            description: "Official YouthCamping primary collection account",
+            isApproved: true,
+            isActive: true,
+          },
+          {
+            tenantId,
+            accountName: "Nikulbhai Patel Account",
+            accountHolderName: "Nikulbhai Patel",
+            accountType: "INDIVIDUAL",
+            ownershipType: "INDIVIDUAL",
+            paymentMethods: ["UPI", "BANK_TRANSFER"],
+            bankName: "State Bank of India",
+            accountNumber: "38920192841",
+            maskedAccountNumber: "XXXX2841",
+            ifsc: "SBIN0004821",
+            upiId: "nikulbhai@upi",
+            description: "Individual external collection account",
+            isApproved: true,
+            isActive: true,
+          },
+          {
+            tenantId,
+            accountName: "Cash Collection Account",
+            accountHolderName: "YouthCamping Cash Desk",
+            accountType: "CASH",
+            ownershipType: "COMPANY",
+            paymentMethods: ["CASH"],
+            description: "Physical cash collection and venue register",
+            isApproved: true,
+            isActive: true,
+          },
+        ],
+      }).catch(() => null);
     }
 
-    const admins = await prisma.admin.findMany({
+    const accounts = await prisma.paymentReceivingAccount.findMany({
       where: { tenantId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        phone: true,
-      },
-      orderBy: { name: "asc" },
+      orderBy: [{ isActive: "desc" }, { createdAt: "asc" }],
     });
 
-    const bookingWhere = {
-      tenantId,
-      advancePaid: { gt: 0 },
-      ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
-    };
+    const accountIds = accounts.map((a) => a.id);
 
-    const bookings = await prisma.booking.findMany({
-      where: bookingWhere,
-      select: {
-        id: true,
-        bookingId: true,
-        advancePaid: true,
-        salesAdminId: true,
-        createdAt: true,
-      },
-    });
+    const [clientPayments, stationPayments, submissions] = await Promise.all([
+      prisma.opsClientPayment.findMany({
+        where: {
+          tenantId,
+          status: "Verified",
+        },
+        select: {
+          id: true,
+          collectionAccountId: true,
+          amount: true,
+          paymentDate: true,
+          createdAt: true,
+        },
+      }),
+      prisma.stationPaymentCollection.findMany({
+        where: {
+          tenantId,
+          status: { not: "REVERSED" },
+        },
+        select: {
+          id: true,
+          receivingAccountId: true,
+          amount: true,
+          collectedAt: true,
+          createdAt: true,
+        },
+      }),
+      prisma.collectionAccountSubmission.findMany({
+        where: {
+          tenantId,
+          accountId: { in: accountIds },
+        },
+        select: {
+          id: true,
+          accountId: true,
+          amount: true,
+          createdAt: true,
+        },
+      }),
+    ]);
 
-    const stationWhere = {
-      tenantId,
-      isReversed: false,
-      ...(Object.keys(dateFilter).length > 0 ? { collectedAt: dateFilter } : {}),
-    };
+    const collectionsByAccount = {};
+    const submissionsByAccount = {};
+    const lastCollectionByAccount = {};
+    const lastSubmissionByAccount = {};
 
-    const stationCollections = await prisma.stationPaymentCollection.findMany({
-      where: stationWhere,
-      select: {
-        id: true,
-        amount: true,
-        collectedByAdminId: true,
-        collectedAt: true,
-      },
-    });
+    const defaultAccId = accounts[0]?.id;
 
-    const entryWhere = {
-      tenantId,
-      status: "APPROVED",
-      ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
-    };
+    clientPayments.forEach((p) => {
+      const accId = p.collectionAccountId || defaultAccId;
+      if (!accId) return;
+      const amt = Number(p.amount || 0);
+      collectionsByAccount[accId] = (collectionsByAccount[accId] || 0) + amt;
 
-    const accountingEntries = await prisma.accountingEntry.findMany({
-      where: entryWhere,
-      select: {
-        id: true,
-        bookingId: true,
-        amount: true,
-        salespersonId: true,
-        createdAt: true,
-      },
-    });
-
-    // Submissions are never date-filtered — they are cumulative (total submitted)
-    const submissions = await prisma.employeeCollectionSubmission.findMany({
-      where: { tenantId },
-      select: {
-        id: true,
-        employeeAdminId: true,
-        amount: true,
-        createdAt: true,
-      },
-    });
-
-    const collectionsByAdmin = {};
-    const submissionsByAdmin = {};
-    const lastCollectionByAdmin = {};
-    const lastSubmissionByAdmin = {};
-
-    bookings.forEach((b) => {
-      const adminId = b.salesAdminId || "unassigned";
-      const amt = Number(b.advancePaid || 0);
-      if (amt <= 0) return;
-      collectionsByAdmin[adminId] = (collectionsByAdmin[adminId] || 0) + amt;
-
-      const dateStr = b.createdAt ? new Date(b.createdAt).toISOString() : null;
+      const dateStr = p.paymentDate
+        ? new Date(p.paymentDate).toISOString()
+        : p.createdAt
+          ? new Date(p.createdAt).toISOString()
+          : null;
       if (
         dateStr &&
-        (!lastCollectionByAdmin[adminId] ||
-          dateStr > lastCollectionByAdmin[adminId])
+        (!lastCollectionByAccount[accId] ||
+          dateStr > lastCollectionByAccount[accId])
       ) {
-        lastCollectionByAdmin[adminId] = dateStr;
+        lastCollectionByAccount[accId] = dateStr;
       }
     });
 
-    stationCollections.forEach((sc) => {
-      const adminId = sc.collectedByAdminId || "unassigned";
+    stationPayments.forEach((sc) => {
+      const accId = sc.receivingAccountId || defaultAccId;
+      if (!accId) return;
       const amt = Number(sc.amount || 0);
-      if (amt <= 0) return;
-      collectionsByAdmin[adminId] = (collectionsByAdmin[adminId] || 0) + amt;
+      collectionsByAccount[accId] = (collectionsByAccount[accId] || 0) + amt;
 
       const dateStr = sc.collectedAt
         ? new Date(sc.collectedAt).toISOString()
-        : null;
+        : sc.createdAt
+          ? new Date(sc.createdAt).toISOString()
+          : null;
       if (
         dateStr &&
-        (!lastCollectionByAdmin[adminId] ||
-          dateStr > lastCollectionByAdmin[adminId])
+        (!lastCollectionByAccount[accId] ||
+          dateStr > lastCollectionByAccount[accId])
       ) {
-        lastCollectionByAdmin[adminId] = dateStr;
-      }
-    });
-
-    accountingEntries.forEach((ae) => {
-      const adminId = ae.salespersonId || "unassigned";
-      if (!ae.bookingId) {
-        const amt = Number(ae.amount || 0);
-        if (amt <= 0) return;
-        collectionsByAdmin[adminId] = (collectionsByAdmin[adminId] || 0) + amt;
-
-        const dateStr = ae.createdAt
-          ? new Date(ae.createdAt).toISOString()
-          : null;
-        if (
-          dateStr &&
-          (!lastCollectionByAdmin[adminId] ||
-            dateStr > lastCollectionByAdmin[adminId])
-        ) {
-          lastCollectionByAdmin[adminId] = dateStr;
-        }
+        lastCollectionByAccount[accId] = dateStr;
       }
     });
 
     submissions.forEach((sub) => {
-      const adminId = sub.employeeAdminId;
+      const accId = sub.accountId;
       const amt = Number(sub.amount || 0);
-      submissionsByAdmin[adminId] = (submissionsByAdmin[adminId] || 0) + amt;
+      submissionsByAccount[accId] = (submissionsByAccount[accId] || 0) + amt;
 
       const dateStr = sub.createdAt
         ? new Date(sub.createdAt).toISOString()
         : null;
       if (
         dateStr &&
-        (!lastSubmissionByAdmin[adminId] ||
-          dateStr > lastSubmissionByAdmin[adminId])
+        (!lastSubmissionByAccount[accId] ||
+          dateStr > lastSubmissionByAccount[accId])
       ) {
-        lastSubmissionByAdmin[adminId] = dateStr;
+        lastSubmissionByAccount[accId] = dateStr;
       }
     });
 
-    const personCollections = admins.map((admin) => {
-      const totalCollected = collectionsByAdmin[admin.id] || 0;
-      const totalSubmitted = submissionsByAdmin[admin.id] || 0;
+    const accountCollections = accounts.map((acc) => {
+      const totalCollected = collectionsByAccount[acc.id] || 0;
+      const totalSubmitted = submissionsByAccount[acc.id] || 0;
       const pending = Math.max(0, totalCollected - totalSubmitted);
       const status =
         pending === 0 && totalCollected > 0
@@ -848,63 +865,206 @@ exports.getPersonalCollections = async (req, res) => {
             : "Settled";
 
       return {
-        id: admin.id,
-        name: admin.name || admin.email.split("@")[0],
-        email: admin.email,
-        role: admin.role,
+        id: acc.id,
+        name: acc.accountName,
+        accountName: acc.accountName,
+        accountHolderName: acc.accountHolderName,
+        accountType: acc.accountType,
+        paymentMethods: acc.paymentMethods || [],
+        bankName: acc.bankName,
+        accountNumber: acc.accountNumber,
+        maskedAccountNumber: acc.maskedAccountNumber,
+        ifsc: acc.ifsc,
+        upiId: acc.upiId,
+        description: acc.description,
+        isActive: acc.isActive,
         totalCollected,
         totalSubmitted,
         pending,
         status,
-        lastCollection: lastCollectionByAdmin[admin.id] || null,
-        lastSubmission: lastSubmissionByAdmin[admin.id] || null,
+        lastCollection: lastCollectionByAccount[acc.id] || null,
+        lastSubmission: lastSubmissionByAccount[acc.id] || null,
       };
     });
 
     const summary = {
-      totalCollected: personCollections.reduce((s, p) => s + p.totalCollected, 0),
-      totalSubmitted: personCollections.reduce((s, p) => s + p.totalSubmitted, 0),
-      totalPending: personCollections.reduce((s, p) => s + p.pending, 0),
+      totalCollected: accountCollections.reduce((s, p) => s + p.totalCollected, 0),
+      totalSubmitted: accountCollections.reduce((s, p) => s + p.totalSubmitted, 0),
+      totalPending: accountCollections.reduce((s, p) => s + p.pending, 0),
     };
 
     return res.json({
       success: true,
-      data: personCollections,
+      data: accountCollections,
       summary,
     });
   } catch (err) {
     console.error("getPersonalCollections error:", err);
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch personal collections data",
+      message: "Failed to fetch collection accounts data",
     });
   }
 };
 
 /**
- * GET /api/accounting/personal-collections/:adminId
- * Fetch detailed collection and submission history for a specific employee
+ * GET /api/accounting/personal-collections/:id
+ * Fetch detailed ledger history for a specific Collection Account (or fallback Admin ID)
  */
 exports.getPersonCollectionDetails = async (req, res) => {
   try {
-    const { adminId } = req.params;
+    const { adminId: targetId } = req.params;
     const tenantId = req.user.tenantId || "default";
 
+    // 1. Try resolving targetId as a Collection Account
+    const account = await prisma.paymentReceivingAccount.findFirst({
+      where: { id: targetId, tenantId },
+    });
+
+    if (account) {
+      const [clientPayments, stationCollections, submissions] =
+        await Promise.all([
+          prisma.opsClientPayment.findMany({
+            where: {
+              tenantId,
+              collectionAccountId: account.id,
+              status: "Verified",
+            },
+            include: {
+              booking: {
+                select: {
+                  id: true,
+                  bookingId: true,
+                  name: true,
+                  fullName: true,
+                  phone: true,
+                  mobile: true,
+                  email: true,
+                  tripName: true,
+                  departureDate: true,
+                },
+              },
+            },
+            orderBy: { paymentDate: "desc" },
+          }),
+          prisma.stationPaymentCollection.findMany({
+            where: {
+              tenantId,
+              receivingAccountId: account.id,
+              status: { not: "REVERSED" },
+            },
+            include: {
+              collectedBy: { select: { id: true, name: true, email: true } },
+            },
+            orderBy: { collectedAt: "desc" },
+          }),
+          prisma.collectionAccountSubmission.findMany({
+            where: { tenantId, accountId: account.id },
+            include: { recordedBy: { select: { id: true, name: true, email: true } } },
+            orderBy: { createdAt: "desc" },
+          }),
+        ]);
+
+      const collectionTransactions = [];
+
+      clientPayments.forEach((p) => {
+        collectionTransactions.push({
+          id: `pay-${p.id}`,
+          date: p.paymentDate || p.createdAt,
+          bookingId: p.booking?.bookingId || p.bookingId,
+          bookingDbId: p.booking?.id || p.bookingId,
+          customerName: p.booking?.fullName || p.booking?.name || "Traveler",
+          paymentMode: p.paymentMode || "UPI",
+          amountCollected: Number(p.amount || 0),
+          notes: p.remarks || "Booking Payment Receipt",
+          reference: p.transactionId || `PAY-${p.id}`,
+          tripName: p.booking?.tripName || "Trip",
+          phone: p.booking?.phone || p.booking?.mobile || "N/A",
+        });
+      });
+
+      stationCollections.forEach((sc) => {
+        collectionTransactions.push({
+          id: `sc-${sc.id}`,
+          date: sc.collectedAt || sc.createdAt,
+          bookingId: sc.bookingId,
+          bookingDbId: sc.bookingId,
+          customerName: sc.collectedFrom || "Passenger",
+          paymentMode: sc.paymentMode || "CASH",
+          amountCollected: Number(sc.amount || 0),
+          notes: sc.remarks || `Station Receipt #${sc.receiptNumber}`,
+          reference: sc.utrNumber || sc.receiptNumber,
+          tripName: "Station Collection",
+          phone: "N/A",
+        });
+      });
+
+      collectionTransactions.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
+
+      const submissionTransactions = submissions.map((sub) => ({
+        id: sub.id,
+        date: sub.createdAt,
+        amountSubmitted: sub.amount,
+        paymentMode: sub.paymentMode,
+        reference: sub.referenceNumber || sub.id,
+        notes: sub.notes || "Fund transfer to company",
+        recordedBy: sub.recordedBy?.name || "Admin",
+      }));
+
+      const totalCollected = collectionTransactions.reduce(
+        (s, c) => s + c.amountCollected,
+        0,
+      );
+      const totalSubmitted = submissionTransactions.reduce(
+        (s, sub) => s + sub.amountSubmitted,
+        0,
+      );
+      const pending = Math.max(0, totalCollected - totalSubmitted);
+      const status = pending <= 0 && totalCollected > 0 ? "Settled" : "Pending";
+
+      return res.json({
+        success: true,
+        data: {
+          employee: {
+            id: account.id,
+            name: account.accountName,
+            email: account.accountHolderName,
+            role: account.accountType,
+            accountType: account.accountType,
+            upiId: account.upiId,
+            bankName: account.bankName,
+            accountNumber: account.accountNumber,
+          },
+          summary: {
+            totalCollected,
+            totalSubmitted,
+            pending,
+            status,
+          },
+          collectionTransactions,
+          submissionTransactions,
+        },
+      });
+    }
+
+    // 2. Fallback if requested with an Admin ID
     const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
+      where: { id: targetId },
       select: { id: true, name: true, email: true, role: true, phone: true },
     });
 
     if (!admin) {
       return res
         .status(404)
-        .json({ success: false, message: "Employee not found" });
+        .json({ success: false, message: "Account/Employee not found" });
     }
 
-    const [bookings, stationCollections, accountingEntries, submissions] =
+    const [bookings, stationCollections, submissions] =
       await Promise.all([
         prisma.booking.findMany({
-          where: { tenantId, salesAdminId: adminId, advancePaid: { gt: 0 } },
+          where: { tenantId, salesAdminId: admin.id, advancePaid: { gt: 0 } },
           select: {
             id: true,
             bookingId: true,
@@ -912,12 +1072,13 @@ exports.getPersonCollectionDetails = async (req, res) => {
             fullName: true,
             advancePaid: true,
             paymentMode: true,
+            tripName: true,
             createdAt: true,
           },
           orderBy: { createdAt: "desc" },
         }),
         prisma.stationPaymentCollection.findMany({
-          where: { tenantId, collectedByAdminId: adminId, isReversed: false },
+          where: { tenantId, collectedByAdminId: admin.id, isReversed: false },
           select: {
             id: true,
             receiptNumber: true,
@@ -931,22 +1092,8 @@ exports.getPersonCollectionDetails = async (req, res) => {
           },
           orderBy: { collectedAt: "desc" },
         }),
-        prisma.accountingEntry.findMany({
-          where: { tenantId, salespersonId: adminId, status: "APPROVED" },
-          select: {
-            id: true,
-            bookingId: true,
-            amount: true,
-            paymentMode: true,
-            referenceNumber: true,
-            notes: true,
-            createdAt: true,
-            booking: { select: { fullName: true, name: true } },
-          },
-          orderBy: { createdAt: "desc" },
-        }),
         prisma.employeeCollectionSubmission.findMany({
-          where: { tenantId, employeeAdminId: adminId },
+          where: { tenantId, employeeAdminId: admin.id },
           include: { recordedBy: { select: { id: true, name: true } } },
           orderBy: { createdAt: "desc" },
         }),
@@ -959,11 +1106,13 @@ exports.getPersonCollectionDetails = async (req, res) => {
         id: `bk-${b.id}`,
         date: b.createdAt,
         bookingId: b.bookingId,
+        bookingDbId: b.id,
         customerName: b.fullName || b.name || "Guest",
         paymentMode: b.paymentMode || "UPI",
         amountCollected: Number(b.advancePaid || 0),
         notes: "Booking Payment",
         reference: b.bookingId,
+        tripName: b.tripName || "Trip",
       });
     });
 
@@ -972,27 +1121,14 @@ exports.getPersonCollectionDetails = async (req, res) => {
         id: `sc-${sc.id}`,
         date: sc.collectedAt,
         bookingId: sc.bookingId,
+        bookingDbId: sc.bookingId,
         customerName: sc.collectedFrom || "Passenger",
         paymentMode: sc.paymentMode || "CASH",
         amountCollected: Number(sc.amount || 0),
         notes: sc.remarks || `Station Receipt #${sc.receiptNumber}`,
         reference: sc.utrNumber || sc.receiptNumber,
+        tripName: "Station Collection",
       });
-    });
-
-    accountingEntries.forEach((ae) => {
-      if (!ae.bookingId) {
-        collectionTransactions.push({
-          id: `ae-${ae.id}`,
-          date: ae.createdAt,
-          bookingId: ae.bookingId || "N/A",
-          customerName: ae.booking?.fullName || ae.booking?.name || "Client",
-          paymentMode: ae.paymentMode || "CASH",
-          amountCollected: Number(ae.amount || 0),
-          notes: ae.notes || "Manual Ledger Entry",
-          reference: ae.referenceNumber || ae.id,
-        });
-      }
     });
 
     collectionTransactions.sort(
@@ -1018,7 +1154,7 @@ exports.getPersonCollectionDetails = async (req, res) => {
       0,
     );
     const pending = Math.max(0, totalCollected - totalSubmitted);
-    const status = pending === 0 && totalCollected > 0 ? "SETTLED" : "PENDING";
+    const status = pending <= 0 && totalCollected > 0 ? "Settled" : "Pending";
 
     return res.json({
       success: true,
@@ -1043,26 +1179,19 @@ exports.getPersonCollectionDetails = async (req, res) => {
     console.error("getPersonCollectionDetails error:", err);
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch person collection details",
+      message: "Failed to fetch account ledger details",
     });
   }
 };
 
 /**
  * POST /api/accounting/personal-collections/submit
- * Record a payment submission from an employee to YouthCamping
+ * Record a fund transfer/submission from a collection account to company
  */
 exports.recordEmployeeSubmission = async (req, res) => {
   try {
-    const { employeeAdminId, amount, paymentMode, referenceNumber, notes } =
+    const { accountId, employeeAdminId, amount, paymentMode, referenceNumber, notes } =
       req.body;
-
-    if (!employeeAdminId || !amount || !paymentMode) {
-      return res.status(400).json({
-        success: false,
-        message: "employeeAdminId, amount, and paymentMode are required",
-      });
-    }
 
     const numAmount = Number(amount);
     if (!Number.isFinite(numAmount) || numAmount <= 0) {
@@ -1072,23 +1201,62 @@ exports.recordEmployeeSubmission = async (req, res) => {
       });
     }
 
+    const targetAccountId = accountId || employeeAdminId;
+    if (!targetAccountId) {
+      return res.status(400).json({
+        success: false,
+        message: "accountId is required",
+      });
+    }
+
+    // Check if target is a PaymentReceivingAccount
+    const account = await prisma.paymentReceivingAccount.findFirst({
+      where: { id: targetAccountId, tenantId: req.user.tenantId || "default" },
+    });
+
+    if (account) {
+      const submission = await prisma.collectionAccountSubmission.create({
+        data: {
+          tenantId: req.user.tenantId || "default",
+          accountId: account.id,
+          amount: numAmount,
+          paymentMode: paymentMode || "BANK_TRANSFER",
+          referenceNumber: referenceNumber || null,
+          notes: notes || null,
+          recordedByAdminId: req.user.id,
+        },
+        include: {
+          account: { select: { id: true, accountName: true } },
+          recordedBy: { select: { id: true, name: true } },
+        },
+      });
+
+      return res.json({
+        success: true,
+        data: submission,
+        message: `Transfer of ₹${numAmount.toLocaleString()} from ${account.accountName} recorded successfully`,
+      });
+    }
+
+    // Fallback: Employee submission
     const employee = await prisma.admin.findUnique({
-      where: { id: employeeAdminId },
+      where: { id: targetAccountId },
       select: { id: true, name: true },
     });
+
     if (!employee) {
       return res.status(404).json({
         success: false,
-        message: "Employee admin not found",
+        message: "Target Collection Account not found",
       });
     }
 
     const submission = await prisma.employeeCollectionSubmission.create({
       data: {
         tenantId: req.user.tenantId || "default",
-        employeeAdminId,
+        employeeAdminId: employee.id,
         amount: numAmount,
-        paymentMode,
+        paymentMode: paymentMode || "BANK_TRANSFER",
         referenceNumber: referenceNumber || null,
         notes: notes || null,
         recordedByAdminId: req.user.id,
@@ -1099,13 +1267,6 @@ exports.recordEmployeeSubmission = async (req, res) => {
       },
     });
 
-    await logBookingActivity({
-      bookingId: "SYSTEM_COLLECTIONS",
-      action: "EMPLOYEE_SUBMISSION",
-      details: `Submission of ₹${numAmount} recorded for ${employee.name || "Employee"} by ${req.user.name || "Admin"}. Ref: ${referenceNumber || "N/A"}`,
-      performedByAdminId: req.user.id,
-    }).catch(() => null);
-
     return res.json({
       success: true,
       data: submission,
@@ -1115,7 +1276,7 @@ exports.recordEmployeeSubmission = async (req, res) => {
     console.error("recordEmployeeSubmission error:", err);
     return res.status(500).json({
       success: false,
-      message: "Failed to record employee submission",
+      message: "Failed to record fund submission",
     });
   }
 };

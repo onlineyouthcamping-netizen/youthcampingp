@@ -123,6 +123,7 @@ exports.addClientPayment = async (req, res) => {
     const {
       amount,
       paymentMode,
+      collectionAccountId,
       transactionId,
       paymentDate,
       proofUrl,
@@ -145,8 +146,15 @@ exports.addClientPayment = async (req, res) => {
 
     const targetBookingId = booking.bookingId || booking.id;
 
-    const collectorAdminId =
-      req.body.collectedByAdminId || req.body.salesAdminId || req.user?.id;
+    // Resolve or fallback to default active collection account
+    let targetAccountId = collectionAccountId || null;
+    if (!targetAccountId) {
+      const defaultAcc = await prisma.paymentReceivingAccount.findFirst({
+        where: { tenantId, isActive: true },
+        orderBy: { createdAt: "asc" },
+      });
+      targetAccountId = defaultAcc?.id || null;
+    }
 
     const receipt = await prisma.opsClientPayment.create({
       data: {
@@ -154,12 +162,19 @@ exports.addClientPayment = async (req, res) => {
         bookingId: targetBookingId,
         amount: parseFloat(amount) || 0,
         paymentMode,
+        collectionAccountId: targetAccountId,
         transactionId,
         paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
         proofUrl,
         status: status || "Verified",
         collectedBy: req.user?.name || req.user?.email || "Staff",
+        recordedByUserId: req.user?.id || null,
         remarks,
+      },
+      include: {
+        collectionAccount: {
+          select: { id: true, accountName: true, accountHolderName: true, accountType: true },
+        },
       },
     });
 
@@ -192,10 +207,6 @@ exports.addClientPayment = async (req, res) => {
       updateData.status = "confirmed";
     }
 
-    if (collectorAdminId) {
-      updateData.salesAdminId = collectorAdminId;
-    }
-
     const updatedBooking = await prisma.booking.update({
       where: { id: booking.id },
       data: updateData,
@@ -217,10 +228,11 @@ exports.addClientPayment = async (req, res) => {
             bookingId: targetBookingId,
             amount: parseFloat(amount) || 0,
             paymentMode: normalizedMode,
+            collectionAccountId: targetAccountId,
             referenceNumber: transactionId || `PAY-${receipt.id}`,
             notes: remarks || "Recorded via Booking Workspace",
             status: "APPROVED",
-            salespersonId: collectorAdminId || req.user?.id,
+            salespersonId: req.user?.id || booking.salesAdminId,
             actionedById: req.user?.id,
           },
         });
@@ -353,6 +365,11 @@ exports.getBookingPayments = async (req, res) => {
     // Query operations client receipts (manual uploads)
     const clientReceipts = await prisma.opsClientPayment.findMany({
       where: { bookingId: { in: possibleBookingIds }, tenantId },
+      include: {
+        collectionAccount: {
+          select: { id: true, accountName: true, accountHolderName: true, accountType: true },
+        },
+      },
       orderBy: { paymentDate: "desc" },
     });
 
@@ -362,6 +379,8 @@ exports.getBookingPayments = async (req, res) => {
         id: p.id,
         amount: p.amount,
         paymentMode: p.paymentMode || "Online",
+        collectionAccountId: null,
+        collectionAccount: null,
         notes: p.transactionId
           ? `Txn ID: ${p.transactionId}`
           : "Booking payment",
@@ -372,6 +391,8 @@ exports.getBookingPayments = async (req, res) => {
         id: r.id,
         amount: r.amount,
         paymentMode: r.paymentMode,
+        collectionAccountId: r.collectionAccountId || null,
+        collectionAccount: r.collectionAccount || null,
         notes: r.remarks || "Manual Payment",
         status:
           r.status === "Verified"
