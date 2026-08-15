@@ -987,6 +987,70 @@ exports.updateDirectoryVendor = async (req, res, next) => {
       isPreferred,
     } = req.body;
 
+    const existing = await prisma.opsVendor.findUnique({
+      where: { id: req.params.vendorId },
+      select: { type: true, accommodationType: true },
+    });
+    const vendorType = (
+      type ||
+      req.body.category ||
+      existing?.type ||
+      existing?.accommodationType ||
+      ""
+    ).toUpperCase();
+    const isTrans =
+      vendorType.includes("TRANSPORT") ||
+      vendorType.includes("FLEET") ||
+      vendorType.includes("VEHICLE");
+    const isG =
+      vendorType.includes("GUIDE") ||
+      vendorType.includes("LEADER") ||
+      vendorType.includes("TREK");
+    const isRest =
+      vendorType.includes("RESTAURANT") ||
+      vendorType.includes("FOOD") ||
+      vendorType.includes("MEAL") ||
+      vendorType.includes("DINING");
+    const isAct =
+      vendorType.includes("ACTIVITIES") ||
+      vendorType.includes("ACTIVITY") ||
+      vendorType.includes("ADVENTURE");
+
+    let resolvedRoomTypes = undefined;
+    if (isTrans && req.body.fleetTypes !== undefined) resolvedRoomTypes = req.body.fleetTypes;
+    else if (isRest && req.body.seatingCapacity !== undefined) resolvedRoomTypes = req.body.seatingCapacity;
+    else if (isAct && req.body.activityTypes !== undefined) resolvedRoomTypes = req.body.activityTypes;
+    else if (req.body.roomTypes !== undefined) resolvedRoomTypes = req.body.roomTypes;
+    else if (req.body.activityTypes !== undefined) resolvedRoomTypes = req.body.activityTypes;
+    else if (req.body.fleetTypes !== undefined) resolvedRoomTypes = req.body.fleetTypes;
+    else if (req.body.seatingCapacity !== undefined) resolvedRoomTypes = req.body.seatingCapacity;
+
+    let resolvedSharingTypes = undefined;
+    if (isG && req.body.languages !== undefined) resolvedSharingTypes = req.body.languages;
+    else if (isRest && req.body.cuisines !== undefined) resolvedSharingTypes = req.body.cuisines;
+    else if (req.body.sharingTypes !== undefined) resolvedSharingTypes = req.body.sharingTypes;
+    else if (req.body.languages !== undefined) resolvedSharingTypes = req.body.languages;
+    else if (req.body.cuisines !== undefined) resolvedSharingTypes = req.body.cuisines;
+
+    let resolvedEarlyPolicy = undefined;
+    if (isG && req.body.certifications !== undefined) resolvedEarlyPolicy = req.body.certifications;
+    else if ((isRest || isAct) && req.body.operatingHours !== undefined) resolvedEarlyPolicy = req.body.operatingHours;
+    else if (req.body.earlyCheckInPolicy !== undefined) resolvedEarlyPolicy = req.body.earlyCheckInPolicy;
+    else if (req.body.operatingHours !== undefined) resolvedEarlyPolicy = req.body.operatingHours;
+    else if (req.body.certifications !== undefined) resolvedEarlyPolicy = req.body.certifications;
+
+    let resolvedLatePolicy = undefined;
+    if (isTrans && req.body.tollParkingPolicy !== undefined) resolvedLatePolicy = req.body.tollParkingPolicy;
+    else if (isG && req.body.experience !== undefined) resolvedLatePolicy = req.body.experience;
+    else if (req.body.lateCheckOutPolicy !== undefined) resolvedLatePolicy = req.body.lateCheckOutPolicy;
+    else if (req.body.tollParkingPolicy !== undefined) resolvedLatePolicy = req.body.tollParkingPolicy;
+    else if (req.body.experience !== undefined) resolvedLatePolicy = req.body.experience;
+
+    let resolvedWebsite = undefined;
+    if (isG && req.body.guideRole !== undefined) resolvedWebsite = req.body.guideRole;
+    else if (req.body.website !== undefined) resolvedWebsite = req.body.website;
+    else if (req.body.guideRole !== undefined) resolvedWebsite = req.body.guideRole;
+
     const vendor = await prisma.opsVendor.update({
       where: { id: req.params.vendorId },
       data: {
@@ -1021,46 +1085,11 @@ exports.updateDirectoryVendor = async (req, res, next) => {
             : JSON.stringify(req.body.mealTariffs)
           : mealPlans || undefined,
         amenities: amenities !== undefined ? amenities : undefined,
-        roomTypes:
-          req.body.fleetTypes !== undefined
-            ? req.body.fleetTypes
-            : req.body.seatingCapacity !== undefined
-              ? req.body.seatingCapacity
-              : req.body.activityTypes !== undefined
-                ? req.body.activityTypes
-                : req.body.roomTypes !== undefined
-                  ? req.body.roomTypes
-                  : undefined,
-        sharingTypes:
-          req.body.cuisines !== undefined
-            ? req.body.cuisines
-            : req.body.languages !== undefined
-              ? req.body.languages
-              : req.body.sharingTypes !== undefined
-                ? req.body.sharingTypes
-                : undefined,
-        earlyCheckInPolicy:
-          req.body.operatingHours !== undefined
-            ? req.body.operatingHours
-            : req.body.certifications !== undefined
-              ? req.body.certifications
-              : req.body.earlyCheckInPolicy !== undefined
-                ? req.body.earlyCheckInPolicy
-                : undefined,
-        lateCheckOutPolicy:
-          req.body.tollParkingPolicy !== undefined
-            ? req.body.tollParkingPolicy
-            : req.body.experience !== undefined
-              ? req.body.experience
-              : req.body.lateCheckOutPolicy !== undefined
-                ? req.body.lateCheckOutPolicy
-                : undefined,
-        website:
-          req.body.guideRole !== undefined
-            ? req.body.guideRole
-            : req.body.website !== undefined
-              ? req.body.website
-              : undefined,
+        roomTypes: resolvedRoomTypes,
+        sharingTypes: resolvedSharingTypes,
+        earlyCheckInPolicy: resolvedEarlyPolicy,
+        lateCheckOutPolicy: resolvedLatePolicy,
+        website: resolvedWebsite,
         tags: tags
           ? typeof tags === "string"
             ? tags
