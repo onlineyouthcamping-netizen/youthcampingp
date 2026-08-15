@@ -398,7 +398,7 @@ exports.getAccountLedger = async (req, res) => {
         },
       }),
       prisma.stationPaymentCollection.findMany({
-        where: { receivingAccountId: id, tenantId },
+        where: { receivingAccountId: id, tenantId, isReversed: false },
         orderBy: { createdAt: "desc" },
         include: {
           collectedBy: { select: { id: true, name: true, email: true } },
