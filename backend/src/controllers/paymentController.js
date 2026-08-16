@@ -454,6 +454,20 @@ exports.getVendorPayments = async (req, res) => {
 
     const vendorPayments = await prisma.opsVendorPayment.findMany({
       where: ctx.where,
+      include: {
+        collectionAccount: {
+          select: {
+            id: true,
+            accountName: true,
+            accountHolderName: true,
+            accountType: true,
+            bankName: true,
+            upiId: true,
+            accountNumber: true,
+            maskedAccountNumber: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -478,6 +492,7 @@ exports.createVendorPayment = async (req, res) => {
       advancePaid,
       paymentDate,
       paymentMode,
+      collectionAccountId,
       transactionId,
       invoiceProof,
       status,
@@ -503,11 +518,26 @@ exports.createVendorPayment = async (req, res) => {
         remainingPayable: remaining,
         paymentDate: paymentDate ? new Date(paymentDate) : null,
         paymentMode,
+        collectionAccountId: collectionAccountId || null,
         transactionId,
         invoiceProof,
         status: status || "Not Paid",
         paidBy: req.user?.name || req.user?.email || "Operations",
         remarks,
+      },
+      include: {
+        collectionAccount: {
+          select: {
+            id: true,
+            accountName: true,
+            accountHolderName: true,
+            accountType: true,
+            bankName: true,
+            upiId: true,
+            accountNumber: true,
+            maskedAccountNumber: true,
+          },
+        },
       },
     });
 
@@ -531,6 +561,7 @@ exports.updateVendorPayment = async (req, res) => {
       advancePaid,
       paymentDate,
       paymentMode,
+      collectionAccountId,
       transactionId,
       invoiceProof,
       status,
@@ -572,12 +603,30 @@ exports.updateVendorPayment = async (req, res) => {
         paymentDate: paymentDate ? new Date(paymentDate) : existing.paymentDate,
         paymentMode:
           paymentMode !== undefined ? paymentMode : existing.paymentMode,
+        collectionAccountId:
+          collectionAccountId !== undefined
+            ? collectionAccountId || null
+            : existing.collectionAccountId,
         transactionId:
           transactionId !== undefined ? transactionId : existing.transactionId,
         invoiceProof:
           invoiceProof !== undefined ? invoiceProof : existing.invoiceProof,
         status: status || existing.status,
         remarks: remarks !== undefined ? remarks : existing.remarks,
+      },
+      include: {
+        collectionAccount: {
+          select: {
+            id: true,
+            accountName: true,
+            accountHolderName: true,
+            accountType: true,
+            bankName: true,
+            upiId: true,
+            accountNumber: true,
+            maskedAccountNumber: true,
+          },
+        },
       },
     });
 

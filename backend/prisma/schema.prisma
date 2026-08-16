@@ -3288,15 +3288,18 @@ model OpsVendorPayment {
   transactionId      String?
   invoiceProof       String?
   status             String    @default("Not Paid") // Not Paid, Advance Paid, Partially Paid, Pending Approval, Paid, Rejected
-  paidBy             String?
-  remarks            String?   @db.Text
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  paidBy              String?
+  collectionAccountId String?
+  remarks             String?   @db.Text
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  trip Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  trip              Trip                     @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  collectionAccount PaymentReceivingAccount? @relation("VendorPaymentPaidFromAccount", fields: [collectionAccountId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tripId, departureDate])
+  @@index([collectionAccountId])
 }
 
 // ── NEW: CLIENT RECEIPTS/PAYMENTS TRACKER ──
@@ -4365,6 +4368,7 @@ model PaymentReceivingAccount {
   approvedBy          Admin?                      @relation("AccountApprovedByAdmin", fields: [approvedByAdminId], references: [id], onDelete: SetNull)
   collections         StationPaymentCollection[]
   clientPayments      OpsClientPayment[]
+  vendorPayments      OpsVendorPayment[]          @relation("VendorPaymentPaidFromAccount")
   accountingEntries   AccountingEntry[]
   accountSubmissions  CollectionAccountSubmission[]
 

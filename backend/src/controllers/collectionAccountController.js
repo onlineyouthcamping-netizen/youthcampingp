@@ -95,7 +95,7 @@ exports.getAccounts = async (req, res) => {
     // Compute live balance aggregates per account
     const accountIds = accounts.map((a) => a.id);
 
-    const [clientPayments, stationPayments, submissions] = await Promise.all([
+    const [clientPayments, stationPayments, submissions, vendorPayments] = await Promise.all([
       prisma.opsClientPayment.findMany({
         where: {
           tenantId,
@@ -119,10 +119,19 @@ exports.getAccounts = async (req, res) => {
         },
         select: { accountId: true, amount: true, createdAt: true },
       }),
+      prisma.opsVendorPayment.findMany({
+        where: {
+          tenantId,
+          collectionAccountId: { in: accountIds },
+          status: { not: "Rejected" },
+        },
+        select: { collectionAccountId: true, advancePaid: true, createdAt: true },
+      }),
     ]);
 
     const collectedMap = {};
     const submittedMap = {};
+    const vendorPaidMap = {};
     const lastActivityMap = {};
 
     clientPayments.forEach((p) => {
@@ -149,15 +158,25 @@ exports.getAccounts = async (req, res) => {
       if (!cur || s.createdAt > cur) lastActivityMap[s.accountId] = s.createdAt;
     });
 
+    vendorPayments.forEach((vp) => {
+      if (!vp.collectionAccountId) return;
+      vendorPaidMap[vp.collectionAccountId] =
+        (vendorPaidMap[vp.collectionAccountId] || 0) + (Number(vp.advancePaid) || 0);
+      const cur = lastActivityMap[vp.collectionAccountId];
+      if (!cur || vp.createdAt > cur) lastActivityMap[vp.collectionAccountId] = vp.createdAt;
+    });
+
     const enriched = accounts.map((acc) => {
       const totalCollected = collectedMap[acc.id] || 0;
       const totalSubmitted = submittedMap[acc.id] || 0;
-      const pending = Math.max(0, totalCollected - totalSubmitted);
+      const totalVendorPaid = vendorPaidMap[acc.id] || 0;
+      const pending = Math.max(0, totalCollected - totalSubmitted - totalVendorPaid);
 
       return {
         ...acc,
         totalCollected,
         totalSubmitted,
+        totalVendorPaid,
         pending,
         status: pending <= 0 ? "SETTLED" : "PENDING",
         lastActivity: lastActivityMap[acc.id] || acc.createdAt,
@@ -167,6 +186,7 @@ exports.getAccounts = async (req, res) => {
     const summary = {
       totalCollected: enriched.reduce((s, a) => s + a.totalCollected, 0),
       totalSubmitted: enriched.reduce((s, a) => s + a.totalSubmitted, 0),
+      totalVendorPaid: enriched.reduce((s, a) => s + (a.totalVendorPaid || 0), 0),
       totalPending: enriched.reduce((s, a) => s + a.pending, 0),
     };
 
@@ -373,7 +393,7 @@ exports.getAccountLedger = async (req, res) => {
         .json({ success: false, message: "Collection account not found" });
     }
 
-    const [clientPayments, stationPayments, submissions] = await Promise.all([
+    const [clientPayments, stationPayments, submissions, vendorPayments] = await Promise.all([
       prisma.opsClientPayment.findMany({
         where: { collectionAccountId: id, tenantId },
         orderBy: { createdAt: "desc" },
@@ -411,6 +431,13 @@ exports.getAccountLedger = async (req, res) => {
           recordedBy: { select: { id: true, name: true, email: true } },
         },
       }),
+      prisma.opsVendorPayment.findMany({
+        where: { collectionAccountId: id, tenantId },
+        orderBy: { createdAt: "desc" },
+        include: {
+          trip: { select: { id: true, title: true, tripCode: true } },
+        },
+      }),
     ]);
 
     const totalCollected =
@@ -426,7 +453,11 @@ exports.getAccountLedger = async (req, res) => {
       0,
     );
 
-    const pending = Math.max(0, totalCollected - totalSubmitted);
+    const totalVendorPaid = vendorPayments
+      .filter((v) => v.status !== "Rejected")
+      .reduce((s, v) => s + (Number(v.advancePaid) || 0), 0);
+
+    const pending = Math.max(0, totalCollected - totalSubmitted - totalVendorPaid);
 
     return res.json({
       success: true,
@@ -435,10 +466,12 @@ exports.getAccountLedger = async (req, res) => {
         clientPayments,
         stationPayments,
         submissions,
+        vendorPayments,
         metrics: {
           totalCollected,
           totalSubmitted,
-          pending,
+          totalVendorPaid,
+          totalPending: pending,
           status: pending <= 0 ? "SETTLED" : "PENDING",
         },
       },
