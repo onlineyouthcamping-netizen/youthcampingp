@@ -327,6 +327,7 @@ model Trip {
   reels             Json?
   tripReviews       Json?
   itineraryVersions Json?
+  trainTicketTemplate Json?
 
   order            Int              @default(999)
   createdAt        DateTime         @default(now())
@@ -959,6 +960,12 @@ model TrainTicket {
   approvalStatus       TrainTicketApprovalStatus @default(DRAFT)
   isLocked             Boolean                   @default(false)
   ticketAmount         Decimal                   @default(0.00) @db.Decimal(10, 2)
+  expectedTicketAmount Decimal?                  @default(0.00) @db.Decimal(10, 2)
+  varianceAmount       Decimal?                  @default(0.00) @db.Decimal(10, 2)
+  financeStatus        String?                   @default("PENDING_VERIFICATION") // PENDING_VERIFICATION | VERIFIED | REJECTED
+  financeVerifiedAt    DateTime?
+  financeVerifiedByAdminId String?
+  financeRejectionReason String?
   paidBy               String                    @default("COMPANY") // COMPANY | CUSTOMER
   fareBreakdown        Json?                     // { baseFare, reservationCharge, superfastCharge, gst, otherCharges }
   amountMode           String?

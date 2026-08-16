@@ -16,6 +16,8 @@ const {
   bulkUpdateTripOrder,
   seedLiveData,
   getTripDepartures,
+  getTripTrainTicketTemplate,
+  updateTripTrainTicketTemplate,
 } = require("../controllers/tripController");
 const {
   authenticate,
@@ -55,6 +57,13 @@ router.get(
 );
 
 router.get("/:id/departures", authenticate, getTripDepartures);
+router.get("/:id/train-template", authenticate, getTripTrainTicketTemplate);
+router.put(
+  "/:id/train-template",
+  authenticate,
+  requirePermission("trips.edit"),
+  updateTripTrainTicketTemplate,
+);
 router.get(
   "/:id",
   optionalAuthenticate,

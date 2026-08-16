@@ -24,6 +24,7 @@ const {
   deleteTemplate,
   archiveTemplate,
   restoreTemplate,
+  verifyFinanceTicket,
 } = require("../controllers/trainTicketController");
 const { authenticate, requirePermission } = require("../middleware/auth");
 
@@ -146,5 +147,7 @@ router.post(
   requirePermission("tickets.edit"),
   recordRefund,
 );
+router.patch("/:ticketId/finance-verify", verifyFinanceTicket);
+router.post("/:ticketId/finance-verify", verifyFinanceTicket);
 
 module.exports = router;

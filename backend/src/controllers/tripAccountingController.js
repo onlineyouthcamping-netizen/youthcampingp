@@ -154,9 +154,31 @@ async function getTripPnL(req, res) {
       (sum, t) => sum + (Number(t.totalAmount) || 0),
       0,
     );
+    let template = trip.trainTicketTemplate;
+    if (typeof template === "string") {
+      try {
+        template = JSON.parse(template);
+      } catch (_) {}
+    }
+    const templateExpectedPerPax =
+      Number(template?.totalExpectedCostPerPassenger) || 0;
+    const ticketCalculatedExpected = trainTickets.reduce(
+      (sum, t) => sum + (Number(t.expectedTicketAmount) || 0),
+      0,
+    );
+    const expectedTrainCost =
+      ticketCalculatedExpected > 0
+        ? ticketCalculatedExpected
+        : templateExpectedPerPax * totalPax;
+    const actualTrainCost = trainTickets.reduce(
+      (sum, t) => sum + (Number(t.ticketAmount) || 0),
+      0,
+    );
+    const trainCostVariance = actualTrainCost - expectedTrainCost;
+
     const ticketingCost =
       financeTickets.reduce((sum, t) => sum + (Number(t.cost) || 0), 0) +
-      trainTickets.reduce((sum, t) => sum + (Number(t.ticketAmount) || 0), 0);
+      actualTrainCost;
 
     const totalDirectCost =
       vendorContractCost +
@@ -190,6 +212,12 @@ async function getTripPnL(req, res) {
           totalCollected,
           totalDue,
         },
+        trainTicketing: {
+          expectedTrainCost,
+          actualTrainCost,
+          trainCostVariance,
+          expectedCostPerPax: templateExpectedPerPax,
+        },
         directCosts: {
           vendorContractCost,
           vendorPaid,
@@ -199,6 +227,9 @@ async function getTripPnL(req, res) {
           guideExpensePaid,
           miscCost,
           tripActivityCost,
+          expectedTrainCost,
+          actualTrainCost,
+          trainCostVariance,
           ticketingCost,
           totalDirectCost,
         },

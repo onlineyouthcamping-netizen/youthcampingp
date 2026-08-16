@@ -484,6 +484,7 @@ const sanitizeTripData = (data) => {
     "reels",
     "tripReviews",
     "itineraryVersions",
+    "trainTicketTemplate",
     "order",
   ]);
 
@@ -1132,3 +1133,140 @@ exports.getTripDepartures = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @desc    Get trip-wise train ticket template
+ * @route   GET /api/trips/:id/train-template
+ * @access  Private
+ */
+exports.getTripTrainTicketTemplate = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const tenantId = req.user?.tenantId || "default";
+
+    const trip = await prisma.trip.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }],
+        ...(tenantId && tenantId !== "all" ? { tenantId } : {}),
+      },
+      select: {
+        id: true,
+        title: true,
+        shortName: true,
+        slug: true,
+        trainTicketTemplate: true,
+      },
+    });
+
+    if (!trip) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
+    }
+
+    let template = trip.trainTicketTemplate;
+    if (typeof template === "string") {
+      try {
+        template = JSON.parse(template);
+      } catch (_) {
+        template = null;
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: template || {
+        departureJourney: {
+          enabled: true,
+          required: true,
+          boardingStation: "",
+          destination: "",
+          trainName: "",
+          trainNumber: "",
+          route: "",
+          class: "3A",
+          quota: "GN",
+          ticketType: "IRCTC E-Ticket",
+          expectedCost: 0,
+          bookingProvider: "Riya Travel Portal",
+          notes: "",
+        },
+        returnJourney: {
+          enabled: true,
+          required: true,
+          boardingStation: "",
+          destination: "",
+          trainName: "",
+          trainNumber: "",
+          route: "",
+          class: "3A",
+          quota: "GN",
+          ticketType: "IRCTC E-Ticket",
+          expectedCost: 0,
+          bookingProvider: "Riya Travel Portal",
+          notes: "",
+        },
+        totalExpectedCostPerPassenger: 0,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update trip-wise train ticket template
+ * @route   PUT /api/trips/:id/train-template
+ * @access  Private
+ */
+exports.updateTripTrainTicketTemplate = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const tenantId = req.user?.tenantId || "default";
+    const templateData = req.body;
+
+    const trip = await prisma.trip.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }],
+        ...(tenantId && tenantId !== "all" ? { tenantId } : {}),
+      },
+    });
+
+    if (!trip) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Trip not found" });
+    }
+
+    const depCost = Number(templateData?.departureJourney?.expectedCost) || 0;
+    const retCost = Number(templateData?.returnJourney?.expectedCost) || 0;
+    const totalExpectedCostPerPassenger = depCost + retCost;
+
+    const sanitizedTemplate = {
+      ...templateData,
+      totalExpectedCostPerPassenger,
+    };
+
+    const updated = await prisma.trip.update({
+      where: { id: trip.id },
+      data: {
+        trainTicketTemplate: sanitizedTemplate,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        trainTicketTemplate: true,
+      },
+    });
+
+    return res.json({
+      success: true,
+      data: updated.trainTicketTemplate,
+      message: "Trip Train Ticket Template updated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

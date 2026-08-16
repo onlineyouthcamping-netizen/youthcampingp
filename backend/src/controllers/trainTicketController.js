@@ -144,7 +144,15 @@ exports.createTicket = async (req, res) => {
         OR: [{ id: String(bookingId) }, { bookingId: String(bookingId) }],
         ...(tenantId && tenantId !== "all" ? { tenantId } : {}),
       },
-      select: { id: true, bookingId: true, tenantId: true },
+      select: {
+        id: true,
+        bookingId: true,
+        tenantId: true,
+        tripId: true,
+        tripRef: {
+          select: { id: true, trainTicketTemplate: true },
+        },
+      },
     });
 
     if (!booking) {
@@ -169,6 +177,7 @@ exports.createTicket = async (req, res) => {
       seatNumber,
       berthType,
       ticketAmount,
+      expectedTicketAmount: inputExpected,
       paidBy,
       fareBreakdown,
       amountMode,
@@ -181,6 +190,37 @@ exports.createTicket = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Traveler name is required" });
     }
+
+    // Resolve Expected Cost from Trip Train Ticket Template if not provided explicitly
+    let expectedCost = Number(inputExpected) || 0;
+    if (!expectedCost && booking.tripRef?.trainTicketTemplate) {
+      let tpl = booking.tripRef.trainTicketTemplate;
+      if (typeof tpl === "string") {
+        try {
+          tpl = JSON.parse(tpl);
+        } catch (_) {}
+      }
+      const isReturn =
+        (destinationStation &&
+          tpl?.returnJourney?.destination &&
+          destinationStation
+            .toLowerCase()
+            .includes(tpl.returnJourney.destination.toLowerCase())) ||
+        (sourceStation &&
+          tpl?.returnJourney?.boardingStation &&
+          sourceStation
+            .toLowerCase()
+            .includes(tpl.returnJourney.boardingStation.toLowerCase()));
+      if (isReturn && tpl?.returnJourney?.expectedCost) {
+        expectedCost = Number(tpl.returnJourney.expectedCost) || 0;
+      } else if (tpl?.departureJourney?.expectedCost) {
+        expectedCost = Number(tpl.departureJourney.expectedCost) || 0;
+      } else if (tpl?.totalExpectedCostPerPassenger) {
+        expectedCost = Number(tpl.totalExpectedCostPerPassenger) / 2;
+      }
+    }
+    const actualCost = Number(ticketAmount) || 0;
+    const variance = actualCost - expectedCost;
 
     // Check for duplicate ticket for the same booking and traveler/PNR
     if (pnr || travelerName) {
@@ -223,7 +263,10 @@ exports.createTicket = async (req, res) => {
         ticketStatus: req.body.ticketStatus || "PENDING",
         approvalStatus: "DRAFT",
         isLocked: false,
-        ticketAmount: new Prisma.Decimal(ticketAmount || 0),
+        ticketAmount: new Prisma.Decimal(actualCost),
+        expectedTicketAmount: new Prisma.Decimal(expectedCost),
+        varianceAmount: new Prisma.Decimal(variance),
+        financeStatus: req.body.financeStatus || "PENDING_VERIFICATION",
         paidBy: paidBy || "COMPANY",
         fareBreakdown: fareBreakdown || null,
         amountMode: amountMode || null,
@@ -2259,3 +2302,61 @@ exports.restoreTemplate = async (req, res) => {
       .json({ success: false, message: "Failed to restore template" });
   }
 };
+
+/**
+ * PATCH /api/train-tickets/:id/finance-verify
+ * Verify or Reject train ticket cost in Finance Controller
+ */
+exports.verifyFinanceTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, rejectionReason } = req.body;
+    const tenantId = req.user?.tenantId || "default";
+
+    const ticket = await prisma.trainTicket.findFirst({
+      where: {
+        id,
+        ...(tenantId && tenantId !== "all" ? { tenantId } : {}),
+      },
+    });
+
+    if (!ticket) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Train ticket not found" });
+    }
+
+    const isVerify =
+      status === "VERIFIED" || status === "Verified" || status === "Approved";
+    const financeStatus = isVerify ? "VERIFIED" : "REJECTED";
+
+    const updated = await prisma.trainTicket.update({
+      where: { id },
+      data: {
+        financeStatus,
+        financeVerifiedAt: new Date(),
+        financeVerifiedByAdminId: req.user?.id || null,
+        financeRejectionReason: !isVerify ? rejectionReason || null : null,
+      },
+    });
+
+    await logHistory(
+      ticket.id,
+      isVerify ? "FINANCE_VERIFIED" : "FINANCE_REJECTED",
+      req,
+      rejectionReason || "Finance Controller action",
+    );
+
+    return res.json({
+      success: true,
+      data: updated,
+      message: `Train ticket ${isVerify ? "verified & reconciled" : "rejected"} in Finance`,
+    });
+  } catch (err) {
+    console.error("verifyFinanceTicket error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to verify train ticket in finance" });
+  }
+};
+

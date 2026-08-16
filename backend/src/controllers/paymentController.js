@@ -796,6 +796,38 @@ exports.getFinanceVerificationQueue = async (req, res) => {
           },
         },
       }),
+      prisma.trainTicket.findMany({
+        where: {
+          tenantId,
+          ticketStatus: { not: "CANCELLED" },
+          ticketAmount: { gt: 0 },
+          financeStatus: { in: ["PENDING_VERIFICATION", "PENDING", null] },
+        },
+        orderBy: { createdAt: "desc" },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              bookingId: true,
+              fullName: true,
+              name: true,
+              phone: true,
+              tripName: true,
+              tripId: true,
+              departureDate: true,
+              tripRef: {
+                select: {
+                  id: true,
+                  title: true,
+                  shortName: true,
+                  slug: true,
+                  trainTicketTemplate: true,
+                },
+              },
+            },
+          },
+        },
+      }),
     ]);
 
     return res.json({
@@ -804,10 +836,12 @@ exports.getFinanceVerificationQueue = async (req, res) => {
         pendingClientPayments,
         pendingStationPayments,
         pendingVendorPayments,
+        pendingTrainTickets,
         totalPendingCount:
           pendingClientPayments.length +
           pendingStationPayments.length +
-          pendingVendorPayments.length,
+          pendingVendorPayments.length +
+          pendingTrainTickets.length,
       },
     });
   } catch (err) {
