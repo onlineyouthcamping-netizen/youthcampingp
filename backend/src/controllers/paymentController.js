@@ -649,22 +649,8 @@ exports.updateVendorPayment = async (req, res) => {
           transactionId !== undefined ? transactionId : existing.transactionId,
         invoiceProof:
           invoiceProof !== undefined ? invoiceProof : existing.invoiceProof,
-        status: status || existing.status,
+        status: status !== undefined ? status : existing.status,
         remarks: remarks !== undefined ? remarks : existing.remarks,
-      },
-      include: {
-        collectionAccount: {
-          select: {
-            id: true,
-            accountName: true,
-            accountHolderName: true,
-            accountType: true,
-            bankName: true,
-            upiId: true,
-            accountNumber: true,
-            maskedAccountNumber: true,
-          },
-        },
       },
     });
 
@@ -674,6 +660,261 @@ exports.updateVendorPayment = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to update vendor payment" });
+  }
+};
+
+exports.verifyVendorPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, remarks } = req.body;
+
+    const existing = await prisma.opsVendorPayment.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Vendor payment record not found" });
+    }
+
+    const updated = await prisma.opsVendorPayment.update({
+      where: { id },
+      data: {
+        status: status || "Paid",
+        remarks: remarks || existing.remarks,
+      },
+    });
+
+    return res.json({
+      success: true,
+      data: updated,
+      message: "Vendor payment status updated",
+    });
+  } catch (err) {
+    console.error("verifyVendorPayment error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to verify vendor payment" });
+  }
+};
+
+exports.getFinanceVerificationQueue = async (req, res) => {
+  try {
+    const tenantId = resolveTenantId(req);
+
+    const [
+      pendingClientPayments,
+      pendingStationPayments,
+      pendingVendorPayments,
+    ] = await Promise.all([
+      prisma.opsClientPayment.findMany({
+        where: {
+          tenantId,
+          status: {
+            in: [
+              "Pending Verification",
+              "Pending Approval",
+              "PENDING",
+              "Pending",
+            ],
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              bookingId: true,
+              fullName: true,
+              name: true,
+              phone: true,
+              mobile: true,
+              tripName: true,
+              departureDate: true,
+              totalAmount: true,
+            },
+          },
+          collectionAccount: {
+            select: {
+              id: true,
+              accountName: true,
+              accountType: true,
+              bankName: true,
+            },
+          },
+        },
+      }),
+      prisma.stationPaymentCollection.findMany({
+        where: {
+          tenantId,
+          upiVerificationStatus: "PENDING_VERIFICATION",
+          isReversed: false,
+        },
+        orderBy: { createdAt: "desc" },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              bookingId: true,
+              fullName: true,
+              name: true,
+              phone: true,
+              tripName: true,
+            },
+          },
+          collectedBy: { select: { id: true, name: true, email: true } },
+          receivingAccount: {
+            select: { id: true, accountName: true, accountType: true },
+          },
+        },
+      }),
+      prisma.opsVendorPayment.findMany({
+        where: {
+          tenantId,
+          status: {
+            in: [
+              "Pending Approval",
+              "Pending Verification",
+              "PENDING",
+              "Pending",
+              "Not Paid",
+              "Advance Paid",
+            ],
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        include: {
+          trip: { select: { id: true, title: true, slug: true } },
+          collectionAccount: {
+            select: {
+              id: true,
+              accountName: true,
+              accountType: true,
+              bankName: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        pendingClientPayments,
+        pendingStationPayments,
+        pendingVendorPayments,
+        totalPendingCount:
+          pendingClientPayments.length +
+          pendingStationPayments.length +
+          pendingVendorPayments.length,
+      },
+    });
+  } catch (err) {
+    console.error("getFinanceVerificationQueue error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch verification queue" });
+  }
+};
+
+exports.getRiyaSummary = async (req, res) => {
+  try {
+    const tenantId = resolveTenantId(req);
+
+    // 1. Find Riya account
+    let riyaAccount = await prisma.paymentReceivingAccount.findFirst({
+      where: {
+        tenantId,
+        accountName: { contains: "Riya", mode: "insensitive" },
+      },
+    });
+
+    if (!riyaAccount) {
+      riyaAccount = await prisma.paymentReceivingAccount.create({
+        data: {
+          tenantId,
+          accountName: "Riya Train Portal Account",
+          accountHolderName: "Riya Travel & Tours (India) Pvt Ltd",
+          accountType: "OTHER",
+          ownershipType: "PARTNER",
+          paymentMethods: ["BANK_TRANSFER", "UPI"],
+          description:
+            "Authoritative Riya train ticketing wallet for IRCTC/train bookings",
+          isApproved: true,
+          isActive: true,
+        },
+      });
+    }
+
+    // 2. Fetch all recharges / inward transfers into Riya account
+    const recharges = await prisma.collectionAccountSubmission.findMany({
+      where: { tenantId, accountId: riyaAccount.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        recordedBy: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    const totalRechargeAmount = recharges.reduce(
+      (sum, r) => sum + (Number(r.amount) || 0),
+      0,
+    );
+
+    // 3. Fetch all train tickets issued
+    const tickets = await prisma.trainTicket.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            bookingId: true,
+            fullName: true,
+            name: true,
+            phone: true,
+            tripName: true,
+            tripId: true,
+            departureDate: true,
+            trip: { select: { id: true, title: true, tripCode: true } },
+          },
+        },
+      },
+    });
+
+    const activeTickets = tickets.filter((t) => t.ticketStatus !== "CANCELLED");
+    const totalTicketsIssuedCount = activeTickets.length;
+    const totalTicketCostConsumed = activeTickets.reduce(
+      (sum, t) => sum + (Number(t.ticketAmount) || 0),
+      0,
+    );
+
+    const totalRefunds = tickets.reduce(
+      (sum, t) => sum + (Number(t.refundAmount) || 0),
+      0,
+    );
+
+    const availableRiyaBalance =
+      totalRechargeAmount - totalTicketCostConsumed + totalRefunds;
+
+    return res.json({
+      success: true,
+      data: {
+        account: riyaAccount,
+        totalRechargeAmount,
+        totalTicketsIssuedCount,
+        totalTicketCostConsumed,
+        totalRefunds,
+        availableRiyaBalance,
+        recharges,
+        tickets,
+      },
+    });
+  } catch (err) {
+    console.error("getRiyaSummary error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch Riya wallet summary" });
   }
 };
 

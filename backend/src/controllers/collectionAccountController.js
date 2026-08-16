@@ -7,61 +7,92 @@ const resolveTenantId = (req) => {
 // Seed/ensure initial default accounts if none exist
 const ensureDefaultAccounts = async (tenantId, adminId) => {
   try {
+    const existingRiya = await prisma.paymentReceivingAccount.findFirst({
+      where: {
+        tenantId,
+        accountName: { contains: "Riya", mode: "insensitive" },
+      },
+    });
+
+    if (!existingRiya) {
+      await prisma.paymentReceivingAccount.create({
+        data: {
+          tenantId,
+          accountName: "Riya Train Portal Account",
+          accountHolderName: "Riya Travel & Tours (India) Pvt Ltd",
+          accountType: "OTHER",
+          ownershipType: "PARTNER",
+          paymentMethods: ["BANK_TRANSFER", "UPI"],
+          description: "Authoritative Riya train ticketing wallet for IRCTC/train bookings",
+          isApproved: true,
+          isActive: true,
+          createdByAdminId: adminId || null,
+        },
+      });
+    }
+
     const count = await prisma.paymentReceivingAccount.count({
       where: { tenantId },
     });
 
-    if (count === 0) {
-      await prisma.paymentReceivingAccount.createMany({
-        data: [
-          {
-            tenantId,
-            accountName: "YouthCamping Company Account",
-            accountHolderName: "Youth Camping Adventures Pvt Ltd",
-            accountType: "COMPANY",
-            ownershipType: "COMPANY",
-            paymentMethods: ["UPI", "BANK_TRANSFER", "CARD", "OTHER"],
-            bankName: "HDFC Bank",
-            accountNumber: "50200084920192",
-            maskedAccountNumber: "XXXX0192",
-            ifsc: "HDFC0001234",
-            upiId: "youthcamping@hdfcbank",
-            description: "Official YouthCamping primary collection account",
-            isApproved: true,
-            isActive: true,
-            createdByAdminId: adminId || null,
-          },
-          {
-            tenantId,
-            accountName: "Nikulbhai Patel Account",
-            accountHolderName: "Nikulbhai Patel",
-            accountType: "INDIVIDUAL",
-            ownershipType: "INDIVIDUAL",
-            paymentMethods: ["UPI", "BANK_TRANSFER"],
-            bankName: "State Bank of India",
-            accountNumber: "38920192841",
-            maskedAccountNumber: "XXXX2841",
-            ifsc: "SBIN0004821",
-            upiId: "nikulbhai@upi",
-            description: "Individual external collection account",
-            isApproved: true,
-            isActive: true,
-            createdByAdminId: adminId || null,
-          },
-          {
-            tenantId,
-            accountName: "Cash Collection Account",
-            accountHolderName: "YouthCamping Cash Desk",
-            accountType: "CASH",
-            ownershipType: "COMPANY",
-            paymentMethods: ["CASH"],
-            description: "Physical cash collection and venue register",
-            isApproved: true,
-            isActive: true,
-            createdByAdminId: adminId || null,
-          },
-        ],
-      });
+    if (count <= 1) {
+      const defaults = [
+        {
+          tenantId,
+          accountName: "YouthCamping Company Account",
+          accountHolderName: "Youth Camping Adventures Pvt Ltd",
+          accountType: "COMPANY",
+          ownershipType: "COMPANY",
+          paymentMethods: ["UPI", "BANK_TRANSFER", "CARD", "OTHER"],
+          bankName: "HDFC Bank",
+          accountNumber: "50200084920192",
+          maskedAccountNumber: "XXXX0192",
+          ifsc: "HDFC0001234",
+          upiId: "youthcamping@hdfcbank",
+          description: "Official YouthCamping primary collection account",
+          isApproved: true,
+          isActive: true,
+          createdByAdminId: adminId || null,
+        },
+        {
+          tenantId,
+          accountName: "Nikulbhai Patel Account",
+          accountHolderName: "Nikulbhai Patel",
+          accountType: "INDIVIDUAL",
+          ownershipType: "INDIVIDUAL",
+          paymentMethods: ["UPI", "BANK_TRANSFER"],
+          bankName: "State Bank of India",
+          accountNumber: "38920192841",
+          maskedAccountNumber: "XXXX2841",
+          ifsc: "SBIN0004821",
+          upiId: "nikulbhai@upi",
+          description: "Individual external collection account",
+          isApproved: true,
+          isActive: true,
+          createdByAdminId: adminId || null,
+        },
+        {
+          tenantId,
+          accountName: "Cash Collection Account",
+          accountHolderName: "YouthCamping Cash Desk",
+          accountType: "CASH",
+          ownershipType: "COMPANY",
+          paymentMethods: ["CASH"],
+          description: "Physical cash collection and venue register",
+          isApproved: true,
+          isActive: true,
+          createdByAdminId: adminId || null,
+        },
+      ];
+
+      for (const def of defaults) {
+        const exists = await prisma.paymentReceivingAccount.findFirst({
+          where: { tenantId, accountName: def.accountName },
+        });
+        if (!exists) {
+          await prisma.paymentReceivingAccount.create({ data: def });
+        }
+      }
     }
   } catch (e) {
     console.warn("ensureDefaultAccounts error:", e.message);
@@ -95,39 +126,47 @@ exports.getAccounts = async (req, res) => {
     // Compute live balance aggregates per account
     const accountIds = accounts.map((a) => a.id);
 
-    const [clientPayments, stationPayments, submissions, vendorPayments] = await Promise.all([
-      prisma.opsClientPayment.findMany({
-        where: {
-          tenantId,
-          collectionAccountId: { in: accountIds },
-          status: { not: "Rejected" },
-        },
-        select: { collectionAccountId: true, amount: true, createdAt: true },
-      }),
-      prisma.stationPaymentCollection.findMany({
-        where: {
-          tenantId,
-          receivingAccountId: { in: accountIds },
-          isReversed: false,
-        },
-        select: { receivingAccountId: true, amount: true, createdAt: true },
-      }),
-      prisma.collectionAccountSubmission.findMany({
-        where: {
-          tenantId,
-          accountId: { in: accountIds },
-        },
-        select: { accountId: true, amount: true, createdAt: true },
-      }),
-      prisma.opsVendorPayment.findMany({
-        where: {
-          tenantId,
-          collectionAccountId: { in: accountIds },
-          status: { not: "Rejected" },
-        },
-        select: { collectionAccountId: true, advancePaid: true, createdAt: true },
-      }),
-    ]);
+    const [clientPayments, stationPayments, submissions, vendorPayments, trainTickets] =
+      await Promise.all([
+        prisma.opsClientPayment.findMany({
+          where: {
+            tenantId,
+            collectionAccountId: { in: accountIds },
+            status: { not: "Rejected" },
+          },
+          select: { collectionAccountId: true, amount: true, createdAt: true },
+        }),
+        prisma.stationPaymentCollection.findMany({
+          where: {
+            tenantId,
+            receivingAccountId: { in: accountIds },
+            isReversed: false,
+          },
+          select: { receivingAccountId: true, amount: true, createdAt: true },
+        }),
+        prisma.collectionAccountSubmission.findMany({
+          where: {
+            tenantId,
+            accountId: { in: accountIds },
+          },
+          select: { accountId: true, amount: true, createdAt: true },
+        }),
+        prisma.opsVendorPayment.findMany({
+          where: {
+            tenantId,
+            collectionAccountId: { in: accountIds },
+            status: { not: "Rejected" },
+          },
+          select: { collectionAccountId: true, advancePaid: true, createdAt: true },
+        }),
+        prisma.trainTicket.findMany({
+          where: {
+            tenantId,
+            ticketStatus: { not: "CANCELLED" },
+          },
+          select: { ticketAmount: true, refundAmount: true, createdAt: true },
+        }),
+      ]);
 
     const collectedMap = {};
     const submittedMap = {};
@@ -166,7 +205,35 @@ exports.getAccounts = async (req, res) => {
       if (!cur || vp.createdAt > cur) lastActivityMap[vp.collectionAccountId] = vp.createdAt;
     });
 
+    const totalTicketsCost = trainTickets.reduce(
+      (s, t) => s + (Number(t.ticketAmount) || 0),
+      0,
+    );
+    const totalTicketRefunds = trainTickets.reduce(
+      (s, t) => s + (Number(t.refundAmount) || 0),
+      0,
+    );
+
     const enriched = accounts.map((acc) => {
+      const isRiya = acc.accountName.toLowerCase().includes("riya");
+      if (isRiya) {
+        const totalRecharges = submittedMap[acc.id] || 0;
+        const totalConsumed = totalTicketsCost;
+        const availableBalance = Math.max(
+          0,
+          totalRecharges - totalConsumed + totalTicketRefunds,
+        );
+        return {
+          ...acc,
+          totalCollected: totalRecharges,
+          totalSubmitted: totalConsumed,
+          totalVendorPaid: 0,
+          pending: availableBalance,
+          status: availableBalance > 1000 ? "ACTIVE_WALLET" : "LOW_BALANCE",
+          lastActivity: lastActivityMap[acc.id] || acc.createdAt,
+        };
+      }
+
       const totalCollected = collectedMap[acc.id] || 0;
       const totalSubmitted = submittedMap[acc.id] || 0;
       const totalVendorPaid = vendorPaidMap[acc.id] || 0;
@@ -393,71 +460,120 @@ exports.getAccountLedger = async (req, res) => {
         .json({ success: false, message: "Collection account not found" });
     }
 
-    const [clientPayments, stationPayments, submissions, vendorPayments] = await Promise.all([
-      prisma.opsClientPayment.findMany({
-        where: { collectionAccountId: id, tenantId },
-        orderBy: { createdAt: "desc" },
-        include: {
-          booking: {
-            select: {
-              id: true,
-              bookingId: true,
-              fullName: true,
-              name: true,
-              phone: true,
-              mobile: true,
-              email: true,
-              tripName: true,
-              tripId: true,
-              departureDate: true,
-              totalAmount: true,
-              advancePaid: true,
-              remainingAmount: true,
+    const [clientPayments, stationPayments, submissions, vendorPayments, trainTickets] =
+      await Promise.all([
+        prisma.opsClientPayment.findMany({
+          where: { collectionAccountId: id, tenantId },
+          orderBy: { createdAt: "desc" },
+          include: {
+            booking: {
+              select: {
+                id: true,
+                bookingId: true,
+                fullName: true,
+                name: true,
+                phone: true,
+                mobile: true,
+                email: true,
+                tripName: true,
+                tripId: true,
+                departureDate: true,
+                totalAmount: true,
+                advancePaid: true,
+                remainingAmount: true,
+              },
             },
           },
-        },
-      }),
-      prisma.stationPaymentCollection.findMany({
-        where: { receivingAccountId: id, tenantId, isReversed: false },
-        orderBy: { createdAt: "desc" },
-        include: {
-          collectedBy: { select: { id: true, name: true, email: true } },
-        },
-      }),
-      prisma.collectionAccountSubmission.findMany({
-        where: { accountId: id, tenantId },
-        orderBy: { createdAt: "desc" },
-        include: {
-          recordedBy: { select: { id: true, name: true, email: true } },
-        },
-      }),
-      prisma.opsVendorPayment.findMany({
-        where: { collectionAccountId: id, tenantId },
-        orderBy: { createdAt: "desc" },
-        include: {
-          trip: { select: { id: true, title: true, tripCode: true } },
-        },
-      }),
-    ]);
+        }),
+        prisma.stationPaymentCollection.findMany({
+          where: { receivingAccountId: id, tenantId, isReversed: false },
+          orderBy: { createdAt: "desc" },
+          include: {
+            collectedBy: { select: { id: true, name: true, email: true } },
+          },
+        }),
+        prisma.collectionAccountSubmission.findMany({
+          where: { accountId: id, tenantId },
+          orderBy: { createdAt: "desc" },
+          include: {
+            recordedBy: { select: { id: true, name: true, email: true } },
+          },
+        }),
+        prisma.opsVendorPayment.findMany({
+          where: { collectionAccountId: id, tenantId },
+          orderBy: { createdAt: "desc" },
+          include: {
+            trip: { select: { id: true, title: true, tripCode: true } },
+          },
+        }),
+        prisma.trainTicket.findMany({
+          where: { tenantId },
+          orderBy: { createdAt: "desc" },
+          include: {
+            booking: {
+              select: {
+                id: true,
+                bookingId: true,
+                fullName: true,
+                name: true,
+                phone: true,
+                tripName: true,
+                tripId: true,
+                departureDate: true,
+              },
+            },
+          },
+        }),
+      ]);
 
-    const totalCollected =
-      clientPayments
-        .filter((p) => p.status !== "Rejected")
-        .reduce((s, p) => s + (Number(p.amount) || 0), 0) +
-      stationPayments
-        .filter((p) => !p.isReversed)
-        .reduce((s, p) => s + (Number(p.amount) || 0), 0);
+    const isRiya = account.accountName.toLowerCase().includes("riya");
 
-    const totalSubmitted = submissions.reduce(
-      (s, sub) => s + (Number(sub.amount) || 0),
-      0,
-    );
+    let totalCollected = 0;
+    let totalSubmitted = 0;
+    let totalVendorPaid = 0;
+    let pending = 0;
 
-    const totalVendorPaid = vendorPayments
-      .filter((v) => v.status !== "Rejected")
-      .reduce((s, v) => s + (Number(v.advancePaid) || 0), 0);
+    if (isRiya) {
+      const activeTickets = trainTickets.filter(
+        (t) => t.ticketStatus !== "CANCELLED",
+      );
+      const totalRecharges = submissions.reduce(
+        (s, sub) => s + (Number(sub.amount) || 0),
+        0,
+      );
+      const totalConsumed = activeTickets.reduce(
+        (s, t) => s + (Number(t.ticketAmount) || 0),
+        0,
+      );
+      const totalRefunds = trainTickets.reduce(
+        (s, t) => s + (Number(t.refundAmount) || 0),
+        0,
+      );
 
-    const pending = Math.max(0, totalCollected - totalSubmitted - totalVendorPaid);
+      totalCollected = totalRecharges;
+      totalSubmitted = totalConsumed;
+      totalVendorPaid = 0;
+      pending = Math.max(0, totalRecharges - totalConsumed + totalRefunds);
+    } else {
+      totalCollected =
+        clientPayments
+          .filter((p) => p.status !== "Rejected")
+          .reduce((s, p) => s + (Number(p.amount) || 0), 0) +
+        stationPayments
+          .filter((p) => !p.isReversed)
+          .reduce((s, p) => s + (Number(p.amount) || 0), 0);
+
+      totalSubmitted = submissions.reduce(
+        (s, sub) => s + (Number(sub.amount) || 0),
+        0,
+      );
+
+      totalVendorPaid = vendorPayments
+        .filter((v) => v.status !== "Rejected")
+        .reduce((s, v) => s + (Number(v.advancePaid) || 0), 0);
+
+      pending = Math.max(0, totalCollected - totalSubmitted - totalVendorPaid);
+    }
 
     return res.json({
       success: true,
@@ -467,12 +583,19 @@ exports.getAccountLedger = async (req, res) => {
         stationPayments,
         submissions,
         vendorPayments,
+        trainTickets: isRiya ? trainTickets : [],
         metrics: {
           totalCollected,
           totalSubmitted,
           totalVendorPaid,
           totalPending: pending,
-          status: pending <= 0 ? "SETTLED" : "PENDING",
+          status: isRiya
+            ? pending > 1000
+              ? "ACTIVE_WALLET"
+              : "LOW_BALANCE"
+            : pending <= 0
+              ? "SETTLED"
+              : "PENDING",
         },
       },
     });

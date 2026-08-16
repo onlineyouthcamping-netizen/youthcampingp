@@ -69,7 +69,15 @@ async function getTripPnL(req, res) {
     const netRevenue = Math.max(0, grossSellingPrice - totalCouponDiscounts - totalCashRefunds);
 
     // 2. Fetch direct vendor, guide, and ticketing costs
-    const [vendors, guidePayments, miscExpenses, tripExpenses, financeTickets] = await Promise.all([
+    const [
+      vendors,
+      guidePayments,
+      miscExpenses,
+      tripExpenses,
+      financeTickets,
+      trainTickets,
+      opsVendorPayments,
+    ] = await Promise.all([
       prisma.tripVendor.findMany({
         where: { tripId: trip.id, tenantId },
       }),
@@ -88,27 +96,80 @@ async function getTripPnL(req, res) {
           booking: { tripId: trip.id },
         },
       }),
+      prisma.trainTicket.findMany({
+        where: {
+          tenantId,
+          booking: { tripId: trip.id },
+          ticketStatus: { not: "CANCELLED" },
+        },
+      }),
+      prisma.opsVendorPayment.findMany({
+        where: {
+          tenantId,
+          tripId: trip.id,
+          status: { not: "Rejected" },
+        },
+      }),
     ]);
 
-    const vendorContractCost = vendors.reduce((sum, v) => sum + (Number(v.agreedTariff) || 0), 0);
-    const vendorPaid = vendors.reduce((sum, v) => sum + (Number(v.paidAmount) || 0), 0);
+    const vendorContractCost =
+      vendors.reduce((sum, v) => sum + (Number(v.agreedTariff) || 0), 0) +
+      opsVendorPayments.reduce(
+        (sum, v) => sum + (Number(v.agreedAmount) || 0),
+        0,
+      );
+    const vendorPaid =
+      vendors.reduce((sum, v) => sum + (Number(v.paidAmount) || 0), 0) +
+      opsVendorPayments.reduce(
+        (sum, v) => sum + (Number(v.advancePaid) || 0),
+        0,
+      );
     const actualGuidePayments = guidePayments.filter(
-      (payment) => !isGuideExpenseType(payment.assignmentType)
+      (payment) => !isGuideExpenseType(payment.assignmentType),
     );
     const guideExpenses = guidePayments.filter((payment) =>
-      isGuideExpenseType(payment.assignmentType)
+      isGuideExpenseType(payment.assignmentType),
     );
-    const guideCost = actualGuidePayments.reduce((sum, g) => sum + (Number(g.agreedAmount) || 0), 0);
-    const guidePaid = actualGuidePayments.reduce((sum, g) => sum + (Number(g.advancePaid) || 0), 0);
-    const guideExpenseCost = guideExpenses.reduce((sum, expense) => sum + (Number(expense.agreedAmount) || 0), 0);
-    const guideExpensePaid = guideExpenses.reduce((sum, expense) => sum + (Number(expense.advancePaid) || 0), 0);
-    const miscCost = miscExpenses.reduce((sum, m) => sum + (Number(m.amount) || 0), 0);
-    const tripActivityCost = tripExpenses.reduce((sum, t) => sum + (Number(t.totalAmount) || 0), 0);
-    const ticketingCost = financeTickets.reduce((sum, t) => sum + (Number(t.cost) || 0), 0);
+    const guideCost = actualGuidePayments.reduce(
+      (sum, g) => sum + (Number(g.agreedAmount) || 0),
+      0,
+    );
+    const guidePaid = actualGuidePayments.reduce(
+      (sum, g) => sum + (Number(g.advancePaid) || 0),
+      0,
+    );
+    const guideExpenseCost = guideExpenses.reduce(
+      (sum, expense) => sum + (Number(expense.agreedAmount) || 0),
+      0,
+    );
+    const guideExpensePaid = guideExpenses.reduce(
+      (sum, expense) => sum + (Number(expense.advancePaid) || 0),
+      0,
+    );
+    const miscCost = miscExpenses.reduce(
+      (sum, m) => sum + (Number(m.amount) || 0),
+      0,
+    );
+    const tripActivityCost = tripExpenses.reduce(
+      (sum, t) => sum + (Number(t.totalAmount) || 0),
+      0,
+    );
+    const ticketingCost =
+      financeTickets.reduce((sum, t) => sum + (Number(t.cost) || 0), 0) +
+      trainTickets.reduce((sum, t) => sum + (Number(t.ticketAmount) || 0), 0);
 
-    const totalDirectCost = vendorContractCost + guideCost + guideExpenseCost + miscCost + tripActivityCost + ticketingCost;
+    const totalDirectCost =
+      vendorContractCost +
+      guideCost +
+      guideExpenseCost +
+      miscCost +
+      tripActivityCost +
+      ticketingCost;
     const grossProfit = netRevenue - totalDirectCost;
-    const profitMargin = netRevenue > 0 ? Math.round((grossProfit / netRevenue) * 100 * 10) / 10 : 0;
+    const profitMargin =
+      netRevenue > 0
+        ? Math.round((grossProfit / netRevenue) * 100 * 10) / 10
+        : 0;
 
     return res.json({
       success: true,
