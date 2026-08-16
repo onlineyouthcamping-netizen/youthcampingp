@@ -82,13 +82,21 @@ exports.getClientPayments = async (req, res) => {
     const bookings = await prisma.booking.findMany({
       where: ctx.bookingWhere,
       select: {
+        id: true,
         bookingId: true,
         name: true,
+        fullName: true,
+        phone: true,
+        mobile: true,
+        email: true,
+        numberOfTravelers: true,
         totalAmount: true,
         advancePaid: true,
         remainingAmount: true,
         paymentStatus: true,
         passengers: true,
+        roomDetails: true,
+        createdAt: true,
       },
     });
 
