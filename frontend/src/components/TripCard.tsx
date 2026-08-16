@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Trip } from "@/types";
 import Link from "next/link";
 import Image from "next/image";
@@ -23,6 +23,62 @@ export default function TripCard({
   onClick,
 }: TripCardProps) {
   const [currentImgIdx, setCurrentImgIdx] = useState(0);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const canTiltRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  const pendingPtr = useRef<{ x: number; y: number } | null>(null);
+
+  const applyTilt = useCallback((x: number, y: number) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8) return;
+    const px = (x - rect.left) / rect.width;
+    const py = (y - rect.top) / rect.height;
+    const rotateY = (px - 0.5) * 2 * 7;
+    const rotateX = (py - 0.5) * 2 * 5.5;
+    stage.style.setProperty("--tilt-x", `${rotateX.toFixed(2)}deg`);
+    stage.style.setProperty("--tilt-y", `${rotateY.toFixed(2)}deg`);
+  }, []);
+
+  const resetTilt = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    stage.classList.remove("is-tilting");
+    stage.style.removeProperty("--tilt-x");
+    stage.style.removeProperty("--tilt-y");
+  }, []);
+
+  useEffect(() => {
+    const fineHover = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    const syncTiltMode = () => {
+      canTiltRef.current = fineHover.matches && !reduceMotion.matches;
+      if (!canTiltRef.current) resetTilt();
+    };
+
+    syncTiltMode();
+    fineHover.addEventListener("change", syncTiltMode);
+    reduceMotion.addEventListener("change", syncTiltMode);
+    return () => {
+      fineHover.removeEventListener("change", syncTiltMode);
+      reduceMotion.removeEventListener("change", syncTiltMode);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [resetTilt]);
+
+  const onPointerMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!canTiltRef.current) return;
+    pendingPtr.current = { x: e.clientX, y: e.clientY };
+    stageRef.current?.classList.add("is-tilting");
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const pt = pendingPtr.current;
+      if (pt) applyTilt(pt.x, pt.y);
+    });
+  };
 
   const price = Number(trip.price || 12999);
   const heroImg =
@@ -178,18 +234,25 @@ export default function TripCard({
     .trim();
 
   return (
-    <Link
-      href={`/trips/${trip.slug}`}
-      onClick={onClick}
-      className={`trip-card group relative flex flex-col w-full hover:-translate-y-1.5 transition-all duration-300 block text-inherit no-underline cursor-pointer ${className || ""}`}
+    <div
+      ref={stageRef}
+      className={`trip-card-stage ${className || ""}`}
+      onMouseMove={onPointerMove}
+      onMouseLeave={resetTilt}
     >
-      {/* TOP FLOATING PHOTO CONTAINER WITH RICH DROP SHADOW */}
-      <div
-        className="relative z-20 w-full rounded-[26px] overflow-hidden bg-zinc-100 shadow-[0_16px_36px_rgba(0,0,0,0.22)] group-hover:shadow-[0_20px_44px_rgba(0,0,0,0.28)] transition-shadow duration-300"
-        style={{ aspectRatio: "16/10.5" }}
+      <Link
+        href={`/trips/${trip.slug}`}
+        onClick={onClick}
+        className="trip-card group relative flex flex-col w-full block text-inherit no-underline cursor-pointer"
       >
-        {/* CINEMATIC KEN BURNS PHOTO CAROUSEL */}
-        {imagesList.map((imgUrl, imgIdx) => {
+        {/* TOP FLOATING PHOTO CONTAINER */}
+        <div
+          className="trip-card-photo relative z-20 w-full rounded-[26px] overflow-hidden bg-zinc-100"
+          style={{ aspectRatio: "16/10.5" }}
+        >
+          <div className="trip-card-photo-zoom absolute inset-0">
+            {/* CINEMATIC KEN BURNS PHOTO CAROUSEL */}
+            {imagesList.map((imgUrl, imgIdx) => {
           const isActive = imgIdx === activePhotoIndex;
           // Each photo gets a unique zoom direction for cinematic variety
           const kenBurnsVariants = [
@@ -236,6 +299,7 @@ export default function TripCard({
             </div>
           );
         })}
+        </div>
 
         {/* TOP LEFT BADGE */}
         <div className="absolute top-3 left-3 z-20 pointer-events-none max-w-[85%]">
@@ -268,7 +332,7 @@ export default function TripCard({
       </div>
 
       {/* LOWER WHITE CARD CONTENT CONTAINER WITH GENEROUS SIDE WHITESPACE PADDING */}
-      <div className="relative z-10 -mt-4 pt-6 pb-5 px-6 sm:px-7 mx-1 sm:mx-1.5 bg-white rounded-b-[26px] rounded-t-[16px] border border-zinc-200/80 shadow-[0_6px_24px_rgba(0,0,0,0.05)] flex flex-col flex-1 font-montserrat justify-between">
+      <div className="trip-card-body relative z-10 -mt-4 pt-6 pb-5 px-6 sm:px-7 mx-1 sm:mx-1.5 bg-white rounded-b-[26px] rounded-t-[16px] border border-zinc-200/80 flex flex-col flex-1 font-montserrat justify-between">
         <div>
           {/* META ROW: DURATION & EX-CITY */}
           <div className="flex items-center justify-between font-montserrat text-[12px] sm:text-[13px] font-normal text-[#666666] mb-2.5 gap-2 pt-0.5">
@@ -315,14 +379,13 @@ export default function TripCard({
           </div>
 
           {/* VIEW TRIP LINK */}
-          <div className="inline-flex items-center gap-1.5 font-montserrat font-bold text-xs sm:text-[14px] text-[#0B1528] group-hover:text-[#D4541A] transition-colors">
+          <div className="trip-card-cta inline-flex items-center gap-1.5 font-montserrat font-bold text-xs sm:text-[14px] text-[#0B1528] group-hover:text-[#D4541A]">
             <span>View Trip</span>
-            <span className="text-[#D4541A] font-bold text-sm group-hover:translate-x-1 transition-transform">
-              →
-            </span>
+            <span className="text-[#D4541A] font-bold text-sm">→</span>
           </div>
         </div>
-      </div>
-    </Link>
+        </div>
+      </Link>
+    </div>
   );
 }

@@ -3,7 +3,8 @@
 import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/api";
 import { useWheelPassThrough } from "@/lib/useWheelPassThrough";
@@ -17,11 +18,14 @@ interface Destination {
   name: string;
   img: string;
   subtext?: string;
+  href?: string;
 }
 
 interface DestinationsProps {
   title?: string;
   subtitle?: string;
+  titlePrimary?: string;
+  titleAccent?: string;
   destinations?: Destination[];
 }
 
@@ -97,117 +101,193 @@ const DEST_IMAGE_MAP: Record<string, string> = {
     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
 };
 
+function destinationHref(d: any): string | undefined {
+  if (!d || typeof d !== "object") return undefined;
+  const raw = d.href || d.link || d.url;
+  if (typeof raw === "string" && raw.trim()) return raw.trim();
+  if (typeof d.slug === "string" && d.slug.trim()) {
+    return `/trips/${d.slug.trim()}`;
+  }
+  if (typeof d.tripSlug === "string" && d.tripSlug.trim()) {
+    return `/trips/${d.tripSlug.trim()}`;
+  }
+  return undefined;
+}
+
 export default function Destinations({
   title = "Popular Destinations",
+  titlePrimary,
+  titleAccent,
   destinations,
 }: DestinationsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedDest, setSelectedDest] = useState<Destination | null>(null);
+  const reduceMotion = useReducedMotion();
   useWheelPassThrough(scrollRef);
 
-  const displayItems: Destination[] =
+  const sourceList =
     Array.isArray(destinations) && destinations.length > 0
-      ? destinations.map((d: any, i: number) => {
-          const fallback =
-            DEFAULT_DESTINATIONS[i % DEFAULT_DESTINATIONS.length];
-          const rawName = typeof d === "string" ? d : d?.name || fallback.name;
-          const customImg =
-            typeof d === "object" && (d?.img || d?.imageUrl)
-              ? normalizeImageUrl(d.img || d.imageUrl)
-              : undefined;
-          const cleanKey = rawName.toLowerCase().replace(/[^a-z0-9]/g, "");
-          const mappedImg =
-            customImg ||
-            Object.entries(DEST_IMAGE_MAP).find(([key]) =>
-              cleanKey.includes(key.replace(/[^a-z0-9]/g, "")),
-            )?.[1] ||
-            fallback.img;
-          return {
-            name: rawName,
-            subtext:
-              typeof d === "object" && d?.subtext
-                ? d.subtext
-                : fallback.subtext || "Explore Group Trip",
-            img: mappedImg,
-          };
-        })
-      : [];
+      ? destinations
+      : DEFAULT_DESTINATIONS;
+
+  const displayItems: Destination[] = sourceList.map((d: any, i: number) => {
+    const fallback = DEFAULT_DESTINATIONS[i % DEFAULT_DESTINATIONS.length];
+    const rawName = typeof d === "string" ? d : d?.name || fallback.name;
+    const customImg =
+      typeof d === "object" && (d?.img || d?.imageUrl)
+        ? normalizeImageUrl(d.img || d.imageUrl)
+        : undefined;
+    const cleanKey = rawName.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const mappedImg =
+      customImg ||
+      Object.entries(DEST_IMAGE_MAP).find(([key]) =>
+        cleanKey.includes(key.replace(/[^a-z0-9]/g, "")),
+      )?.[1] ||
+      fallback.img;
+    return {
+      name: rawName,
+      subtext:
+        typeof d === "object" && d?.subtext
+          ? d.subtext
+          : fallback.subtext || "Explore Group Trip",
+      img: mappedImg,
+      href: destinationHref(d),
+    };
+  });
+
+  const primaryWord = (
+    titlePrimary ||
+    title.split(" ")[0] ||
+    "Popular"
+  ).toLowerCase();
+  const accentWord = (
+    titleAccent ||
+    title.split(" ").slice(1).join(" ") ||
+    "Destinations"
+  ).toLowerCase();
 
   const nudge = (dir: "l" | "r") => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({
-        left: dir === "l" ? -250 : 250,
-        behavior: "smooth",
-      });
-    }
+    if (!scrollRef.current) return;
+    const cardEl = scrollRef.current.firstElementChild as HTMLElement | null;
+    const gap = 16;
+    const scrollAmount = cardEl ? cardEl.offsetWidth + gap : 220;
+    scrollRef.current.scrollBy({
+      left: dir === "l" ? -scrollAmount : scrollAmount,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
   };
 
   return (
     <section
-      className="popular-destinations popular-section destinations-grid pt-4 pb-2 sm:pt-5 sm:pb-2 font-montserrat overflow-hidden"
+      className="popular-destinations popular-section destinations-grid pt-4 pb-2 sm:pt-5 sm:pb-2 font-montserrat overflow-hidden border-0 outline-none shadow-none"
       style={{ backgroundColor: "#E2E7ED" }}
     >
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12">
-        {/* HEADER ROW - FITS TITLE ON ONE LINE */}
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12 min-w-0 w-full">
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
           <div className="flex items-baseline gap-2 min-w-0 overflow-hidden whitespace-nowrap">
-            <h2 className="text-[#1B2A4A] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight">
-              {(title.split(" ")[0] || "Popular").toLowerCase()}
+            <h2 className="text-[#0B1528] font-montserrat font-black text-2xl sm:text-3xl md:text-4xl lg:text-[40px] tracking-tight capitalize leading-tight">
+              {primaryWord}
             </h2>
-            <span className="font-caveat font-bold text-[#D4541A] text-[26px] sm:text-[34px] md:text-[40px] lg:text-[46px] leading-none shrink-0 capitalize pr-2 sm:pr-3">
-              {(
-                title.split(" ").slice(1).join(" ") || "Destinations"
-              ).toLowerCase()}
+            <span className="font-caveat font-bold text-[#FF4D00] text-[26px] sm:text-[34px] md:text-[40px] lg:text-[46px] leading-none shrink-0 capitalize pr-2 sm:pr-3">
+              {accentWord}
             </span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 shrink-0">
+          <div className="flex md:hidden items-center gap-2 shrink-0">
             <button
+              type="button"
               onClick={() => nudge("l")}
               aria-label="Previous Destinations"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
+              className="dest-nav"
             >
-              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
+              <ChevronLeft className="w-5 h-5 text-[#0B1528]" strokeWidth={2.25} />
             </button>
             <button
+              type="button"
               onClick={() => nudge("r")}
               aria-label="Next Destinations"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-zinc-200 shadow-xs hover:bg-zinc-100 flex items-center justify-center text-zinc-800 transition-all cursor-pointer active:scale-95"
+              className="dest-nav dest-nav-next"
             >
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
+              <ChevronRight className="w-5 h-5 text-[#0B1528]" strokeWidth={2.25} />
             </button>
           </div>
         </div>
 
-        {/* DESTINATION PORTRAIT CARDS SLIDER WITH NAME OVERLAY & INQUIRY FORM CLICK */}
-        <div
-          ref={scrollRef}
-          className="carousel-track w-full max-w-full flex gap-3.5 sm:gap-5 overflow-x-auto no-scrollbar py-2 px-1 scroll-smooth snap-x snap-mandatory"
-        >
-          {displayItems.map((item, idx) => (
-            <motion.div
-              key={item.name + idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.07, duration: 0.5 }}
-              viewport={{ once: true }}
-              onClick={() => setSelectedDest(item)}
-              className="group relative flex-none snap-start w-[52vw] min-w-[170px] max-w-[210px] sm:w-[190px] md:w-[210px] aspect-[9/13.5] rounded-2xl overflow-hidden bg-zinc-900 shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer isolate"
-            >
-              {/* DESTINATION BACKGROUND IMAGE */}
-              <Image
-                src={item.img}
-                alt={item.name}
-                fill
-                sizes="(max-width: 640px) 140px, 190px"
-                className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-              />
-            </motion.div>
-          ))}
+        <div className="relative min-w-0">
+          <div
+            ref={scrollRef}
+            className="carousel-track w-full max-w-full min-w-0 flex gap-3.5 sm:gap-4 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory"
+          >
+            {displayItems.map((item, idx) => {
+              const useScript = idx % 2 === 1;
+              const cardClass =
+                "dest-photo-card group relative block w-full aspect-[9/14] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF4D00]";
+              const inner = (
+                <>
+                  <Image
+                    src={item.img}
+                    alt={item.name}
+                    fill
+                    sizes="(max-width: 640px) 48vw, 216px"
+                    className="dest-photo-img object-cover"
+                  />
+                  <div
+                    className="dest-photo-fade pointer-events-none absolute inset-0 z-[1]"
+                    aria-hidden
+                  />
+                  <span
+                    className={`absolute top-0 inset-x-0 z-[2] px-3 pt-5 sm:pt-6 text-center text-white [text-shadow:0_1px_8px_rgba(11,21,40,0.35)] ${
+                      useScript
+                        ? "font-caveat font-bold text-[28px] sm:text-[32px] leading-none"
+                        : "font-montserrat font-extrabold text-[16px] sm:text-[18px] tracking-[0.06em] uppercase leading-tight"
+                    }`}
+                  >
+                    {item.name}
+                  </span>
+                </>
+              );
+
+              return (
+                <motion.div
+                  key={item.name + idx}
+                  initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{
+                    delay: reduceMotion ? 0 : idx * 0.06,
+                    duration: reduceMotion ? 0 : 0.45,
+                  }}
+                  viewport={{ once: true }}
+                  className="relative flex-none snap-start min-w-0 w-[46vw] max-w-[210px] sm:w-[188px] md:w-[210px]"
+                >
+                  {item.href ? (
+                    <Link href={item.href} className={cardClass}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDest(item)}
+                      className={cardClass}
+                    >
+                      {inner}
+                    </button>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => nudge("r")}
+            aria-label="Next Destinations"
+            className="dest-nav dest-nav-next absolute right-1 sm:right-0 top-1/2 z-20 -translate-y-1/2"
+          >
+            <ChevronRight className="w-5 h-5 text-[#0B1528]" strokeWidth={2.25} />
+          </button>
         </div>
       </div>
 
-      {/* INQUIRY MODAL */}
       <DestinationInquiryModal
         isOpen={!!selectedDest}
         onClose={() => setSelectedDest(null)}

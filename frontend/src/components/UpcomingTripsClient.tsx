@@ -312,7 +312,7 @@ function DestinationRow({
       {/* Horizontal Scrolling Standard TripCards */}
       <div
         ref={scrollRef}
-        className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth pb-4 pt-2"
+        className="trip-cards-row flex gap-6 overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth pb-2 pt-2"
       >
         {trips.map((trip, idx) => (
           <div key={trip.id} className="w-[280px] sm:w-[310px] shrink-0">

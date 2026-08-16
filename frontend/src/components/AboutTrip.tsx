@@ -117,7 +117,7 @@ export default function AboutTrip({
         </span>
       </h2>
 
-      <div className="bg-[#F8F9FA] border border-zinc-100/90 rounded-[20px] p-6 sm:p-7 relative">
+      <div className="@container bg-[#F8F9FA] border border-zinc-100/90 rounded-[20px] p-6 sm:p-7 relative">
         {/* Mobile View */}
         <div className="md:hidden relative">
           {isExpandedInline ? (
@@ -168,9 +168,10 @@ export default function AboutTrip({
               </button>
             </div>
           )}
+        </div>
 
-          {/* Dynamic Feature Badges Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 border border-zinc-100/90 rounded-2xl bg-white p-3 md:p-4 mt-6 divide-y md:divide-y-0 md:divide-x divide-zinc-100 shadow-2xs">
+        {cardsToRender.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 @3xl:grid-cols-4 gap-4 border border-zinc-100/90 rounded-2xl bg-white p-3 sm:p-4 mt-6 shadow-2xs overflow-hidden">
             {cardsToRender.map((card, idx) => {
               const IconComponent =
                 card.icon && ICON_MAP[card.icon]
@@ -180,7 +181,11 @@ export default function AboutTrip({
               return (
                 <div
                   key={card.id || idx}
-                  className="flex items-center gap-3 p-2 md:px-3"
+                  className={cn(
+                    "flex items-center gap-3 min-w-0 p-2",
+                    idx < cardsToRender.length - 1 &&
+                      "@3xl:border-r @3xl:border-zinc-100",
+                  )}
                 >
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
@@ -194,11 +199,11 @@ export default function AboutTrip({
                       style={{ color: card.iconColor || "#D4541A" }}
                     />
                   </div>
-                  <div>
-                    <p className="text-[#0B1528] font-bold text-xs sm:text-sm font-montserrat leading-tight">
+                  <div className="min-w-0">
+                    <p className="text-[#0B1528] font-bold text-xs sm:text-sm font-montserrat leading-snug">
                       {card.title}
                     </p>
-                    <p className="text-zinc-400 font-medium text-[11px] font-montserrat leading-tight mt-0.5">
+                    <p className="text-zinc-400 font-medium text-[11px] font-montserrat leading-snug mt-0.5 break-words">
                       {card.subtitle}
                     </p>
                   </div>
@@ -206,7 +211,7 @@ export default function AboutTrip({
               );
             })}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Desktop Read More Modal */}

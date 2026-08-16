@@ -74,7 +74,7 @@ export default function Navbar({
     <>
       <nav
         className={cn(
-          "fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 px-5 sm:px-8 md:px-10 flex items-center bg-white/95 backdrop-blur-md border-b border-zinc-100/80 shadow-xs h-[80px]",
+          "fixed top-0 left-0 right-0 z-[9999] transition-all duration-300 px-5 sm:px-8 md:px-10 flex items-center bg-white border-b border-zinc-100/80 h-[80px]",
         )}
       >
         <div className="max-w-[1440px] w-full mx-auto flex items-center justify-between">

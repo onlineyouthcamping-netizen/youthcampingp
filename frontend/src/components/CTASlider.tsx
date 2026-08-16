@@ -90,7 +90,7 @@ export default function CTASlider({
 
         <div
           ref={containerRef}
-          className={`relative w-full max-w-[1280px] h-[200px] sm:h-[280px] md:h-[360px] lg:h-[400px] overflow-hidden bg-zinc-900 mx-auto shadow-lg border border-slate-100 ${borderRadius === "rounded-[24px]" ? "rounded-[28px] md:rounded-[36px]" : borderRadius}`}
+          className={`relative w-full max-w-[1280px] h-[200px] sm:h-[280px] md:h-[360px] lg:h-[400px] overflow-hidden bg-zinc-900 mx-auto shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${borderRadius === "rounded-[24px]" ? "rounded-[28px] md:rounded-[36px]" : borderRadius}`}
         >
           <AnimatePresence mode="popLayout">
             <motion.div

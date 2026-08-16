@@ -13,7 +13,6 @@ import {
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { useWheelPassThrough } from "@/lib/useWheelPassThrough";
 
 interface GoogleReviewItem {
@@ -121,13 +120,6 @@ export default function ReviewsSection({
   const [selectedReview, setSelectedReview] = useState<GoogleReviewItem | null>(
     null,
   );
-  const [expandedReviewIds, setExpandedReviewIds] = useState<string[]>([]);
-
-  const toggleReviewExpand = (id: string) => {
-    setExpandedReviewIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
-    );
-  };
 
   const apiMappedReviews: GoogleReviewItem[] =
     reviews && reviews.length > 0
@@ -202,11 +194,11 @@ export default function ReviewsSection({
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1, duration: 0.5 }}
                 viewport={{ once: true }}
-                className="flex-none snap-start w-[62vw] min-w-[220px] max-w-[270px] sm:w-[320px] md:w-[340px] bg-white border border-zinc-200/80 rounded-2xl overflow-hidden p-3.5 sm:p-5 pb-0 sm:pb-0 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+                className="flex-none snap-start w-[62vw] min-w-[220px] max-w-[270px] sm:w-[320px] md:w-[340px] bg-white border border-[#0B1528]/12 rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(11,21,40,0.06)] hover:border-[#0B1528]/22 hover:shadow-[0_8px_22px_rgba(11,21,40,0.10)] transition-all duration-300 flex flex-col justify-between"
               >
-                <div>
+                <div className="flex flex-col gap-3 p-3.5 sm:p-5 pb-3.5 sm:pb-4">
                   {/* USER HEADER ROW */}
-                  <div className="flex items-start gap-2.5 mb-2.5">
+                  <div className="flex items-start gap-3.5">
                     <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden shrink-0 border border-zinc-100 shadow-2xs">
                       <Image
                         src={rev.avatar}
@@ -217,83 +209,63 @@ export default function ReviewsSection({
                       />
                     </div>
 
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <div className="flex items-center gap-1 flex-wrap">
-                        <h3 className="font-bold text-[#0B1528] text-sm sm:text-base leading-tight font-montserrat capitalize">
-                          {rev.name}
-                        </h3>
-                        {rev.badge && (
-                          <span className="text-[#888888] font-medium text-[11px] sm:text-xs">
-                            {rev.badge}
-                          </span>
-                        )}
-                      </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <h3 className="min-w-0 font-bold text-[#0B1528] text-sm sm:text-base leading-snug font-montserrat capitalize break-words">
+                        {rev.name}
+                      </h3>
+                      {rev.badge && (
+                        <span className="text-[#888888] font-medium text-[11px] sm:text-xs leading-snug">
+                          {rev.badge}
+                        </span>
+                      )}
 
-                      <div className="flex items-center gap-1 mt-0.5 text-xs text-[#777777]">
-                        <span>Booked:</span>
-                        <span className="font-bold text-[#0B1528] flex items-center gap-0.5 truncate hover:text-[#D4541A] transition-colors cursor-pointer">
+                      <div className="flex min-w-0 items-start gap-1 text-xs leading-snug text-[#777777]">
+                        <span className="shrink-0">Booked:</span>
+                        <span className="min-w-0 break-words font-bold text-[#0B1528] leading-snug line-clamp-2 hover:text-[#D4541A] transition-colors cursor-pointer">
                           {rev.tripName}
-                          <ExternalLink className="w-3 h-3 text-[#0B1528] inline shrink-0" />
+                          <ExternalLink className="ml-0.5 inline h-3 w-3 shrink-0 align-[-0.125em] text-[#0B1528]" />
                         </span>
                       </div>
                     </div>
                   </div>
 
                   {/* RATING STARS */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-3.5 items-center gap-0.5">
                       {[...Array(rev.rating || 5)].map((_, i) => (
                         <Star
                           key={i}
-                          className="w-3.5 h-3.5 fill-[#FFB800] text-[#FFB800]"
+                          className="h-3.5 w-3.5 shrink-0 fill-[#FFB800] text-[#FFB800]"
                         />
                       ))}
                     </div>
-                    <span className="text-[#777777] font-medium text-[11px] sm:text-xs">
+                    <span className="text-[#777777] font-medium text-xs leading-none">
                       {rev.date}
                     </span>
                   </div>
 
                   {/* COMMENT & TOGGLE */}
-                  <div className="mb-2.5">
-                    <p
-                      className={cn(
-                        "text-[#1B2A4A] font-normal text-xs sm:text-sm leading-snug font-montserrat transition-all",
-                        !expandedReviewIds.includes(rev.id) && "line-clamp-3",
-                      )}
-                    >
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[#1B2A4A] font-normal text-xs sm:text-sm leading-relaxed font-montserrat line-clamp-3">
                       {rev.comment}
                     </p>
-                    <div className="flex items-center justify-between gap-2 mt-1.5">
-                      {rev.comment && rev.comment.length > 80 ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleReviewExpand(rev.id);
-                          }}
-                          className="font-bold text-xs text-[#D4541A] hover:underline cursor-pointer inline-flex items-center gap-0.5"
-                        >
-                          {expandedReviewIds.includes(rev.id)
-                            ? "Show Less"
-                            : "Read More"}
-                        </button>
-                      ) : <span />}
+                    {rev.comment && rev.comment.length > 80 && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedReview(rev);
                         }}
-                        className="font-semibold text-[11px] text-zinc-400 hover:text-[#0B1528] cursor-pointer"
+                        className="inline-flex items-center self-start font-semibold text-xs leading-none text-[#FF4D00] hover:underline cursor-pointer"
                       >
-                        Full Story
+                        Read More
                       </button>
-                    </div>
+                    )}
                   </div>
                 </div>
 
                 {/* DYNAMIC PHOTO GALLERY GRID */}
                 {photoList.length > 0 && (
-                  <div className="-mx-3.5 -mb-3.5 sm:-mx-4.5 sm:-mb-4.5 mt-2 overflow-hidden rounded-b-2xl bg-zinc-100">
+                  <div className="mx-px mb-px overflow-hidden rounded-b-[15px] bg-zinc-100 border-t border-[#0B1528]/8">
                     {photoList.length === 1 ? (
                       /* SINGLE PHOTO */
                       <div

@@ -588,6 +588,10 @@ export default function CommunityTrips({
         ? Number(overlayOpacity)
         : 60;
   const activeFadeDirection = fadeDirection || overlayDirection || "left-right";
+  const useCinematicWhiteFade =
+    isWhiteOverlay &&
+    (activeFadeDirection === "left-right" ||
+      activeFadeDirection === "horizontal");
 
   // Build dynamic overlay background style
   const getDynamicOverlayStyle = () => {
@@ -626,7 +630,10 @@ export default function CommunityTrips({
         };
       default: // left-right / horizontal
         return {
-          background: `linear-gradient(to right, rgba(${rgb}, ${Math.min(0.98, alpha * 1.25)}) 0%, rgba(${rgb}, ${alpha * 0.85}) 55%, rgba(${rgb}, ${alpha * 0.35}) 100%)`,
+          background: [
+            `linear-gradient(to top, rgba(${rgb}, ${Math.min(0.4, alpha * 0.5)}) 0%, transparent 26%)`,
+            `linear-gradient(to right, rgba(${rgb}, ${Math.min(0.92, alpha * 1.15)}) 0%, rgba(${rgb}, ${alpha * 0.7}) 28%, rgba(${rgb}, ${alpha * 0.18}) 52%, transparent 68%)`,
+          ].join(", "),
         };
     }
   };
@@ -684,8 +691,10 @@ export default function CommunityTrips({
 
           {/* DYNAMIC OVERLAY */}
           <div
-            className="absolute inset-0 z-10 pointer-events-none transition-all duration-300"
-            style={getDynamicOverlayStyle()}
+            className={`absolute inset-0 z-10 pointer-events-none transition-all duration-300${
+              useCinematicWhiteFade ? " hero-cinematic-fade" : ""
+            }`}
+            style={useCinematicWhiteFade ? undefined : getDynamicOverlayStyle()}
           />
         </div>
 
@@ -848,11 +857,7 @@ export default function CommunityTrips({
               exit={{ opacity: 0, x: 16 }}
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
               ref={tripCardsScrollRef}
-              className="flex gap-6 sm:gap-8 overflow-x-auto pb-6 pt-3 px-1 scroll-smooth snap-x snap-mandatory no-scrollbar touch-manipulation cursor-grab"
-              style={{
-                willChange: "transform, opacity",
-                transform: "translateZ(0)",
-              }}
+              className="trip-cards-row flex gap-6 sm:gap-8 overflow-x-auto overflow-y-hidden pb-2 pt-3 px-0 scroll-smooth snap-x snap-mandatory no-scrollbar touch-manipulation cursor-grab"
             >
               {display.map((t, idx) => (
                 <div

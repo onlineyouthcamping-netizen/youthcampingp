@@ -290,7 +290,11 @@ export default function PageRenderer({
         return (
           <div
             key={index}
-            className={`page-section-wrapper ${getBackgroundClass(index)} transition-colors duration-500`}
+            className={`page-section-wrapper ${getBackgroundClass(index)} transition-colors duration-500 ${
+              type === "destinations"
+                ? "border-0 outline-none shadow-none"
+                : ""
+            }`}
           >
             {renderSection()}
           </div>

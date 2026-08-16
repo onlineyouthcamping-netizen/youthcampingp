@@ -112,7 +112,7 @@ function normalizeTravelIcon(icon?: string): string {
 }
 
 function TravellingIcon({ icon }: { icon: string }) {
-  const cls = "w-[18px] h-[18px] text-[#D4541A] stroke-[1.8] shrink-0";
+  const cls = "w-[18px] h-[18px] text-[#FF4D00] stroke-[1.8] shrink-0";
   switch (normalizeTravelIcon(icon)) {
     case "plane":
       return <Plane className={cls} />;
@@ -345,7 +345,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
 
         <div>
           <div className="mb-3">
-            <span className="inline-flex bg-[#0B1528] text-white font-montserrat font-bold text-[11px] tracking-wider uppercase px-3.5 py-1.5 rounded-full shadow-md">
+            <span className="inline-flex bg-[#0B1528] text-white font-montserrat font-bold text-[11px] tracking-wider uppercase px-3.5 py-1.5 rounded-full shadow-md border border-[#FF4D00]">
               Prepared for {q.customerName}
             </span>
           </div>
@@ -356,14 +356,14 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
             {main}
           </h1>
           {sub && (
-            <span className="font-caveat font-bold text-[#D4541A] text-[28px] sm:text-[36px] md:text-[42px] leading-tight block mt-0.5">
+            <span className="font-caveat font-bold text-[#FF4D00] text-[28px] sm:text-[36px] md:text-[42px] leading-tight block mt-0.5">
               {sub}
             </span>
           )}
         </div>
 
         <div>
-          <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-8 gap-y-3 gap-x-4 py-2.5 sm:py-3 border-t border-zinc-200/80 w-full relative z-10 bg-white">
+          <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-8 gap-y-3 gap-x-4 py-2.5 sm:py-3 border-t border-[#E8EEF4] w-full relative z-10 bg-white">
             {[
               { label: "Duration", val: durationStr, icon: Clock3 },
               {
@@ -388,7 +388,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                   <p className="text-[#0B1528] font-semibold text-[13px] sm:text-sm leading-tight font-montserrat truncate">
                     {info.val}
                   </p>
-                  <p className="text-zinc-400 font-medium text-[11px] leading-tight font-montserrat mt-0.5">
+                  <p className="text-[#0B1528]/55 font-medium text-[11px] leading-tight font-montserrat mt-0.5">
                     {info.label}
                   </p>
                 </div>
@@ -415,21 +415,33 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                           title: "Best Experiences",
                           subtitle: "Local experts, custom days",
                           icon: "Compass",
+                          iconColor: "#FF4D00",
+                          bgColor: "#FFFFFF",
+                          borderColor: "rgba(255, 77, 0, 0.35)",
                         },
                         {
                           title: "Happy Travellers",
                           subtitle: "Trusted across India",
                           icon: "Heart",
+                          iconColor: "#FF4D00",
+                          bgColor: "#FFFFFF",
+                          borderColor: "rgba(255, 77, 0, 0.35)",
                         },
                         {
                           title: "Personalized Trip",
                           subtitle: `Prepared for ${q.customerName}`,
                           icon: "MapPin",
+                          iconColor: "#FF4D00",
+                          bgColor: "#FFFFFF",
+                          borderColor: "rgba(255, 77, 0, 0.35)",
                         },
                         {
                           title: "24x7 Support",
                           subtitle: "Your expert on WhatsApp",
                           icon: "PhoneCall",
+                          iconColor: "#FF4D00",
+                          bgColor: "#FFFFFF",
+                          borderColor: "rgba(255, 77, 0, 0.35)",
                         },
                       ],
                     }}
@@ -441,7 +453,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                     {q.staySummary.map((item, i) => (
                       <span
                         key={i}
-                        className="inline-flex items-center gap-2 bg-slate-100/90 border border-slate-200/70 px-3 py-1.5 rounded-full text-xs font-bold text-[#0B1528] shadow-2xs font-montserrat"
+                        className="inline-flex items-center gap-2 bg-white border border-[#0B1528]/10 px-3 py-1.5 rounded-full text-xs font-bold text-[#0B1528] shadow-2xs font-montserrat"
                       >
                         <HotelIcon className="w-3.5 h-3.5 text-[#0B1528] shrink-0" />
                         {item.nights} Night{item.nights > 1 ? "s" : ""} in{" "}
@@ -449,12 +461,12 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                       </span>
                     ))}
                     {q.roomsInfo ? (
-                      <span className="inline-flex items-center gap-2 bg-orange-50/90 border border-orange-200/80 px-3 py-1.5 rounded-full text-xs font-bold text-[#D4541A] shadow-2xs font-montserrat">
+                      <span className="inline-flex items-center gap-2 bg-white border border-[#FF4D00]/40 px-3 py-1.5 rounded-full text-xs font-bold text-[#FF4D00] shadow-2xs font-montserrat">
                         {q.roomsInfo}
                       </span>
                     ) : null}
                     {q.mealsInfo ? (
-                      <span className="inline-flex items-center gap-2 bg-orange-50/90 border border-orange-200/80 px-3 py-1.5 rounded-full text-xs font-bold text-[#D4541A] shadow-2xs font-montserrat">
+                      <span className="inline-flex items-center gap-2 bg-white border border-[#FF4D00]/40 px-3 py-1.5 rounded-full text-xs font-bold text-[#FF4D00] shadow-2xs font-montserrat">
                         {q.mealsInfo}
                       </span>
                     ) : null}
@@ -464,7 +476,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                 <section className="space-y-4">
                   <h2 className="text-xl md:text-2xl font-extrabold text-[#0B1528] font-montserrat">
                     Getting{" "}
-                    <span className="text-[#D4541A] font-caveat italic">
+                    <span className="text-[#FF4D00] font-caveat italic">
                       There
                     </span>
                   </h2>
@@ -472,9 +484,9 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                     {travellingItems.map((item, i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-3 p-3.5 bg-white border border-zinc-100/90 rounded-2xl shadow-2xs"
+                        className="flex items-center gap-3 p-3.5 bg-white border border-[#0B1528]/10 rounded-2xl shadow-2xs"
                       >
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-orange-50 border border-orange-100">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-white border border-[#FF4D00]/35">
                           <TravellingIcon icon={item.icon} />
                         </div>
                         <p className="text-[#0B1528] font-bold text-xs sm:text-sm font-montserrat leading-tight">
@@ -501,14 +513,14 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                   <div className="space-y-3">
                     {hasBothTiers && (
                       <div className="flex justify-end">
-                        <div className="flex p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 shrink-0">
+                        <div className="flex p-1 bg-[#0B1528]/[0.06] rounded-xl border border-[#E8EEF4] shrink-0">
                           <button
                             type="button"
                             onClick={() => setSelectedTier("standard")}
                             className={`py-1.5 px-3 rounded-lg text-xs font-bold font-montserrat transition-all cursor-pointer whitespace-nowrap ${
                               selectedTier === "standard"
                                 ? "bg-white text-[#0B1528] shadow-2xs font-extrabold"
-                                : "text-zinc-500 hover:text-zinc-800"
+                                : "text-[#0B1528]/55 hover:text-[#0B1528]"
                             }`}
                           >
                             Standard
@@ -518,8 +530,8 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                             onClick={() => setSelectedTier("premium")}
                             className={`py-1.5 px-3 rounded-lg text-xs font-bold font-montserrat transition-all cursor-pointer whitespace-nowrap ${
                               selectedTier === "premium"
-                                ? "bg-white text-[#D4541A] shadow-2xs font-extrabold"
-                                : "text-zinc-500 hover:text-zinc-800"
+                                ? "bg-white text-[#FF4D00] shadow-2xs font-extrabold"
+                                : "text-[#0B1528]/55 hover:text-[#0B1528]"
                             }`}
                           >
                             Premium
@@ -540,11 +552,11 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                 >
                   <h2 className="text-xl md:text-2xl font-extrabold text-[#0B1528] font-montserrat">
                     Your{" "}
-                    <span className="text-[#D4541A] font-caveat italic">
+                    <span className="text-[#FF4D00] font-caveat italic">
                       Destination Expert
                     </span>
                   </h2>
-                  <div className="bg-[#F8F9FA] border border-zinc-100/90 rounded-[20px] p-6 sm:p-7 flex flex-col sm:flex-row items-start gap-5">
+                  <div className="bg-white border border-[#0B1528]/10 rounded-[20px] p-6 sm:p-7 flex flex-col sm:flex-row items-start gap-5">
                     {expertPhoto ? (
                       <OptimizedImage
                         src={expertPhoto}
@@ -561,11 +573,11 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                         <h3 className="text-lg font-extrabold text-[#0B1528] font-montserrat tracking-tight">
                           {q.expert?.name || "Suresh Chaudhary"}
                         </h3>
-                        <p className="text-[#D4541A] font-caveat italic text-xl leading-tight">
+                        <p className="text-[#FF4D00] font-caveat italic text-xl leading-tight">
                           {q.expert?.designation || "Destination Expert"}
                         </p>
                       </div>
-                      <p className="text-zinc-600 text-sm font-montserrat leading-relaxed">
+                      <p className="text-[#0B1528]/60 text-sm font-montserrat leading-relaxed">
                         {q.expert?.description ||
                           "I'll walk you through this itinerary, adjust stays if you want, and stay on WhatsApp from the first transfer to the last drop."}
                       </p>
@@ -574,16 +586,16 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                           href={expertWhatsAppHref}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 h-11 px-5 bg-[#D4541A] text-white rounded-xl font-bold text-xs uppercase tracking-wider font-montserrat hover:bg-[#c2460e] transition-all active:scale-95"
+                          className="inline-flex items-center justify-center gap-2 h-11 px-5 bg-[#FF4D00] text-white rounded-xl font-bold text-xs uppercase tracking-wider font-montserrat hover:brightness-[0.94] transition-all active:scale-95"
                         >
                           <MessageCircle className="w-4 h-4" />
                           WhatsApp
                         </a>
                         <a
                           href={`tel:${q.expert?.phone || q.expert?.whatsapp}`}
-                          className="inline-flex items-center justify-center gap-2 h-11 px-5 border border-zinc-200 rounded-xl text-xs font-bold text-[#0B1528] font-montserrat hover:bg-zinc-50 transition-all"
+                          className="inline-flex items-center justify-center gap-2 h-11 px-5 border border-[#0B1528]/15 rounded-xl text-xs font-bold text-[#0B1528] font-montserrat hover:bg-[#0B1528]/[0.04] transition-all"
                         >
-                          <Phone className="w-4 h-4 text-[#D4541A]" />
+                          <Phone className="w-4 h-4 text-[#FF4D00]" />
                           Call
                         </a>
                       </div>
@@ -595,16 +607,16 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                   <TripReviews reviews={q.reviews} />
                 ) : null}
 
-                <div className="bg-[#0B1528] rounded-[20px] p-5 sm:p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl border border-slate-800">
+                <div className="bg-[#0B1528] rounded-[20px] p-5 sm:p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl border border-white/10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#D4541A] flex items-center justify-center shrink-0 text-white">
+                    <div className="w-10 h-10 rounded-full bg-[#FF4D00] flex items-center justify-center shrink-0 text-white">
                       <MessageCircle className="w-5 h-5 fill-current" />
                     </div>
                     <div>
                       <h4 className="font-extrabold text-sm sm:text-base font-montserrat leading-tight">
                         Ready to confirm this itinerary?
                       </h4>
-                      <p className="text-zinc-400 text-xs font-montserrat mt-0.5">
+                      <p className="text-white/60 text-xs font-montserrat mt-0.5">
                         Message your expert on WhatsApp to lock dates and stays.
                       </p>
                     </div>
@@ -613,7 +625,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                     type="button"
                     onClick={handleWhatsAppBooking}
                     disabled={expired}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-[#D4541A] hover:bg-[#c24813] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all font-montserrat shrink-0 shadow-lg shadow-orange-500/20 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-6 py-2.5 bg-[#FF4D00] hover:brightness-[0.94] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all font-montserrat shrink-0 shadow-lg shadow-[#FF4D00]/20 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {expired ? "Quote Expired" : "Book My Spot"}
                   </button>
@@ -623,8 +635,8 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
 
             <div className="lg:col-span-4 relative min-w-0">
               <div className="sticky top-[96px] xl:top-[100px] z-20 space-y-4 hidden lg:block">
-                <div className="bg-[#0B1528] rounded-[24px] overflow-hidden shadow-xl p-6 md:p-7 text-white border border-slate-800">
-                  <span className="text-zinc-400 font-bold text-xs uppercase tracking-wider block mb-2 font-montserrat">
+                <div className="bg-[#0B1528] rounded-[24px] overflow-hidden shadow-xl p-6 md:p-7 text-white border border-white/10">
+                  <span className="text-white/55 font-bold text-xs uppercase tracking-wider block mb-2 font-montserrat">
                     Your investment
                   </span>
 
@@ -632,7 +644,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                     ₹ {salePrice.toLocaleString()}
                   </div>
 
-                  <div className="text-zinc-400 text-xs font-normal mb-2 font-montserrat">
+                  <div className="text-white/55 text-xs font-normal mb-2 font-montserrat">
                     <span className="line-through mr-1.5">
                       ₹ {listPrice.toLocaleString()}
                     </span>
@@ -640,7 +652,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                   </div>
 
                   {q.discount ? (
-                    <p className="text-[#D4541A] text-[11px] font-bold font-montserrat mb-4">
+                    <p className="text-[#FF4D00] text-[11px] font-bold font-montserrat mb-4">
                       Save ₹ {q.discount.toLocaleString()} on this quote
                     </p>
                   ) : (
@@ -649,7 +661,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
 
                   <div className="h-px bg-white/10 mb-5" />
 
-                  <p className="text-zinc-400 text-[11px] font-bold uppercase tracking-wider mb-1 font-montserrat">
+                  <p className="text-white/55 text-[11px] font-bold uppercase tracking-wider mb-1 font-montserrat">
                     Current package configuration
                   </p>
                   <p className="text-white font-bold text-base mb-1 font-montserrat">
@@ -657,7 +669,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                       ? `${selectedTier === "premium" ? "Premium" : "Standard"} · ${durationStr}`
                       : durationStr}
                   </p>
-                  <p className="text-zinc-400 text-xs font-medium font-montserrat mb-4">
+                  <p className="text-white/55 text-xs font-medium font-montserrat mb-4">
                     {travelDate || "Dates on request"} · {pax} Adults
                   </p>
 
@@ -669,7 +681,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                         className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold font-montserrat transition-all cursor-pointer ${
                           selectedTier === "standard"
                             ? "bg-white text-[#0B1528]"
-                            : "text-zinc-400 hover:text-white"
+                            : "text-white/55 hover:text-white"
                         }`}
                       >
                         Standard
@@ -679,8 +691,8 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                         onClick={() => setSelectedTier("premium")}
                         className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold font-montserrat transition-all cursor-pointer ${
                           selectedTier === "premium"
-                            ? "bg-[#D4541A] text-white"
-                            : "text-zinc-400 hover:text-white"
+                            ? "bg-[#FF4D00] text-white"
+                            : "text-white/55 hover:text-white"
                         }`}
                       >
                         Premium
@@ -690,12 +702,12 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
 
                   {q.expiryTime && timeLeft ? (
                     <div className="mb-4 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
-                      <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider font-montserrat">
+                      <p className="text-white/55 text-[10px] font-bold uppercase tracking-wider font-montserrat">
                         {expired ? "Quotation status" : "Quote valid for"}
                       </p>
                       <p
                         className={`mt-0.5 font-extrabold font-montserrat tracking-tight ${
-                          expired ? "text-rose-300 text-sm" : "text-white text-lg"
+                          expired ? "text-[#FF4D00] text-sm" : "text-white text-lg"
                         }`}
                       >
                         {expired ? "This quotation has expired" : timeLeft}
@@ -711,16 +723,16 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                     <button
                       type="button"
                       onClick={handleWhatsAppBooking}
-                      className="w-full py-4 bg-[#D4541A] text-white rounded-[16px] font-bold text-sm uppercase tracking-wide hover:bg-[#c2460e] transition-all shadow-lg text-center font-montserrat cursor-pointer active:scale-98 mb-3"
+                      className="w-full py-4 bg-[#FF4D00] text-white rounded-[16px] font-bold text-sm uppercase tracking-wide hover:brightness-[0.94] transition-all shadow-lg text-center font-montserrat cursor-pointer active:scale-98 mb-3"
                     >
                       Book My Spot
                     </button>
                   )}
 
                   {!expired && (
-                    <div className="flex items-center justify-center gap-1.5 text-zinc-400 text-xs font-medium font-montserrat">
+                    <div className="flex items-center justify-center gap-1.5 text-white/55 text-xs font-medium font-montserrat">
                       <svg
-                        className="w-3.5 h-3.5 text-emerald-400"
+                        className="w-3.5 h-3.5 text-[#FF4D00]"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -737,11 +749,11 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                   )}
                 </div>
 
-                <div className="bg-white border border-zinc-100 rounded-[20px] p-5 shadow-xs">
+                <div className="bg-white border border-[#0B1528]/10 rounded-[20px] p-5 shadow-xs">
                   <h4 className="text-[#0B1528] font-bold text-sm font-montserrat mb-0.5">
                     Hello, {q.customerName}
                   </h4>
-                  <p className="text-zinc-400 font-medium text-xs font-montserrat mb-4">
+                  <p className="text-[#0B1528]/55 font-medium text-xs font-montserrat mb-4">
                     Questions on this package? Write or call your destination
                     expert.
                   </p>
@@ -761,16 +773,16 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                       <p className="text-sm font-bold text-[#0B1528] font-montserrat leading-tight">
                         {q.expert?.name || "Suresh Chaudhary"}
                       </p>
-                      <p className="text-[11px] font-medium text-zinc-400 font-montserrat">
+                      <p className="text-[11px] font-medium text-[#0B1528]/55 font-montserrat">
                         Destination Expert
                       </p>
                     </div>
                   </div>
                   <a
                     href={`tel:${q.expert?.phone || q.expert?.whatsapp}`}
-                    className="w-full py-2.5 px-4 border border-zinc-200 rounded-xl text-xs font-bold text-[#0B1528] hover:bg-zinc-50 transition-all font-montserrat flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
+                    className="w-full py-2.5 px-4 border border-[#0B1528]/15 rounded-xl text-xs font-bold text-[#0B1528] hover:bg-[#0B1528]/[0.04] transition-all font-montserrat flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
                   >
-                    <Phone className="w-4 h-4 text-[#D4541A]" />
+                    <Phone className="w-4 h-4 text-[#FF4D00]" />
                     Request a Callback
                   </a>
                 </div>
@@ -779,7 +791,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                   href={expertWhatsAppHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-white border border-zinc-100 rounded-[20px] p-4 shadow-xs flex items-center justify-center gap-3 text-sm font-bold text-[#0B1528] hover:bg-zinc-50 transition-all font-montserrat cursor-pointer"
+                  className="w-full bg-white border border-[#0B1528]/10 rounded-[20px] p-4 shadow-xs flex items-center justify-center gap-3 text-sm font-bold text-[#0B1528] hover:bg-[#0B1528]/[0.04] transition-all font-montserrat cursor-pointer"
                 >
                   <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
                     <MessageCircle className="w-4 h-4 fill-current" />
@@ -787,11 +799,11 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                   Chat on WhatsApp
                 </a>
 
-                <div className="bg-[#0B1528] rounded-[24px] p-6 text-white shadow-xl space-y-4 border border-slate-800">
+                <div className="bg-[#0B1528] rounded-[24px] p-6 text-white shadow-xl space-y-4 border border-white/10">
                   <h4 className="text-lg font-extrabold font-montserrat tracking-tight">
                     Got Questions?
                   </h4>
-                  <p className="text-zinc-400 text-xs font-montserrat leading-relaxed">
+                  <p className="text-white/60 text-xs font-montserrat leading-relaxed">
                     We are here to help. Chat with your expert for any queries
                     on this quotation.
                   </p>
@@ -805,7 +817,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
                         key={i}
                         className="flex items-center gap-2.5 text-xs font-bold text-white font-montserrat"
                       >
-                        <div className="w-4 h-4 rounded-full bg-[#D4541A] flex items-center justify-center shrink-0">
+                        <div className="w-4 h-4 rounded-full bg-[#FF4D00] flex items-center justify-center shrink-0">
                           <Check className="w-2.5 h-2.5 text-white stroke-[3]" />
                         </div>
                         {feature}
@@ -819,17 +831,17 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-[9999] lg:hidden bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.08)] border-t border-zinc-200/80 px-4 py-2.5 pb-[calc(10px+env(safe-area-inset-bottom))]">
+      <div className="fixed bottom-0 left-0 right-0 z-[9999] lg:hidden bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_rgba(11,21,40,0.08)] border-t border-[#E8EEF4] px-4 py-2.5 pb-[calc(10px+env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-col shrink-0">
             <span className="text-xl font-extrabold text-[#0B1528] leading-none font-montserrat">
               ₹ {salePrice.toLocaleString()}
             </span>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-zinc-400 line-through text-[11px] font-normal">
+              <span className="text-[#0B1528]/55 line-through text-[11px] font-normal">
                 ₹ {listPrice.toLocaleString()}
               </span>
-              <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
+              <span className="text-[#0B1528]/55 text-[10px] font-bold uppercase tracking-wider">
                 per person
               </span>
             </div>
@@ -838,7 +850,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
             type="button"
             onClick={handleWhatsAppBooking}
             disabled={expired}
-            className="flex-1 max-w-[200px] h-12 min-h-[48px] bg-[#D4541A] text-white px-6 rounded-xl font-extrabold text-sm uppercase tracking-wider active:scale-95 transition-all shadow-md flex items-center justify-center font-montserrat disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 max-w-[200px] h-12 min-h-[48px] bg-[#FF4D00] text-white px-6 rounded-xl font-extrabold text-sm uppercase tracking-wider active:scale-95 hover:brightness-[0.94] transition-all shadow-md flex items-center justify-center font-montserrat disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {expired ? "Expired" : "Book Now"}
           </button>

@@ -3,6 +3,69 @@
 .lq-page {
   font-family: var(--font-montserrat), "Montserrat", sans-serif;
   -webkit-font-smoothing: antialiased;
+  background-color: #ffffff;
+  color: #0b1528;
+
+  --lq-navy: #0b1528;
+  --lq-orange: #ff4d00;
+  --lq-white: #ffffff;
+  --lq-hairline: #e8eef4;
+  --lq-navy-muted: rgb(11 21 40 / 55%);
+  --lq-navy-border: rgb(11 21 40 / 10%);
+
+  /* Catch inlined @theme tokens (text-navy, text-primary-orange) */
+  --primary: #ff4d00;
+  --secondary: #0b1528;
+  --light-orange: color-mix(in srgb, #ff4d00 8%, #ffffff);
+  --color-navy: #0b1528;
+  --color-primary-orange: #ff4d00;
+
+  --color-zinc-50: color-mix(in srgb, #0b1528 4%, #ffffff);
+  --color-zinc-100: #e8eef4;
+  --color-zinc-200: #e8eef4;
+  --color-zinc-300: rgb(11 21 40 / 22%);
+  --color-zinc-400: rgb(11 21 40 / 55%);
+  --color-zinc-500: rgb(11 21 40 / 55%);
+  --color-zinc-600: rgb(11 21 40 / 60%);
+  --color-zinc-700: #0b1528;
+  --color-zinc-800: #0b1528;
+  --color-zinc-900: #0b1528;
+  --color-zinc-950: #0b1528;
+
+  --color-slate-50: #ffffff;
+  --color-slate-100: #ffffff;
+  --color-slate-200: #e8eef4;
+  --color-slate-300: #e8eef4;
+  --color-slate-400: rgb(11 21 40 / 55%);
+  --color-slate-500: rgb(11 21 40 / 55%);
+  --color-slate-600: rgb(11 21 40 / 60%);
+  --color-slate-700: #0b1528;
+  --color-slate-800: #0b1528;
+  --color-slate-900: #0b1528;
+  --color-slate-950: #0b1528;
+
+  --color-orange-50: color-mix(in srgb, #ff4d00 8%, #ffffff);
+  --color-orange-100: color-mix(in srgb, #ff4d00 16%, #ffffff);
+  --color-orange-200: color-mix(in srgb, #ff4d00 35%, #ffffff);
+  --color-orange-300: #ff4d00;
+  --color-orange-400: #ff4d00;
+  --color-orange-500: #ff4d00;
+  --color-orange-600: #ff4d00;
+  --color-orange-700: #ff4d00;
+
+  --color-emerald-50: color-mix(in srgb, #0b1528 5%, #ffffff);
+  --color-emerald-100: #e8eef4;
+  --color-emerald-400: #ff4d00;
+  --color-emerald-600: #ff4d00;
+  --color-emerald-700: #0b1528;
+  --color-emerald-950: #0b1528;
+
+  --color-rose-50: color-mix(in srgb, #ff4d00 8%, #ffffff);
+  --color-rose-100: color-mix(in srgb, #ff4d00 18%, #ffffff);
+  --color-rose-300: #ff4d00;
+  --color-rose-600: #ff4d00;
+  --color-rose-700: #ff4d00;
+  --color-rose-950: #0b1528;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -14,4 +77,66 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Off-brand oranges used as arbitrary Tailwind values in shared trip sections */
+.lq-page .text-\[\#D4541A\],
+.lq-page .hover\:text-\[\#D4541A\]:hover,
+.lq-page .group:hover .group-hover\:text-\[\#D4541A\],
+.lq-page .group\/item:hover .group-hover\/item\:text-\[\#D4541A\] {
+  color: #ff4d00 !important;
+}
+
+.lq-page .bg-\[\#D4541A\],
+.lq-page .hover\:bg-\[\#D4541A\]:hover {
+  background-color: #ff4d00 !important;
+}
+
+.lq-page .border-\[\#D4541A\],
+.lq-page .hover\:border-\[\#D4541A\]:hover,
+.lq-page .hover\:border-\[\#D4541A\]\/50:hover {
+  border-color: #ff4d00 !important;
+}
+
+.lq-page .focus-visible\:outline-\[\#D4541A\]:focus-visible {
+  outline-color: #ff4d00 !important;
+}
+
+.lq-page .hover\:bg-\[\#c2460e\]:hover,
+.lq-page .hover\:bg-\[\#c24813\]:hover {
+  background-color: color-mix(in srgb, #ff4d00 88%, #0b1528) !important;
+}
+
+/* Cool gray about/expert cards → white + navy hairline */
+.lq-page .bg-\[\#F8F9FA\] {
+  background-color: #ffffff !important;
+  border-color: rgb(11 21 40 / 10%);
+}
+
+.lq-page #about .bg-\[\#F8F9FA\] {
+  background-color: #ffffff !important;
+  border-color: rgb(11 21 40 / 10%) !important;
+}
+
+.lq-page .prose,
+.lq-page .prose-zinc {
+  color: rgb(11 21 40 / 60%);
+}
+
+.lq-page .bg-black\/5 {
+  background-color: rgb(11 21 40 / 5%) !important;
+}
+
+.lq-page .bg-black\/60 {
+  background-color: rgb(11 21 40 / 60%) !important;
+}
+
+/* Gallery overlays: white chip, navy type, navy hairline */
+.lq-page .bg-white\/95 {
+  border-color: rgb(11 21 40 / 12%);
+}
+
+/* WhatsApp green FAB / chat chip — leave emerald-500 alone */
+.lq-page .bg-emerald-500 {
+  background-color: #10b981;
 }
