@@ -480,6 +480,44 @@ exports.getVendorPayments = async (req, res) => {
   }
 };
 
+exports.getAllRecordedVendorPayments = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId || "default";
+    const vendorPayments = await prisma.opsVendorPayment.findMany({
+      where: { tenantId },
+      include: {
+        collectionAccount: {
+          select: {
+            id: true,
+            accountName: true,
+            accountHolderName: true,
+            accountType: true,
+            bankName: true,
+            upiId: true,
+            accountNumber: true,
+            maskedAccountNumber: true,
+          },
+        },
+        trip: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.json({ success: true, data: vendorPayments });
+  } catch (err) {
+    console.error("getAllRecordedVendorPayments error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch vendor payments" });
+  }
+};
+
 exports.createVendorPayment = async (req, res) => {
   try {
     const { tripId } = req.params;

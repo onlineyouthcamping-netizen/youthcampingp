@@ -6,6 +6,7 @@ const {
   addClientPayment,
   verifyClientPayment,
   getVendorPayments,
+  getAllRecordedVendorPayments,
   createVendorPayment,
   updateVendorPayment,
   deleteVendorPayment,
@@ -25,8 +26,9 @@ router.delete("/accounts/:id", collectionAccountController.deleteAccount);
 router.get("/accounts/:id/ledger", collectionAccountController.getAccountLedger);
 router.post("/accounts/:id/submit", collectionAccountController.recordAccountSubmission);
 
-// Global Payables Queue
+// Global Payables Queue & Recorded Payments
 router.get("/vendor-payables-queue", requirePermission("ops.view"), getAllVendorPayablesQueue);
+router.get("/vendor-payments", requirePermission("ops.view"), getAllRecordedVendorPayments);
 
 // Client Receivables Routes
 router.get("/client/:tripId", requirePermission("ops.view"), getClientPayments);
