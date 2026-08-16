@@ -10,6 +10,13 @@ const {
 const { mirrorConfirmedRooms } = require("../utils/roomAllocationAuthority");
 const opsSummaryCache = new Map();
 
+function isGuideExpenseType(assignmentType) {
+  return (
+    assignmentType === "EXPENSE" ||
+    String(assignmentType || "").startsWith("EXPENSE_")
+  );
+}
+
 /**
  * Shared server-side India timezone (Asia/Kolkata) normalization method for departure calendar dates.
  * Converts input timestamps or dates (e.g. 2026-07-09T18:30:00.000Z, 2026-07-10T00:00:00.000Z, 2026-07-10T05:30:00.000Z)
@@ -1742,8 +1749,18 @@ exports.getOpsAccountingSummary = async (req, res) => {
       (s, t) => s + (Number(t.totalAmount) || 0),
       0,
     );
-    const guideCost = (guides || []).reduce(
+    const actualGuides = (guides || []).filter(
+      (guide) => !isGuideExpenseType(guide.assignmentType),
+    );
+    const guideExpenses = (guides || []).filter((guide) =>
+      isGuideExpenseType(guide.assignmentType),
+    );
+    const guideCost = actualGuides.reduce(
       (s, g) => s + (Number(g.agreedAmount) || 0),
+      0,
+    );
+    const guideExpenseCost = guideExpenses.reduce(
+      (s, expense) => s + (Number(expense.agreedAmount) || 0),
       0,
     );
     const miscCost = (misc || []).reduce(
@@ -1763,6 +1780,7 @@ exports.getOpsAccountingSummary = async (req, res) => {
       hotelCost +
       transportCost +
       guideCost +
+      guideExpenseCost +
       miscCost +
       detailedExpensesCost +
       activityCost;
@@ -1841,6 +1859,7 @@ exports.getOpsAccountingSummary = async (req, res) => {
         hotelCost,
         transportCost,
         guideCost,
+        guideExpenseCost,
         miscCost,
         detailedExpensesCost,
         activityCost,
@@ -1861,6 +1880,7 @@ exports.getOpsAccountingSummary = async (req, res) => {
         hotelCost: 0,
         transportCost: 0,
         guideCost: 0,
+        guideExpenseCost: 0,
         miscCost: 0,
         detailedExpensesCost: 0,
         totalOpsCost: 0,

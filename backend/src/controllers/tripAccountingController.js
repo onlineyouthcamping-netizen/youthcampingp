@@ -1,6 +1,13 @@
 const { prisma } = require("../lib/prisma");
 const { logAction } = require("../utils/auditLogger");
 
+function isGuideExpenseType(assignmentType) {
+  return (
+    assignmentType === "EXPENSE" ||
+    String(assignmentType || "").startsWith("EXPENSE_")
+  );
+}
+
 /**
  * GET /api/finance/trip-accounting/:tripId
  * Real-time Trip P&L aggregating net revenues and vendor/operational costs.
@@ -85,13 +92,21 @@ async function getTripPnL(req, res) {
 
     const vendorContractCost = vendors.reduce((sum, v) => sum + (Number(v.agreedTariff) || 0), 0);
     const vendorPaid = vendors.reduce((sum, v) => sum + (Number(v.paidAmount) || 0), 0);
-    const guideCost = guidePayments.reduce((sum, g) => sum + (Number(g.agreedAmount) || 0), 0);
-    const guidePaid = guidePayments.reduce((sum, g) => sum + (Number(g.advancePaid) || 0), 0);
+    const actualGuidePayments = guidePayments.filter(
+      (payment) => !isGuideExpenseType(payment.assignmentType)
+    );
+    const guideExpenses = guidePayments.filter((payment) =>
+      isGuideExpenseType(payment.assignmentType)
+    );
+    const guideCost = actualGuidePayments.reduce((sum, g) => sum + (Number(g.agreedAmount) || 0), 0);
+    const guidePaid = actualGuidePayments.reduce((sum, g) => sum + (Number(g.advancePaid) || 0), 0);
+    const guideExpenseCost = guideExpenses.reduce((sum, expense) => sum + (Number(expense.agreedAmount) || 0), 0);
+    const guideExpensePaid = guideExpenses.reduce((sum, expense) => sum + (Number(expense.advancePaid) || 0), 0);
     const miscCost = miscExpenses.reduce((sum, m) => sum + (Number(m.amount) || 0), 0);
     const tripActivityCost = tripExpenses.reduce((sum, t) => sum + (Number(t.totalAmount) || 0), 0);
     const ticketingCost = financeTickets.reduce((sum, t) => sum + (Number(t.cost) || 0), 0);
 
-    const totalDirectCost = vendorContractCost + guideCost + miscCost + tripActivityCost + ticketingCost;
+    const totalDirectCost = vendorContractCost + guideCost + guideExpenseCost + miscCost + tripActivityCost + ticketingCost;
     const grossProfit = netRevenue - totalDirectCost;
     const profitMargin = netRevenue > 0 ? Math.round((grossProfit / netRevenue) * 100 * 10) / 10 : 0;
 
@@ -119,6 +134,8 @@ async function getTripPnL(req, res) {
           vendorPaid,
           guideCost,
           guidePaid,
+          guideExpenseCost,
+          guideExpensePaid,
           miscCost,
           tripActivityCost,
           ticketingCost,
