@@ -25,6 +25,7 @@ const {
   archiveTemplate,
   restoreTemplate,
   verifyFinanceTicket,
+  syncBookingTicketsWithTemplate,
 } = require("../controllers/trainTicketController");
 const { authenticate, requirePermission } = require("../middleware/auth");
 
@@ -95,6 +96,11 @@ router.post(
   "/booking/:bookingId/auto-generate",
   requirePermission("tickets.create"),
   autoGenerateTickets,
+);
+router.post(
+  "/booking/:bookingId/sync-template",
+  requirePermission("tickets.edit"),
+  syncBookingTicketsWithTemplate,
 );
 
 // Bulk Update

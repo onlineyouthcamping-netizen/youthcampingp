@@ -339,11 +339,20 @@ exports.autoGenerateTickets = async (req, res) => {
         });
     }
 
-    // Fetch the booking with passengers
+    // Fetch the booking with passengers and Trip's trainTicketTemplate
     const booking = await prisma.booking.findFirst({
       where: {
         OR: [{ id: String(bookingId) }, { bookingId: String(bookingId) }],
         tenantId: req.user.tenantId,
+      },
+      include: {
+        tripRef: {
+          select: {
+            id: true,
+            title: true,
+            trainTicketTemplate: true,
+          },
+        },
       },
     });
     if (!booking) {
@@ -353,6 +362,37 @@ exports.autoGenerateTickets = async (req, res) => {
     }
 
     const targetBookingId = booking.bookingId;
+
+    // Resolve Trip Train Ticket Template
+    let tripTpl = booking.tripRef?.trainTicketTemplate;
+    if (typeof tripTpl === "string") {
+      try {
+        tripTpl = JSON.parse(tripTpl);
+      } catch (_) {}
+    }
+
+    // Resolve matching class tier (e.g. SL vs 3A)
+    let selectedTier = tripTpl;
+    const targetClass = (booking.packageType || booking.travelClass || "").toUpperCase();
+    if (Array.isArray(tripTpl?.tiers) && tripTpl.tiers.length > 0) {
+      if (targetClass) {
+        selectedTier =
+          tripTpl.tiers.find(
+            (t) =>
+              t.classCode?.toUpperCase() === targetClass ||
+              (targetClass.includes("SLEEP") && t.classCode === "SL") ||
+              (targetClass.includes("3A") && t.classCode === "3A") ||
+              (targetClass.includes("2A") && t.classCode === "2A") ||
+              (targetClass.includes("3E") && t.classCode === "3E") ||
+              t.name?.toUpperCase().includes(targetClass),
+          ) || tripTpl.tiers[0];
+      } else {
+        selectedTier = tripTpl.tiers[0];
+      }
+    }
+
+    const depTmpl = selectedTier?.departureJourney;
+    const retTmpl = selectedTier?.returnJourney;
 
     // Parse passengers list safely
     let passengers = [];
@@ -413,19 +453,6 @@ exports.autoGenerateTickets = async (req, res) => {
       ),
     );
 
-    // Fetch active templates for this trip
-    const templates = await prisma.trainTemplate.findMany({
-      where: {
-        tenantId: req.user.tenantId,
-        isActive: true,
-        ...(booking.tripId ? { tripId: booking.tripId } : {}),
-      },
-      orderBy: { createdAt: "asc" },
-    });
-
-    // Separate departure / return templates
-    // Convention: if there are exactly 2 templates, first = departure, second = return
-    // If there are more, use all of them. If zero, create tickets without train details.
     const createdTickets = [];
     const skippedCount = { value: 0 };
 
@@ -442,19 +469,15 @@ exports.autoGenerateTickets = async (req, res) => {
             ? `Age ${pAge}`
             : pGender || null;
 
-      // Identify Departure & Return templates if available
-      let depTmpl = templates.length >= 1 ? templates[0] : null;
-      let retTmpl = templates.length >= 2 ? templates[1] : null;
-
       // 1. DEPARTURE TICKET
       const depKey = existingKey(
         pName,
-        depTmpl?.source || "Departure",
+        depTmpl?.boardingStation || "Departure",
         depTmpl?.destination || "",
         "DEPARTURE",
       );
       if (!existingSet.has(depKey)) {
-        const depCost = depTmpl?.estimatedTicketCost ? Number(depTmpl.estimatedTicketCost) : 0;
+        const depCost = depTmpl?.expectedCost ? Number(depTmpl.expectedCost) : 0;
         const ticket = await prisma.trainTicket.create({
           data: {
             tenantId: req.user.tenantId,
@@ -463,25 +486,27 @@ exports.autoGenerateTickets = async (req, res) => {
             passengerReference: "DEPARTURE",
             trainName: depTmpl?.trainName || null,
             trainNumber: depTmpl?.trainNumber || null,
-            journeyDate: depTmpl?.journeyDate || null,
-            sourceStation: depTmpl?.source || null,
+            journeyDate: booking.departureDate ? new Date(booking.departureDate) : null,
+            sourceStation: depTmpl?.boardingStation || null,
             destinationStation: depTmpl?.destination || null,
-            coach: depTmpl?.defaultCoach || null,
-            berthType: depTmpl?.defaultClass || null,
-            templateId: depTmpl?.id || null,
+            coach: depTmpl?.class || null,
+            berthType: depTmpl?.quota || null,
             ticketStatus: "PENDING",
             approvalStatus: "DRAFT",
             isLocked: false,
             ticketAmount: new Prisma.Decimal(depCost),
+            expectedTicketAmount: new Prisma.Decimal(depCost),
+            varianceAmount: new Prisma.Decimal(0),
+            financeStatus: "PENDING_VERIFICATION",
             paidBy: "COMPANY",
             refundAmount: new Prisma.Decimal(0),
             internalNote: depTmpl
-              ? `Auto-generated departure from template: ${depTmpl.trainName || depTmpl.trainNumber || "Unknown"}. Passenger: ${passengerRef || "N/A"}`
+              ? `Auto-generated from Trip Template: ${depTmpl.trainName || depTmpl.trainNumber || "Train"}. Class: ${depTmpl.class || "SL"}`
               : `DEPARTURE ticket — auto-generated. Passenger: ${passengerRef || "N/A"}`,
           },
         });
         await logHistory(ticket.id, "CREATE", req, {
-          notes: `Auto-generated departure ticket. Internal Cost: ₹${depCost}`,
+          notes: `Auto-generated departure ticket from Trip Template. Expected: ₹${depCost}`,
         });
         createdTickets.push(ticket);
         existingSet.add(depKey);
@@ -492,12 +517,12 @@ exports.autoGenerateTickets = async (req, res) => {
       // 2. RETURN TICKET
       const retKey = existingKey(
         pName,
-        retTmpl?.source || depTmpl?.destination || "Return",
-        retTmpl?.destination || depTmpl?.source || "",
+        retTmpl?.boardingStation || "Return",
+        retTmpl?.destination || "",
         "RETURN",
       );
       if (!existingSet.has(retKey)) {
-        const retCost = retTmpl?.estimatedTicketCost ? Number(retTmpl.estimatedTicketCost) : 0;
+        const retCost = retTmpl?.expectedCost ? Number(retTmpl.expectedCost) : 0;
         const ticket = await prisma.trainTicket.create({
           data: {
             tenantId: req.user.tenantId,
@@ -506,18 +531,169 @@ exports.autoGenerateTickets = async (req, res) => {
             passengerReference: "RETURN",
             trainName: retTmpl?.trainName || null,
             trainNumber: retTmpl?.trainNumber || null,
-            journeyDate: retTmpl?.journeyDate || null,
-            sourceStation: retTmpl?.source || (depTmpl?.destination || null),
-            destinationStation: retTmpl?.destination || (depTmpl?.source || null),
-            coach: retTmpl?.defaultCoach || null,
-            berthType: retTmpl?.defaultClass || null,
-            templateId: retTmpl?.id || null,
+            journeyDate: booking.returnDate ? new Date(booking.returnDate) : null,
+            sourceStation: retTmpl?.boardingStation || null,
+            destinationStation: retTmpl?.destination || null,
+            coach: retTmpl?.class || null,
+            berthType: retTmpl?.quota || null,
             ticketStatus: "PENDING",
             approvalStatus: "DRAFT",
             isLocked: false,
             ticketAmount: new Prisma.Decimal(retCost),
+            expectedTicketAmount: new Prisma.Decimal(retCost),
+            varianceAmount: new Prisma.Decimal(0),
+            financeStatus: "PENDING_VERIFICATION",
             paidBy: "COMPANY",
             refundAmount: new Prisma.Decimal(0),
+            internalNote: retTmpl
+              ? `Auto-generated from Trip Template: ${retTmpl.trainName || retTmpl.trainNumber || "Train"}. Class: ${retTmpl.class || "SL"}`
+              : `RETURN ticket — auto-generated. Passenger: ${passengerRef || "N/A"}`,
+          },
+        });
+        await logHistory(ticket.id, "CREATE", req, {
+          notes: `Auto-generated return ticket from Trip Template. Expected: ₹${retCost}`,
+        });
+        createdTickets.push(ticket);
+        existingSet.add(retKey);
+      } else {
+        skippedCount.value++;
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: `Generated ${createdTickets.length} tickets from Trip Template (${skippedCount.value} existing skipped)`,
+      data: {
+        created: createdTickets.length,
+        skipped: skippedCount.value,
+        tickets: createdTickets,
+      },
+    });
+  } catch (err) {
+    console.error("autoGenerateTickets error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to auto-generate tickets",
+      details: err.message,
+    });
+  }
+};
+
+/**
+ * POST /api/train-tickets/booking/:bookingId/sync-template
+ * Synchronizes existing tickets of a booking with the Trip's configured Train Ticket Template.
+ * Updates blank stations, train names, numbers, travel classes, and expected costs.
+ */
+exports.syncBookingTicketsWithTemplate = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await prisma.booking.findFirst({
+      where: {
+        OR: [{ id: String(bookingId) }, { bookingId: String(bookingId) }],
+        tenantId: req.user.tenantId,
+      },
+      include: {
+        tripRef: {
+          select: {
+            id: true,
+            title: true,
+            trainTicketTemplate: true,
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    let tripTpl = booking.tripRef?.trainTicketTemplate;
+    if (!tripTpl) {
+      return res.status(400).json({
+        success: false,
+        message: "No Train Ticket Template configured for this trip",
+      });
+    }
+
+    if (typeof tripTpl === "string") {
+      try {
+        tripTpl = JSON.parse(tripTpl);
+      } catch (_) {}
+    }
+
+    // Resolve matching tier
+    let selectedTier = tripTpl;
+    const targetClass = (booking.packageType || booking.travelClass || "").toUpperCase();
+    if (Array.isArray(tripTpl?.tiers) && tripTpl.tiers.length > 0) {
+      if (targetClass) {
+        selectedTier =
+          tripTpl.tiers.find(
+            (t) =>
+              t.classCode?.toUpperCase() === targetClass ||
+              (targetClass.includes("SLEEP") && t.classCode === "SL") ||
+              (targetClass.includes("3A") && t.classCode === "3A") ||
+              (targetClass.includes("2A") && t.classCode === "2A") ||
+              (targetClass.includes("3E") && t.classCode === "3E") ||
+              t.name?.toUpperCase().includes(targetClass),
+          ) || tripTpl.tiers[0];
+      } else {
+        selectedTier = tripTpl.tiers[0];
+      }
+    }
+
+    const depTmpl = selectedTier?.departureJourney;
+    const retTmpl = selectedTier?.returnJourney;
+
+    // Fetch existing tickets
+    const existingTickets = await prisma.trainTicket.findMany({
+      where: {
+        bookingId: booking.bookingId,
+        tenantId: req.user.tenantId,
+        ticketStatus: { not: "CANCELLED" },
+      },
+    });
+
+    let updatedCount = 0;
+    for (const t of existingTickets) {
+      const isReturn = t.passengerReference === "RETURN";
+      const tmpl = isReturn ? retTmpl : depTmpl;
+      if (!tmpl) continue;
+
+      const expCost = Number(tmpl.expectedCost) || 0;
+      const currentActual = Number(t.ticketAmount) || 0;
+      const newActual = currentActual > 0 ? currentActual : expCost;
+      const variance = newActual - expCost;
+
+      await prisma.trainTicket.update({
+        where: { id: t.id },
+        data: {
+          sourceStation: t.sourceStation || tmpl.boardingStation || null,
+          destinationStation: t.destinationStation || tmpl.destination || null,
+          trainName: t.trainName || tmpl.trainName || null,
+          trainNumber: t.trainNumber || tmpl.trainNumber || null,
+          coach: t.coach || tmpl.class || null,
+          ticketAmount: new Prisma.Decimal(newActual),
+          expectedTicketAmount: new Prisma.Decimal(expCost),
+          varianceAmount: new Prisma.Decimal(variance),
+        },
+      });
+      updatedCount++;
+    }
+
+    return res.json({
+      success: true,
+      message: `Successfully synchronized ${updatedCount} tickets with "${booking.tripRef?.title || "Trip"}" template!`,
+      data: { updatedCount },
+    });
+  } catch (err) {
+    console.error("syncBookingTicketsWithTemplate error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to sync tickets with template",
+      details: err.message,
+    });
+  }
+};
             internalNote: retTmpl
               ? `Auto-generated return from template: ${retTmpl.trainName || retTmpl.trainNumber || "Unknown"}. Passenger: ${passengerRef || "N/A"}`
               : `RETURN ticket — auto-generated. Passenger: ${passengerRef || "N/A"}`,
