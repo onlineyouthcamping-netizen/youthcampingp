@@ -876,7 +876,9 @@ exports.getRiyaSummary = async (req, res) => {
             tripName: true,
             tripId: true,
             departureDate: true,
-            trip: { select: { id: true, title: true, tripCode: true } },
+            tripRef: {
+              select: { id: true, title: true, shortName: true, slug: true },
+            },
           },
         },
       },

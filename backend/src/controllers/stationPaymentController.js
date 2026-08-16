@@ -805,7 +805,15 @@ exports.verifyUpi = async (req, res) => {
       return res
         .status(409)
         .json({ success: false, message: "Not in PENDING_VERIFICATION state" });
-    if (record.collectedByAdminId === req.user?.id)
+    const userRole = (req.user?.role || "").toUpperCase();
+    const isPrivileged = [
+      "SUPER_ADMIN",
+      "ADMIN",
+      "FINANCE",
+      "OPS_HEAD",
+      "MANAGER",
+    ].includes(userRole);
+    if (record.collectedByAdminId === req.user?.id && !isPrivileged)
       return res
         .status(403)
         .json({ success: false, message: "Cannot verify your own collection" });
@@ -831,6 +839,10 @@ exports.verifyUpi = async (req, res) => {
           upiVerificationStatus: isVerify ? "VERIFIED" : "REJECTED",
           verifiedByAdminId: req.user?.id,
           verifiedAt: new Date(),
+          remarks:
+            !isVerify && rejectionReason
+              ? `${record.remarks ? record.remarks + " | " : ""}Rejected: ${rejectionReason}`
+              : record.remarks,
           ...(isVerify
             ? {
                 newTotalPaid: newPaid,

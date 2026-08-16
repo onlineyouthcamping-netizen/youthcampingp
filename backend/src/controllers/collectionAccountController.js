@@ -503,7 +503,9 @@ exports.getAccountLedger = async (req, res) => {
           where: { collectionAccountId: id, tenantId },
           orderBy: { createdAt: "desc" },
           include: {
-            trip: { select: { id: true, title: true, tripCode: true } },
+            trip: {
+              select: { id: true, title: true, shortName: true, slug: true },
+            },
           },
         }),
         prisma.trainTicket.findMany({
