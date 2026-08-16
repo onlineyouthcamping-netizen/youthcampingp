@@ -12,6 +12,7 @@ export default function FloatingWhatsApp({
   const settings = initialSettings || contextSettings;
   const pathname = usePathname();
   const isBookPage = pathname?.startsWith("/book");
+  const isQuotePage = pathname?.startsWith("/quote");
 
   const phone = settings?.contactPhone || "99242 46267";
   const whatsappNumber = phone.replace(/[^0-9]/g, "");
@@ -22,9 +23,10 @@ export default function FloatingWhatsApp({
       target="_blank"
       rel="noopener noreferrer"
       style={{
-        bottom: isBookPage
-          ? "calc(5.5rem + env(safe-area-inset-bottom, 0px))"
-          : "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
+        bottom:
+          isBookPage || isQuotePage
+            ? "calc(5.5rem + env(safe-area-inset-bottom, 0px))"
+            : "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
         right: isBookPage
           ? undefined
           : "calc(1rem + env(safe-area-inset-right, 0px))",
@@ -32,11 +34,16 @@ export default function FloatingWhatsApp({
           ? "calc(1rem + env(safe-area-inset-left, 0px))"
           : undefined,
       }}
-      className="fixed z-[100] flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-[#25d366] text-white rounded-full shadow-xl hover:scale-105 active:scale-95 transition-all group"
+      className={`fixed z-[100] flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-[#25d366] text-white rounded-full shadow-xl transition-all duration-300 group ${
+        isQuotePage
+          ? "hover:-translate-y-0.5"
+          : "hover:scale-105 active:scale-95"
+      }`}
       aria-label="Chat on WhatsApp"
     >
-      {/* Pulse Animation */}
-      <span className="absolute inset-0 rounded-full bg-[#25d366] animate-ping opacity-20 group-hover:opacity-40 transition-opacity"></span>
+      {!isQuotePage && (
+        <span className="absolute inset-0 rounded-full bg-[#25d366] animate-ping opacity-20 group-hover:opacity-40 transition-opacity motion-reduce:animate-none"></span>
+      )}
 
       <svg
         className="w-7 h-7 sm:w-8 sm:h-8 fill-current relative z-10"
