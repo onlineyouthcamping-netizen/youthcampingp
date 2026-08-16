@@ -694,37 +694,6 @@ exports.syncBookingTicketsWithTemplate = async (req, res) => {
     });
   }
 };
-            internalNote: retTmpl
-              ? `Auto-generated return from template: ${retTmpl.trainName || retTmpl.trainNumber || "Unknown"}. Passenger: ${passengerRef || "N/A"}`
-              : `RETURN ticket — auto-generated. Passenger: ${passengerRef || "N/A"}`,
-          },
-        });
-        await logHistory(ticket.id, "CREATE", req, {
-          notes: `Auto-generated return ticket. Internal Cost: ₹${retCost}`,
-        });
-        createdTickets.push(ticket);
-        existingSet.add(retKey);
-      } else {
-        skippedCount.value++;
-      }
-    }
-
-    return res.status(201).json({
-      success: true,
-      data: createdTickets,
-      message:
-        `${createdTickets.length} ticket(s) auto-generated` +
-        (skippedCount.value > 0
-          ? ` (${skippedCount.value} duplicate(s) skipped)`
-          : ""),
-    });
-  } catch (err) {
-    console.error("autoGenerateTickets error:", err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to auto-generate tickets" });
-  }
-};
 
 /**
  * PATCH /api/train-tickets/:ticketId
