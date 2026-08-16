@@ -278,22 +278,36 @@ exports.upsertDayItinerary = async (req, res) => {
       checkInDone,
     } = req.body;
 
-    let result;
+    let existing;
     if (id) {
+      existing = await prisma.opsDayItinerary.findUnique({ where: { id } });
+    } else {
+      existing = await prisma.opsDayItinerary.findFirst({
+        where: {
+          tenantId: ctx.tenantId,
+          tripId: ctx.tripId,
+          departureDate: ctx.departureDate,
+          dayTitle: dayTitle,
+        },
+      });
+    }
+
+    let result;
+    if (existing) {
       result = await prisma.opsDayItinerary.update({
-        where: { id },
+        where: { id: existing.id },
         data: {
-          date: date ? new Date(date) : null,
-          dayTitle,
-          paxCount,
-          hotelName,
-          hotelVerified,
-          vehicleType,
-          vehicleVerified,
-          remarks,
-          guideDriverDetails,
-          guideVerified,
-          checkInDone,
+          ...(date !== undefined ? { date: date ? new Date(date) : null } : {}),
+          ...(dayTitle !== undefined ? { dayTitle } : {}),
+          ...(paxCount !== undefined ? { paxCount: Number(paxCount) } : {}),
+          ...(hotelName !== undefined ? { hotelName } : {}),
+          ...(hotelVerified !== undefined ? { hotelVerified: !!hotelVerified } : {}),
+          ...(vehicleType !== undefined ? { vehicleType } : {}),
+          ...(vehicleVerified !== undefined ? { vehicleVerified: !!vehicleVerified } : {}),
+          ...(remarks !== undefined ? { remarks } : {}),
+          ...(guideDriverDetails !== undefined ? { guideDriverDetails } : {}),
+          ...(guideVerified !== undefined ? { guideVerified: !!guideVerified } : {}),
+          ...(checkInDone !== undefined ? { checkInDone: !!checkInDone } : {}),
         },
       });
     } else {
@@ -304,7 +318,7 @@ exports.upsertDayItinerary = async (req, res) => {
           departureDate: ctx.departureDate,
           date: date ? new Date(date) : null,
           dayTitle,
-          paxCount: paxCount || 0,
+          paxCount: paxCount ? Number(paxCount) : 0,
           hotelName,
           hotelVerified: !!hotelVerified,
           vehicleType,
