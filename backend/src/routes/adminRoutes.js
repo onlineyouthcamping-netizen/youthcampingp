@@ -109,6 +109,49 @@ router.put("/users/:id/reset-password", protect, resetUserPassword);
 router.delete("/users/:id", protect, deleteUser);
 router.delete("/staff-profiles/:id", protect, deleteUser);
 
+// Hotels & Accommodations Master Directory
+router.get("/hotels", async (req, res) => {
+  try {
+    const { prisma } = require("../lib/prisma");
+    const { city } = req.query;
+    const vendors = await prisma.vendor.findMany({
+      where: {
+        OR: [
+          { category: "ACCOMMODATION" },
+          { category: "HOTEL" },
+          { category: "RESORT" },
+          { category: "CAMPSITE" },
+          { category: "HOMESTAY" },
+          { accommodationType: { not: null } },
+        ],
+        ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
+      },
+      include: {
+        vendorRooms: true,
+      },
+      orderBy: { name: "asc" },
+    });
+
+    const formatted = vendors.map((v) => ({
+      id: v.id,
+      name: v.name,
+      city: v.city || v.location || "Manali",
+      category: v.accommodationType || v.category || "Hotel",
+      rating: v.rating || 4,
+      totalRooms: v.totalRooms || 20,
+      contactPerson: v.contactPerson || v.contactName || "",
+      phone: v.phone || v.contactPhone || "",
+      rooms: v.vendorRooms || [],
+      roomRates: v.vendorRooms || [],
+    }));
+
+    return res.json({ success: true, data: formatted });
+  } catch (err) {
+    console.error("GET /api/admin/hotels error:", err);
+    return res.json({ success: true, data: [] });
+  }
+});
+
 // Audit Logging
 router.get("/audit-logs", protect, listAuditLogs);
 
