@@ -979,11 +979,6 @@ model TrainTicket {
   groupId              String?
   templateId           String?
   ticketFileUrl        String?
-  paidBy                    String?
-  railwayCancellationCharge Decimal?                  @default(0.00) @db.Decimal(10, 2)
-  refundStatus              String?
-  reticketAdjustment        Decimal?                  @default(0.00) @db.Decimal(10, 2)
-  ycCancellationCharge      Decimal?                  @default(0.00) @db.Decimal(10, 2)
 
   // Relations
   booking      Booking               @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
@@ -1050,7 +1045,6 @@ model TrainTemplate {
   journeyDate        DateTime?
   boardingPoint      String?
   droppingPoint      String?
-  estimatedTicketCost Decimal?  @default(0.00) @db.Decimal(10, 2)
   
   // Flight Specific Fields
   flightAirline      String?
