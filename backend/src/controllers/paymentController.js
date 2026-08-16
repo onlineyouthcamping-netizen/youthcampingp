@@ -99,6 +99,18 @@ exports.getClientPayments = async (req, res) => {
       where: {
         bookingId: { in: bookingIds },
       },
+      include: {
+        collectionAccount: {
+          select: {
+            id: true,
+            accountName: true,
+            accountHolderName: true,
+            accountType: true,
+            bankName: true,
+            upiId: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
 
