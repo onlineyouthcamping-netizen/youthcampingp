@@ -106,13 +106,23 @@ exports.getDashboard = async (req, res) => {
       search,
     } = req.query;
     const tenantId = req.user?.tenantId || "default";
-    if (!tripId || !departureDate)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "tripId and departureDate are required",
-        });
+    if (!tripId || !departureDate) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          stats: {
+            totalDue: 0,
+            totalCollected: 0,
+            balanceRemaining: 0,
+            cashInHand: 0,
+            upiVerified: 0,
+            upiPending: 0,
+          },
+          bookings: [],
+          handovers: [],
+        },
+      });
+    }
 
     const depDate = new Date(departureDate);
     const bookings = await prisma.booking.findMany({

@@ -561,6 +561,14 @@ exports.createHotelBooking = async (req, res) => {
             index: idx,
           });
       }
+      if (!h.checkOut && h.checkIn) {
+        const cinD = new Date(h.checkIn);
+        if (!isNaN(cinD.getTime())) {
+          const coutD = new Date(cinD);
+          coutD.setDate(coutD.getDate() + (parseInt(h.nightsCount) || 1));
+          h.checkOut = coutD.toISOString().substring(0, 10);
+        }
+      }
       if (!h.checkOut) {
         return res
           .status(400)

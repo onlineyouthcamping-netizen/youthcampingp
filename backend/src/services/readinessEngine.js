@@ -1,5 +1,12 @@
 const { prisma } = require("../lib/prisma");
 
+function isGuideExpenseType(assignmentType) {
+  return (
+    assignmentType === "EXPENSE" ||
+    String(assignmentType || "").startsWith("EXPENSE_")
+  );
+}
+
 /**
  * Helper to safely extract YYYY-MM-DD from Date or string.
  */
@@ -334,7 +341,11 @@ exports.calculateReadiness = async (tripId, departureDateStr) => {
       },
     });
 
-    const hasGuide = guidePayments.length > 0 || tripLeaders.length > 0;
+    const actualGuidePayments = guidePayments.filter(
+      (payment) => !isGuideExpenseType(payment.assignmentType)
+    );
+    const hasGuide =
+      actualGuidePayments.length > 0 || tripLeaders.length > 0;
     const guidePoints = hasGuide ? 10 : 0;
     score += guidePoints;
 
@@ -348,7 +359,7 @@ exports.calculateReadiness = async (tripId, departureDateStr) => {
       points: guidePoints,
       max: 10,
       details: hasGuide
-        ? `${guidePayments.length + tripLeaders.length} Captain/Leader(s) assigned`
+        ? `${actualGuidePayments.length + tripLeaders.length} Captain/Leader(s) assigned`
         : "Unassigned",
     });
   } catch (e) {
