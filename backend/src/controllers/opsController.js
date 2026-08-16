@@ -928,37 +928,35 @@ exports.createHotelBooking = async (req, res) => {
         };
 
         let booking;
+        let existingTargetBooking = null;
+
         if (h.id && !h.id.startsWith("stay") && !h.id.startsWith("spt-stay")) {
-          booking = await tx.opsHotelBooking.update({
+          const existingById = await tx.opsHotelBooking.findUnique({
             where: { id: h.id },
-            data: dataObj,
-            include: { overrides: true },
           });
-        } else if (dataObj.checkIn) {
-          const existingByDate = await tx.opsHotelBooking.findFirst({
+          const existingCinStr = existingById?.checkIn ? existingById.checkIn.toISOString().substring(0, 10) : "";
+          const targetCinStr = dataObj.checkIn ? dataObj.checkIn.toISOString().substring(0, 10) : "";
+          if (existingById && (!targetCinStr || existingCinStr === targetCinStr)) {
+            existingTargetBooking = existingById;
+          }
+        }
+
+        if (!existingTargetBooking && dataObj.checkIn) {
+          existingTargetBooking = await tx.opsHotelBooking.findFirst({
             where: {
               tripId: ctx.tripId,
               departureDate: ctx.departureDate,
               checkIn: dataObj.checkIn,
             },
           });
-          if (existingByDate) {
-            booking = await tx.opsHotelBooking.update({
-              where: { id: existingByDate.id },
-              data: dataObj,
-              include: { overrides: true },
-            });
-          } else {
-            booking = await tx.opsHotelBooking.create({
-              data: {
-                tenantId: ctx.tenantId,
-                tripId: ctx.tripId,
-                departureDate: ctx.departureDate,
-                ...dataObj,
-              },
-              include: { overrides: true },
-            });
-          }
+        }
+
+        if (existingTargetBooking) {
+          booking = await tx.opsHotelBooking.update({
+            where: { id: existingTargetBooking.id },
+            data: dataObj,
+            include: { overrides: true },
+          });
         } else {
           booking = await tx.opsHotelBooking.create({
             data: {
