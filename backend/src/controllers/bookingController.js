@@ -1778,8 +1778,8 @@ exports.deleteBooking = async (req, res, next) => {
     const isPermanent = req.query.permanent === "true";
     const role = req.user?.role;
 
-    // Superadmin can delete any booking regardless of tenantId, and match by id (cuid) or bookingId (code)
-    const whereCondition = role === "superadmin" || role === "admin"
+    // Superadmin, admin, founder, owner can delete any booking regardless of tenantId
+    const whereCondition = role === "superadmin" || role === "admin" || role === "founder" || role === "owner"
       ? { OR: [{ id }, { bookingId: id }] }
       : { OR: [{ id, tenantId }, { bookingId: id, tenantId }] };
 
@@ -1794,40 +1794,17 @@ exports.deleteBooking = async (req, res, next) => {
     }
 
     if (isPermanent) {
-      // Permanent hard delete for founder profile
+      // Permanent hard delete
       const bookingIds = Array.from(new Set([id, booking.id, booking.bookingId].filter(Boolean)));
 
-      // Delete child records across all models referencing either cuid or bookingId
       const safeDelete = async (fn, name) => {
         try { await fn(); } catch(e) { console.warn(`[DELETE] ${name} skip/error:`, e.message); }
       };
 
-      await safeDelete(() => prisma.trainTicketLog.deleteMany({ where: { trainTicket: { bookingId: { in: bookingIds } } } }), "trainTicketLog");
-      await safeDelete(() => prisma.trainTicketTraveller.deleteMany({ where: { trainTicket: { bookingId: { in: bookingIds } } } }), "trainTicketTraveller");
-      await safeDelete(() => prisma.trainTicketHistory.deleteMany({ where: { trainTicket: { bookingId: { in: bookingIds } } } }), "trainTicketHistory");
-      await safeDelete(() => prisma.trainTicketAlert.deleteMany({ where: { bookingId: { in: bookingIds } } }), "trainTicketAlert");
-      await safeDelete(() => prisma.trainTicketAlertEvent.deleteMany({ where: { bookingId: { in: bookingIds } } }), "trainTicketAlertEvent");
-      await safeDelete(() => prisma.trainTicketApproval.deleteMany({ where: { bookingId: { in: bookingIds } } }), "trainTicketApproval");
-      await safeDelete(() => prisma.ticketApproval.deleteMany({ where: { bookingId: { in: bookingIds } } }), "ticketApproval");
-      await safeDelete(() => prisma.trainTicketRequest.deleteMany({ where: { bookingId: { in: bookingIds } } }), "trainTicketRequest");
-      await safeDelete(() => prisma.trainTicket.deleteMany({ where: { bookingId: { in: bookingIds } } }), "trainTicket");
-      await safeDelete(() => prisma.payment.deleteMany({ where: { bookingId: { in: bookingIds } } }), "payment");
-      await safeDelete(() => prisma.bookingActivityLog.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingActivityLog");
-      await safeDelete(() => prisma.bookingTask.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingTask");
-      await safeDelete(() => prisma.bookingAttachment.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingAttachment");
-      await safeDelete(() => prisma.bookingDocument.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingDocument");
-      await safeDelete(() => prisma.bookingEmailLog.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingEmailLog");
-      await safeDelete(() => prisma.bookingVerificationLog.deleteMany({ where: { bookingVerification: { bookingId: { in: bookingIds } } } }), "bookingVerificationLog");
-      await safeDelete(() => prisma.bookingVerification.deleteMany({ where: { bookingId: { in: bookingIds } } }), "bookingVerification");
-      await safeDelete(() => prisma.accountingEntryLog.deleteMany({ where: { accountingEntry: { bookingId: { in: bookingIds } } } }), "accountingEntryLog");
-      await safeDelete(() => prisma.accountingEntry.deleteMany({ where: { bookingId: { in: bookingIds } } }), "accountingEntry");
-      await safeDelete(() => prisma.auditLog.deleteMany({ where: { bookingId: { in: bookingIds } } }), "auditLog");
-      await safeDelete(() => prisma.quotation.deleteMany({ where: { bookingId: { in: bookingIds } } }), "quotation");
+      // These two models have onDelete: Restrict in schema.prisma, so they MUST be deleted manually before deleting Booking.
+      // Other models have onDelete: Cascade or SetNull, so the database will handle them automatically.
       await safeDelete(() => prisma.opsVehicleAllocation.deleteMany({ where: { bookingId: { in: bookingIds } } }), "opsVehicleAllocation");
       await safeDelete(() => prisma.opsRoomAllocation.deleteMany({ where: { bookingId: { in: bookingIds } } }), "opsRoomAllocation");
-      await safeDelete(() => prisma.opsClientPayment.deleteMany({ where: { bookingId: { in: bookingIds } } }), "opsClientPayment");
-      await safeDelete(() => prisma.stationPaymentCollection.deleteMany({ where: { bookingId: { in: bookingIds } } }), "stationPaymentCollection");
-      await safeDelete(() => prisma.passengerActivityAllocation.deleteMany({ where: { bookingId: { in: bookingIds } } }), "passengerActivityAllocation");
 
       await prisma.booking.delete({ where: { id: booking.id } });
 

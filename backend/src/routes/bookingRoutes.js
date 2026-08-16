@@ -218,7 +218,7 @@ router.delete(
   // Permanent delete is a founder-only action — requires superadmin role
   (req, res, next) => {
     const role = req.user?.role;
-    if (role === "superadmin" || role === "admin") return next();
+    if (role === "superadmin" || role === "admin" || role === "founder" || role === "owner") return next();
     return res
       .status(403)
       .json({ success: false, message: "Forbidden: Only administrators can delete bookings." });
