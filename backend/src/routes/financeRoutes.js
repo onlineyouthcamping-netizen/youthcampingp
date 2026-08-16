@@ -18,6 +18,7 @@ const {
   getExpensesQueue,
   verifyDeparturePayment,
   verifyExpense,
+  assignIncomingPayment,
 } = require("../controllers/financeController");
 
 // New Sub-module Controllers
@@ -145,6 +146,12 @@ router.post(
   "/control-center/incoming/:id/action",
   requirePermission(["accounting.approve", "finance.incoming.approve"]),
   verifyIncomingPayment
+);
+
+router.post(
+  "/control-center/incoming/:id/assign",
+  requirePermission(["accounting.approve", "finance.incoming.approve", "finance.control_center.view"]),
+  assignIncomingPayment
 );
 
 router.post(

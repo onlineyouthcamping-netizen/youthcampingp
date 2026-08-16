@@ -332,6 +332,23 @@ exports.approveEntry = async (req, res) => {
       });
     }
 
+    // ── STRICT ROLE CHECK: Cash payment approvals strictly reserved for Superuser / Founder / Admin ──
+    const userRole = (req.user.role || "").toLowerCase();
+    const isSuperuserFounder =
+      ["superadmin", "founder", "admin"].includes(userRole) || req.user.isSuperuser;
+    const isCash =
+      entry.paymentMode &&
+      (entry.paymentMode.toUpperCase() === "CASH" ||
+        entry.paymentMode.toUpperCase().includes("CASH"));
+
+    if (isCash && !isSuperuserFounder) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Restricted Approval: Cash payment approvals are strictly reserved for Superuser / Founder / Admin accounts only.",
+      });
+    }
+
     // 1. Update entry status
     const updated = await prisma.accountingEntry.update({
       where: { id },

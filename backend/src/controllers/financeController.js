@@ -642,6 +642,19 @@ exports.verifyCashSubmission = async (req, res) => {
       });
     }
 
+    // ── STRICT ROLE CHECK: Cash approvals strictly reserved for Superuser / Founder / Admin ──
+    const userRole = (req.user.role || "").toLowerCase();
+    const isSuperuserFounder =
+      ["superadmin", "founder", "admin"].includes(userRole) || req.user.isSuperuser;
+
+    if ((action === "APPROVE" || action === "APPROVE_WITH_DISCREPANCY") && !isSuperuserFounder) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Restricted Approval: Cash payment approvals are strictly reserved for Superuser / Founder / Admin accounts only.",
+      });
+    }
+
     let nextStatus = "APPROVED";
     let logNote = "";
 
@@ -779,6 +792,23 @@ exports.verifyIncomingPayment = async (req, res) => {
       });
     }
 
+    // Strict Cash Approval Restriction: ONLY Superuser / Founder / Admin
+    const isCash =
+      entry.paymentMode &&
+      (entry.paymentMode.toUpperCase() === "CASH" ||
+        entry.paymentMode.toUpperCase().includes("CASH"));
+    const userRole = (req.user.role || "").toLowerCase();
+    const isSuperuserFounder =
+      ["superadmin", "founder", "admin"].includes(userRole) || req.user.isSuperuser;
+
+    if (isCash && action === "VERIFY" && !isSuperuserFounder) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Restricted Approval: Cash payment approvals are strictly reserved for Superuser / Founder / Admin accounts only.",
+      });
+    }
+
     const nextStatus = action === "VERIFY" ? "APPROVED" : action === "REJECT" ? "REJECTED" : "DISCREPANCY";
 
     const updated = await prisma.accountingEntry.update({
@@ -848,6 +878,69 @@ exports.verifyIncomingPayment = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to process incoming payment verification",
+    });
+  }
+};
+
+/**
+ * POST /api/finance/control-center/incoming/:id/assign
+ * Assign incoming payment to accounts/finance team member for verification
+ */
+exports.assignIncomingPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assigneeId } = req.body;
+    const userId = req.user.id;
+    const userName = req.user.name || req.user.email || "Finance Admin";
+
+    const entry = await prisma.accountingEntry.findUnique({
+      where: { id },
+    });
+
+    if (!entry) {
+      return res.status(404).json({ success: false, message: "Payment entry not found" });
+    }
+
+    let assigneeName = "Unassigned";
+    if (assigneeId) {
+      const assigneeUser = await prisma.admin.findUnique({
+        where: { id: assigneeId },
+        select: { id: true, name: true, email: true, role: true },
+      });
+      if (assigneeUser) {
+        assigneeName = assigneeUser.name || assigneeUser.email;
+      }
+    }
+
+    const updated = await prisma.accountingEntry.update({
+      where: { id },
+      data: {
+        actionedById: assigneeId || null,
+      },
+      include: {
+        actionedBy: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
+
+    await prisma.accountingEntryLog.create({
+      data: {
+        accountingEntryId: entry.id,
+        action: "ASSIGN",
+        notes: `Assigned incoming payment verification to ${assigneeName} by ${userName}.`,
+        actorId: userId,
+      },
+    });
+
+    return res.json({
+      success: true,
+      data: updated,
+      message: `Payment assigned to ${assigneeName}`,
+    });
+  } catch (err) {
+    console.error("assignIncomingPayment error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to assign payment approver",
     });
   }
 };
