@@ -200,23 +200,45 @@ exports.createTicket = async (req, res) => {
           tpl = JSON.parse(tpl);
         } catch (_) {}
       }
+
+      // Determine matching tier (e.g. 3A, SL, 2A, etc.)
+      let selectedTier = tpl;
+      const targetClass = (coach || req.body.class || req.body.travelClass || "").toUpperCase();
+      if (Array.isArray(tpl?.tiers) && tpl.tiers.length > 0) {
+        if (targetClass) {
+          selectedTier =
+            tpl.tiers.find(
+              (t) =>
+                t.classCode?.toUpperCase() === targetClass ||
+                (targetClass.includes("SLEEP") && t.classCode === "SL") ||
+                (targetClass.includes("3A") && t.classCode === "3A") ||
+                (targetClass.includes("2A") && t.classCode === "2A") ||
+                (targetClass.includes("3E") && t.classCode === "3E") ||
+                t.name?.toUpperCase().includes(targetClass),
+            ) || tpl.tiers[0];
+        } else {
+          selectedTier = tpl.tiers[0];
+        }
+      }
+
       const isReturn =
         (destinationStation &&
-          tpl?.returnJourney?.destination &&
+          selectedTier?.returnJourney?.destination &&
           destinationStation
             .toLowerCase()
-            .includes(tpl.returnJourney.destination.toLowerCase())) ||
+            .includes(selectedTier.returnJourney.destination.toLowerCase())) ||
         (sourceStation &&
-          tpl?.returnJourney?.boardingStation &&
+          selectedTier?.returnJourney?.boardingStation &&
           sourceStation
             .toLowerCase()
-            .includes(tpl.returnJourney.boardingStation.toLowerCase()));
-      if (isReturn && tpl?.returnJourney?.expectedCost) {
-        expectedCost = Number(tpl.returnJourney.expectedCost) || 0;
-      } else if (tpl?.departureJourney?.expectedCost) {
-        expectedCost = Number(tpl.departureJourney.expectedCost) || 0;
-      } else if (tpl?.totalExpectedCostPerPassenger) {
-        expectedCost = Number(tpl.totalExpectedCostPerPassenger) / 2;
+            .includes(selectedTier.returnJourney.boardingStation.toLowerCase()));
+
+      if (isReturn && selectedTier?.returnJourney?.expectedCost) {
+        expectedCost = Number(selectedTier.returnJourney.expectedCost) || 0;
+      } else if (selectedTier?.departureJourney?.expectedCost) {
+        expectedCost = Number(selectedTier.departureJourney.expectedCost) || 0;
+      } else if (selectedTier?.totalExpectedCostPerPassenger) {
+        expectedCost = Number(selectedTier.totalExpectedCostPerPassenger) / 2;
       }
     }
     const actualCost = Number(ticketAmount) || 0;
