@@ -1123,9 +1123,32 @@ exports.getFinanceSummary = async (req, res) => {
     };
 
     if (tripId || departureDate) {
+      let tripIds = [];
+      if (tripId) {
+        const trip = await prisma.trip.findFirst({
+          where: {
+            OR: [
+              { id: tripId },
+              { slug: tripId },
+              { shortName: tripId },
+            ],
+          },
+          select: { id: true, slug: true },
+        });
+        tripIds = [tripId, trip?.id, trip?.slug].filter(Boolean);
+      }
+
+      let dateFilter = undefined;
+      if (departureDate) {
+        const dateStr = String(departureDate).substring(0, 10);
+        const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
+        const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
+        dateFilter = { gte: startOfDay, lte: endOfDay };
+      }
+
       where.booking = {
-        ...(tripId ? { tripId } : {}),
-        ...(departureDate ? { departureDate: new Date(departureDate) } : {}),
+        ...(tripIds.length > 0 ? { tripId: { in: tripIds } } : {}),
+        ...(dateFilter ? { departureDate: dateFilter } : {}),
       };
     }
 
@@ -1178,7 +1201,7 @@ exports.getFinanceSummary = async (req, res) => {
     let companyPaidCost = 0;
     let customerPaidCost = 0;
 
-    tickets.forEach((t) => {
+    (tickets || []).forEach((t) => {
       const amt = Number(t.ticketAmount || 0);
       const rCharge = Number(t.railwayCancellationCharge || 0);
       const yCharge = Number(t.ycCancellationCharge || 0);
@@ -1211,7 +1234,7 @@ exports.getFinanceSummary = async (req, res) => {
       success: true,
       data: {
         summary: {
-          totalTickets: tickets.length,
+          totalTickets: (tickets || []).length,
           totalCost,
           confirmedCost,
           pendingCost,
@@ -1224,7 +1247,7 @@ exports.getFinanceSummary = async (req, res) => {
           customerPaidCost,
           netCompanyCost,
         },
-        tickets,
+        tickets: tickets || [],
       },
     });
   } catch (err) {

@@ -516,17 +516,20 @@ exports.createHotelBooking = async (req, res) => {
     for (let idx = 0; idx < hotelList.length; idx++) {
       const h = hotelList[idx];
       if (h.checkIn) {
-        const dateStr = new Date(h.checkIn).toISOString().substring(0, 10);
-        if (checkInDates.has(dateStr)) {
-          return res.status(400).json({
-            success: false,
-            code: "VALIDATION_ERROR",
-            message: `Duplicate hotel allocations detected for check-in date ${dateStr}.`,
-            field: "checkIn",
-            index: idx,
-          });
+        const cinNorm = normalizeDepartureDateIndia(h.checkIn) || new Date(h.checkIn);
+        if (!isNaN(cinNorm.getTime())) {
+          const dateStr = cinNorm.toISOString().substring(0, 10);
+          if (checkInDates.has(dateStr)) {
+            return res.status(400).json({
+              success: false,
+              code: "VALIDATION_ERROR",
+              message: `Duplicate hotel allocations detected for check-in date ${dateStr}.`,
+              field: "checkIn",
+              index: idx,
+            });
+          }
+          checkInDates.add(dateStr);
         }
-        checkInDates.add(dateStr);
       }
     }
 
@@ -569,7 +572,7 @@ exports.createHotelBooking = async (req, res) => {
           });
       }
       if (!h.checkOut && h.checkIn) {
-        const cinD = new Date(h.checkIn);
+        const cinD = normalizeDepartureDateIndia(h.checkIn) || new Date(h.checkIn);
         if (!isNaN(cinD.getTime())) {
           const coutD = new Date(cinD);
           coutD.setDate(coutD.getDate() + (parseInt(h.nightsCount) || 1));
@@ -589,8 +592,8 @@ exports.createHotelBooking = async (req, res) => {
       }
 
       // Check dates validity
-      const cin = new Date(h.checkIn);
-      const cout = new Date(h.checkOut);
+      const cin = normalizeDepartureDateIndia(h.checkIn) || new Date(h.checkIn);
+      const cout = normalizeDepartureDateIndia(h.checkOut) || new Date(h.checkOut);
       if (isNaN(cin.getTime())) {
         return res
           .status(400)
@@ -800,46 +803,40 @@ exports.createHotelBooking = async (req, res) => {
             }
           }
         }
-        const vType = (dbVendor.type || "").toUpperCase();
-        if (
-          vType !== "HOTEL" &&
-          vType !== "HOMESTAY" &&
-          vType !== "CAMP" &&
-          vType !== "TRANSPORT" &&
-          vType !== "GUIDE" &&
-          vType !== "FOOD" &&
-          vType !== "MISC" &&
-          vType !== "MEALS"
-        ) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              code: "VALIDATION_ERROR",
-              message: "Selected vendor type is not supported.",
-              field: "vendorId",
-              index: idx,
-            });
+        if (dbVendor) {
+          const vType = (dbVendor.type || "").toUpperCase();
+          if (
+            vType !== "HOTEL" &&
+            vType !== "HOMESTAY" &&
+            vType !== "CAMP" &&
+            vType !== "TRANSPORT" &&
+            vType !== "GUIDE" &&
+            vType !== "FOOD" &&
+            vType !== "MISC" &&
+            vType !== "MEALS"
+          ) {
+            return res
+              .status(400)
+              .json({
+                success: false,
+                code: "VALIDATION_ERROR",
+                message: "Selected vendor type is not supported.",
+                field: "vendorId",
+                index: idx,
+              });
+          }
         }
       }
 
-      // Validate booking ID belongs to selected trip
-      if (h.id && !h.id.startsWith("stay") && !h.id.startsWith("spt-stay")) {
+      // Validate booking ID if editing an existing record
+      if (h.id && !h.id.startsWith("stay") && !h.id.startsWith("spt-stay") && !h.id.startsWith("auto-") && !h.id.startsWith("HTL-")) {
         const existing = await prisma.opsHotelBooking.findUnique({
           where: { id: h.id },
         });
         if (!existing) {
-          return res
-            .status(404)
-            .json({
-              success: false,
-              code: "NOT_FOUND",
-              message: `Hotel booking record not found for ID: ${h.id}`,
-              field: "id",
-              index: idx,
-            });
-        }
-        if (existing.tripId !== ctx.tripId) {
+          // If ID not found in database, delete it so Prisma creates a new record
+          delete h.id;
+        } else if (existing.tripId !== ctx.tripId) {
           return res
             .status(400)
             .json({
@@ -850,21 +847,9 @@ exports.createHotelBooking = async (req, res) => {
               index: idx,
             });
         }
-        const existingDateStr = existing.departureDate
-          .toISOString()
-          .substring(0, 10);
-        const ctxDateStr = ctx.departureDate.toISOString().substring(0, 10);
-        if (existingDateStr !== ctxDateStr) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              code: "VALIDATION_ERROR",
-              message: "Hotel allocation departure date mismatch.",
-              field: "departureDate",
-              index: idx,
-            });
-        }
+      } else if (h.id) {
+        // Strip non-persisted client-side dummy ID
+        delete h.id;
       }
     }
 
