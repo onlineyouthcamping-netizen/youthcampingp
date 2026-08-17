@@ -1,5 +1,21 @@
 const { prisma } = require("../lib/prisma");
 
+let cachedPublishedPages = null;
+let cachedPublishedPagesExpiresAt = 0;
+
+let cachedPublicSettings = null;
+let cachedPublicSettingsExpiresAt = 0;
+
+const invalidatePagesCache = () => {
+  cachedPublishedPages = null;
+  cachedPublishedPagesExpiresAt = 0;
+};
+
+const invalidateSettingsCache = () => {
+  cachedPublicSettings = null;
+  cachedPublicSettingsExpiresAt = 0;
+};
+
 // ══════════════════════════════════════════════════════════════════════
 // WEBSITE PAGES CRUD
 // ══════════════════════════════════════════════════════════════════════
@@ -9,6 +25,12 @@ const { prisma } = require("../lib/prisma");
  */
 exports.getPublishedPages = async (req, res) => {
   try {
+    const now = Date.now();
+    if (cachedPublishedPages && now < cachedPublishedPagesExpiresAt) {
+      res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=120");
+      return res.json({ success: true, data: cachedPublishedPages });
+    }
+
     const pages = await prisma.websitePage.findMany({
       where: { published: true, deletedAt: null },
       orderBy: { updatedAt: "desc" },
@@ -23,6 +45,9 @@ exports.getPublishedPages = async (req, res) => {
         updatedAt: true,
       },
     });
+
+    cachedPublishedPages = pages;
+    cachedPublishedPagesExpiresAt = now + 60000; // 60s
 
     res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=120");
     res.json({ success: true, data: pages });
@@ -125,6 +150,8 @@ exports.createPage = async (req, res) => {
       },
     });
 
+    invalidatePagesCache();
+
     console.log(
       `✅ [WebsitePages] Created page: ${slug} by ${req.user?.name || req.user?.id}`,
     );
@@ -186,6 +213,8 @@ exports.updatePage = async (req, res) => {
       data: updateData,
     });
 
+    invalidatePagesCache();
+
     console.log(
       `✅ [WebsitePages] Updated page: ${page.slug} by ${req.user?.name || req.user?.id}`,
     );
@@ -223,6 +252,8 @@ exports.softDeletePage = async (req, res) => {
       data: { deletedAt: new Date(), published: false },
     });
 
+    invalidatePagesCache();
+
     console.log(
       `🗑️ [WebsitePages] Soft-deleted page: ${existing.slug} by ${req.user?.name || req.user?.id}`,
     );
@@ -245,12 +276,21 @@ exports.softDeletePage = async (req, res) => {
  */
 exports.getPublicSettings = async (req, res) => {
   try {
+    const now = Date.now();
+    if (cachedPublicSettings && now < cachedPublicSettingsExpiresAt) {
+      res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=120");
+      return res.json({ success: true, data: cachedPublicSettings });
+    }
+
     const settings = await prisma.websiteSetting.findMany();
 
     const settingsMap = {};
     for (const s of settings) {
       settingsMap[s.key] = s.value;
     }
+
+    cachedPublicSettings = settingsMap;
+    cachedPublicSettingsExpiresAt = now + 60000; // 60s
 
     res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=120");
     res.json({ success: true, data: settingsMap });
@@ -299,6 +339,8 @@ exports.upsertSetting = async (req, res) => {
       update: { value },
       create: { key, value },
     });
+
+    invalidateSettingsCache();
 
     console.log(
       `✅ [WebsiteSettings] Upserted key="${key}" by ${req.user?.name || req.user?.id}`,

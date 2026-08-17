@@ -109,18 +109,16 @@ exports.getDashboard = async (req, res) => {
     if (!tripId || !departureDate) {
       return res.status(200).json({
         success: true,
-        data: {
-          stats: {
-            totalDue: 0,
-            totalCollected: 0,
-            balanceRemaining: 0,
-            cashInHand: 0,
-            upiVerified: 0,
-            upiPending: 0,
-          },
-          bookings: [],
-          handovers: [],
+        stats: {
+          totalDue: 0,
+          totalCollected: 0,
+          balanceRemaining: 0,
+          cashInHand: 0,
+          upiVerified: 0,
+          upiPending: 0,
         },
+        bookings: [],
+        handovers: [],
       });
     }
 

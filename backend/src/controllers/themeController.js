@@ -161,24 +161,27 @@ const defaultTheme = {
   ],
 };
 
+let cachedThemeConfig = null;
+let cachedThemeExpiresAt = 0;
+
+const getCachedTheme = async () => {
+  const now = Date.now();
+  if (cachedThemeConfig && now < cachedThemeExpiresAt) {
+    return cachedThemeConfig;
+  }
+  const theme = await prisma.theme.findUnique({
+    where: { name: "primary" },
+    select: { config: true },
+  });
+  const config = { ...defaultTheme, ...(theme?.config || {}) };
+  cachedThemeConfig = config;
+  cachedThemeExpiresAt = now + 60000; // Cache for 60 seconds in memory
+  return config;
+};
+
 const getTheme = async (req, res) => {
   try {
-    let theme = await prisma.theme.findUnique({
-      where: { name: "primary" },
-    });
-
-    if (!theme) {
-      try {
-        theme = await prisma.theme.create({
-          data: {
-            name: "primary",
-            config: defaultTheme,
-          },
-        });
-      } catch (_e) {}
-    }
-
-    const config = { ...defaultTheme, ...(theme?.config || {}) };
+    const config = await getCachedTheme();
     return res.json(config);
   } catch (error) {
     console.error(
@@ -192,12 +195,7 @@ const getTheme = async (req, res) => {
 // Read-only public variant: never creates or updates a theme record on GET.
 const getPublicTheme = async (req, res) => {
   try {
-    const theme = await prisma.theme.findUnique({
-      where: { name: "primary" },
-      select: { config: true },
-    });
-
-    const config = { ...defaultTheme, ...(theme?.config || {}) };
+    const config = await getCachedTheme();
     res.set("Cache-Control", "public, max-age=600, stale-while-revalidate=600");
     return res.json(config);
   } catch (error) {
@@ -212,6 +210,8 @@ const getPublicTheme = async (req, res) => {
 const updateTheme = async (req, res) => {
   try {
     const config = req.body;
+    cachedThemeConfig = null; // Invalidate cache immediately
+    cachedThemeExpiresAt = 0;
 
     const theme = await prisma.theme.upsert({
       where: { name: "primary" },
