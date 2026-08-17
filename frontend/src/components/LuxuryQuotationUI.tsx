@@ -140,7 +140,13 @@ function mapItinerary(q: Quotation): ItineraryDay[] {
     activities: day.activities || [],
     stay: day.stay || "",
     meals: day.meals || "",
-    photos: day.photos || [],
+    photos: Array.isArray(day.photos)
+      ? day.photos
+      : day.image
+        ? [day.image]
+        : day.photo
+          ? [day.photo]
+          : [],
   }));
 }
 
@@ -200,8 +206,34 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
 
   const itineraryDays = useMemo(() => mapItinerary(q), [q]);
   const galleryImages = useMemo(() => {
+    const itineraryPhotos = (q.itinerary || []).flatMap((d: any) =>
+      Array.isArray(d.photos)
+        ? d.photos
+        : d.image
+          ? [d.image]
+          : d.photo
+            ? [d.photo]
+            : [],
+    );
+    const hotelPhotos = [
+      ...(q.highLevelHotels || []),
+      ...(q.lowLevelHotels || []),
+    ].flatMap((h: any) =>
+      Array.isArray(h.images)
+        ? h.images
+        : h.image
+          ? [h.image]
+          : h.photos
+            ? h.photos
+            : [],
+    );
+
     const urls = [
+      q.coverImage,
+      q.heroImage,
       ...(q.heroImages || []),
+      ...itineraryPhotos,
+      ...hotelPhotos,
       ...experienceUrls(q),
     ]
       .map((u) => normalizeImageUrl(u))
@@ -212,12 +244,13 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
   const galleryTrip = useMemo(() => {
     const hero = q.coverImage || q.heroImage || galleryImages[0] || "";
     const heroNorm = normalizeImageUrl(hero);
+    const remainingImages = galleryImages.filter(
+      (url) => normalizeImageUrl(url) !== heroNorm,
+    );
     return {
       title: q.tripTitle,
-      heroImage: hero,
-      images: galleryImages.filter(
-        (url) => normalizeImageUrl(url) !== heroNorm,
-      ),
+      heroImage: hero || galleryImages[0] || "",
+      images: remainingImages,
       location: q.destination,
       itinerary: itineraryDays,
     } as Trip;
