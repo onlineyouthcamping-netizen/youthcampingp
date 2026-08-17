@@ -1253,9 +1253,22 @@ exports.createBooking = async (req, res, next) => {
               pickupCity: calculations.pickupCity || null,
               skipDays: calculations.skipDays,
               adjustedPrice: calculations.adjustedPrice,
-              joiningDate: joiningDate ? new Date(joiningDate) : null,
-              age: req.body.age ? parseInt(req.body.age) : null,
-              gender: req.body.gender || null,
+              age: req.body.age
+                ? parseInt(req.body.age)
+                : Array.isArray(req.body.passengers) &&
+                    req.body.passengers[0]?.age
+                  ? parseInt(req.body.passengers[0].age)
+                  : req.body.passengers?.persons &&
+                      req.body.passengers.persons[0]?.age
+                    ? parseInt(req.body.passengers.persons[0].age)
+                    : null,
+              gender:
+                req.body.gender ||
+                (Array.isArray(req.body.passengers) &&
+                  req.body.passengers[0]?.gender) ||
+                (req.body.passengers?.persons &&
+                  req.body.passengers.persons[0]?.gender) ||
+                null,
               numberOfTravelers: req.body.passengers?.length || 1,
               baseAmount: calculations.baseAmount,
               gstAmount: calculations.gstAmount,
@@ -2368,8 +2381,22 @@ exports.submitBookingForm = async (req, res, next) => {
               joiningDate: req.body.joiningDate
                 ? new Date(req.body.joiningDate)
                 : null,
-              age: req.body.age ? parseInt(req.body.age) : null,
-              gender: req.body.gender || null,
+              age: req.body.age
+                ? parseInt(req.body.age)
+                : Array.isArray(req.body.passengers) &&
+                    req.body.passengers[0]?.age
+                  ? parseInt(req.body.passengers[0].age)
+                  : req.body.passengers?.persons &&
+                      req.body.passengers.persons[0]?.age
+                    ? parseInt(req.body.passengers.persons[0].age)
+                    : null,
+              gender:
+                req.body.gender ||
+                (Array.isArray(req.body.passengers) &&
+                  req.body.passengers[0]?.gender) ||
+                (req.body.passengers?.persons &&
+                  req.body.passengers.persons[0]?.gender) ||
+                null,
               numberOfTravelers: req.body.passengers?.length || 1,
               baseAmount: calculations.baseAmount,
               gstAmount: calculations.gstAmount,
