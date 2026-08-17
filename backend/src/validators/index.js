@@ -67,7 +67,13 @@ const createBookingSchema = z
     ticketStatus: z.string().optional().nullable(),
     basePrice: z.number({ coerce: true }).optional().nullable(),
     gstAmount: z.number({ coerce: true }).optional().nullable(),
-    age: z.number({ coerce: true }).optional().nullable(),
+    age: z
+      .number({ coerce: true })
+      .int("Age must be an integer")
+      .min(1, "Age must be at least 1")
+      .max(120, "Age must be at most 120")
+      .optional()
+      .nullable(),
     gender: z.string().optional().nullable(),
     bookingId: z.string().optional().nullable(),
     salesAdminId: z.string().optional().nullable(),
@@ -79,7 +85,30 @@ const createBookingSchema = z
   .refine((data) => data.phone || data.mobile, {
     message: "Either phone or mobile must be provided",
     path: ["phone"],
-  });
+  })
+  .refine(
+    (data) => {
+      if (!data.passengers) return true;
+      const list = Array.isArray(data.passengers)
+        ? data.passengers
+        : Array.isArray(data.passengers?.persons)
+          ? data.passengers.persons
+          : [];
+      for (const p of list) {
+        if (p && p.age !== undefined && p.age !== null && p.age !== "") {
+          const num = Number(p.age);
+          if (isNaN(num) || num < 1 || num > 120) {
+            return false;
+          }
+        }
+      }
+      return true;
+    },
+    {
+      message: "Passenger age must be a valid number between 1 and 120",
+      path: ["passengers"],
+    },
+  );
 
 // ── Inquiry schemas ─────────────────────────────────────────────────
 const createInquirySchema = z.object({

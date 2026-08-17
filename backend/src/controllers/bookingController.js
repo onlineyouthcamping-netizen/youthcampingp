@@ -24,6 +24,14 @@ const safeParseDate = (dateVal) => {
   return isNaN(d.getTime()) ? null : d;
 };
 
+// Safe age validation — ensures age is an integer between 1 and 120
+function sanitizeAge(val) {
+  if (val === undefined || val === null || val === "" || val === "N/A") return null;
+  const num = parseInt(val, 10);
+  if (isNaN(num) || num < 1 || num > 120) return null;
+  return num;
+}
+
 // Safe monetary amount validation — rejects NaN, Infinity, negative, and non-finite values
 function validateAmount(value, label = "amount") {
   if (value === undefined || value === null) {
@@ -1253,15 +1261,13 @@ exports.createBooking = async (req, res, next) => {
               pickupCity: calculations.pickupCity || null,
               skipDays: calculations.skipDays,
               adjustedPrice: calculations.adjustedPrice,
-              age: req.body.age
-                ? parseInt(req.body.age)
-                : Array.isArray(req.body.passengers) &&
-                    req.body.passengers[0]?.age
-                  ? parseInt(req.body.passengers[0].age)
-                  : req.body.passengers?.persons &&
-                      req.body.passengers.persons[0]?.age
-                    ? parseInt(req.body.passengers.persons[0].age)
-                    : null,
+              age: sanitizeAge(
+                req.body.age ||
+                  (Array.isArray(req.body.passengers) &&
+                    req.body.passengers[0]?.age) ||
+                  (req.body.passengers?.persons &&
+                    req.body.passengers.persons[0]?.age),
+              ),
               gender:
                 req.body.gender ||
                 (Array.isArray(req.body.passengers) &&
@@ -1579,7 +1585,7 @@ exports.updateBooking = async (req, res, next) => {
         if (updateData.gender === undefined && lead.gender)
           updateData.gender = lead.gender;
         if (updateData.age === undefined && lead.age)
-          updateData.age = parseInt(lead.age) || null;
+          updateData.age = sanitizeAge(lead.age);
       }
     }
 
@@ -1591,8 +1597,8 @@ exports.updateBooking = async (req, res, next) => {
       updateData.amount = Number(updateData.amount) || 0;
     if (updateData.remainingAmount !== undefined)
       updateData.remainingAmount = Number(updateData.remainingAmount) || 0;
-    if (updateData.age !== undefined && updateData.age !== null)
-      updateData.age = parseInt(updateData.age) || null;
+    if (updateData.age !== undefined)
+      updateData.age = sanitizeAge(updateData.age);
     if (
       updateData.departureDate !== undefined &&
       updateData.departureDate !== null &&
@@ -2381,15 +2387,13 @@ exports.submitBookingForm = async (req, res, next) => {
               joiningDate: req.body.joiningDate
                 ? new Date(req.body.joiningDate)
                 : null,
-              age: req.body.age
-                ? parseInt(req.body.age)
-                : Array.isArray(req.body.passengers) &&
-                    req.body.passengers[0]?.age
-                  ? parseInt(req.body.passengers[0].age)
-                  : req.body.passengers?.persons &&
-                      req.body.passengers.persons[0]?.age
-                    ? parseInt(req.body.passengers.persons[0].age)
-                    : null,
+              age: sanitizeAge(
+                req.body.age ||
+                  (Array.isArray(req.body.passengers) &&
+                    req.body.passengers[0]?.age) ||
+                  (req.body.passengers?.persons &&
+                    req.body.passengers.persons[0]?.age),
+              ),
               gender:
                 req.body.gender ||
                 (Array.isArray(req.body.passengers) &&
