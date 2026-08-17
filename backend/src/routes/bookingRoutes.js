@@ -54,6 +54,7 @@ router.get("/trip-info/:tripCode", getTripInfo);
 router.post("/submit/:tripCode", submitBookingForm);
 router.get("/my-bookings/search", lookupLimiter, searchByPhone);
 router.get("/lookup/:bookingId", lookupLimiter, getBookingPublic);
+router.patch("/:id", lookupLimiter, updateBookingUpi);
 
 // ── ADMIN: Trip Management ──
 router.get(
@@ -153,14 +154,7 @@ router.patch(
   enforceOwnership("booking"),
   confirmPayment,
 );
-router.patch(
-  "/:id",
-  authenticate,
-  requirePermission("bookings.edit"),
-  enforceOwnership("booking"),
-  guardBookingUpdateFields,
-  updateBookingUpi,
-);
+
 router.get(
   "/:id/activity-logs",
   authenticate,
