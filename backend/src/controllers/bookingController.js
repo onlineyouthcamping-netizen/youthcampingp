@@ -594,7 +594,6 @@ exports.getBookings = async (req, res, next) => {
               createdAt: true,
               salesAdminId: true,
               passengers: true,
-              isCancelled: true,
               pickupCity: true,
             }
           : {
