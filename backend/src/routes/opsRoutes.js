@@ -109,6 +109,11 @@ router.put(
   updateActivity,
 );
 router.delete(
+  "/activities/:tripId/:id",
+  requirePermission("ops.manage"),
+  deleteActivity,
+);
+router.delete(
   "/activities/:id",
   requirePermission("ops.manage"),
   deleteActivity,

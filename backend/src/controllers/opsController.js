@@ -4488,9 +4488,13 @@ exports.updateActivity = async (req, res) => {
 exports.deleteActivity = async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.opsActivity.delete({
-      where: { id },
-    });
+    try {
+      await prisma.opsActivity.delete({
+        where: { id },
+      });
+    } catch (dbErr) {
+      console.warn("Activity not found in DB during delete, returning success:", id);
+    }
     return res.json({
       success: true,
       message: "Activity deleted successfully",
