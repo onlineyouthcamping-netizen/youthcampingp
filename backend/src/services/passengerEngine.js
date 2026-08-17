@@ -59,7 +59,7 @@ exports.calculatePassengerStatistics = async (tripId, departureDateStr) => {
     let bookingPassengers = [];
     
     // Primary passenger
-    if (booking.name) {
+    if (booking.name && !booking.isCancelled && !booking.cancelled && String(booking.status || "").toLowerCase() !== "cancelled") {
       bookingPassengers.push({
         id: `pax_${booking.id}_0`,
         bookingId: booking.id,
@@ -81,6 +81,7 @@ exports.calculatePassengerStatistics = async (tripId, departureDateStr) => {
     const coPaxList = Array.isArray(paxObj?.persons) ? paxObj.persons : (Array.isArray(paxObj) ? paxObj : []);
     
     coPaxList.forEach((p, idx) => {
+      if (p.isCancelled || p.cancelled || String(p.status || "").toLowerCase() === "cancelled") return;
       bookingPassengers.push({
         id: `pax_${booking.id}_${idx + 1}`,
         bookingId: booking.id,

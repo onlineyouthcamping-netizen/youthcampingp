@@ -17,6 +17,43 @@ function isGuideExpenseType(assignmentType) {
   );
 }
 
+function getActivePaxCount(b) {
+  if (!b) return 0;
+  if (
+    b.isCancelled ||
+    b.cancelled ||
+    ["cancelled", "rejected", "expired", "failed", "refunded"].includes(
+      String(b.status || b.bookingStatus || "").toLowerCase(),
+    )
+  ) {
+    return 0;
+  }
+  let paxObj = b.passengers;
+  if (typeof paxObj === "string") {
+    try {
+      paxObj = JSON.parse(paxObj);
+    } catch (e) {
+      paxObj = {};
+    }
+  }
+  const persons = Array.isArray(paxObj?.persons)
+    ? paxObj.persons
+    : Array.isArray(paxObj)
+      ? paxObj
+      : [];
+
+  if (persons.length > 0) {
+    const active = persons.filter(
+      (p) =>
+        !p.isCancelled &&
+        !p.cancelled &&
+        String(p.status || "").toLowerCase() !== "cancelled",
+    );
+    return active.length;
+  }
+  return Number(b.numberOfTravelers) || 1;
+}
+
 /**
  * Shared server-side India timezone (Asia/Kolkata) normalization method for departure calendar dates.
  * Converts input timestamps or dates (e.g. 2026-07-09T18:30:00.000Z, 2026-07-10T00:00:00.000Z, 2026-07-10T05:30:00.000Z)
@@ -1416,7 +1453,8 @@ exports.getTransportPassengerGroups = async (req, res) => {
       const city = b.pickupCity || "Not Specified";
       if (!groups[city])
         groups[city] = { city, count: 0, bookings: [], unallocated: 0 };
-      const paxCount = b.numberOfTravelers || 1;
+      const paxCount = getActivePaxCount(b);
+      if (paxCount <= 0) continue;
       groups[city].count += paxCount;
       groups[city].bookings.push({
         bookingId: b.bookingId,
@@ -1456,20 +1494,20 @@ exports.getTransportPassengerGroups = async (req, res) => {
         f.capacity - activeAllocations.filter((a) => a.fleetId === f.id).length,
     }));
 
+    const totalActivePax = bookings.reduce(
+      (s, b) => s + getActivePaxCount(b),
+      0,
+    );
+
     return res.json({
       success: true,
       data: {
         passengerGroups: Object.values(groups).sort(
           (a, b) => b.count - a.count,
         ),
-        totalPassengers: bookings.reduce(
-          (s, b) => s + (b.numberOfTravelers || 1),
-          0,
-        ),
+        totalPassengers: totalActivePax,
         totalAllocated: activeAllocations.length,
-        totalUnallocated:
-          bookings.reduce((s, b) => s + (b.numberOfTravelers || 1), 0) -
-          activeAllocations.length,
+        totalUnallocated: Math.max(0, totalActivePax - activeAllocations.length),
         fleetSummary: fleetWithCounts,
         totalCapacity: fleets.reduce((s, f) => s + f.capacity, 0),
       },
@@ -1808,7 +1846,7 @@ exports.getOpsAccountingSummary = async (req, res) => {
       activityCost;
 
     let travelerCount = (bookings || []).reduce(
-      (s, b) => s + (Number(b.numberOfTravelers) || 1),
+      (s, b) => s + getActivePaxCount(b),
       0,
     );
     if (travelerCount === 0) travelerCount = 1;

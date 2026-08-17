@@ -77,7 +77,7 @@ exports.calculateReadiness = async (tripId, departureDateStr) => {
     bookings = await prisma.booking.findMany({
       where: {
         tripId: { in: tripIdentifiers },
-        status: { notIn: ["rejected", "cancelled", "failed"] },
+        status: { notIn: ["rejected", "cancelled", "CANCELLED", "Cancelled", "failed", "expired", "refunded"] },
       },
       include: {
         opsVehicleAllocations: true,
@@ -91,6 +91,7 @@ exports.calculateReadiness = async (tripId, departureDateStr) => {
   }
 
   const activeBookings = bookings.filter((b) => {
+    if (b.isCancelled || b.cancelled) return false;
     return formatDateKey(b.departureDate) === targetDateKey;
   });
 
@@ -124,6 +125,7 @@ exports.calculateReadiness = async (tripId, departureDateStr) => {
       });
     } else {
       persons.forEach((p, idx) => {
+        if (p.isCancelled || p.cancelled || String(p.status || "").toLowerCase() === "cancelled") return;
         activePassengers.push({
           id: p.id || `pax_${b.id}_${idx}`,
           bookingId: b.bookingId || b.id,
@@ -510,6 +512,7 @@ exports.getDeparturePassengerStats = async (tripId, departureDateStr) => {
       });
     } else {
       persons.forEach((p, idx) => {
+        if (p.isCancelled || p.cancelled || String(p.status || "").toLowerCase() === "cancelled") return;
         allPassengers.push({
           id: p.id || `pax_${b.id}_${idx}`,
           bookingId: b.bookingId || b.id,
