@@ -277,6 +277,7 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
   const salePrice = listPrice - (q.discount || 0);
   const expertPhoto = normalizeImageUrl(q.expert?.photo);
   const expertInitial = (q.expert?.name || "S").charAt(0);
+  const expired = timeLeft === "EXPIRED";
   const rawExpertNumber = (
     q.expert?.whatsapp ||
     q.expert?.phone ||
