@@ -19,14 +19,28 @@ const toPublicDates = (availableDates) => {
 
   if (!Array.isArray(dates)) return [];
 
-  return dates
-    .map((entry) => {
-      if (typeof entry === "string") return { date: entry };
-      if (entry && typeof entry === "object" && entry.date)
-        return { date: entry.date };
-      return null;
-    })
-    .filter(Boolean);
+  const seen = new Set();
+  const result = [];
+
+  for (const entry of dates) {
+    let dateVal = null;
+    let otherProps = {};
+    if (typeof entry === "string") {
+      dateVal = entry;
+    } else if (entry && typeof entry === "object" && entry.date) {
+      dateVal = entry.date;
+      otherProps = { ...entry };
+    }
+    if (!dateVal) continue;
+
+    const norm = String(dateVal).split("T")[0].trim();
+    if (!seen.has(norm)) {
+      seen.add(norm);
+      result.push({ ...otherProps, date: dateVal });
+    }
+  }
+
+  return result;
 };
 
 const parseJsonArray = (value) => {
