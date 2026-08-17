@@ -173,7 +173,20 @@ async function parseDepartureFilter(req, res, requireDepartureDate = true) {
       const bookingsCount = await prisma.booking.count({
         where: {
           tripId: tripId,
-          status: { notIn: ["cancelled", "rejected"] },
+          status: {
+            notIn: [
+              "cancelled",
+              "CANCELLED",
+              "Cancelled",
+              "rejected",
+              "REJECTED",
+              "Rejected",
+              "refunded",
+              "REFUNDED",
+              "expired",
+              "EXPIRED",
+            ],
+          },
           departureDate: {
             gte: new Date(formattedDate + "T00:00:00.000Z"),
             lte: new Date(formattedDate + "T23:59:59.999Z"),
@@ -189,7 +202,20 @@ async function parseDepartureFilter(req, res, requireDepartureDate = true) {
   let bookingWhere = {
     tenantId,
     tripId,
-    status: { notIn: ["cancelled", "rejected"] },
+    status: {
+      notIn: [
+        "cancelled",
+        "CANCELLED",
+        "Cancelled",
+        "rejected",
+        "REJECTED",
+        "Rejected",
+        "refunded",
+        "REFUNDED",
+        "expired",
+        "EXPIRED",
+      ],
+    },
   };
   if (departureDate) {
     const startOfDay = new Date(departureDate);
@@ -1338,7 +1364,20 @@ exports.getTransportPassengerGroups = async (req, res) => {
       where: {
         tripId: ctx.tripId,
         departureDate: ctx.departureDate,
-        status: { notIn: ["cancelled", "refunded"] },
+        status: {
+          notIn: [
+            "cancelled",
+            "CANCELLED",
+            "Cancelled",
+            "rejected",
+            "REJECTED",
+            "Rejected",
+            "refunded",
+            "REFUNDED",
+            "expired",
+            "EXPIRED",
+          ],
+        },
       },
       select: {
         bookingId: true,
