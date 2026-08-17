@@ -231,6 +231,8 @@ const updateTheme = async (req, res) => {
 
 const resetTheme = async (req, res) => {
   try {
+    cachedThemeConfig = null;
+    cachedThemeExpiresAt = 0;
     const theme = await prisma.theme.update({
       where: { name: "primary" },
       data: { config: defaultTheme },
@@ -314,6 +316,8 @@ const applyPreset = async (req, res) => {
     }
 
     const merged = { ...defaultTheme, ...preset.config };
+    cachedThemeConfig = null;
+    cachedThemeExpiresAt = 0;
     await prisma.theme.upsert({
       where: { name: "primary" },
       update: { config: merged },
