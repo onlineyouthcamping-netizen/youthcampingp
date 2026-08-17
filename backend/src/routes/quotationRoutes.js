@@ -131,6 +131,7 @@ router.get(
         // Check sales ownership
         if (
           req.user.role === "sales" &&
+          quotation.salesAdminId &&
           quotation.salesAdminId !== req.user.id
         ) {
           return res
@@ -140,42 +141,42 @@ router.get(
         isAuthorized = true;
       } else {
         // Public check
-        if (quotation.status === "draft") {
-          return res
-            .status(401)
-            .json({
-              success: false,
-              message: "Authentication required to view draft quotations",
-            });
-        }
-
-        if (!token) {
-          return res
-            .status(401)
-            .json({ success: false, message: "Access token required" });
-        }
-
-        try {
-          const jwt = require("jsonwebtoken");
-          const decoded = jwt.verify(token, process.env.JWT_SECRET);
-          if (decoded.quotationId === quotation.id) {
-            isAuthorized = true;
-          }
-        } catch (err) {
-          if (err.name === "TokenExpiredError") {
+        const isDraft = quotation.status?.toLowerCase() === "draft";
+        if (isDraft) {
+          if (!token) {
             return res
               .status(401)
               .json({
                 success: false,
-                message: "This quotation link has expired",
+                message: "Authentication required to view draft quotations",
               });
           }
-          return res
-            .status(401)
-            .json({
-              success: false,
-              message: "Invalid or expired share token",
-            });
+
+          try {
+            const jwt = require("jsonwebtoken");
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            if (decoded.quotationId === quotation.id) {
+              isAuthorized = true;
+            }
+          } catch (err) {
+            if (err.name === "TokenExpiredError") {
+              return res
+                .status(401)
+                .json({
+                  success: false,
+                  message: "This preview link has expired",
+                });
+            }
+            return res
+              .status(401)
+              .json({
+                success: false,
+                message: "Invalid or expired share token",
+              });
+          }
+        } else {
+          // Published / Sent quotations are accessible to the customer via direct link
+          isAuthorized = true;
         }
       }
 

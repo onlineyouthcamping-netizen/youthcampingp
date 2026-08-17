@@ -21,8 +21,8 @@ export default async function Page({
     return notFound();
   }
 
-  // Block access to draft quotes unless user is admin
-  if (data.status === "draft" && !isAdmin) {
+  // Block access to draft quotes unless user is admin or has preview token
+  if (data.status?.toLowerCase() === "draft" && !isAdmin && !token) {
     console.log(
       `[Page: /quote/${slug}] Attempt to access draft quote blocked.`,
     );
