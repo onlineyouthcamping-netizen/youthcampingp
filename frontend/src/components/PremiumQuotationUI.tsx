@@ -78,11 +78,38 @@ export default function PremiumQuotationUI({ q }: { q: Quotation }) {
   const phone = settings?.contactPhone || "99242 46267";
   const whatsappNumber = phone.replace(/\D/g, "");
 
+  const rawExpertNumber = (
+    q.expert?.whatsapp ||
+    q.expert?.phone ||
+    whatsappNumber ||
+    "918866699409"
+  ).replace(/\D/g, "");
+
+  const expertTargetNumber =
+    rawExpertNumber.length === 10
+      ? `91${rawExpertNumber}`
+      : rawExpertNumber.startsWith("91")
+        ? rawExpertNumber
+        : rawExpertNumber || "918866699409";
+
   const handleWhatsAppBooking = () => {
+    const expertNameGreeting = q.expert?.name ? ` ${q.expert.name}` : "";
+    const fromDateStr = q.travelDates?.from
+      ? new Date(q.travelDates.from).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "As proposed";
+
     const message = encodeURIComponent(
-      `Hi! I've reviewed the premium quotation for "${q.tripTitle}". I'd like to confirm the booking for ${q.pax || 2} travellers starting from ${new Date(q.travelDates.from).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}.`,
+      `Hi${expertNameGreeting}! I've reviewed the premium quotation for "${q.tripTitle}".\n\n` +
+        `👤 Traveler: ${q.customerName || "Customer"}\n` +
+        `👥 Group: ${q.pax || 2} Travellers\n` +
+        `📅 Date: ${fromDateStr}\n\n` +
+        `I would like to confirm and book my spot. Please share next steps!`,
     );
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
+    window.open(`https://wa.me/${expertTargetNumber}?text=${message}`, "_blank");
   };
 
   if ((q as any).expired) {
@@ -134,7 +161,7 @@ export default function PremiumQuotationUI({ q }: { q: Quotation }) {
     );
   }
 
-  const whatsappLink = `https://wa.me/${q.expert?.whatsapp?.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi ${q.expert?.name}, I've reviewed the quotation for ${q.tripTitle}. I'd like to discuss further.`)}`;
+  const whatsappLink = `https://wa.me/${expertTargetNumber}?text=${encodeURIComponent(`Hi ${q.expert?.name || "Expert"}, I've reviewed the quotation for "${q.tripTitle}". I'd like to discuss further.`)}`;
 
   return (
     <div className="bg-[#f8fafc] min-h-screen font-sans selection:bg-orange-100 selection:text-orange-900 pb-24">
