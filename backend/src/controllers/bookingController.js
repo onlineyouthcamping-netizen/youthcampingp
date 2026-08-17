@@ -581,6 +581,7 @@ exports.getBookings = async (req, res, next) => {
               tripName: true,
               status: true,
               name: true,
+              fullName: true,
               mobile: true,
               email: true,
               numberOfTravelers: true,
@@ -592,6 +593,9 @@ exports.getBookings = async (req, res, next) => {
               departureDate: true,
               createdAt: true,
               salesAdminId: true,
+              passengers: true,
+              isCancelled: true,
+              pickupCity: true,
             }
           : {
               id: true,
