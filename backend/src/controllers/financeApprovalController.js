@@ -612,6 +612,59 @@ exports.getCollectionDetailsWithAudit = async (req, res) => {
         });
       }
 
+      // Check if it's a vendor payment ID
+      const vendorPayment = await prisma.opsVendorPayment.findFirst({
+        where: {
+          tenantId,
+          id: cleanId,
+        },
+        include: {
+          trip: {
+            select: { id: true, title: true, slug: true },
+          },
+          collectionAccount: true,
+        },
+      });
+
+      if (vendorPayment) {
+        const auditTrail = await prisma.financeAuditLog.findMany({
+          where: {
+            tenantId,
+            entityId: vendorPayment.id,
+            entityType: { in: ["VENDOR_PAYOUT", "VENDOR_PAYMENT"] },
+          },
+          orderBy: { performedAt: "asc" },
+        });
+
+        const balanceDue = (vendorPayment.agreedAmount || 0) - (vendorPayment.advancePaid || 0);
+        const requiresFounder = vendorPayment.requiresFounderApproval || balanceDue > 50000;
+
+        return res.json({
+          success: true,
+          payment: vendorPayment,
+          auditTrail,
+          approvalChain: {
+            step1_financeController: {
+              status:
+                vendorPayment.approvalStatus === "REVIEWED_FINANCE_CONTROLLER" ||
+                vendorPayment.approvalStatus === "APPROVED_FOUNDER"
+                  ? "DONE"
+                  : vendorPayment.approvalStatus === "REJECTED"
+                  ? "REJECTED"
+                  : "PENDING",
+              approvedAt: vendorPayment.reviewedByFinanceAt,
+              approvedBy: vendorPayment.reviewedByFinanceId,
+            },
+            step2_founder: {
+              status: vendorPayment.approvalStatus === "APPROVED_FOUNDER" ? "DONE" : "PENDING",
+              approvedAt: vendorPayment.approvedByFounderAt,
+              approvedBy: vendorPayment.approvedByFounderId,
+              required: requiresFounder,
+            },
+          },
+        });
+      }
+
       return res.status(404).json({ success: false, message: "Payment not found or access denied" });
     }
 
@@ -650,6 +703,75 @@ exports.getCollectionDetailsWithAudit = async (req, res) => {
   } catch (err) {
     console.error("getCollectionDetailsWithAudit error:", err);
     return res.status(500).json({ success: false, message: "Failed to fetch payment details" });
+  }
+};
+
+/**
+ * Vendor Payment Audit Trail & Details
+ * GET /api/finance/vendor-payments/:paymentId
+ */
+exports.getVendorPaymentDetailsWithAudit = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const tenantId = resolveTenantId(req);
+    const cleanId = String(paymentId).replace(/^vnd-/, "").replace(/^adv-/, "");
+
+    const payment = await prisma.opsVendorPayment.findFirst({
+      where: {
+        tenantId,
+        OR: [{ id: paymentId }, { id: cleanId }],
+      },
+      include: {
+        trip: {
+          select: { id: true, title: true, slug: true },
+        },
+        collectionAccount: true,
+      },
+    });
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: "Vendor payment not found" });
+    }
+
+    const auditTrail = await prisma.financeAuditLog.findMany({
+      where: {
+        tenantId,
+        entityId: payment.id,
+        entityType: { in: ["VENDOR_PAYOUT", "VENDOR_PAYMENT"] },
+      },
+      orderBy: { performedAt: "asc" },
+    });
+
+    const balanceDue = (payment.agreedAmount || 0) - (payment.advancePaid || 0);
+    const requiresFounder = payment.requiresFounderApproval || balanceDue > 50000;
+
+    return res.json({
+      success: true,
+      payment,
+      auditTrail,
+      approvalChain: {
+        step1_financeController: {
+          status:
+            payment.approvalStatus === "REVIEWED_FINANCE_CONTROLLER" ||
+            payment.approvalStatus === "APPROVED_FOUNDER"
+              ? "DONE"
+              : payment.approvalStatus === "REJECTED"
+              ? "REJECTED"
+              : "PENDING",
+          approvedAt: payment.reviewedByFinanceAt,
+          approvedBy: payment.reviewedByFinanceId,
+        },
+        step2_founder: {
+          status: payment.approvalStatus === "APPROVED_FOUNDER" ? "DONE" : "PENDING",
+          approvedAt: payment.approvedByFounderAt,
+          approvedBy: payment.approvedByFounderId,
+          required: requiresFounder,
+        },
+      },
+    });
+  } catch (err) {
+    console.error("getVendorPaymentDetailsWithAudit error:", err);
+    return res.status(500).json({ success: false, message: "Failed to fetch vendor payment details" });
   }
 };
 

@@ -383,6 +383,7 @@ const {
   rejectCollection,
   uploadCollectionProof,
   getCollectionDetailsWithAudit,
+  getVendorPaymentDetailsWithAudit,
   reviewVendorPaymentFC,
   approveVendorPaymentFounder,
   rejectVendorPayment,
@@ -418,6 +419,11 @@ router.get(
 );
 
 // Vendor Payouts Approval
+router.get(
+  "/vendor-payments/:paymentId",
+  requirePermission(["finance.payments.view", "accounting.view", "finance.audit.view", "finance.control_center.view", "finance.outgoing.verify"]),
+  getVendorPaymentDetailsWithAudit
+);
 router.patch(
   "/vendor-payments/:paymentId/review-fc",
   requirePermission(["finance.vendor.review", "finance.outgoing.verify", "accounting.approve"]),
