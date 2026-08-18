@@ -795,14 +795,10 @@ exports.verifyUpi = async (req, res) => {
     });
     if (!record)
       return res.status(404).json({ success: false, message: "Not found" });
-    if (record.paymentMode !== "UPI")
+    if (record.paymentMode !== "UPI" && record.paymentMode !== "CASH")
       return res
         .status(400)
-        .json({ success: false, message: "Not a UPI payment" });
-    if (record.upiVerificationStatus !== "PENDING_VERIFICATION")
-      return res
-        .status(409)
-        .json({ success: false, message: "Not in PENDING_VERIFICATION state" });
+        .json({ success: false, message: "Invalid station payment mode" });
     const userRole = (req.user?.role || "").toUpperCase();
     const isPrivileged = [
       "SUPER_ADMIN",
@@ -834,9 +830,19 @@ exports.verifyUpi = async (req, res) => {
       await tx.stationPaymentCollection.update({
         where: { id: record.id },
         data: {
-          upiVerificationStatus: isVerify ? "VERIFIED" : "REJECTED",
+          upiVerificationStatus:
+            record.paymentMode === "UPI"
+              ? isVerify
+                ? "VERIFIED"
+                : "REJECTED"
+              : record.upiVerificationStatus,
+          collectionStatus: isVerify
+            ? "COLLECTED"
+            : action === "REJECT"
+            ? "CANCELLED"
+            : record.collectionStatus,
           verifiedByAdminId: req.user?.id,
-          verifiedAt: new Date(),
+          verifiedAt: isVerify ? new Date() : null,
           remarks:
             !isVerify && rejectionReason
               ? `${record.remarks ? record.remarks + " | " : ""}Rejected: ${rejectionReason}`

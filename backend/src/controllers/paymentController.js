@@ -774,8 +774,12 @@ exports.getFinanceVerificationQueue = async (req, res) => {
       prisma.stationPaymentCollection.findMany({
         where: {
           tenantId,
-          upiVerificationStatus: "PENDING_VERIFICATION",
           isReversed: false,
+          OR: [
+            { upiVerificationStatus: "PENDING_VERIFICATION" },
+            { paymentMode: "UPI", upiVerificationStatus: { not: "VERIFIED" } },
+            { paymentMode: "CASH", verifiedAt: null, collectionStatus: "COLLECTED" },
+          ],
         },
         orderBy: { createdAt: "desc" },
         include: {
