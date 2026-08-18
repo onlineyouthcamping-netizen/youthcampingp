@@ -508,33 +508,218 @@ exports.getVendorPayments = async (req, res) => {
 exports.getAllRecordedVendorPayments = async (req, res) => {
   try {
     const tenantId = req.user?.tenantId || "default";
-    const vendorPayments = await prisma.opsVendorPayment.findMany({
-      where: { tenantId },
-      include: {
-        collectionAccount: {
-          select: {
-            id: true,
-            accountName: true,
-            accountHolderName: true,
-            accountType: true,
-            bankName: true,
-            upiId: true,
-            accountNumber: true,
-            maskedAccountNumber: true,
+
+    // 1. Fetch direct recorded OpsVendorPayment entries
+    const [vendorPayments, bookings, companyAcc] = await Promise.all([
+      prisma.opsVendorPayment.findMany({
+        where: { tenantId },
+        include: {
+          collectionAccount: {
+            select: {
+              id: true,
+              accountName: true,
+              accountHolderName: true,
+              accountType: true,
+              bankName: true,
+              upiId: true,
+              accountNumber: true,
+              maskedAccountNumber: true,
+            },
+          },
+          trip: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+            },
           },
         },
-        trip: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-          },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.booking.findMany({
+        where: { tenantId },
+        select: { tripId: true, departureDate: true, status: true },
+      }),
+      prisma.paymentReceivingAccount.findFirst({
+        where: { tenantId, accountType: "COMPANY" },
+        select: {
+          id: true,
+          accountName: true,
+          accountHolderName: true,
+          accountType: true,
+          bankName: true,
         },
-      },
-      orderBy: { createdAt: "desc" },
+      }),
+    ]);
+
+    // 2. Determine active departure dates with passenger bookings
+    const activeDepDates = Array.from(
+      new Set(
+        bookings
+          .filter((b) => b.departureDate)
+          .map((b) => new Date(b.departureDate).toISOString())
+      )
+    ).map((dStr) => new Date(dStr));
+
+    // 3. Fetch operational allocations for active departures with bookings
+    const [hotels, fleets, guides] = await Promise.all([
+      activeDepDates.length > 0
+        ? prisma.opsHotelBooking.findMany({
+            where: {
+              tenantId,
+              departureDate: { in: activeDepDates },
+              totalAmount: { gt: 0 },
+              hotelName: { not: "NO_STAY" },
+            },
+            include: {
+              trip: {
+                select: { id: true, title: true, slug: true },
+              },
+            },
+            orderBy: { departureDate: "asc" },
+          })
+        : [],
+      activeDepDates.length > 0
+        ? prisma.opsTransportFleet.findMany({
+            where: {
+              tenantId,
+              departureDate: { in: activeDepDates },
+              totalAmount: { gt: 0 },
+            },
+            include: {
+              trip: {
+                select: { id: true, title: true, slug: true },
+              },
+            },
+            orderBy: { departureDate: "asc" },
+          })
+        : [],
+      activeDepDates.length > 0
+        ? prisma.opsGuidePayment.findMany({
+            where: {
+              tenantId,
+              departureDate: { in: activeDepDates },
+              agreedAmount: { gt: 0 },
+            },
+            include: {
+              trip: {
+                select: { id: true, title: true, slug: true },
+              },
+            },
+            orderBy: { departureDate: "asc" },
+          })
+        : [],
+    ]);
+
+    // Group and aggregate hotel allocations per vendor per departure
+    const groupedHotels = {};
+    hotels.forEach((h) => {
+      const dStr = h.departureDate ? new Date(h.departureDate).toISOString().substring(0, 10) : "N/A";
+      const vName = (h.hotelName || "").trim();
+      const key = `${vName.toLowerCase()}_${h.tripId}_${dStr}`;
+
+      if (!groupedHotels[key]) {
+        groupedHotels[key] = {
+          id: `hb-${h.id}`,
+          tenantId: h.tenantId,
+          tripId: h.tripId,
+          departureDate: h.departureDate,
+          vendorName: vName,
+          category: "Hotels",
+          serviceDescription: `${h.roomType || "Hotel"} Stay (${h.location || "Local"})`,
+          agreedAmount: 0,
+          advancePaid: 0,
+          collectionAccount: companyAcc,
+          trip: h.trip,
+          createdAt: h.createdAt,
+        };
+      }
+      groupedHotels[key].agreedAmount += Number(h.totalAmount || 0);
+      groupedHotels[key].advancePaid += Number(h.advancePaid || 0);
     });
 
-    return res.json({ success: true, data: vendorPayments });
+    const mappedHotels = Object.values(groupedHotels).map((h) => {
+      const remaining = Math.max(0, h.agreedAmount - h.advancePaid);
+      const isPaid = h.advancePaid >= h.agreedAmount && h.agreedAmount > 0;
+
+      return {
+        ...h,
+        remainingPayable: remaining,
+        paymentDate: h.departureDate || h.createdAt,
+        paymentMode: "BANK_TRANSFER",
+        status: isPaid ? "Paid" : h.advancePaid > 0 ? "Advance Paid" : "Pending Approval",
+        approvalStatus: isPaid ? "APPROVED_FOUNDER" : "PENDING",
+        requiresFounderApproval: remaining > 50000,
+        invoiceProof: null,
+      };
+    });
+
+    const mappedFleets = fleets.map((f) => {
+      const agreed = Number(f.totalAmount || 0);
+      const advance = Number(f.advancePaid || 0);
+      const remaining = Math.max(0, agreed - advance);
+      const isPaid = advance >= agreed && agreed > 0;
+
+      return {
+        id: `fl-${f.id}`,
+        tenantId: f.tenantId,
+        tripId: f.tripId,
+        departureDate: f.departureDate,
+        vendorName: (f.vendorName || f.driverName || "Transport Fleet").trim(),
+        category: "Transport",
+        serviceDescription: `${f.vehicleType || "Fleet"} (${f.vehicleNumber || "Route Fleet"})`,
+        agreedAmount: agreed,
+        advancePaid: advance,
+        remainingPayable: remaining,
+        paymentDate: f.departureDate || f.createdAt,
+        paymentMode: "BANK_TRANSFER",
+        status: isPaid ? "Paid" : advance > 0 ? "Advance Paid" : "Pending Approval",
+        approvalStatus: isPaid ? "APPROVED_FOUNDER" : "PENDING",
+        requiresFounderApproval: remaining > 50000,
+        collectionAccount: companyAcc,
+        trip: f.trip,
+        invoiceProof: null,
+        createdAt: f.createdAt,
+      };
+    });
+
+    const mappedGuides = guides.map((g) => {
+      const agreed = Number(g.agreedAmount || 0);
+      const advance = Number(g.advancePaid || 0);
+      const remaining = Math.max(0, agreed - advance);
+      const isPaid = g.paymentStatus === "PAID" || (advance >= agreed && agreed > 0);
+
+      return {
+        id: `gp-${g.id}`,
+        tenantId: g.tenantId,
+        tripId: g.tripId,
+        departureDate: g.departureDate,
+        vendorName: (g.guideName || "Lead Guide").trim(),
+        category: "Guides",
+        serviceDescription: `${g.assignmentType || "Trip Leader"} (${g.daysWorked || 1} Days)`,
+        agreedAmount: agreed,
+        advancePaid: advance,
+        remainingPayable: remaining,
+        paymentDate: g.departureDate || g.createdAt,
+        paymentMode: "BANK_TRANSFER",
+        status: isPaid ? "Paid" : advance > 0 ? "Advance Paid" : "Pending Approval",
+        approvalStatus: isPaid ? "APPROVED_FOUNDER" : "PENDING",
+        requiresFounderApproval: remaining > 50000,
+        collectionAccount: companyAcc,
+        trip: g.trip,
+        invoiceProof: null,
+        createdAt: g.createdAt,
+      };
+    });
+
+    const allVendorDisbursements = [
+      ...vendorPayments,
+      ...mappedHotels,
+      ...mappedFleets,
+      ...mappedGuides,
+    ];
+
+    return res.json({ success: true, data: allVendorDisbursements });
   } catch (err) {
     console.error("getAllRecordedVendorPayments error:", err);
     return res
