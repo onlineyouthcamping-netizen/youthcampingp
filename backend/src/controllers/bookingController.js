@@ -2777,13 +2777,111 @@ exports.createBookingTask = async (req, res, next) => {
   }
 };
 
+exports.createUniversalOrBookingTask = async (req, res, next) => {
+  try {
+    const { title, description, assignedToId, dueDate, priority, taskType, bookingId } = req.body;
+    const tenantId = req.user?.tenantId || "default";
+
+    if (!title || !assignedToId) {
+      return res.status(400).json({
+        success: false,
+        message: "Title and assignedToId are required",
+      });
+    }
+
+    // Check if linked to a booking
+    if (bookingId && String(bookingId).trim() !== "") {
+      const bKey = String(bookingId).trim();
+      const booking = await prisma.booking.findFirst({
+        where: {
+          OR: [{ id: bKey }, { bookingId: bKey }],
+          ...(tenantId && tenantId !== "default" ? { tenantId } : {}),
+        },
+        select: { id: true, bookingId: true, fullName: true, name: true },
+      });
+
+      if (!booking) {
+        return res.status(404).json({ success: false, message: "Specified booking not found" });
+      }
+
+      const task = await prisma.bookingTask.create({
+        data: {
+          tenantId,
+          bookingId: booking.id,
+          title,
+          description: description || "",
+          assignedById: req.user.id,
+          assignedToId,
+          dueDate: dueDate ? new Date(dueDate) : null,
+          status: "PENDING",
+        },
+        include: {
+          assignedBy: { select: { id: true, name: true } },
+          assignedTo: { select: { id: true, name: true } },
+          booking: { select: { id: true, bookingId: true, fullName: true, name: true } },
+        },
+      });
+
+      // Notification
+      if (assignedToId && assignedToId !== req.user.id) {
+        await prisma.notification.create({
+          data: {
+            tenantId,
+            userId: assignedToId,
+            title: "New Booking Task Assigned",
+            message: `Task "${title}" assigned for booking ${booking.bookingId}`,
+            link: `/admin/bookings?id=${booking.id}&tab=tasks`,
+          },
+        }).catch(() => {});
+      }
+
+      return res.status(201).json({ success: true, data: task, taskCategory: "BOOKING" });
+    }
+
+    // Universal / General Operational Task
+    const task = await prisma.taskAllotment.create({
+      data: {
+        tenantId,
+        title,
+        description: description || "",
+        taskType: taskType || "UNIVERSAL",
+        priority: priority || "MEDIUM",
+        status: "PENDING",
+        assignedToId,
+        assignedById: req.user.id,
+        deadline: dueDate ? new Date(dueDate) : null,
+      },
+      include: {
+        assignedBy: { select: { id: true, name: true } },
+        assignedTo: { select: { id: true, name: true } },
+      },
+    });
+
+    if (assignedToId && assignedToId !== req.user.id) {
+      await prisma.notification.create({
+        data: {
+          tenantId,
+          userId: assignedToId,
+          title: "New Universal Task Assigned",
+          message: `You have been assigned a task: "${title}"`,
+          link: `/admin/operations/booking-tasks`,
+        },
+      }).catch(() => {});
+    }
+
+    return res.status(201).json({ success: true, data: task, taskCategory: "UNIVERSAL" });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.updateBookingTask = async (req, res, next) => {
   try {
     const { taskId } = req.params;
     const { status } = req.body;
     const tenantId = req.user?.tenantId;
 
-    const existingTask = await prisma.bookingTask.findFirst({
+    const existingBookingTask = await prisma.bookingTask.findFirst({
       where: {
         id: taskId,
         ...(tenantId && tenantId !== "default" ? { tenantId } : {}),
@@ -2794,30 +2892,55 @@ exports.updateBookingTask = async (req, res, next) => {
       },
     });
 
-    if (!existingTask) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Task not found" });
+    if (existingBookingTask) {
+      const updated = await prisma.bookingTask.update({
+        where: { id: taskId },
+        data: { status },
+        include: {
+          assignedBy: { select: { id: true, name: true } },
+          assignedTo: { select: { id: true, name: true } },
+        },
+      });
+
+      // Log to booking activity log
+      await logBookingActivity({
+        bookingId: existingBookingTask.bookingId,
+        action: "TASK_UPDATED",
+        details: `Task "${existingBookingTask.title}" status changed to ${status}`,
+        performedByAdminId: req.user.id,
+      });
+
+      return res.json({ success: true, data: updated });
     }
 
-    const updated = await prisma.bookingTask.update({
-      where: { id: taskId },
-      data: { status },
+    const existingUniversalTask = await prisma.taskAllotment.findFirst({
+      where: {
+        id: taskId,
+        ...(tenantId && tenantId !== "default" ? { tenantId } : {}),
+      },
       include: {
         assignedBy: { select: { id: true, name: true } },
         assignedTo: { select: { id: true, name: true } },
       },
     });
 
-    // Log to booking activity log
-    await logBookingActivity({
-      bookingId: existingTask.bookingId,
-      action: "TASK_UPDATED",
-      details: `Task "${existingTask.title}" status changed to ${status}`,
-      performedByAdminId: req.user.id,
-    });
+    if (existingUniversalTask) {
+      const updated = await prisma.taskAllotment.update({
+        where: { id: taskId },
+        data: {
+          status,
+          completedAt: status === "COMPLETED" ? new Date() : null,
+        },
+        include: {
+          assignedBy: { select: { id: true, name: true } },
+          assignedTo: { select: { id: true, name: true } },
+        },
+      });
 
-    res.json({ success: true, data: updated });
+      return res.json({ success: true, data: updated });
+    }
+
+    return res.status(404).json({ success: false, message: "Task not found" });
   } catch (error) {
     next(error);
   }
@@ -3362,38 +3485,104 @@ exports.updateBookingStatus = async (req, res, next) => {
 exports.getAllBookingTasks = async (req, res, next) => {
   try {
     const tenantId = req.user?.tenantId;
-    const { status, assignee } = req.query;
+    const { status, assignee, type } = req.query;
 
-    const where = {};
+    const bWhere = {};
     if (tenantId && tenantId !== "default") {
-      where.tenantId = tenantId;
+      bWhere.tenantId = tenantId;
     }
     if (status && status !== "ALL") {
-      where.status = status;
+      bWhere.status = status;
     }
     if (assignee && assignee !== "ALL") {
-      where.assignedToId = assignee;
+      bWhere.assignedToId = assignee;
     }
 
-    const tasks = await prisma.bookingTask.findMany({
-      where,
-      include: {
-        booking: {
-          select: {
-            id: true,
-            bookingId: true,
-            fullName: true,
-            name: true,
-            tripName: true,
+    let bookingTasks = [];
+    if (!type || type === "ALL" || type === "BOOKING") {
+      const bRaw = await prisma.bookingTask.findMany({
+        where: bWhere,
+        include: {
+          booking: {
+            select: {
+              id: true,
+              bookingId: true,
+              fullName: true,
+              name: true,
+              tripName: true,
+            },
           },
+          assignedBy: { select: { id: true, name: true } },
+          assignedTo: { select: { id: true, name: true } },
         },
-        assignedBy: { select: { id: true, name: true } },
-        assignedTo: { select: { id: true, name: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      });
 
-    res.json({ success: true, data: tasks });
+      bookingTasks = bRaw.map((bt) => ({
+        id: bt.id,
+        title: bt.title,
+        description: bt.description,
+        status: bt.status,
+        dueDate: bt.dueDate,
+        createdAt: bt.createdAt,
+        taskCategory: "BOOKING",
+        booking: bt.booking,
+        assignedTo: bt.assignedTo,
+        assignedBy: bt.assignedBy,
+      }));
+    }
+
+    let universalTasks = [];
+    if (!type || type === "ALL" || type === "UNIVERSAL") {
+      const uWhere = {};
+      if (tenantId && tenantId !== "default") {
+        uWhere.tenantId = tenantId;
+      }
+      if (status && status !== "ALL") {
+        uWhere.status = status;
+      }
+      if (assignee && assignee !== "ALL") {
+        uWhere.assignedToId = assignee;
+      }
+
+      const uRaw = await prisma.taskAllotment.findMany({
+        where: uWhere,
+        include: {
+          booking: {
+            select: {
+              id: true,
+              bookingId: true,
+              fullName: true,
+              name: true,
+            },
+          },
+          assignedBy: { select: { id: true, name: true } },
+          assignedTo: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      universalTasks = uRaw.map((ut) => ({
+        id: ut.id,
+        title: ut.title,
+        description: ut.description,
+        status: ut.status,
+        dueDate: ut.deadline,
+        createdAt: ut.createdAt,
+        taskCategory: ut.booking ? "BOOKING" : "UNIVERSAL",
+        taskType: ut.taskType,
+        priority: ut.priority,
+        booking: ut.booking,
+        assignedTo: ut.assignedTo,
+        assignedBy: ut.assignedBy,
+      }));
+    }
+
+    const allCombined = [...bookingTasks, ...universalTasks].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    res.json({ success: true, data: allCombined });
   } catch (error) {
     next(error);
   }

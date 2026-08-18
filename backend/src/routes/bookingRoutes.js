@@ -22,6 +22,7 @@ const {
   getColleagues,
   getBookingTasks,
   createBookingTask,
+  createUniversalOrBookingTask,
   updateBookingTask,
   getAllBookingTasks,
   uploadPassengerDocument,
@@ -121,6 +122,7 @@ router.post(
 );
 
 router.get("/colleagues/list", authenticate, getColleagues);
+router.post("/tasks/create-universal", authenticate, createUniversalOrBookingTask);
 router.put("/tasks/:taskId", authenticate, updateBookingTask);
 
 router.get("/tasks/all", authenticate, getAllBookingTasks);
