@@ -1,4 +1,5 @@
 /**
+ * @deprecated Superseded by backend/src/routes/destinationsRoutes.js (not mounted from here).
  * Destinations Route Handler
  * - GET /api/destinations
  */

@@ -1,3 +1,12 @@
+/**
+ * Departure operations routes — merged into opsRoutes.js via router.use().
+ * Do not mount separately on /api/ops in app.js.
+ *
+ * Endpoints (no auth middleware):
+ * - POST /api/ops/hotel-bookings/assign
+ * - POST /api/ops/hotel-bookings/:id/communicate|confirm|attach
+ * - GET  /api/ops/departures/:tripId/:date/dashboard
+ */
 const express = require("express");
 const router = express.Router();
 const hotelConfirmationService = require("../services/hotelConfirmationService");

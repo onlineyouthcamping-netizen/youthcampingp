@@ -1,39 +1,36 @@
 /**
- * @deprecated Superseded by backend/src/routes/tripFaqsRoutes.js (not mounted from here).
- * Trip-Specific Reviews & FAQs Route Handlers
+ * Trip-scoped reviews & FAQs (canonical)
  * - GET /api/trips/:id/reviews
  * - GET /api/trips/:id/faqs
+ *
+ * Migrated from backend/routes/faqs.js — behavior preserved.
+ * Mounted on /api/trips after tripRoutes.js (same order as before).
  */
 
-const express = require('express');
+const express = require("express");
 const router = express.Router({ mergeParams: true });
-const { prisma, queryWithTimeout } = require('../utils/database');
-const { validatePagination } = require('../utils/validators');
+const { prisma, queryWithTimeout } = require("../../utils/database");
+const { validatePagination } = require("../../utils/validators");
 
-/**
- * GET /api/trips/:id/reviews
- * Fetch reviews for a specific trip detail page with pagination and rating stats
- */
-router.get('/:id/reviews', async (req, res, next) => {
+router.get("/:id/reviews", async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    if (!id || id.trim() === '') {
+    if (!id || id.trim() === "") {
       return res.status(400).json({
-        status: 'error',
-        message: 'Trip ID parameter is required',
-        code: 'BAD_REQUEST',
+        status: "error",
+        message: "Trip ID parameter is required",
+        code: "BAD_REQUEST",
         statusCode: 400,
       });
     }
 
-    // 1. Validate pagination
     const paginationVal = validatePagination(req.query);
     if (!paginationVal.valid) {
       return res.status(400).json({
-        status: 'error',
+        status: "error",
         message: paginationVal.error,
-        code: 'BAD_REQUEST',
+        code: "BAD_REQUEST",
         statusCode: 400,
       });
     }
@@ -42,7 +39,6 @@ router.get('/:id/reviews', async (req, res, next) => {
     const limit = req.query.limit !== undefined ? paginationVal.limit : 5;
     const offset = (page - 1) * limit;
 
-    // First resolve tripId if slug was passed
     const trip = await prisma.apiTrip.findFirst({
       where: { OR: [{ id: id }, { slug: id }] },
       select: { id: true },
@@ -63,7 +59,7 @@ router.get('/:id/reviews', async (req, res, next) => {
         text: true,
         images: true,
       },
-      orderBy: { date: 'desc' },
+      orderBy: { date: "desc" },
       skip: offset,
       take: limit,
     });
@@ -76,7 +72,7 @@ router.get('/:id/reviews', async (req, res, next) => {
 
     const [reviews, total, aggregateResult] = await queryWithTimeout(
       Promise.all([fetchReviewsTask, countTask, aggregateTask]),
-      3000
+      3000,
     );
 
     const avgRatingRaw = aggregateResult._avg.rating;
@@ -85,7 +81,7 @@ router.get('/:id/reviews', async (req, res, next) => {
     const formattedReviews = reviews.map((r) => ({
       id: isNaN(Number(r.id)) ? r.id : Number(r.id),
       author: r.author,
-      avatar: r.avatar || '',
+      avatar: r.avatar || "",
       date: r.date,
       rating: r.rating,
       text: r.text,
@@ -93,7 +89,7 @@ router.get('/:id/reviews', async (req, res, next) => {
     }));
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: formattedReviews,
       pagination: {
         total,
@@ -107,41 +103,36 @@ router.get('/:id/reviews', async (req, res, next) => {
       },
     });
   } catch (error) {
-    if (error.code === 'TIMEOUT') {
+    if (error.code === "TIMEOUT") {
       return res.status(408).json({
-        status: 'error',
-        message: 'Request timed out after 3 seconds',
-        code: 'REQUEST_TIMEOUT',
+        status: "error",
+        message: "Request timed out after 3 seconds",
+        code: "REQUEST_TIMEOUT",
         statusCode: 408,
       });
     }
     return res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch trip reviews',
-      code: 'SERVER_ERROR',
+      status: "error",
+      message: "Failed to fetch trip reviews",
+      code: "SERVER_ERROR",
       statusCode: 500,
     });
   }
 });
 
-/**
- * GET /api/trips/:id/faqs
- * Fetch FAQs for specific trip
- */
-router.get('/:id/faqs', async (req, res, next) => {
+router.get("/:id/faqs", async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    if (!id || id.trim() === '') {
+    if (!id || id.trim() === "") {
       return res.status(400).json({
-        status: 'error',
-        message: 'Trip ID parameter is required',
-        code: 'BAD_REQUEST',
+        status: "error",
+        message: "Trip ID parameter is required",
+        code: "BAD_REQUEST",
         statusCode: 400,
       });
     }
 
-    // Resolve tripId if slug was passed
     const trip = await prisma.apiTrip.findFirst({
       where: { OR: [{ id: id }, { slug: id }] },
       select: { id: true },
@@ -156,28 +147,28 @@ router.get('/:id/faqs', async (req, res, next) => {
         question: true,
         answer: true,
       },
-      orderBy: { id: 'asc' },
+      orderBy: { id: "asc" },
     });
 
     const faqs = await queryWithTimeout(fetchFaqs, 3000);
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: faqs,
     });
   } catch (error) {
-    if (error.code === 'TIMEOUT') {
+    if (error.code === "TIMEOUT") {
       return res.status(408).json({
-        status: 'error',
-        message: 'Request timed out after 3 seconds',
-        code: 'REQUEST_TIMEOUT',
+        status: "error",
+        message: "Request timed out after 3 seconds",
+        code: "REQUEST_TIMEOUT",
         statusCode: 408,
       });
     }
     return res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch FAQs',
-      code: 'SERVER_ERROR',
+      status: "error",
+      message: "Failed to fetch FAQs",
+      code: "SERVER_ERROR",
       statusCode: 500,
     });
   }

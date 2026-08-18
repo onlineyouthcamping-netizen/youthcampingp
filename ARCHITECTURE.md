@@ -1,6 +1,6 @@
 # Project Architecture: YouthCamping OS
 
-This document defines the architecture, data flow, security boundaries, and operational guidelines for **YouthCamping OS**.
+This document is the **short summary**. The evidence-backed audit (live vs legacy inventory, domain map, violations, deploy matrix) lives in **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)**. Agent rules: **[`AGENTS.md`](AGENTS.md)**.
 
 ## 1. Unified 3-Tier Architecture Overview
 

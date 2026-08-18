@@ -1,5 +1,10 @@
 const express = require("express");
 const router = express.Router();
+
+// Departure hotel-confirmation + readiness dashboard (no auth — preserved from
+// departureOperationsRoutes; mounted here before authenticate middleware).
+router.use(require("./departureOperationsRoutes"));
+
 const {
   getVendors,
   createVendor,
@@ -196,6 +201,19 @@ router.get(
   "/transport/:tripId/passenger-groups",
   requirePermission("ops.view"),
   getTransportPassengerGroups,
+);
+
+// Room inventory (allocation workspace)
+router.get("/rooms/:tripId", requirePermission("ops.view"), getRoomInventory);
+router.post(
+  "/rooms/:tripId",
+  requirePermission("ops.manage"),
+  createRoomInventory,
+);
+router.delete(
+  "/rooms/:id",
+  requirePermission("ops.manage"),
+  deleteRoomInventory,
 );
 
 // Summary & Seats

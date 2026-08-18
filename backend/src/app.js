@@ -8,6 +8,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const compression = require("compression");
 const path = require("path");
+const fs = require("fs");
 const { apiNoStore } = require("./middleware/noStore");
 
 const { setupCORS } = require("./middleware/cors");
@@ -86,12 +87,12 @@ app.use("/api/admin/login", authLimiter);
 app.use("/api/users/login", authLimiter);
 
 // 3. Import & Mount Routes
-app.use("/api/health", require("../routes/health"));
+// /api/health is registered above (before rate limiting) — do not mount again here.
 app.use("/api/trips", require("./routes/tripRoutes"));
-app.use("/api/destinations", require("../routes/destinations"));
-app.use("/api/stories", require("../routes/stories"));
-app.use("/api/reviews", require("../routes/reviews"));
-app.use("/api/trips", require("../routes/faqs"));
+app.use("/api/trips", require("./routes/tripFaqsRoutes"));
+app.use("/api/destinations", require("./routes/destinationsRoutes"));
+app.use("/api/stories", require("./routes/storiesRoutes"));
+app.use("/api/reviews", require("./routes/reviewsRoutes"));
 
 app.use("/api/admin/rbac", require("./routes/rbacRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
@@ -109,7 +110,6 @@ app.use("/api/vendors", require("./routes/vendorRoutes"));
 app.use("/api/ledger", require("./routes/ledgerRoutes"));
 app.use("/api/departure-engine", require("./routes/departureEngineRoutes"));
 app.use("/api/departures", require("./routes/departureEngineRoutes"));
-app.use("/api/ops", require("./routes/departureOperationsRoutes"));
 app.use("/api/quotations", require("./routes/quotationRoutes"));
 app.use("/api/blogs", require("./routes/blogRoutes"));
 app.use("/api/marketing", require("./routes/marketingRoutes"));
@@ -139,6 +139,7 @@ app.use(
 );
 app.use("/api/accounting", require("./routes/accountingRoutes"));
 app.use("/api/finance", require("./routes/financeRoutes"));
+// Canonical /api/ops tree (includes departureOperationsRoutes merged in opsRoutes.js)
 app.use("/api/ops", require("./routes/opsRoutes"));
 app.use("/api/ops/payments", require("./routes/paymentRoutes"));
 app.use("/api/ops/tasks-docs-comm", require("./routes/opsTasksDocsCommRoutes"));

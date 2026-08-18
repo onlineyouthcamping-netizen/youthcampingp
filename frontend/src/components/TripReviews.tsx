@@ -188,11 +188,11 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
         {displayList.map((rev) => (
           <div
             key={rev.id}
-            className="flex-none snap-start w-[65vw] sm:w-[260px] md:w-[280px] max-w-[290px] bg-white border border-zinc-200/80 rounded-[18px] overflow-hidden p-3.5 sm:p-4 pb-0 sm:pb-0 shadow-[0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_28px_rgba(0,0,0,0.09)] transition-all duration-300 flex flex-col justify-between"
+            className="flex-none snap-start w-[65vw] sm:w-[260px] md:w-[280px] max-w-[290px] rounded-[18px] border border-zinc-200/80 bg-white overflow-hidden p-3.5 sm:p-4 pb-0 sm:pb-0 shadow-[0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_28px_rgba(0,0,0,0.09)] transition-all duration-300 flex flex-col justify-between"
           >
             <div>
               {/* USER HEADER ROW */}
-              <div className="flex items-start gap-2.5 mb-2.5">
+              <div className="flex items-start gap-3 mb-3">
                 <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden shrink-0 border border-zinc-100 shadow-2xs">
                   <OptimizedImage
                     src={normalizeImageUrl(rev.avatar)}
@@ -203,44 +203,44 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
                 </div>
 
                 <div className="flex flex-col min-w-0 flex-1">
-                  <h3 className="font-bold text-[#0B1528] text-xs sm:text-[13px] leading-tight font-montserrat capitalize truncate">
-                    {rev.name}
-                  </h3>
-
-                  <p className="text-[#888888] font-medium text-[10px] sm:text-[11px] leading-tight mt-0.5 truncate">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-bold text-[#202124] text-[13px] sm:text-[14px] leading-tight font-montserrat capitalize truncate">
+                      {rev.name}
+                    </h3>
+                    <span className="shrink-0 text-[10px] text-zinc-500 font-medium">
+                      {rev.date}
+                    </span>
+                  </div>
+                  <p className="text-[#5f6368] font-medium text-[10px] sm:text-[11px] leading-tight mt-0.5 truncate">
                     {rev.badge}
                   </p>
 
-                  <div className="flex items-center gap-1 mt-0.5 text-[10px] text-[#777777]">
-                    <span className="shrink-0">Booked:</span>
-                    <span className="font-bold text-[#0B1528] flex items-center gap-0.5 truncate hover:text-[#D4541A] transition-colors cursor-pointer">
-                      {rev.tripName}
-                      <ExternalLink className="w-2.5 h-2.5 text-[#0B1528] inline shrink-0" />
+                  <div className="flex items-center gap-0.5 mt-1.5">
+                    {[...Array(Number(rev.rating) || 5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className="w-3 h-3 fill-[#FBBC04] text-[#FBBC04]"
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-[#3c4043]">
+                      <span className="truncate">{rev.tripName}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2 py-1 text-[10px] font-medium text-zinc-500">
+                      Google-style
+                      <ExternalLink className="w-2.5 h-2.5 shrink-0" />
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* RATING STARS & DATE */}
-              <div className="flex items-center gap-1.5 mb-2">
-                <div className="flex items-center gap-0.5">
-                  {[...Array(Number(rev.rating) || 5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-3 h-3 fill-[#FFB800] text-[#FFB800]"
-                    />
-                  ))}
-                </div>
-                <span className="text-[#777777] font-medium text-[10px]">
-                  {rev.date}
-                </span>
-              </div>
-
               {/* REVIEW COMMENT TEXT & INLINE TOGGLE */}
-              <div className="mb-2.5">
+              <div className="mb-3">
                 <p
                   className={cn(
-                    "text-[#1B2A4A] font-normal text-[11px] sm:text-xs leading-[1.5] font-montserrat transition-all",
+                    "text-[#3c4043] font-normal text-[12px] sm:text-[13px] leading-[1.6] font-montserrat transition-all",
                     !expandedReviewIds.includes(rev.id) && "line-clamp-3",
                   )}
                 >
@@ -253,7 +253,7 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
                         e.stopPropagation();
                         toggleReviewExpand(rev.id);
                       }}
-                      className="font-bold text-[11px] text-[#D4541A] hover:underline cursor-pointer inline-flex items-center gap-0.5"
+                      className="inline-flex cursor-pointer items-center gap-0.5 text-[11px] font-semibold text-[#D4541A] hover:underline"
                     >
                       {expandedReviewIds.includes(rev.id)
                         ? "Show Less"
@@ -265,7 +265,7 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
                       e.stopPropagation();
                       setSelectedReview(rev);
                     }}
-                    className="font-semibold text-[10px] text-zinc-400 hover:text-[#0B1528] cursor-pointer"
+                    className="cursor-pointer text-[10px] font-medium text-zinc-400 hover:text-[#0B1528]"
                   >
                     Full Story
                   </button>
@@ -273,47 +273,26 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
               </div>
             </div>
 
-            {/* ATTACHED 3-PHOTO GALLERY GRID */}
+            {/* ATTACHED REVIEW PHOTOS */}
             {rev.photos && rev.photos.length >= 2 && (
-              <div className="-mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 mt-1.5 grid grid-cols-2 gap-1 overflow-hidden rounded-b-[17px] bg-zinc-100">
-                {/* LEFT PORTRAIT PHOTO */}
-                <div
-                  onClick={() => setSelectedPhoto(rev.photos[0])}
-                  className="relative aspect-[3/3.8] overflow-hidden bg-zinc-100 cursor-pointer group/img"
-                >
-                  <OptimizedImage
-                    src={normalizeImageUrl(rev.photos[0])}
-                    fallbackSrc="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80"
-                    alt={`Review photo by ${rev.name}`}
-                    className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
-                    <Camera className="w-4 h-4" />
+              <div className="-mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4 mt-1.5 flex gap-1 overflow-x-auto overflow-y-hidden rounded-b-[17px] bg-zinc-50 px-1 pb-1 pt-1 no-scrollbar">
+                {rev.photos.slice(0, 3).map((imgUrl: string, pIdx: number) => (
+                  <div
+                    key={pIdx}
+                    onClick={() => setSelectedPhoto(imgUrl)}
+                    className="group/img relative h-[88px] min-w-[88px] flex-1 overflow-hidden rounded-[12px] bg-zinc-100 cursor-pointer"
+                  >
+                    <OptimizedImage
+                      src={normalizeImageUrl(imgUrl)}
+                      fallbackSrc="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=600&q=80"
+                      alt={`Review photo ${pIdx + 1} by ${rev.name}`}
+                      className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition-opacity group-hover/img:opacity-100 text-white">
+                      <Camera className="w-3.5 h-3.5" />
+                    </div>
                   </div>
-                </div>
-
-                {/* RIGHT 2 LANDSCAPE PHOTOS */}
-                <div className="flex flex-col gap-1">
-                  {rev.photos
-                    .slice(1, 3)
-                    .map((imgUrl: string, pIdx: number) => (
-                      <div
-                        key={pIdx}
-                        onClick={() => setSelectedPhoto(imgUrl)}
-                        className="relative aspect-[16/8.5] overflow-hidden bg-zinc-100 cursor-pointer group/img flex-1"
-                      >
-                        <OptimizedImage
-                          src={normalizeImageUrl(imgUrl)}
-                          fallbackSrc="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=600&q=80"
-                          alt={`Review photo ${pIdx + 2} by ${rev.name}`}
-                          className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
-                          <Camera className="w-3.5 h-3.5" />
-                        </div>
-                      </div>
-                    ))}
-                </div>
+                ))}
               </div>
             )}
           </div>

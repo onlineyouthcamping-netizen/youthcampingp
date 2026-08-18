@@ -427,8 +427,8 @@ export default function CommunityTrips({
   fontFamily = "montserrat",
   accentColor = "#D4541A",
   heroHeight = "medium",
-  paddingTop = "32",
-  paddingBottom = "80",
+  paddingTop = "28",
+  paddingBottom = "60",
   selectedTripIds,
 }: CommunityTripsProps) {
   const MONTHS = getAutoMonths();
@@ -639,7 +639,10 @@ export default function CommunityTrips({
   };
 
   return (
-    <section className="relative overflow-hidden bg-white">
+    <section
+      className="relative overflow-hidden bg-white"
+      style={{ paddingTop: "var(--navbar-height, 80px)" }}
+    >
       {/* HERO SECTION WRAPPER */}
       <div
         className="relative flex flex-col justify-center min-h-[260px] sm:min-h-[340px] md:min-h-[400px]"
@@ -781,7 +784,7 @@ export default function CommunityTrips({
       </div>
 
       {/* Month Selector Pill Bar */}
-      <div className="-mt-3 sm:-mt-5 relative z-20 px-6 sm:px-8 md:px-12 mb-1 sm:mb-1.5">
+      <div className="-mt-1 sm:-mt-2 relative z-20 px-6 sm:px-8 md:px-12 mb-0.5 sm:mb-1">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-center gap-2 sm:gap-3 bg-white border border-zinc-200/80 rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] p-2.5 sm:p-3.5">
             <button
@@ -840,7 +843,7 @@ export default function CommunityTrips({
       </div>
 
       {/* Trip Cards Carousel Container */}
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 md:px-14 lg:px-16 relative group pb-10 pt-0">
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 md:px-14 lg:px-16 relative group pb-6 pt-0">
         {/* Scrollable Trips Carousel */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
@@ -857,7 +860,7 @@ export default function CommunityTrips({
               exit={{ opacity: 0, x: 16 }}
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
               ref={tripCardsScrollRef}
-              className="trip-cards-row flex gap-6 sm:gap-8 overflow-x-auto overflow-y-hidden pb-2 pt-3 px-0 scroll-smooth snap-x snap-mandatory no-scrollbar touch-manipulation cursor-grab"
+              className="trip-cards-row flex gap-6 sm:gap-8 overflow-x-auto overflow-y-hidden pb-1 pt-2 px-0 scroll-smooth snap-x snap-mandatory no-scrollbar touch-manipulation cursor-grab"
             >
               {display.map((t, idx) => (
                 <div

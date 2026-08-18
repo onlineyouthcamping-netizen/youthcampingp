@@ -1,27 +1,26 @@
 /**
- * @deprecated Superseded by backend/src/routes/storiesRoutes.js (not mounted from here).
- * Stories Route Handler
+ * Stories Route Handler (canonical)
  * - GET /api/stories
+ *
+ * Migrated from backend/routes/stories.js — behavior preserved.
  */
 
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { prisma, queryWithTimeout } = require('../utils/database');
-const { validatePagination, validateBooleanParam } = require('../utils/validators');
+const { prisma, queryWithTimeout } = require("../../utils/database");
+const {
+  validatePagination,
+  validateBooleanParam,
+} = require("../../utils/validators");
 
-/**
- * GET /api/stories
- * Fetch blog stories for homepage
- */
-router.get('/', async (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
-    // 1. Validate pagination
     const paginationVal = validatePagination(req.query);
     if (!paginationVal.valid) {
       return res.status(400).json({
-        status: 'error',
+        status: "error",
         message: paginationVal.error,
-        code: 'BAD_REQUEST',
+        code: "BAD_REQUEST",
         statusCode: 400,
       });
     }
@@ -30,13 +29,12 @@ router.get('/', async (req, res, next) => {
     const limit = req.query.limit !== undefined ? paginationVal.limit : 3;
     const offset = (page - 1) * limit;
 
-    // 2. Validate featured param
-    const featuredVal = validateBooleanParam(req.query.featured, 'featured');
+    const featuredVal = validateBooleanParam(req.query.featured, "featured");
     if (!featuredVal.valid) {
       return res.status(400).json({
-        status: 'error',
+        status: "error",
         message: featuredVal.error,
-        code: 'BAD_REQUEST',
+        code: "BAD_REQUEST",
         statusCode: 400,
       });
     }
@@ -59,7 +57,7 @@ router.get('/', async (req, res, next) => {
         excerpt: true,
         publishedAt: true,
       },
-      orderBy: { publishedAt: 'desc' },
+      orderBy: { publishedAt: "desc" },
       skip: offset,
       take: limit,
     });
@@ -70,7 +68,7 @@ router.get('/', async (req, res, next) => {
       id: isNaN(Number(s.id)) ? s.id : Number(s.id),
       title: s.title,
       author: s.author,
-      avatar: s.avatar || '',
+      avatar: s.avatar || "",
       readTime: s.readTime,
       image: s.image,
       slug: s.slug,
@@ -79,22 +77,22 @@ router.get('/', async (req, res, next) => {
     }));
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: formattedData,
     });
   } catch (error) {
-    if (error.code === 'TIMEOUT') {
+    if (error.code === "TIMEOUT") {
       return res.status(408).json({
-        status: 'error',
-        message: 'Request timed out after 3 seconds',
-        code: 'REQUEST_TIMEOUT',
+        status: "error",
+        message: "Request timed out after 3 seconds",
+        code: "REQUEST_TIMEOUT",
         statusCode: 408,
       });
     }
     return res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch stories',
-      code: 'SERVER_ERROR',
+      status: "error",
+      message: "Failed to fetch stories",
+      code: "SERVER_ERROR",
       statusCode: 500,
     });
   }

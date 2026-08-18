@@ -110,7 +110,7 @@ export default function TripHighlightsList({
             <div
               key={i}
               onClick={() => handlePhotoClick(i)}
-              className="shrink-0 w-[140px] sm:w-[170px] md:w-[190px] aspect-[4/3] rounded-[18px] md:rounded-[22px] overflow-hidden bg-zinc-100 shadow-xs border border-zinc-100/90 hover:scale-[1.03] transition-transform duration-300 cursor-pointer group relative"
+              className="shrink-0 w-[110px] sm:w-[138px] md:w-[158px] aspect-[4/3] rounded-[16px] md:rounded-[20px] overflow-hidden bg-zinc-100 shadow-xs border border-zinc-100/90 hover:scale-[1.03] transition-transform duration-300 cursor-pointer group relative"
             >
               <OptimizedImage
                 src={

@@ -216,7 +216,8 @@ export default function Destinations({
         <div className="relative min-w-0">
           <div
             ref={scrollRef}
-            className="carousel-track w-full max-w-full min-w-0 flex gap-3.5 sm:gap-4 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory"
+            className="carousel-track w-full max-w-full min-w-0 flex gap-3.5 sm:gap-4 overflow-x-auto overflow-y-hidden no-scrollbar py-2 scroll-smooth snap-x snap-mandatory"
+            style={{ touchAction: "pan-x" }}
           >
             {displayItems.map((item, idx) => {
               const useScript = idx % 2 === 1;

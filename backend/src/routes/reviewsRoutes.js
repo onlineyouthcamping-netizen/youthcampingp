@@ -1,40 +1,38 @@
 /**
- * @deprecated Superseded by backend/src/routes/reviewsRoutes.js (not mounted from here).
- * Reviews Route Handler
- * - GET /api/reviews (Homepage featured reviews)
+ * Reviews Route Handler (canonical public homepage)
+ * - GET /api/reviews
+ *
+ * Migrated from backend/routes/reviews.js — behavior preserved.
  */
 
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { prisma, queryWithTimeout } = require('../utils/database');
-const { validatePagination, validateBooleanParam } = require('../utils/validators');
+const { prisma, queryWithTimeout } = require("../../utils/database");
+const {
+  validatePagination,
+  validateBooleanParam,
+} = require("../../utils/validators");
 
-/**
- * GET /api/reviews
- * Fetch homepage testimonials (featured reviews)
- */
-router.get('/', async (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
-    // 1. Validate pagination/limit
     const paginationVal = validatePagination(req.query);
     if (!paginationVal.valid) {
       return res.status(400).json({
-        status: 'error',
+        status: "error",
         message: paginationVal.error,
-        code: 'BAD_REQUEST',
+        code: "BAD_REQUEST",
         statusCode: 400,
       });
     }
 
     const limit = req.query.limit !== undefined ? paginationVal.limit : 3;
 
-    // 2. Validate featured filter
-    const featuredVal = validateBooleanParam(req.query.featured, 'featured');
+    const featuredVal = validateBooleanParam(req.query.featured, "featured");
     if (!featuredVal.valid) {
       return res.status(400).json({
-        status: 'error',
+        status: "error",
         message: featuredVal.error,
-        code: 'BAD_REQUEST',
+        code: "BAD_REQUEST",
         statusCode: 400,
       });
     }
@@ -43,7 +41,7 @@ router.get('/', async (req, res, next) => {
     if (featuredVal.value !== undefined) {
       where.featured = featuredVal.value;
     } else {
-      where.featured = true; // Default to featured reviews for homepage endpoint
+      where.featured = true;
     }
 
     const fetchReviews = prisma.reviewItem.findMany({
@@ -56,7 +54,7 @@ router.get('/', async (req, res, next) => {
           },
         },
       },
-      orderBy: { date: 'desc' },
+      orderBy: { date: "desc" },
       take: limit,
     });
 
@@ -65,9 +63,9 @@ router.get('/', async (req, res, next) => {
     const formattedData = reviews.map((r) => ({
       id: isNaN(Number(r.id)) ? r.id : Number(r.id),
       author: r.author,
-      avatar: r.avatar || '',
-      trip: r.tripName || r.trip?.title || 'YouthCamping Trip',
-      tripSlug: r.tripSlug || r.trip?.slug || 'youthcamping-trip',
+      avatar: r.avatar || "",
+      trip: r.tripName || r.trip?.title || "YouthCamping Trip",
+      tripSlug: r.tripSlug || r.trip?.slug || "youthcamping-trip",
       date: r.date,
       rating: r.rating,
       text: r.text,
@@ -75,22 +73,22 @@ router.get('/', async (req, res, next) => {
     }));
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       data: formattedData,
     });
   } catch (error) {
-    if (error.code === 'TIMEOUT') {
+    if (error.code === "TIMEOUT") {
       return res.status(408).json({
-        status: 'error',
-        message: 'Request timed out after 3 seconds',
-        code: 'REQUEST_TIMEOUT',
+        status: "error",
+        message: "Request timed out after 3 seconds",
+        code: "REQUEST_TIMEOUT",
         statusCode: 408,
       });
     }
     return res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch reviews',
-      code: 'SERVER_ERROR',
+      status: "error",
+      message: "Failed to fetch reviews",
+      code: "SERVER_ERROR",
       statusCode: 500,
     });
   }

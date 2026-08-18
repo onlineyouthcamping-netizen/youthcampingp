@@ -7,14 +7,9 @@ import {
   X,
   BedDouble,
   Utensils,
-  Star,
   Building,
   Bath,
-  Coffee,
-  Wifi,
-  Flame,
   Sparkles,
-  CheckCircle2,
 } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
@@ -306,279 +301,298 @@ export default function StaySection({ accommodations }: StaySectionProps) {
       </div>
 
       {/* Stays Horizontal 1.5 Cards Peek Slider on Mobile & Grid on Desktop */}
-      <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-manipulation flex-nowrap sm:flex-wrap">
+      <div
+        className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 overflow-x-auto overflow-y-hidden no-scrollbar py-2 scroll-smooth snap-x snap-mandatory touch-manipulation flex-nowrap sm:flex-wrap"
+        style={{ touchAction: "pan-x" }}
+      >
         {staysList.map((stay, i) => (
           <div
             key={i}
-            className="flex-none snap-start w-[48vw] sm:w-auto max-w-[190px] flex flex-col"
+            className="flex-none snap-start w-[58vw] min-w-[200px] sm:w-auto sm:min-w-0 sm:max-w-none max-w-[220px] flex flex-col"
           >
             <div
               onClick={() => {
                 setSelectedStay(stay);
                 setActiveCategory("All");
               }}
-              className="bg-white border border-zinc-200/90 rounded-[14px] overflow-hidden shadow-2xs hover:border-[#D4541A] transition-all cursor-pointer group flex flex-col justify-between h-full"
+              className="bg-white border border-zinc-200/80 rounded-[14px] overflow-hidden shadow-[0_6px_20px_rgba(11,21,40,0.06)] hover:shadow-[0_12px_28px_rgba(11,21,40,0.1)] hover:border-[#D4541A]/60 transition-all duration-300 cursor-pointer group flex flex-col h-full"
             >
-              <div>
-                {/* Full-Bleed Stay Photo with Nights Badge */}
-                <div className="relative aspect-[16/10.5] w-full overflow-hidden bg-zinc-100 shadow-2xs">
-                  <OptimizedImage
-                    src={normalizeImageUrl(stay.image)}
-                    alt={stay.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  {stay.nights && (
-                    <div className="absolute top-1.5 right-1.5 bg-[#D4541A] text-white text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs font-montserrat">
-                      {stay.nights}
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Maximize2 className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-
-                {/* Stay Details */}
-                <div className="p-2 sm:p-2.5 pb-1">
-                  <h3 className="text-[11px] sm:text-xs font-bold text-[#0B1528] font-montserrat line-clamp-1 group-hover:text-[#D4541A] transition-colors">
-                    {stay.name}
-                  </h3>
-
-                  <div className="flex items-center gap-1 text-[10px] text-zinc-500 font-medium font-montserrat mt-0.5">
-                    <MapPin className="w-2.5 h-2.5 text-[#D4541A] shrink-0" />
-                    <span className="truncate">{stay.location}</span>
-                  </div>
-
-                  {/* Highlights Pills on Main Card */}
-                  {stay.amenities && stay.amenities.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {stay.amenities
-                        .filter(
-                          (amenity) =>
-                            Boolean(String(amenity || "").trim()) &&
-                            !isRedundantStayTypeChip(String(amenity), stay),
-                        )
-                        .slice(0, 3)
-                        .map((amenity, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center gap-1 bg-orange-50/80 border border-orange-200/60 text-[9px] font-bold text-[#D4541A] px-1.5 py-0.5 rounded-md font-montserrat"
-                          >
-                            <CheckCircle2 className="w-2.5 h-2.5 text-[#D4541A] shrink-0" />
-                            <span className="truncate max-w-[90px]">
-                              {amenity}
-                            </span>
-                          </span>
-                        ))}
-                    </div>
-                  )}
+              {/* Photo */}
+              <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-100">
+                <OptimizedImage
+                  src={normalizeImageUrl(stay.image)}
+                  alt={stay.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                />
+                <div className="absolute inset-0 hidden sm:flex bg-black/15 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
+                  <Maximize2 className="w-4 h-4 text-white drop-shadow-md" />
                 </div>
               </div>
 
-              {/* Amenities Tag Row */}
-              <div className="p-2 sm:p-2.5 pt-1.5 mt-1 border-t border-zinc-100 flex items-center justify-between text-[9px] font-semibold text-zinc-600 font-montserrat">
-                <div className="flex items-center gap-1 truncate mr-1">
-                  <Building className="w-2.5 h-2.5 text-zinc-400 shrink-0" />
-                  <span className="truncate">{stay.type}</span>
+              {/* Body */}
+              <div className="flex flex-col flex-1 px-3 pt-2.5 pb-2 sm:px-3.5 sm:pt-3 sm:pb-2.5">
+                <h3 className="text-[13px] sm:text-sm font-extrabold text-[#0B1528] font-montserrat line-clamp-2 leading-snug group-hover:text-[#D4541A] transition-colors min-h-[2.5rem] sm:min-h-0">
+                  {stay.name}
+                </h3>
+
+                <div className="flex items-start gap-1 mt-1.5 text-[11px] text-zinc-500 font-medium font-montserrat leading-snug">
+                  <MapPin className="w-3.5 h-3.5 text-[#D4541A] shrink-0 mt-0.5" />
+                  <span className="line-clamp-2">{stay.location}</span>
                 </div>
-                {stay.starRating && (
-                  <span className="text-[#D4541A] font-bold bg-orange-50 px-1 py-0.5 rounded text-[8px] sm:text-[9px] shrink-0">
-                    {stay.starRating}
-                  </span>
+
+                {stay.amenities && stay.amenities.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {stay.amenities
+                      .filter(
+                        (amenity) =>
+                          Boolean(String(amenity || "").trim()) &&
+                          !isRedundantStayTypeChip(String(amenity), stay),
+                      )
+                      .slice(0, 2)
+                      .map((amenity, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex max-w-full items-center rounded-md bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-600 font-montserrat"
+                        >
+                          <span className="truncate">{amenity}</span>
+                        </span>
+                      ))}
+                  </div>
                 )}
+
+                <div className="mt-auto pt-2.5 border-t border-zinc-100 flex items-center justify-between gap-2 text-[10px] sm:text-[11px] font-semibold text-zinc-500 font-montserrat">
+                  <div className="min-w-0 flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                    <span className="truncate text-zinc-600">{stay.type}</span>
+                  </div>
+                  {stay.starRating &&
+                    stay.starRating.toLowerCase().trim() !==
+                      (stay.type || "").toLowerCase().trim() && (
+                      <span className="shrink-0 rounded-md bg-[#FFF7F2] px-1.5 py-0.5 text-[10px] font-bold text-[#C2410C]">
+                        {stay.starRating}
+                      </span>
+                    )}
+                </div>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Redesigned Stay Modal Popup with Interior / Bathroom / Dining / Views Section Tabs */}
+      {/* Stay detail modal */}
       <AnimatePresence>
         {selectedStay && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100000] flex items-center justify-center p-3.5 sm:p-6 md:p-8 pt-[84px] sm:pt-6 pb-4 sm:pb-6 overflow-hidden"
+            className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-6 md:p-8 pt-[72px] sm:pt-6 pb-0 sm:pb-6 overflow-hidden"
           >
             <div
-              className="fixed inset-0 bg-[#0B1528]/85 backdrop-blur-md"
+              className="fixed inset-0 bg-[#0B1528]/75 backdrop-blur-sm"
               onClick={() => setSelectedStay(null)}
+              aria-hidden
             />
 
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-4xl bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-2xl z-10 max-h-[calc(100vh-104px)] sm:max-h-[88vh] flex flex-col border border-zinc-100"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="stay-modal-title"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+              className="relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-t-[20px] border border-zinc-200/80 bg-white shadow-[0_24px_64px_rgba(11,21,40,0.18)] sm:rounded-[22px] max-h-[calc(100vh-72px)] sm:max-h-[min(88vh,820px)]"
             >
-              {/* Modal Header (Full clearance from fixed navbar) */}
-              <div className="p-4 sm:p-5 md:p-6 border-b border-zinc-100 flex items-start justify-between bg-white shrink-0">
-                <div>
-                  <h3 className="text-base sm:text-lg md:text-xl font-extrabold text-[#0B1528] font-montserrat tracking-tight leading-snug">
-                    {selectedStay.name}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-zinc-500 font-montserrat">
-                    <span className="font-semibold text-zinc-700">
-                      {selectedStay.location}
-                    </span>
-                    <span>•</span>
-                    <span className="text-[#D4541A] font-bold">
-                      {selectedStay.nights}
-                    </span>
-                    {selectedStay.starRating && (
-                      <>
-                        <span>•</span>
-                        <span className="bg-orange-50 text-[#D4541A] px-2 py-0.5 rounded font-bold text-[11px]">
-                          {selectedStay.starRating}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedStay(null)}
-                  className="p-1.5 sm:p-2 rounded-full text-zinc-400 hover:text-[#0B1528] hover:bg-zinc-100 transition-colors cursor-pointer shrink-0 ml-2"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Category Filter Pills (Interior / Rooms, Bathroom, Dining Area, Views) */}
-              <div className="px-4 sm:px-6 pt-2 pb-1.5 border-b border-zinc-100 bg-[#F8F9FA] shrink-0">
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                  {modalCategories.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setActiveCategory(cat)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold font-montserrat transition-all shrink-0 cursor-pointer ${
-                        activeCategory === cat
-                          ? "bg-[#D4541A] text-white shadow-xs"
-                          : "bg-white text-zinc-600 border border-zinc-200/80 hover:border-zinc-300"
-                      }`}
+              {/* Hero + header */}
+              <div className="relative shrink-0">
+                <div className="relative h-[140px] sm:h-[168px] w-full overflow-hidden bg-zinc-100">
+                  <OptimizedImage
+                    src={normalizeImageUrl(selectedStay.image)}
+                    alt={selectedStay.name}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528]/88 via-[#0B1528]/35 to-transparent" />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStay(null)}
+                    aria-label="Close stay details"
+                    className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#0B1528] shadow-md transition-colors hover:bg-white cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+                    <h3
+                      id="stay-modal-title"
+                      className="font-montserrat text-lg sm:text-xl font-extrabold leading-tight text-white"
                     >
-                      {cat === "Interior / Rooms" && (
-                        <BedDouble className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />
+                      {selectedStay.name}
+                    </h3>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        {selectedStay.location}
+                      </span>
+                      {selectedStay.nights && (
+                        <span className="rounded-full bg-[#D4541A] px-2.5 py-1 text-[11px] font-bold text-white">
+                          {selectedStay.nights}
+                        </span>
                       )}
-                      {cat === "Bathroom" && (
-                        <Bath className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />
+                      {selectedStay.type && (
+                        <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-[#0B1528]">
+                          {selectedStay.type}
+                        </span>
                       )}
-                      {cat === "Dining Area" && (
-                        <Utensils className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />
-                      )}
-                      {cat === "Property & Views" && (
-                        <Sparkles className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />
-                      )}
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Modal body: tight section gaps + extra bottom pad so last blocks clear the Next.js N / floating widgets */}
-              <div className="px-4 pt-3 pb-24 sm:px-6 sm:pt-4 sm:pb-28 overflow-y-auto flex-1 custom-scrollbar space-y-3">
-                {/* Amenities Highlights Bar */}
-                {highlightAmenities.length > 0 && (
-                  <div className="p-3 bg-orange-50/40 border border-orange-100 rounded-2xl h-fit">
-                    <p className="text-xs font-bold text-[#0B1528] uppercase tracking-wider font-montserrat mb-1.5">
-                      Key Stay Highlights:
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {highlightAmenities.map((amenity, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-1.5 bg-white border border-orange-200/80 rounded-lg px-2.5 py-1 text-xs font-semibold text-zinc-700 font-montserrat shadow-2xs"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#D4541A]" />
-                          <span>{amenity}</span>
-                        </div>
-                      ))}
+                      {selectedStay.starRating &&
+                        selectedStay.starRating.toLowerCase().trim() !==
+                          (selectedStay.type || "").toLowerCase().trim() && (
+                          <span className="rounded-full bg-[#FFF1E8] px-2.5 py-1 text-[11px] font-bold text-[#C2410C]">
+                            {selectedStay.starRating}
+                          </span>
+                        )}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Category filters */}
+              <div className="shrink-0 border-b border-zinc-100 px-4 py-2.5 sm:px-5">
+                <div
+                  className="flex gap-2 overflow-x-auto overflow-y-hidden no-scrollbar scroll-smooth"
+                  style={{ touchAction: "pan-x" }}
+                >
+                  {modalCategories.map((cat) => {
+                    const active = activeCategory === cat;
+                    const Icon =
+                      cat === "Interior / Rooms"
+                        ? BedDouble
+                        : cat === "Bathroom"
+                          ? Bath
+                          : cat === "Dining Area"
+                            ? Utensils
+                            : cat === "Property & Views"
+                              ? Sparkles
+                              : null;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setActiveCategory(cat)}
+                        className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold font-montserrat transition-colors cursor-pointer ${
+                          active
+                            ? "bg-[#0B1528] text-white"
+                            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200/80"
+                        }`}
+                      >
+                        {Icon && <Icon className="h-3.5 w-3.5" />}
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-16 sm:px-5 sm:py-5 sm:pb-20 custom-scrollbar space-y-6">
+                {highlightAmenities.length > 0 && (
+                  <section>
+                    <h4 className="mb-2.5 font-montserrat text-xs font-bold uppercase tracking-wide text-zinc-500">
+                      Highlights
+                    </h4>
+                    <ul className="flex flex-wrap gap-2">
+                      {highlightAmenities.map((amenity, idx) => (
+                        <li
+                          key={idx}
+                          className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-medium text-zinc-700 font-montserrat"
+                        >
+                          {amenity}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
                 )}
 
-                {/* Meals Menu Breakdown Section */}
                 {((selectedStay as any).mealsBreakdown ||
                   (selectedStay as any).meals) && (
-                  <div className="p-3 bg-zinc-50 border border-zinc-200/80 rounded-2xl space-y-2.5 h-fit">
-                    <p className="text-xs font-bold text-[#0B1528] uppercase tracking-wider font-montserrat flex items-center gap-2">
-                      <Utensils className="w-4 h-4 text-[#D4541A]" />
-                      <span>Food & Meals Menu Breakdown</span>
-                    </p>
+                  <section>
+                    <div className="mb-3 flex items-center gap-2">
+                      <Utensils className="h-4 w-4 text-[#D4541A]" />
+                      <h4 className="font-montserrat text-sm font-bold text-[#0B1528]">
+                        Meals included
+                      </h4>
+                    </div>
                     {((selectedStay as any).mealsBreakdown?.breakfast ||
                       (selectedStay as any).mealsBreakdown?.lunch ||
                       (selectedStay as any).mealsBreakdown?.dinner) ? (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-montserrat">
-                        {(selectedStay as any).mealsBreakdown?.breakfast && (
-                          <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
-                            <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">
-                              Breakfast
-                            </span>
-                            <p className="text-zinc-600 font-medium leading-relaxed">
-                              {(selectedStay as any).mealsBreakdown.breakfast}
-                            </p>
-                          </div>
-                        )}
-                        {(selectedStay as any).mealsBreakdown?.lunch && (
-                          <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
-                            <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">
-                              Lunch
-                            </span>
-                            <p className="text-zinc-600 font-medium leading-relaxed">
-                              {(selectedStay as any).mealsBreakdown.lunch}
-                            </p>
-                          </div>
-                        )}
-                        {(selectedStay as any).mealsBreakdown?.dinner && (
-                          <div className="bg-white p-3 rounded-xl border border-zinc-200/60 space-y-1">
-                            <span className="font-bold text-[#D4541A] uppercase tracking-wider text-[10px] block">
-                              Dinner
-                            </span>
-                            <p className="text-zinc-600 font-medium leading-relaxed">
-                              {(selectedStay as any).mealsBreakdown.dinner}
-                            </p>
-                          </div>
-                        )}
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 font-montserrat">
+                        {(
+                          [
+                            ["Breakfast", (selectedStay as any).mealsBreakdown?.breakfast],
+                            ["Lunch", (selectedStay as any).mealsBreakdown?.lunch],
+                            ["Dinner", (selectedStay as any).mealsBreakdown?.dinner],
+                          ] as const
+                        )
+                          .filter(([, text]) => Boolean(text))
+                          .map(([label, text]) => (
+                            <div
+                              key={label}
+                              className="rounded-xl border border-zinc-200/80 bg-white p-3.5"
+                            >
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-[#D4541A]">
+                                {label}
+                              </p>
+                              <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-600">
+                                {text}
+                              </p>
+                            </div>
+                          ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-zinc-600 font-medium font-montserrat leading-relaxed">
+                      <p className="text-[13px] leading-relaxed text-zinc-600 font-montserrat">
                         {(selectedStay as any).meals}
                       </p>
                     )}
                     {(selectedStay as any).disclaimer && (
-                      <p className="text-[11px] text-zinc-500 italic pt-1 font-montserrat leading-relaxed">
+                      <p className="mt-2.5 text-[11px] leading-relaxed text-zinc-400 font-montserrat">
                         {(selectedStay as any).disclaimer}
                       </p>
                     )}
-                  </div>
+                  </section>
                 )}
 
-                {/* Photos Grid with Category Badge Overlay */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {filteredImages.map((img, idx) => (
-                    <div
-                      key={idx}
-                      className="group bg-white border border-zinc-100 rounded-[18px] overflow-hidden shadow-xs"
-                    >
-                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-100">
-                        <OptimizedImage
-                          src={normalizeImageUrl(img.url) || selectedStay.image}
-                          alt={img.title || selectedStay.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-2.5 left-2.5 bg-[#0B1528]/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full font-montserrat">
-                          {img.category}
+                <section>
+                  <h4 className="mb-3 font-montserrat text-sm font-bold text-[#0B1528]">
+                    {activeCategory === "All"
+                      ? "Property photos"
+                      : `${activeCategory} photos`}
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3">
+                    {filteredImages.map((img, idx) => (
+                      <figure
+                        key={`${img.url}-${idx}`}
+                        className="group overflow-hidden rounded-xl bg-zinc-100"
+                      >
+                        <div className="relative aspect-[4/3] w-full">
+                          <OptimizedImage
+                            src={normalizeImageUrl(img.url) || selectedStay.image}
+                            alt={img.title || selectedStay.name}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                          />
+                          {img.category && (
+                            <figcaption className="absolute left-2 top-2 rounded-md bg-[#0B1528]/75 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+                              {img.category}
+                            </figcaption>
+                          )}
                         </div>
-                      </div>
-                      {img.title && (
-                        <div className="p-3">
-                          <p className="text-xs font-bold text-[#0B1528] font-montserrat line-clamp-1">
+                        {img.title && (
+                          <p className="truncate px-2 py-1.5 text-[11px] font-semibold text-zinc-600 font-montserrat">
                             {img.title}
                           </p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                        )}
+                      </figure>
+                    ))}
+                  </div>
+                </section>
               </div>
             </motion.div>
           </motion.div>

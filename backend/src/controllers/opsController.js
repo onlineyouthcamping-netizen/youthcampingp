@@ -2881,6 +2881,70 @@ exports.reopenIncident = async (req, res) => {
 };
 
 // ── ROOM INVENTORY (Available rooms for allocation) ──
+async function createRoomInventoryEntries(ctx, roomInput) {
+  const {
+    roomLabel,
+    roomType,
+    genderGroup,
+    capacity,
+    hotelName,
+    notes,
+    quantity,
+  } = roomInput || {};
+
+  if (!roomLabel || !roomType || !capacity) {
+    const err = new Error("roomLabel, roomType, and capacity are required");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const qty = quantity ? parseInt(quantity, 10) : 1;
+  const createdRooms = [];
+
+  const labelMatch = roomLabel.match(/^(.*?)(\d+)$/);
+  if (qty > 1 && labelMatch) {
+    const prefix = labelMatch[1];
+    const startNum = parseInt(labelMatch[2], 10);
+    const totalDigits = labelMatch[2].length;
+
+    for (let i = 0; i < qty; i++) {
+      const currentNum = startNum + i;
+      const currentLabel = `${prefix}${String(currentNum).padStart(totalDigits, "0")}`;
+      const newRoom = await prisma.opsRoomInventory.create({
+        data: {
+          tenantId: ctx.tenantId,
+          tripId: ctx.tripId,
+          departureDate: ctx.departureDate,
+          roomLabel: currentLabel,
+          roomType,
+          genderGroup: genderGroup || "GROUP",
+          capacity: parseInt(capacity, 10),
+          hotelName,
+          notes,
+        },
+      });
+      createdRooms.push(newRoom);
+    }
+  } else {
+    const newRoom = await prisma.opsRoomInventory.create({
+      data: {
+        tenantId: ctx.tenantId,
+        tripId: ctx.tripId,
+        departureDate: ctx.departureDate,
+        roomLabel,
+        roomType,
+        genderGroup: genderGroup || "GROUP",
+        capacity: parseInt(capacity, 10),
+        hotelName,
+        notes,
+      },
+    });
+    createdRooms.push(newRoom);
+  }
+
+  return createdRooms;
+}
+
 exports.getRoomInventory = async (req, res) => {
   try {
     const ctx = await parseDepartureFilter(req, res, true);
@@ -2915,73 +2979,39 @@ exports.createRoomInventory = async (req, res) => {
         });
     }
 
-    const {
-      roomLabel,
-      roomType,
-      genderGroup,
-      capacity,
-      hotelName,
-      notes,
-      quantity,
-    } = req.body;
-    if (!roomLabel || !roomType || !capacity) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "roomLabel, roomType, and capacity are required",
-        });
-    }
-
-    const qty = quantity ? parseInt(quantity) : 1;
-    const createdRooms = [];
-
-    // Parse starting room number if any
-    const labelMatch = roomLabel.match(/^(.*?)(\d+)$/);
-    if (qty > 1 && labelMatch) {
-      const prefix = labelMatch[1];
-      const startNum = parseInt(labelMatch[2]);
-      const totalDigits = labelMatch[2].length;
-
-      for (let i = 0; i < qty; i++) {
-        const currentNum = startNum + i;
-        const currentLabel = `${prefix}${String(currentNum).padStart(totalDigits, "0")}`;
-        const newRoom = await prisma.opsRoomInventory.create({
-          data: {
-            tenantId: ctx.tenantId,
-            tripId: ctx.tripId,
-            departureDate: ctx.departureDate,
-            roomLabel: currentLabel,
-            roomType,
-            genderGroup: genderGroup || "GROUP",
-            capacity: parseInt(capacity),
-            hotelName,
-            notes,
-          },
-        });
-        createdRooms.push(newRoom);
+    let roomList = req.body.rooms;
+    if (!roomList) {
+      if (Array.isArray(req.body)) {
+        roomList = req.body;
+      } else {
+        roomList = [req.body];
       }
-    } else {
-      const newRoom = await prisma.opsRoomInventory.create({
-        data: {
-          tenantId: ctx.tenantId,
-          tripId: ctx.tripId,
-          departureDate: ctx.departureDate,
-          roomLabel,
-          roomType,
-          genderGroup: genderGroup || "GROUP",
-          capacity: parseInt(capacity),
-          hotelName,
-          notes,
-        },
-      });
-      createdRooms.push(newRoom);
     }
 
-    return res
-      .status(201)
-      .json({ success: true, data: qty > 1 ? createdRooms : createdRooms[0] });
+    if (!Array.isArray(roomList)) {
+      return res.status(400).json({
+        success: false,
+        message: "rooms parameter must be an array of room inventory objects.",
+      });
+    }
+
+    const createdRooms = [];
+    for (const roomInput of roomList) {
+      const batch = await createRoomInventoryEntries(ctx, roomInput);
+      createdRooms.push(...batch);
+    }
+
+    return res.status(201).json({
+      success: true,
+      data:
+        roomList.length === 1 && createdRooms.length === 1
+          ? createdRooms[0]
+          : createdRooms,
+    });
   } catch (err) {
+    if (err.statusCode === 400) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
     console.error("createRoomInventory error:", err);
     return res
       .status(500)

@@ -401,7 +401,7 @@ export default function ItineraryAccordion({
                           {parsedPhotos.map((photo, pIdx) => (
                             <div
                               key={pIdx}
-                              className="group relative flex-none snap-start w-[145px] sm:w-[165px] h-[125px] sm:h-[135px] rounded-2xl overflow-hidden bg-slate-900 shadow-[0_8px_25px_rgba(0,0,0,0.12)] border border-slate-200/60 hover:shadow-[0_16px_35px_rgba(0,0,0,0.18)] hover:-translate-y-1 transition-all duration-300 shrink-0 flex flex-col justify-end"
+                              className="group relative flex-none snap-start w-[122px] sm:w-[145px] h-[105px] sm:h-[118px] rounded-2xl overflow-hidden bg-slate-900 shadow-[0_8px_25px_rgba(0,0,0,0.12)] border border-slate-200/60 hover:shadow-[0_16px_35px_rgba(0,0,0,0.18)] hover:-translate-y-1 transition-all duration-300 shrink-0 flex flex-col justify-end"
                             >
                               {/* Photo Background */}
                               <OptimizedImage
