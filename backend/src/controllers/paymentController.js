@@ -95,7 +95,6 @@ exports.getClientPayments = async (req, res) => {
         remainingAmount: true,
         paymentStatus: true,
         passengers: true,
-        roomDetails: true,
         createdAt: true,
       },
     });
