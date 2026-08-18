@@ -4462,6 +4462,15 @@ exports.createActivity = async (req, res) => {
       order,
     } = req.body;
 
+    let validVendorId = null;
+    if (vendorId && typeof vendorId === "string" && !vendorId.startsWith("VND-CUSTOM") && !vendorId.startsWith("VND-DEFAULT")) {
+      const vExists = await prisma.opsVendor.findUnique({
+        where: { id: vendorId },
+        select: { id: true },
+      });
+      if (vExists) validVendorId = vExists.id;
+    }
+
     const activity = await prisma.opsActivity.create({
       data: {
         tenantId: ctx.tenantId,
@@ -4470,15 +4479,15 @@ exports.createActivity = async (req, res) => {
         dayNumber: Number(dayNumber) || 1,
         date: date ? new Date(date) : null,
         name,
-        type,
+        type: type || "ADVENTURE",
         startTime,
         endTime,
         location,
         description,
         responsibleGuideId: responsibleGuideId || null,
         responsibleStaff,
-        vendorId: vendorId || null,
-        vendorName,
+        vendorId: validVendorId,
+        vendorName: vendorName || undefined,
         estimatedCost: Number(estimatedCost) || 0,
         actualCost: Number(actualCost) || 0,
         maxParticipants: Number(maxParticipants) || 0,
@@ -4525,6 +4534,19 @@ exports.updateActivity = async (req, res) => {
       order,
     } = req.body;
 
+    let validVendorId = undefined;
+    if (vendorId !== undefined) {
+      if (vendorId && typeof vendorId === "string" && !vendorId.startsWith("VND-CUSTOM") && !vendorId.startsWith("VND-DEFAULT")) {
+        const vExists = await prisma.opsVendor.findUnique({
+          where: { id: vendorId },
+          select: { id: true },
+        });
+        validVendorId = vExists ? vExists.id : null;
+      } else {
+        validVendorId = null;
+      }
+    }
+
     const activity = await prisma.opsActivity.update({
       where: { id },
       data: {
@@ -4541,7 +4563,7 @@ exports.updateActivity = async (req, res) => {
             ? responsibleGuideId || null
             : undefined,
         responsibleStaff,
-        vendorId: vendorId !== undefined ? vendorId || null : undefined,
+        vendorId: validVendorId,
         vendorName,
         estimatedCost:
           estimatedCost !== undefined ? Number(estimatedCost) : undefined,
