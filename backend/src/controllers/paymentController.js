@@ -508,229 +508,33 @@ exports.getVendorPayments = async (req, res) => {
 exports.getAllRecordedVendorPayments = async (req, res) => {
   try {
     const tenantId = req.user?.tenantId || "default";
-
-    const [
-      vendorPayments,
-      companyAcc,
-      hotelBookings,
-      fleets,
-      guidePayments,
-      activities,
-    ] = await Promise.all([
-      prisma.opsVendorPayment.findMany({
-        where: { tenantId },
-        include: {
-          collectionAccount: {
-            select: {
-              id: true,
-              accountName: true,
-              accountHolderName: true,
-              accountType: true,
-              bankName: true,
-              upiId: true,
-              accountNumber: true,
-              maskedAccountNumber: true,
-            },
-          },
-          trip: {
-            select: {
-              id: true,
-              title: true,
-              slug: true,
-            },
+    const vendorPayments = await prisma.opsVendorPayment.findMany({
+      where: { tenantId },
+      include: {
+        collectionAccount: {
+          select: {
+            id: true,
+            accountName: true,
+            accountHolderName: true,
+            accountType: true,
+            bankName: true,
+            upiId: true,
+            accountNumber: true,
+            maskedAccountNumber: true,
           },
         },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.paymentReceivingAccount.findFirst({
-        where: { tenantId, accountType: "COMPANY" },
-        select: {
-          id: true,
-          accountName: true,
-          accountHolderName: true,
-          accountType: true,
-          bankName: true,
-        },
-      }),
-      prisma.opsHotelBooking.findMany({
-        where: {
-          tenantId,
-          totalAmount: { gt: 0 },
-          hotelName: { not: "NO_STAY" },
-        },
-        include: {
-          trip: {
-            select: { id: true, title: true, slug: true },
+        trip: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
           },
         },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.opsTransportFleet.findMany({
-        where: {
-          tenantId,
-          totalAmount: { gt: 0 },
-        },
-        include: {
-          trip: {
-            select: { id: true, title: true, slug: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.opsGuidePayment.findMany({
-        where: {
-          tenantId,
-          agreedAmount: { gt: 0 },
-        },
-        include: {
-          trip: {
-            select: { id: true, title: true, slug: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.opsActivity.findMany({
-        where: {
-          tenantId,
-          OR: [{ estimatedCost: { gt: 0 } }, { actualCost: { gt: 0 } }],
-        },
-        include: {
-          trip: {
-            select: { id: true, title: true, slug: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
-
-    const mappedHotels = hotelBookings.map((h) => {
-      const agreed = Number(h.totalAmount || 0);
-      const advance = Number(h.advancePaid || 0);
-      const remaining = Math.max(0, agreed - advance);
-      const isPaid = advance >= agreed && agreed > 0;
-
-      return {
-        id: `hb-${h.id}`,
-        tenantId: h.tenantId,
-        tripId: h.tripId,
-        departureDate: h.departureDate,
-        vendorName: h.hotelName,
-        category: "Hotels",
-        serviceDescription: `${h.roomType || "Hotel"} Stay (${h.numberOfRooms || 1} Rooms) - ${h.location || ""}`,
-        agreedAmount: agreed,
-        advancePaid: advance,
-        remainingPayable: remaining,
-        paymentDate: h.departureDate || h.createdAt,
-        paymentMode: "BANK_TRANSFER",
-        status: isPaid ? "Paid" : advance > 0 ? "Advance Paid" : "Pending Approval",
-        approvalStatus: isPaid ? "APPROVED_FOUNDER" : "PENDING",
-        requiresFounderApproval: remaining > 50000,
-        collectionAccount: companyAcc,
-        trip: h.trip,
-        invoiceProof: null,
-        createdAt: h.createdAt,
-        sourceModule: "OPERATIONS_HOTELS",
-      };
+      },
+      orderBy: { createdAt: "desc" },
     });
 
-    const mappedFleets = fleets.map((f) => {
-      const agreed = Number(f.totalAmount || 0);
-      const advance = Number(f.advancePaid || 0);
-      const remaining = Math.max(0, agreed - advance);
-      const isPaid = advance >= agreed && agreed > 0;
-
-      return {
-        id: `fl-${f.id}`,
-        tenantId: f.tenantId,
-        tripId: f.tripId,
-        departureDate: f.departureDate,
-        vendorName: f.vendorName || f.driverName || "Transport Fleet",
-        category: "Transport",
-        serviceDescription: `${f.vehicleType || "Fleet Vehicle"} (${f.vehicleNumber || "Route Fleet"})`,
-        agreedAmount: agreed,
-        advancePaid: advance,
-        remainingPayable: remaining,
-        paymentDate: f.departureDate || f.createdAt,
-        paymentMode: "BANK_TRANSFER",
-        status: isPaid ? "Paid" : advance > 0 ? "Advance Paid" : "Pending Approval",
-        approvalStatus: isPaid ? "APPROVED_FOUNDER" : "PENDING",
-        requiresFounderApproval: remaining > 50000,
-        collectionAccount: companyAcc,
-        trip: f.trip,
-        invoiceProof: null,
-        createdAt: f.createdAt,
-        sourceModule: "OPERATIONS_TRANSPORT",
-      };
-    });
-
-    const mappedGuides = guidePayments.map((g) => {
-      const agreed = Number(g.agreedAmount || 0);
-      const advance = Number(g.advancePaid || 0);
-      const remaining = Math.max(0, agreed - advance);
-      const isPaid = g.paymentStatus === "PAID" || (advance >= agreed && agreed > 0);
-
-      return {
-        id: `gp-${g.id}`,
-        tenantId: g.tenantId,
-        tripId: g.tripId,
-        departureDate: g.departureDate,
-        vendorName: g.guideName,
-        category: "Guides",
-        serviceDescription: `${g.assignmentType || "Trip Leader"} (${g.daysWorked || 1} Days)`,
-        agreedAmount: agreed,
-        advancePaid: advance,
-        remainingPayable: remaining,
-        paymentDate: g.departureDate || g.createdAt,
-        paymentMode: "BANK_TRANSFER",
-        status: isPaid ? "Paid" : "Pending Approval",
-        approvalStatus: isPaid ? "APPROVED_FOUNDER" : "PENDING",
-        requiresFounderApproval: remaining > 50000,
-        collectionAccount: companyAcc,
-        trip: g.trip,
-        invoiceProof: null,
-        createdAt: g.createdAt,
-        sourceModule: "OPERATIONS_GUIDES",
-      };
-    });
-
-    const mappedActivities = activities.map((a) => {
-      const agreed = Number(a.actualCost || a.estimatedCost || 0);
-      const advance = 0;
-      const remaining = agreed;
-
-      return {
-        id: `act-${a.id}`,
-        tenantId: a.tenantId,
-        tripId: a.tripId,
-        departureDate: a.departureDate,
-        vendorName: a.vendorName || a.name || "Activity Provider",
-        category: a.type === "MEAL" ? "Meals" : "Activities",
-        serviceDescription: `${a.name} (${a.type || "Activity"})`,
-        agreedAmount: agreed,
-        advancePaid: advance,
-        remainingPayable: remaining,
-        paymentDate: a.departureDate || a.createdAt,
-        paymentMode: "BANK_TRANSFER",
-        status: a.status === "CONFIRMED" ? "Pending Approval" : "Not Paid",
-        approvalStatus: "PENDING",
-        requiresFounderApproval: remaining > 50000,
-        collectionAccount: companyAcc,
-        trip: a.trip,
-        invoiceProof: null,
-        createdAt: a.createdAt,
-        sourceModule: "OPERATIONS_ACTIVITIES",
-      };
-    });
-
-    const allVendorDisbursements = [
-      ...vendorPayments,
-      ...mappedHotels,
-      ...mappedFleets,
-      ...mappedGuides,
-      ...mappedActivities,
-    ];
-
-    return res.json({ success: true, data: allVendorDisbursements });
+    return res.json({ success: true, data: vendorPayments });
   } catch (err) {
     console.error("getAllRecordedVendorPayments error:", err);
     return res
