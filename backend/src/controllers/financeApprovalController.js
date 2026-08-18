@@ -56,6 +56,94 @@ function sanitizeReason(text) {
 }
 
 /**
+ * Resolves OpsClientPayment by raw ID, adv- ID, or booking reference
+ */
+async function resolveCollectionPayment(txOrPrisma, paymentId, tenantId) {
+  if (!paymentId) return null;
+  const cleanId = String(paymentId).replace(/^adv-/, "");
+
+  let payment = await txOrPrisma.opsClientPayment.findFirst({
+    where: { id: paymentId, tenantId },
+    include: {
+      booking: {
+        select: {
+          id: true,
+          bookingId: true,
+          tripId: true,
+          tripName: true,
+          fullName: true,
+          name: true,
+          phone: true,
+          email: true,
+          departureDate: true,
+          totalAmount: true,
+          advancePaid: true,
+        },
+      },
+      collectionAccount: true,
+    },
+  });
+
+  if (payment) return payment;
+
+  if (cleanId !== paymentId) {
+    payment = await txOrPrisma.opsClientPayment.findFirst({
+      where: { id: cleanId, tenantId },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            bookingId: true,
+            tripId: true,
+            tripName: true,
+            fullName: true,
+            name: true,
+            phone: true,
+            email: true,
+            departureDate: true,
+            totalAmount: true,
+            advancePaid: true,
+          },
+        },
+        collectionAccount: true,
+      },
+    });
+    if (payment) return payment;
+  }
+
+  payment = await txOrPrisma.opsClientPayment.findFirst({
+    where: {
+      tenantId,
+      OR: [
+        { bookingId: cleanId },
+        { booking: { id: cleanId } },
+        { booking: { bookingId: cleanId } },
+      ],
+    },
+    include: {
+      booking: {
+        select: {
+          id: true,
+          bookingId: true,
+          tripId: true,
+          tripName: true,
+          fullName: true,
+          name: true,
+          phone: true,
+          email: true,
+          departureDate: true,
+          totalAmount: true,
+          advancePaid: true,
+        },
+      },
+      collectionAccount: true,
+    },
+  });
+
+  return payment;
+}
+
+/**
  * 1️⃣ Finance Controller Reviews Collection
  * State Transition: PENDING / REJECTED -> REVIEWED_FINANCE_CONTROLLER
  * Concurrency Safe: Uses atomic conditional updateMany
@@ -70,21 +158,7 @@ exports.reviewCollectionFC = async (req, res) => {
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Verify existence and tenant ownership
-      const payment = await tx.opsClientPayment.findFirst({
-        where: { id: paymentId, tenantId },
-        include: {
-          booking: {
-            select: {
-              id: true,
-              bookingId: true,
-              tripId: true,
-              tripName: true,
-              fullName: true,
-              name: true,
-            },
-          },
-        },
-      });
+      const payment = await resolveCollectionPayment(tx, paymentId, tenantId);
 
       if (!payment) {
         throw { statusCode: 404, message: "Collection payment not found or access denied" };
@@ -106,7 +180,7 @@ exports.reviewCollectionFC = async (req, res) => {
       // 2. Atomic conditional update (guarantees race condition immunity)
       const updateResult = await tx.opsClientPayment.updateMany({
         where: {
-          id: paymentId,
+          id: payment.id,
           tenantId,
           approvalStatus: { in: ["PENDING", "REJECTED"] },
           status: { not: "Verified" },
@@ -127,7 +201,7 @@ exports.reviewCollectionFC = async (req, res) => {
       }
 
       const updated = await tx.opsClientPayment.findUnique({
-        where: { id: paymentId },
+        where: { id: payment.id },
         include: { booking: true, collectionAccount: true },
       });
 
@@ -136,7 +210,7 @@ exports.reviewCollectionFC = async (req, res) => {
         data: {
           tenantId,
           entityType: "CUSTOMER_PAYMENT",
-          entityId: paymentId,
+          entityId: payment.id,
           tripId: payment.booking?.tripId || null,
           action: "REVIEWED_FC",
           performedBy: user.id,
@@ -184,13 +258,7 @@ exports.approveCollectionFounder = async (req, res) => {
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Verify existence and tenant ownership
-      const payment = await tx.opsClientPayment.findFirst({
-        where: { id: paymentId, tenantId },
-        include: {
-          booking: true,
-          collectionAccount: true,
-        },
-      });
+      const payment = await resolveCollectionPayment(tx, paymentId, tenantId);
 
       if (!payment) {
         throw { statusCode: 404, message: "Collection payment not found or access denied" };
@@ -227,7 +295,7 @@ exports.approveCollectionFounder = async (req, res) => {
       // 2. Atomic conditional update (guarantees race condition immunity)
       const updateResult = await tx.opsClientPayment.updateMany({
         where: {
-          id: paymentId,
+          id: payment.id,
           tenantId,
           approvalStatus: "REVIEWED_FINANCE_CONTROLLER",
           status: { not: "Verified" },
@@ -250,7 +318,7 @@ exports.approveCollectionFounder = async (req, res) => {
       }
 
       const updated = await tx.opsClientPayment.findUnique({
-        where: { id: paymentId },
+        where: { id: payment.id },
         include: { booking: true, collectionAccount: true },
       });
 
@@ -259,7 +327,7 @@ exports.approveCollectionFounder = async (req, res) => {
         data: {
           tenantId,
           entityType: "CUSTOMER_PAYMENT",
-          entityId: paymentId,
+          entityId: payment.id,
           tripId: payment.booking?.tripId || null,
           action: "APPROVED_FOUNDER",
           performedBy: user.id,
@@ -315,10 +383,7 @@ exports.rejectCollection = async (req, res) => {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const payment = await tx.opsClientPayment.findFirst({
-        where: { id: paymentId, tenantId },
-        include: { booking: true },
-      });
+      const payment = await resolveCollectionPayment(tx, paymentId, tenantId);
 
       if (!payment) {
         throw { statusCode: 404, message: "Collection payment not found or access denied" };
@@ -339,7 +404,7 @@ exports.rejectCollection = async (req, res) => {
       // Atomic conditional update
       const updateResult = await tx.opsClientPayment.updateMany({
         where: {
-          id: paymentId,
+          id: payment.id,
           tenantId,
           approvalStatus: { not: "APPROVED_FOUNDER" },
           status: { not: "Verified" },
@@ -361,7 +426,7 @@ exports.rejectCollection = async (req, res) => {
       }
 
       const updated = await tx.opsClientPayment.findUnique({
-        where: { id: paymentId },
+        where: { id: payment.id },
         include: { booking: true, collectionAccount: true },
       });
 
@@ -370,7 +435,7 @@ exports.rejectCollection = async (req, res) => {
         data: {
           tenantId,
           entityType: "CUSTOMER_PAYMENT",
-          entityId: paymentId,
+          entityId: payment.id,
           tripId: payment.booking?.tripId || null,
           action: "REJECTED",
           performedBy: user.id,
@@ -429,17 +494,14 @@ exports.uploadCollectionProof = async (req, res) => {
     const fileType = req.body?.proofFileType || req.file?.mimetype || "image/png";
 
     const result = await prisma.$transaction(async (tx) => {
-      const payment = await tx.opsClientPayment.findFirst({
-        where: { id: paymentId, tenantId },
-        include: { booking: true },
-      });
+      const payment = await resolveCollectionPayment(tx, paymentId, tenantId);
 
       if (!payment) {
         throw { statusCode: 404, message: "Collection payment not found or access denied" };
       }
 
       const updated = await tx.opsClientPayment.update({
-        where: { id: paymentId },
+        where: { id: payment.id },
         data: {
           proofFileUrl: validatedUrl,
           proofUrl: validatedUrl,
@@ -501,36 +563,62 @@ exports.getCollectionDetailsWithAudit = async (req, res) => {
     const { paymentId } = req.params;
     const tenantId = resolveTenantId(req);
 
-    const payment = await prisma.opsClientPayment.findFirst({
-      where: { id: paymentId, tenantId },
-      include: {
-        booking: {
-          select: {
-            id: true,
-            bookingId: true,
-            fullName: true,
-            name: true,
-            phone: true,
-            email: true,
-            tripName: true,
-            tripId: true,
-            departureDate: true,
-            totalAmount: true,
-            advancePaid: true,
-          },
-        },
-        collectionAccount: true,
-      },
-    });
+    const payment = await resolveCollectionPayment(prisma, paymentId, tenantId);
 
     if (!payment) {
+      const cleanId = String(paymentId || "").replace(/^adv-/, "");
+      const booking = await prisma.booking.findFirst({
+        where: {
+          tenantId,
+          OR: [{ id: cleanId }, { bookingId: cleanId }],
+        },
+        select: {
+          id: true,
+          bookingId: true,
+          fullName: true,
+          name: true,
+          phone: true,
+          email: true,
+          tripName: true,
+          tripId: true,
+          departureDate: true,
+          totalAmount: true,
+          advancePaid: true,
+          paymentMode: true,
+          createdAt: true,
+        },
+      });
+
+      if (booking) {
+        return res.json({
+          success: true,
+          payment: {
+            id: paymentId,
+            tenantId,
+            bookingId: booking.bookingId || booking.id,
+            amount: booking.advancePaid || 0,
+            paymentMode: booking.paymentMode || "UPI",
+            status: "Pending Verification",
+            approvalStatus: "PENDING",
+            paymentDate: booking.createdAt,
+            booking,
+            collectionAccount: null,
+          },
+          auditTrail: [],
+          approvalChain: {
+            step1_financeController: { status: "PENDING" },
+            step2_founder: { status: "PENDING" },
+          },
+        });
+      }
+
       return res.status(404).json({ success: false, message: "Payment not found or access denied" });
     }
 
     const auditTrail = await prisma.financeAuditLog.findMany({
       where: {
         tenantId,
-        entityId: paymentId,
+        entityId: payment.id,
         entityType: "CUSTOMER_PAYMENT",
       },
       orderBy: { performedAt: "asc" },
