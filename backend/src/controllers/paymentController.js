@@ -801,7 +801,10 @@ exports.getFinanceVerificationQueue = async (req, res) => {
           tenantId,
           ticketStatus: { not: "CANCELLED" },
           ticketAmount: { gt: 0 },
-          financeStatus: { in: ["PENDING_VERIFICATION", "PENDING", null] },
+          OR: [
+            { financeStatus: { in: ["PENDING_VERIFICATION", "PENDING"] } },
+            { financeStatus: null },
+          ],
         },
         orderBy: { createdAt: "desc" },
         include: {
