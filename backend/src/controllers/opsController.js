@@ -963,12 +963,15 @@ exports.createHotelBooking = async (req, res) => {
           }
         }
 
+        const normalizedCheckIn = normalizeDepartureDateIndia(h.checkIn) || (h.checkIn ? new Date(h.checkIn) : null);
+        const normalizedCheckOut = normalizeDepartureDateIndia(h.checkOut) || (h.checkOut ? new Date(h.checkOut) : null);
+
         const dataObj = {
           vendorId: h.vendorId || null,
           hotelName: h.hotelName,
           location: h.location,
-          checkIn: h.checkIn ? new Date(h.checkIn) : null,
-          checkOut: h.checkOut ? new Date(h.checkOut) : null,
+          checkIn: normalizedCheckIn,
+          checkOut: normalizedCheckOut,
           roomType: h.roomType,
           numberOfRooms: parseInt(h.numberOfRooms || 1),
           confirmed: h.confirmed || "UNCONFIRMED",
