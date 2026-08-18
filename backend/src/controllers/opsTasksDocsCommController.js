@@ -197,49 +197,114 @@ exports.deleteChecklistTask = async (req, res) => {
 
 exports.getAllOperationsTasks = async (req, res) => {
   try {
-    const tenantId = req.user?.tenantId || "default";
+    const tenantId = req.user?.tenantId;
     const { assignee, source, status, priority, tripId, search } = req.query;
 
-    const where = { tenantId };
-
+    const checklistWhere = {};
+    if (tenantId && tenantId !== "default") {
+      checklistWhere.tenantId = tenantId;
+    }
     if (tripId && tripId !== "ALL") {
-      where.tripId = tripId;
+      checklistWhere.tripId = tripId;
     }
-
-    if (source && source !== "ALL") {
-      where.source = source;
+    if (source && source !== "ALL" && source !== "BOOKING") {
+      checklistWhere.source = source;
     }
-
     if (priority && priority !== "ALL") {
-      where.priority = priority;
+      checklistWhere.priority = priority;
     }
-
     if (status && status !== "ALL") {
-      where.status = status;
+      checklistWhere.status = status;
     }
-
     if (assignee && assignee !== "ALL") {
-      where.assignedTo = assignee;
+      checklistWhere.assignedTo = assignee;
     }
-
     if (search && search.trim()) {
-      where.OR = [
+      checklistWhere.OR = [
         { taskName: { contains: search, mode: "insensitive" } },
         { notes: { contains: search, mode: "insensitive" } },
         { remarks: { contains: search, mode: "insensitive" } },
       ];
     }
 
-    const tasks = await prisma.opsTripChecklist.findMany({
-      where,
-      orderBy: [
-        { isCompleted: "asc" },
-        { dueDate: "asc" },
-        { id: "desc" },
-      ],
-    });
+    let checklistTasks = [];
+    if (source !== "BOOKING") {
+      checklistTasks = await prisma.opsTripChecklist.findMany({
+        where: checklistWhere,
+        orderBy: [
+          { isCompleted: "asc" },
+          { dueDate: "asc" },
+          { id: "desc" },
+        ],
+      });
+    }
 
-    return res.json({ success: true, data: tasks });
+    let bookingTasks = [];
+    if (source === "ALL" || source === "BOOKING") {
+      const bWhere = {};
+      if (tenantId && tenantId !== "default") {
+        bWhere.tenantId = tenantId;
+      }
+      if (status && status !== "ALL") {
+        bWhere.status = status.toUpperCase();
+      }
+      if (assignee && assignee !== "ALL") {
+        bWhere.OR = [
+          { assignedToId: assignee },
+          { assignedTo: { name: { contains: assignee, mode: "insensitive" } } },
+        ];
+      }
+      if (search && search.trim()) {
+        bWhere.OR = [
+          { title: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+          { booking: { bookingId: { contains: search, mode: "insensitive" } } },
+          { booking: { fullName: { contains: search, mode: "insensitive" } } },
+        ];
+      }
+
+      const bRaw = await prisma.bookingTask.findMany({
+        where: bWhere,
+        include: {
+          booking: {
+            select: {
+              id: true,
+              bookingId: true,
+              tripId: true,
+              tripName: true,
+              departureDate: true,
+              fullName: true,
+              name: true,
+            },
+          },
+          assignedTo: { select: { id: true, name: true } },
+          assignedBy: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      bookingTasks = bRaw.map((bt) => ({
+        id: bt.id,
+        taskName: bt.title,
+        source: "BOOKING",
+        tripId: bt.booking?.tripId || "BOOKING",
+        departureDate: bt.booking?.departureDate ? new Date(bt.booking.departureDate).toISOString().split("T")[0] : null,
+        stage: "BOOKING_TASK",
+        assignedTo: bt.assignedTo?.name || "Unassigned",
+        assignedToId: bt.assignedToId,
+        assignedByName: bt.assignedBy?.name || null,
+        priority: "HIGH",
+        dueDate: bt.dueDate ? new Date(bt.dueDate).toISOString().split("T")[0] : bt.createdAt ? new Date(bt.createdAt).toISOString().split("T")[0] : null,
+        status: bt.status === "COMPLETED" ? "Completed" : bt.status === "IN_PROGRESS" ? "In Progress" : "Pending",
+        isCompleted: bt.status === "COMPLETED",
+        notes: `${bt.description || ""} (Booking: ${bt.booking?.bookingId || ""} - ${bt.booking?.fullName || bt.booking?.name || ""})`,
+        bookingId: bt.booking?.id,
+        bookingReadableId: bt.booking?.bookingId,
+      }));
+    }
+
+    const combined = [...bookingTasks, ...checklistTasks];
+    return res.json({ success: true, data: combined });
   } catch (err) {
     console.error("getAllOperationsTasks error:", err);
     return res.status(500).json({ success: false, message: "Failed to fetch all tasks" });

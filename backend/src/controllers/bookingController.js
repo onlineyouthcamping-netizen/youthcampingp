@@ -2679,17 +2679,21 @@ exports.getBookingTasks = async (req, res, next) => {
   try {
     const { id } = req.params;
     const tenantId = req.user?.tenantId;
-    // Verify booking belongs to tenant
+    // Verify booking exists using either internal ID or readable bookingId
     const booking = await prisma.booking.findFirst({
-      where: { id, tenantId },
+      where: {
+        OR: [{ id }, { bookingId: id }],
+        ...(tenantId && tenantId !== "default" ? { tenantId } : {}),
+      },
       select: { id: true },
     });
     if (!booking)
       return res
         .status(404)
         .json({ success: false, message: "Booking not found" });
+
     const tasks = await prisma.bookingTask.findMany({
-      where: { bookingId: id },
+      where: { bookingId: booking.id },
       include: {
         assignedBy: { select: { id: true, name: true } },
         assignedTo: { select: { id: true, name: true } },
@@ -2717,10 +2721,13 @@ exports.createBookingTask = async (req, res, next) => {
         });
     }
 
-    // Verify booking exists and belongs to tenant
+    // Verify booking exists using either internal ID or readable bookingId
     const booking = await prisma.booking.findFirst({
-      where: { id, tenantId },
-      select: { id: true },
+      where: {
+        OR: [{ id }, { bookingId: id }],
+        ...(tenantId && tenantId !== "default" ? { tenantId } : {}),
+      },
+      select: { id: true, bookingId: true },
     });
     if (!booking)
       return res
@@ -2730,7 +2737,7 @@ exports.createBookingTask = async (req, res, next) => {
     const task = await prisma.bookingTask.create({
       data: {
         tenantId,
-        bookingId: id,
+        bookingId: booking.id,
         title,
         description: description || "",
         assignedById: req.user.id,
@@ -2746,21 +2753,20 @@ exports.createBookingTask = async (req, res, next) => {
 
     // Log in activity log
     await logBookingActivity({
-      bookingId: id,
+      bookingId: booking.id,
       action: "TASK_ASSIGNED",
       details: `Task "${title}" assigned to ${task.assignedTo?.name || "junior"} by ${task.assignedBy?.name || "senior"}`,
       performedByAdminId: req.user.id,
     });
 
     if (assignedToId && assignedToId !== req.user.id) {
-      const fullBooking = await prisma.booking.findUnique({ where: { id } });
       await prisma.notification.create({
         data: {
           tenantId,
           userId: assignedToId,
           title: "New Task Assigned",
-          message: `You have been assigned a new task: "${title}" for booking ${fullBooking?.bookingId || "Unknown"}`,
-          link: `/admin/bookings?id=${id}&tab=tasks`,
+          message: `You have been assigned a new task: "${title}" for booking ${booking.bookingId || "Unknown"}`,
+          link: `/admin/bookings?id=${booking.id}&tab=tasks`,
         },
       });
     }
@@ -2778,7 +2784,10 @@ exports.updateBookingTask = async (req, res, next) => {
     const tenantId = req.user?.tenantId;
 
     const existingTask = await prisma.bookingTask.findFirst({
-      where: { id: taskId, tenantId },
+      where: {
+        id: taskId,
+        ...(tenantId && tenantId !== "default" ? { tenantId } : {}),
+      },
       include: {
         assignedBy: { select: { id: true, name: true } },
         assignedTo: { select: { id: true, name: true } },
@@ -3352,10 +3361,13 @@ exports.updateBookingStatus = async (req, res, next) => {
 
 exports.getAllBookingTasks = async (req, res, next) => {
   try {
-    const tenantId = req.user?.tenantId || "default";
+    const tenantId = req.user?.tenantId;
     const { status, assignee } = req.query;
 
-    const where = { tenantId };
+    const where = {};
+    if (tenantId && tenantId !== "default") {
+      where.tenantId = tenantId;
+    }
     if (status && status !== "ALL") {
       where.status = status;
     }
@@ -3367,7 +3379,13 @@ exports.getAllBookingTasks = async (req, res, next) => {
       where,
       include: {
         booking: {
-          select: { id: true, bookingId: true },
+          select: {
+            id: true,
+            bookingId: true,
+            fullName: true,
+            name: true,
+            tripName: true,
+          },
         },
         assignedBy: { select: { id: true, name: true } },
         assignedTo: { select: { id: true, name: true } },
@@ -3375,7 +3393,7 @@ exports.getAllBookingTasks = async (req, res, next) => {
       orderBy: { createdAt: "desc" },
     });
 
-    res.json(tasks);
+    res.json({ success: true, data: tasks });
   } catch (error) {
     next(error);
   }
