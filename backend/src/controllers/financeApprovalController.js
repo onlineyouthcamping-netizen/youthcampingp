@@ -210,8 +210,9 @@ exports.approveCollectionFounder = async (req, res) => {
       const rawProofUrl = proofFileUrl || payment.proofFileUrl || payment.proofUrl;
       const validProofUrl = sanitizeProofUrl(rawProofUrl);
 
-      // Mandatory Proof Check
-      if (!validProofUrl) {
+      // Mandatory Proof Check (Skip for CASH)
+      const isCash = payment.paymentMode && payment.paymentMode.toUpperCase().includes("CASH");
+      if (!validProofUrl && !isCash) {
         throw {
           statusCode: 400,
           message: "Valid receipt/payment proof screenshot is required before Founder approval.",
