@@ -16,6 +16,7 @@ html {
   max-width: 100vw !important;
   overflow-x: clip !important;
   scroll-behavior: smooth;
+  text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -58,6 +59,7 @@ html {
   background-image: none !important;
   box-shadow: none !important;
   filter: none !important;
+  -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
   outline: none !important;
   will-change: auto;
@@ -373,8 +375,8 @@ canvas,
   border: 0;
   padding: 0;
   margin: 0;
-  appearance: none;
   -webkit-appearance: none;
+  appearance: none;
   display: block;
   width: 100%;
   color: inherit;
@@ -1719,7 +1721,7 @@ article h3 {
   padding: 0 !important;
   margin-bottom: 6px !important;
   border-radius: 0 !important;
-  min-height: auto !important;
+  min-height: 0 !important;
 }
 
 .day-badge {
