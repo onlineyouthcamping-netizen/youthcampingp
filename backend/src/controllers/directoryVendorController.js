@@ -1091,6 +1091,8 @@ exports.updateDirectoryVendor = async (req, res, next) => {
           ? typeof req.body.mealTariffs === "string"
             ? req.body.mealTariffs
             : JSON.stringify(req.body.mealTariffs)
+          : isRest
+          ? undefined
           : mealPlans || undefined,
         amenities: amenities !== undefined ? amenities : undefined,
         roomTypes: resolvedRoomTypes,
