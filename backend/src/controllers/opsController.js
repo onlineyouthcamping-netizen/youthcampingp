@@ -4540,7 +4540,9 @@ exports.createActivity = async (req, res) => {
 
 exports.updateActivity = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id, tripId } = req.params;
+    const ctx = await parseDepartureFilter(req, res, false);
+
     const {
       dayNumber,
       date,
@@ -4577,36 +4579,71 @@ exports.updateActivity = async (req, res) => {
       }
     }
 
-    const activity = await prisma.opsActivity.update({
-      where: { id },
-      data: {
-        dayNumber: dayNumber !== undefined ? Number(dayNumber) : undefined,
-        date: date !== undefined ? (date ? new Date(date) : null) : undefined,
-        name,
-        type,
-        startTime,
-        endTime,
-        location,
-        description,
-        responsibleGuideId:
-          responsibleGuideId !== undefined
-            ? responsibleGuideId || null
-            : undefined,
-        responsibleStaff,
-        vendorId: validVendorId,
-        vendorName,
-        estimatedCost:
-          estimatedCost !== undefined ? Number(estimatedCost) : undefined,
-        actualCost: actualCost !== undefined ? Number(actualCost) : undefined,
-        maxParticipants:
-          maxParticipants !== undefined ? Number(maxParticipants) : undefined,
-        safetyInstructions,
-        requiredEquipment,
-        status,
-        remarks,
-        order: order !== undefined ? Number(order) : undefined,
-      },
-    });
+    const existing = await prisma.opsActivity.findUnique({ where: { id } }).catch(() => null);
+    let activity;
+
+    if (existing) {
+      activity = await prisma.opsActivity.update({
+        where: { id },
+        data: {
+          dayNumber: dayNumber !== undefined ? Number(dayNumber) : undefined,
+          date: date !== undefined ? (date ? new Date(date) : null) : undefined,
+          name: name || undefined,
+          type: type || undefined,
+          startTime: startTime || undefined,
+          endTime: endTime || undefined,
+          location: location !== undefined ? location : undefined,
+          description: description !== undefined ? description : undefined,
+          responsibleGuideId:
+            responsibleGuideId !== undefined
+              ? responsibleGuideId || null
+              : undefined,
+          responsibleStaff: responsibleStaff !== undefined ? responsibleStaff : undefined,
+          vendorId: validVendorId,
+          vendorName: vendorName !== undefined ? vendorName : undefined,
+          estimatedCost:
+            estimatedCost !== undefined ? Number(estimatedCost) : undefined,
+          actualCost: actualCost !== undefined ? Number(actualCost) : undefined,
+          maxParticipants:
+            maxParticipants !== undefined ? Number(maxParticipants) : undefined,
+          safetyInstructions,
+          requiredEquipment,
+          status: status || undefined,
+          remarks: remarks !== undefined ? remarks : undefined,
+          order: order !== undefined ? Number(order) : undefined,
+        },
+      });
+    } else if (ctx) {
+      activity = await prisma.opsActivity.create({
+        data: {
+          tenantId: ctx.tenantId,
+          tripId: ctx.tripId,
+          departureDate: ctx.departureDate,
+          dayNumber: Number(dayNumber) || 1,
+          date: date ? new Date(date) : null,
+          name: name || "Activity",
+          type: type || "ADVENTURE",
+          startTime: startTime || "10:00 AM",
+          endTime: endTime || "01:00 PM",
+          location: location || "",
+          description: description || "",
+          responsibleGuideId: responsibleGuideId || null,
+          responsibleStaff: responsibleStaff || "",
+          vendorId: validVendorId,
+          vendorName: vendorName || undefined,
+          estimatedCost: Number(estimatedCost) || 0,
+          actualCost: Number(actualCost) || 0,
+          maxParticipants: Number(maxParticipants) || 0,
+          safetyInstructions: safetyInstructions || "",
+          requiredEquipment: requiredEquipment || "",
+          status: status || "CONFIRMED",
+          remarks: remarks || "",
+          order: Number(order) || 0,
+        },
+      });
+    } else {
+      return res.status(404).json({ success: false, message: "Activity record not found" });
+    }
 
     return res.json({ success: true, data: activity });
   } catch (err) {
