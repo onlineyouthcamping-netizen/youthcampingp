@@ -126,6 +126,20 @@ const guardBookingUpdateFields = (req, res, next) => {
       "foodPreference",
       "status",
       "joiningDate",
+      // Financial / Accounting fields
+      "paymentStatus",
+      "payment_status",
+      "paymentMethod",
+      "payment_method",
+      "upiReference",
+      "upi_reference",
+      "paymentNotes",
+      "advancePaid",
+      "remainingAmount",
+      "invoiceStatus",
+      "totalAmount",
+      "discount",
+      "couponCode",
     ];
 
     const violations = bodyKeys.filter((k) => !OPERATIONS_ALLOWED.includes(k));
