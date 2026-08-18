@@ -374,4 +374,77 @@ router.post(
   snapshotTripPnL
 );
 
+// ─────────────────────────────────────────────────────────────
+// 9. FINANCE APPROVAL WORKFLOW & AUDIT TRAIL
+// ─────────────────────────────────────────────────────────────
+const {
+  reviewCollectionFC,
+  approveCollectionFounder,
+  rejectCollection,
+  uploadCollectionProof,
+  getCollectionDetailsWithAudit,
+  reviewVendorPaymentFC,
+  approveVendorPaymentFounder,
+  rejectVendorPayment,
+  getPendingApprovals,
+  getMonthlyReconciliation,
+} = require("../controllers/financeApprovalController");
+
+// Collections 2-Tier Approval
+router.patch(
+  "/collections/:paymentId/review-fc",
+  requirePermission(["finance.collections.review", "finance.incoming.verify", "accounting.approve", "finance.control_center.view"]),
+  reviewCollectionFC
+);
+router.patch(
+  "/collections/:paymentId/approve-founder",
+  requirePermission(["finance.collections.approve_founder", "finance.incoming.approve"]),
+  approveCollectionFounder
+);
+router.patch(
+  "/collections/:paymentId/reject",
+  requirePermission(["finance.collections.reject", "finance.incoming.reject", "accounting.approve"]),
+  rejectCollection
+);
+router.post(
+  "/collections/:paymentId/upload-proof",
+  requirePermission(["finance.proof.upload", "finance.collections.review", "accounting.approve", "ops.manage"]),
+  uploadCollectionProof
+);
+router.get(
+  "/collections/:paymentId",
+  requirePermission(["finance.payments.view", "accounting.view", "finance.audit.view", "finance.control_center.view"]),
+  getCollectionDetailsWithAudit
+);
+
+// Vendor Payouts Approval
+router.patch(
+  "/vendor-payments/:paymentId/review-fc",
+  requirePermission(["finance.vendor.review", "finance.outgoing.verify", "accounting.approve"]),
+  reviewVendorPaymentFC
+);
+router.patch(
+  "/vendor-payments/:paymentId/approve-founder",
+  requirePermission(["finance.vendor.approve_founder", "finance.outgoing.approve"]),
+  approveVendorPaymentFounder
+);
+router.patch(
+  "/vendor-payments/:paymentId/reject",
+  requirePermission(["finance.vendor.reject", "finance.outgoing.reject", "accounting.approve"]),
+  rejectVendorPayment
+);
+
+// Pending Queue & Monthly Reconciliation Report
+router.get(
+  "/approvals/pending",
+  requirePermission(["finance.incoming.verify", "finance.control_center.view", "accounting.view", "finance.payments.view"]),
+  getPendingApprovals
+);
+router.get(
+  "/reconciliation/monthly/:year/:month",
+  requirePermission(["finance.reconciliation.view", "finance.accounting.view", "accounting.view", "reports.view"]),
+  getMonthlyReconciliation
+);
+
 module.exports = router;
+

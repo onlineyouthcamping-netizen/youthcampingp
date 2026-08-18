@@ -3296,6 +3296,23 @@ model OpsVendorPayment {
   transactionId      String?
   invoiceProof       String?
   status             String    @default("Not Paid") // Not Paid, Advance Paid, Partially Paid, Pending Approval, Paid, Rejected
+  
+  // Approval Workflow Fields
+  approvalStatus          String    @default("PENDING") // PENDING, REVIEWED_FINANCE_CONTROLLER, APPROVED_FOUNDER, REJECTED
+  reviewedByFinanceAt     DateTime?
+  reviewedByFinanceId     String?
+  approvedByFounderAt     DateTime?
+  approvedByFounderId     String?
+  requiresFounderApproval Boolean   @default(false)
+  rejectionReason         String?   @db.Text
+  rejectionAt             DateTime?
+  rejectedById            String?
+  
+  // Proof Tracking
+  invoiceFileUrl          String?
+  advanceProofUrl         String?
+  settlementProofUrl      String?
+
   paidBy              String?
   collectionAccountId String?
   remarks             String?   @db.Text
@@ -3308,6 +3325,7 @@ model OpsVendorPayment {
   @@index([tenantId])
   @@index([tripId, departureDate])
   @@index([collectionAccountId])
+  @@index([approvalStatus])
 }
 
 // ── NEW: CLIENT RECEIPTS/PAYMENTS TRACKER ──
@@ -3322,6 +3340,23 @@ model OpsClientPayment {
   paymentDate         DateTime?
   proofUrl            String?
   status              String                   @default("Pending Verification") // Unpaid, Partially Paid, Paid, Pending Verification, Verified, Rejected, Refunded
+  
+  // Approval Workflow Fields
+  approvalStatus        String                 @default("PENDING") // PENDING, REVIEWED_FINANCE_CONTROLLER, APPROVED_FOUNDER, REJECTED
+  reviewedByFinanceAt   DateTime?
+  reviewedByFinanceId   String?
+  approvedByFounderAt   DateTime?
+  approvedByFounderId   String?
+  rejectionReason       String?                @db.Text
+  rejectionAt           DateTime?
+  rejectedById          String?
+  
+  // Proof Tracking Metadata
+  proofFileUrl          String?
+  proofUploadedAt       DateTime?
+  proofFileName         String?
+  proofFileType         String?
+
   collectedBy         String?                  // Legacy display name
   recordedByUserId    String?                  // Audit admin who recorded payment
   remarks             String?                  @db.Text
@@ -3334,6 +3369,7 @@ model OpsClientPayment {
   @@index([tenantId])
   @@index([bookingId])
   @@index([collectionAccountId])
+  @@index([approvalStatus])
 }
 
 // ── DEPARTURE-WISE DOCUMENTS ──
@@ -5303,4 +5339,30 @@ model Notification {
   @@index([userId])
   @@index([isRead])
 }
+
+// ── COMPLIANCE & AUDIT LOGGING FOR FINANCE ──
+model FinanceAuditLog {
+  id                String   @id @default(cuid())
+  tenantId          String   @default("default")
+  entityType        String   // CUSTOMER_PAYMENT, VENDOR_PAYMENT, STATION_PAYMENT, REFUND
+  entityId          String
+  tripId            String?
+  action            String   // CREATED, REVIEWED_FC, APPROVED_FOUNDER, REJECTED, PROOF_UPLOADED, STATUS_CHANGED
+  performedBy       String   // user ID
+  performedByName   String   // user display name
+  performedAt       DateTime @default(now())
+  oldValue          String?  @db.Text
+  newValue          String?  @db.Text
+  changeDescription String   @db.Text
+  reason            String?  @db.Text
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([entityType, entityId])
+  @@index([performedBy])
+  @@index([performedAt])
+}
+
 

@@ -193,6 +193,16 @@ const PERMISSIONS = [
   "finance.audit.export",
   "finance.accounting.view",
   "finance.accounting.manage",
+
+  // Finance 2-Tier Approval Workflow
+  "finance.collections.review",
+  "finance.collections.approve_founder",
+  "finance.collections.reject",
+  "finance.vendor.review",
+  "finance.vendor.approve_founder",
+  "finance.vendor.reject",
+  "finance.proof.upload",
+  "finance.reconciliation.view",
 ];
 
 const { isProtectedSuperadminIdentity } = require("./superadmin");
@@ -499,6 +509,16 @@ const ROLE_PERMISSIONS = {
     "finance.audit.export",
     "finance.accounting.view",
     "finance.accounting.manage",
+
+    // Approval Workflow
+    "finance.collections.review",
+    "finance.collections.approve_founder",
+    "finance.collections.reject",
+    "finance.vendor.review",
+    "finance.vendor.approve_founder",
+    "finance.vendor.reject",
+    "finance.proof.upload",
+    "finance.reconciliation.view",
   ],
 
   guide: [
