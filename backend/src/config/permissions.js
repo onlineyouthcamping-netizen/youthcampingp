@@ -404,6 +404,11 @@ const ROLE_PERMISSIONS = {
     "company_documents.view",
     "recurring_tasks.view",
     "recurring_tasks.assign",
+    // Accounting & Payments - ops needs to view/update booking financials
+    "accounting.view",
+    "accounting.submit",
+    "payments.view",
+    "payments.edit",
     // Station Payment Collection - ops can collect and handover
     "station_payments.view",
     "station_payments.collect",

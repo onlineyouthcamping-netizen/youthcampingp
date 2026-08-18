@@ -707,6 +707,7 @@ exports.getFinanceVerificationQueue = async (req, res) => {
       pendingClientPayments,
       pendingStationPayments,
       pendingVendorPayments,
+      pendingTrainTickets,
     ] = await Promise.all([
       prisma.opsClientPayment.findMany({
         where: {
