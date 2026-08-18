@@ -422,6 +422,22 @@ exports.deleteAccount = async (req, res) => {
     const { id } = req.params;
     const tenantId = resolveTenantId(req);
 
+    // Check if account has any linked transactions
+    const [clientCount, vendorCount, stationCount] = await Promise.all([
+      prisma.opsClientPayment.count({ where: { collectionAccountId: id } }),
+      prisma.opsVendorPayment.count({ where: { collectionAccountId: id } }),
+      prisma.stationPaymentCollection.count({ where: { receivingAccountId: id } }),
+    ]);
+
+    if (clientCount === 0 && vendorCount === 0 && stationCount === 0) {
+      // Safe to permanently delete if no linked transactions exist
+      await prisma.paymentReceivingAccount.delete({ where: { id } });
+      return res.json({
+        success: true,
+        message: "Collection account permanently deleted",
+      });
+    }
+
     // Soft delete by deactivating so historical records are never orphaned
     const updated = await prisma.paymentReceivingAccount.update({
       where: { id },
@@ -431,7 +447,7 @@ exports.deleteAccount = async (req, res) => {
     return res.json({
       success: true,
       data: updated,
-      message: "Collection account deactivated successfully",
+      message: "Collection account archived successfully",
     });
   } catch (err) {
     console.error("deleteAccount error:", err);
