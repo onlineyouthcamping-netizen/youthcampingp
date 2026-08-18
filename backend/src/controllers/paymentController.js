@@ -168,11 +168,23 @@ exports.addClientPayment = async (req, res) => {
     // Resolve or fallback to default active collection account
     let targetAccountId = collectionAccountId || null;
     if (!targetAccountId) {
-      const defaultAcc = await prisma.paymentReceivingAccount.findFirst({
-        where: { tenantId, isActive: true },
-        orderBy: { createdAt: "asc" },
-      });
-      targetAccountId = defaultAcc?.id || null;
+      if (paymentMode && String(paymentMode).toUpperCase().includes("CASH")) {
+        const cashAcc = await prisma.paymentReceivingAccount.findFirst({
+          where: {
+            tenantId,
+            isActive: true,
+            OR: [{ accountType: "CASH" }, { accountName: { contains: "Cash", mode: "insensitive" } }],
+          },
+        });
+        targetAccountId = cashAcc?.id || null;
+      }
+      if (!targetAccountId) {
+        const defaultAcc = await prisma.paymentReceivingAccount.findFirst({
+          where: { tenantId, isActive: true },
+          orderBy: { createdAt: "asc" },
+        });
+        targetAccountId = defaultAcc?.id || null;
+      }
     }
 
     const receipt = await prisma.opsClientPayment.create({

@@ -131,10 +131,9 @@ exports.getAccounts = async (req, res) => {
         prisma.opsClientPayment.findMany({
           where: {
             tenantId,
-            collectionAccountId: { in: accountIds },
             status: { not: "Rejected" },
           },
-          select: { collectionAccountId: true, amount: true, createdAt: true },
+          select: { collectionAccountId: true, amount: true, paymentMode: true, createdAt: true },
         }),
         prisma.stationPaymentCollection.findMany({
           where: {
@@ -168,17 +167,30 @@ exports.getAccounts = async (req, res) => {
         }),
       ]);
 
+    const cashAccount = accounts.find(
+      (a) => a.accountType === "CASH" || a.accountName.toLowerCase().includes("cash"),
+    );
+
     const collectedMap = {};
     const submittedMap = {};
     const vendorPaidMap = {};
     const lastActivityMap = {};
 
     clientPayments.forEach((p) => {
-      if (!p.collectionAccountId) return;
-      collectedMap[p.collectionAccountId] =
-        (collectedMap[p.collectionAccountId] || 0) + (Number(p.amount) || 0);
-      const cur = lastActivityMap[p.collectionAccountId];
-      if (!cur || p.createdAt > cur) lastActivityMap[p.collectionAccountId] = p.createdAt;
+      let targetAccId = p.collectionAccountId;
+      if (
+        (!targetAccId || !accountIds.includes(targetAccId)) &&
+        p.paymentMode &&
+        p.paymentMode.toUpperCase().includes("CASH") &&
+        cashAccount
+      ) {
+        targetAccId = cashAccount.id;
+      }
+      if (!targetAccId) return;
+      collectedMap[targetAccId] =
+        (collectedMap[targetAccId] || 0) + (Number(p.amount) || 0);
+      const cur = lastActivityMap[targetAccId];
+      if (!cur || p.createdAt > cur) lastActivityMap[targetAccId] = p.createdAt;
     });
 
     stationPayments.forEach((p) => {
@@ -476,10 +488,29 @@ exports.getAccountLedger = async (req, res) => {
         .json({ success: false, message: "Collection account not found" });
     }
 
+    const isCash =
+      account.accountType === "CASH" ||
+      account.accountName.toLowerCase().includes("cash");
+
+    const clientPaymentsWhere = {
+      tenantId,
+      status: { not: "Rejected" },
+    };
+
+    if (isCash) {
+      clientPaymentsWhere.OR = [
+        { collectionAccountId: id },
+        { paymentMode: { contains: "CASH", mode: "insensitive" } },
+        { paymentMode: { in: ["CASH", "Cash", "cash", "OFFICE CASH", "Office Cash"] } },
+      ];
+    } else {
+      clientPaymentsWhere.collectionAccountId = id;
+    }
+
     const [clientPayments, stationPayments, submissions, vendorPayments, trainTickets] =
       await Promise.all([
         prisma.opsClientPayment.findMany({
-          where: { collectionAccountId: id, tenantId },
+          where: clientPaymentsWhere,
           orderBy: { createdAt: "desc" },
           include: {
             booking: {
