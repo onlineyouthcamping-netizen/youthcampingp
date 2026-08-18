@@ -23,6 +23,7 @@ const {
   getBookingTasks,
   createBookingTask,
   updateBookingTask,
+  getAllBookingTasks,
   uploadPassengerDocument,
   downloadPassengerDocument,
   deletePassengerDocument,
@@ -122,6 +123,7 @@ router.post(
 router.get("/colleagues/list", authenticate, getColleagues);
 router.put("/tasks/:taskId", authenticate, updateBookingTask);
 
+router.get("/tasks/all", authenticate, getAllBookingTasks);
 router.get("/my-bookings", authenticate, getMyBookings);
 
 router.get(

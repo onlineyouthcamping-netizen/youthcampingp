@@ -101,6 +101,7 @@ app.use("/api/trips-vendors", require("./routes/tripVendors"));
 app.use("/api/trips-sops", require("./routes/tripSOPs"));
 app.use("/api/departure-pricing", require("./routes/departurePricingRoutes"));
 app.use("/api/bookings", require("./routes/bookingRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/booking-links", require("./routes/bookingLinkRoutes"));
 app.use("/api/inquiries", require("./routes/inquiryRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));

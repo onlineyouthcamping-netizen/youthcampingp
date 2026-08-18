@@ -47,6 +47,7 @@ model Admin {
   bookingActivityLogs BookingActivityLog[]     @relation("BookingActivityActor")
   assignedTasks       BookingTask[]            @relation("TaskAssignedBy")
   receivedTasks       BookingTask[]            @relation("TaskAssignedTo")
+  notifications       Notification[]           @relation("UserNotifications")
 
   // Travel Desk Knowledge Management relations
   authoredKnowledge       TripKnowledge[]    @relation("KnowledgeAuthor")
@@ -5284,5 +5285,22 @@ model TripAccounting {
   @@index([tripId])
   @@index([paymentStatus])
   @@index([refundStatus])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("default")
+  userId    String
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user Admin @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([isRead])
 }
 

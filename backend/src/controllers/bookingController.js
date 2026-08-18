@@ -2752,6 +2752,19 @@ exports.createBookingTask = async (req, res, next) => {
       performedByAdminId: req.user.id,
     });
 
+    if (assignedToId && assignedToId !== req.user.id) {
+      const fullBooking = await prisma.booking.findUnique({ where: { id } });
+      await prisma.notification.create({
+        data: {
+          tenantId,
+          userId: assignedToId,
+          title: "New Task Assigned",
+          message: `You have been assigned a new task: "${title}" for booking ${fullBooking?.bookingId || "Unknown"}`,
+          link: `/admin/bookings?id=${id}&tab=tasks`,
+        },
+      });
+    }
+
     res.status(201).json({ success: true, data: task });
   } catch (error) {
     next(error);
@@ -3332,6 +3345,37 @@ exports.updateBookingStatus = async (req, res, next) => {
       message: "Booking status updated",
       data: updatedBooking,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAllBookingTasks = async (req, res, next) => {
+  try {
+    const tenantId = req.user?.tenantId || "default";
+    const { status, assignee } = req.query;
+
+    const where = { tenantId };
+    if (status && status !== "ALL") {
+      where.status = status;
+    }
+    if (assignee && assignee !== "ALL") {
+      where.assignedToId = assignee;
+    }
+
+    const tasks = await prisma.bookingTask.findMany({
+      where,
+      include: {
+        booking: {
+          select: { id: true, bookingId: true },
+        },
+        assignedBy: { select: { id: true, name: true } },
+        assignedTo: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(tasks);
   } catch (error) {
     next(error);
   }
