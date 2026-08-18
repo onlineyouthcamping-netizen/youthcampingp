@@ -24,6 +24,14 @@ const safeParseDate = (dateVal) => {
   return isNaN(d.getTime()) ? null : d;
 };
 
+// Safe age validation — ensures age is an integer between 1 and 120
+function sanitizeAge(val) {
+  if (val === undefined || val === null || val === "" || val === "N/A") return null;
+  const num = parseInt(val, 10);
+  if (isNaN(num) || num < 1 || num > 120) return null;
+  return num;
+}
+
 // Safe monetary amount validation — rejects NaN, Infinity, negative, and non-finite values
 function validateAmount(value, label = "amount") {
   if (value === undefined || value === null) {
@@ -557,59 +565,85 @@ exports.getBookings = async (req, res, next) => {
       });
     }
 
+    const isCompact =
+      req.query.compact === "true" || req.query.compact === true;
+
     const queryStart = Date.now();
     const [totalCount, bookings] = await Promise.all([
       totalPromise,
       prisma.booking.findMany({
         where,
-        select: {
-          id: true,
-          bookingId: true,
-          tripId: true,
-          tripName: true,
-          status: true,
-          name: true,
-          fullName: true,
-          mobile: true,
-          email: true,
-          age: true,
-          gender: true,
-          numberOfTravelers: true,
-          totalAmount: true,
-          advancePaid: true,
-          remainingAmount: true,
-          paymentMode: true,
-          paymentStatus: true,
-          payment_status: true,
-          payment_method: true,
-          upi_reference: true,
-          notes: true,
-          departureDate: true,
-          createdAt: true,
-          salesAdminId: true,
-          salesAdmin: {
-            select: {
+        select: isCompact
+          ? {
               id: true,
-              name: true,
-              email: true,
-            },
-          },
-          baseAmount: true,
-          gstAmount: true,
-          sourceMeta: true,
-          passengers: true,
-          trainTicketStatus: true,
-          trainTicketRequired: true,
-          sourceBookingLink: {
-            select: {
-              id: true,
-              tokenPrefix: true,
-              expiresAt: true,
+              bookingId: true,
+              tripId: true,
+              tripName: true,
               status: true,
-              shareUrl: true,
+              name: true,
+              fullName: true,
+              mobile: true,
+              email: true,
+              numberOfTravelers: true,
+              totalAmount: true,
+              advancePaid: true,
+              remainingAmount: true,
+              paymentStatus: true,
+              payment_status: true,
+              departureDate: true,
+              createdAt: true,
+              salesAdminId: true,
+              passengers: true,
+              pickupCity: true,
+            }
+          : {
+              id: true,
+              bookingId: true,
+              tripId: true,
+              tripName: true,
+              status: true,
+              name: true,
+              fullName: true,
+              mobile: true,
+              email: true,
+              age: true,
+              gender: true,
+              numberOfTravelers: true,
+              totalAmount: true,
+              advancePaid: true,
+              remainingAmount: true,
+              paymentMode: true,
+              paymentStatus: true,
+              payment_status: true,
+              payment_method: true,
+              upi_reference: true,
+              notes: true,
+              departureDate: true,
+              createdAt: true,
+              salesAdminId: true,
+              salesAdmin: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+              baseAmount: true,
+              gstAmount: true,
+              sourceMeta: true,
+              passengers: true,
+              trainTicketStatus: true,
+              trainTicketRequired: true,
+              sourceBookingLink: {
+                select: {
+                  id: true,
+                  tokenPrefix: true,
+                  expiresAt: true,
+                  status: true,
+                  shareUrl: true,
+                },
+              },
             },
-          },
-        },
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
@@ -1552,7 +1586,7 @@ exports.updateBooking = async (req, res, next) => {
         if (updateData.gender === undefined && lead.gender)
           updateData.gender = lead.gender;
         if (updateData.age === undefined && lead.age)
-          updateData.age = parseInt(lead.age) || null;
+          updateData.age = sanitizeAge(lead.age);
       }
     }
 
@@ -1564,8 +1598,8 @@ exports.updateBooking = async (req, res, next) => {
       updateData.amount = Number(updateData.amount) || 0;
     if (updateData.remainingAmount !== undefined)
       updateData.remainingAmount = Number(updateData.remainingAmount) || 0;
-    if (updateData.age !== undefined && updateData.age !== null)
-      updateData.age = parseInt(updateData.age) || null;
+    if (updateData.age !== undefined)
+      updateData.age = sanitizeAge(updateData.age);
     if (
       updateData.departureDate !== undefined &&
       updateData.departureDate !== null &&

@@ -165,6 +165,14 @@ exports.getCompactTrips = async (req, res, next) => {
   }
 };
 
+let cachedPublicCards = null;
+let cachedPublicCardsExpiresAt = 0;
+
+const invalidatePublicTripCache = () => {
+  cachedPublicCards = null;
+  cachedPublicCardsExpiresAt = 0;
+};
+
 /**
  * Lightweight published trip cards for the public website.
  * Existing /api/trips responses remain unchanged for backwards compatibility.
@@ -176,6 +184,17 @@ exports.getPublicTripCards = async (req, res, next) => {
     const take = Number.isFinite(requestedLimit)
       ? Math.max(1, Math.min(requestedLimit, 100))
       : undefined;
+
+    const now = Date.now();
+    if (!take && cachedPublicCards && now < cachedPublicCardsExpiresAt) {
+      setPublicCache(res, 180);
+      return res.json({
+        success: true,
+        count: cachedPublicCards.length,
+        data: cachedPublicCards,
+      });
+    }
+
     const trips = await prisma.trip.findMany({
       where: { tenantId: "default", status: "published" },
       select: {
@@ -204,6 +223,11 @@ exports.getPublicTripCards = async (req, res, next) => {
       variants: toPublicVariantSummary(trip.variants),
       route: toPublicRouteSummary(trip.route),
     }));
+
+    if (!take) {
+      cachedPublicCards = data;
+      cachedPublicCardsExpiresAt = now + 60000; // 60s
+    }
 
     setPublicCache(res, 180);
     res.json({ success: true, count: data.length, data });
@@ -595,6 +619,7 @@ exports.createTrip = async (req, res, next) => {
       }
     }
 
+    invalidatePublicTripCache();
     res.status(201).json({ success: true, data: trip });
   } catch (error) {
     console.error("Error creating trip:", error);
@@ -741,6 +766,7 @@ exports.updateTrip = async (req, res, next) => {
       });
     }
 
+    invalidatePublicTripCache();
     res.json({ success: true, message: "Trip updated successfully" });
   } catch (error) {
     next(error);
@@ -841,6 +867,7 @@ exports.deleteTrip = async (req, res, next) => {
       });
     }
 
+    invalidatePublicTripCache();
     res.json({ success: true, message: "Trip removed successfully" });
   } catch (error) {
     console.error("deleteTrip error:", error);

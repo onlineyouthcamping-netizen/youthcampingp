@@ -41,34 +41,73 @@ async function getTripPnL(req, res) {
 
     const bookings = await prisma.booking.findMany({
       where: bookingWhere,
-      include: {
-        refundTransactions: { where: { status: "COMPLETED" } },
-        couponRedemptions: true,
-        creditNoteUsages: true,
+      select: {
+        id: true,
+        numberOfTravelers: true,
+        totalAmount: true,
+        amount: true,
+        advancePaid: true,
+        refundTransactions: {
+          where: { status: "COMPLETED" },
+          select: { id: true, refundAmount: true, creditNoteAmount: true },
+        },
+        couponRedemptions: {
+          select: { id: true, discountAmount: true },
+        },
+        creditNoteUsages: {
+          select: { id: true, amountUsed: true },
+        },
       },
     });
 
-    const totalPax = bookings.reduce((sum, b) => sum + (Number(b.numberOfTravelers) || 1), 0);
-    const grossSellingPrice = bookings.reduce((sum, b) => sum + (Number(b.totalAmount || b.amount) || 0), 0);
-    const totalCollected = bookings.reduce((sum, b) => sum + (Number(b.advancePaid) || 0), 0);
+    const totalPax = bookings.reduce(
+      (sum, b) => sum + (Number(b.numberOfTravelers) || 1),
+      0,
+    );
+    const grossSellingPrice = bookings.reduce(
+      (sum, b) => sum + (Number(b.totalAmount || b.amount) || 0),
+      0,
+    );
+    const totalCollected = bookings.reduce(
+      (sum, b) => sum + (Number(b.advancePaid) || 0),
+      0,
+    );
     const totalDue = Math.max(0, grossSellingPrice - totalCollected);
 
     const totalCashRefunds = bookings.reduce(
-      (sum, b) => sum + b.refundTransactions.reduce((rSum, r) => rSum + Number(r.refundAmount || 0), 0),
-      0
+      (sum, b) =>
+        sum +
+        b.refundTransactions.reduce(
+          (rSum, r) => rSum + Number(r.refundAmount || 0),
+          0,
+        ),
+      0,
     );
     const totalCreditsIssued = bookings.reduce(
-      (sum, b) => sum + b.refundTransactions.reduce((rSum, r) => rSum + Number(r.creditNoteAmount || 0), 0),
-      0
+      (sum, b) =>
+        sum +
+        b.refundTransactions.reduce(
+          (rSum, r) => rSum + Number(r.creditNoteAmount || 0),
+          0,
+        ),
+      0,
     );
     const totalCouponDiscounts = bookings.reduce(
-      (sum, b) => sum + b.couponRedemptions.reduce((cSum, c) => cSum + Number(c.discountAmount || 0), 0),
-      0
+      (sum, b) =>
+        sum +
+        b.couponRedemptions.reduce(
+          (cSum, c) => cSum + Number(c.discountAmount || 0),
+          0,
+        ),
+      0,
     );
 
-    const netRevenue = Math.max(0, grossSellingPrice - totalCouponDiscounts - totalCashRefunds);
+    const netRevenue = Math.max(
+      0,
+      grossSellingPrice - totalCouponDiscounts - totalCashRefunds,
+    );
 
-    // 2. Fetch direct vendor, guide, and ticketing costs
+    // 2. Fetch direct vendor, guide, and ticketing costs with targeted field selection
     const [
       vendors,
       guidePayments,
@@ -80,21 +119,36 @@ async function getTripPnL(req, res) {
     ] = await Promise.all([
       prisma.tripVendor.findMany({
         where: { tripId: trip.id, tenantId },
+        select: {
+          id: true,
+          agreedTariff: true,
+          advancePaid: true,
+          vendorType: true,
+        },
       }),
       prisma.opsGuidePayment.findMany({
         where: { tripId: trip.id, tenantId },
+        select: {
+          id: true,
+          agreedAmount: true,
+          advancePaid: true,
+          balanceAmount: true,
+        },
       }),
       prisma.opsMiscExpense.findMany({
         where: { tripId: trip.id, tenantId },
+        select: { id: true, amount: true, expenseCategory: true },
       }),
       prisma.opsTripExpense.findMany({
         where: { tripId: trip.id, tenantId },
+        select: { id: true, amount: true, category: true },
       }),
       prisma.ticket.findMany({
         where: {
           tenantId,
           booking: { tripId: trip.id },
         },
+        select: { id: true, cost: true, bookingId: true },
       }),
       prisma.trainTicket.findMany({
         where: {
@@ -102,12 +156,20 @@ async function getTripPnL(req, res) {
           booking: { tripId: trip.id },
           ticketStatus: { not: "CANCELLED" },
         },
+        select: { id: true, netCost: true, totalCost: true, bookingId: true },
       }),
       prisma.opsVendorPayment.findMany({
         where: {
           tenantId,
           tripId: trip.id,
           status: { not: "Rejected" },
+        },
+        select: {
+          id: true,
+          agreedAmount: true,
+          advancePaid: true,
+          balanceAmount: true,
+          paymentCategory: true,
         },
       }),
     ]);
@@ -266,10 +328,23 @@ async function snapshotTripPnL(req, res) {
         tripId,
         departureDate: departureDate ? new Date(departureDate) : undefined,
       },
-      include: {
-        refundTransactions: { where: { status: "COMPLETED" } },
-        couponRedemptions: true,
-        creditNoteUsages: true,
+      select: {
+        id: true,
+        bookingId: true,
+        departureDate: true,
+        totalAmount: true,
+        amount: true,
+        advancePaid: true,
+        refundTransactions: {
+          where: { status: "COMPLETED" },
+          select: { id: true, refundAmount: true, creditNoteAmount: true },
+        },
+        couponRedemptions: {
+          select: { id: true, discountAmount: true },
+        },
+        creditNoteUsages: {
+          select: { id: true, amountUsed: true },
+        },
       },
     });
 

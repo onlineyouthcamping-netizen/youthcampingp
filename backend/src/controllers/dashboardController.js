@@ -657,8 +657,8 @@ exports.getStats = async (req, res, next) => {
         : undefined,
     };
 
-    // Cache the data in Redis for 15 seconds
-    await cache.set(cacheKey, resData, 15);
+    // Cache the data in Redis/memory for 45 seconds
+    await cache.set(cacheKey, resData, 45);
 
     res.json({
       success: true,

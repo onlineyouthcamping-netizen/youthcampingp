@@ -140,7 +140,13 @@ function mapItinerary(q: Quotation): ItineraryDay[] {
     activities: day.activities || [],
     stay: day.stay || "",
     meals: day.meals || "",
-    photos: day.photos || [],
+    photos: Array.isArray(day.photos)
+      ? day.photos
+      : day.image
+        ? [day.image]
+        : day.photo
+          ? [day.photo]
+          : [],
   }));
 }
 
@@ -200,8 +206,34 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
 
   const itineraryDays = useMemo(() => mapItinerary(q), [q]);
   const galleryImages = useMemo(() => {
+    const itineraryPhotos = (q.itinerary || []).flatMap((d: any) =>
+      Array.isArray(d.photos)
+        ? d.photos
+        : d.image
+          ? [d.image]
+          : d.photo
+            ? [d.photo]
+            : [],
+    );
+    const hotelPhotos = [
+      ...(q.highLevelHotels || []),
+      ...(q.lowLevelHotels || []),
+    ].flatMap((h: any) =>
+      Array.isArray(h.images)
+        ? h.images
+        : h.image
+          ? [h.image]
+          : h.photos
+            ? h.photos
+            : [],
+    );
+
     const urls = [
+      q.coverImage,
+      q.heroImage,
       ...(q.heroImages || []),
+      ...itineraryPhotos,
+      ...hotelPhotos,
       ...experienceUrls(q),
     ]
       .map((u) => normalizeImageUrl(u))
@@ -212,12 +244,13 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
   const galleryTrip = useMemo(() => {
     const hero = q.coverImage || q.heroImage || galleryImages[0] || "";
     const heroNorm = normalizeImageUrl(hero);
+    const remainingImages = galleryImages.filter(
+      (url) => normalizeImageUrl(url) !== heroNorm,
+    );
     return {
       title: q.tripTitle,
-      heroImage: hero,
-      images: galleryImages.filter(
-        (url) => normalizeImageUrl(url) !== heroNorm,
-      ),
+      heroImage: hero || galleryImages[0] || "",
+      images: remainingImages,
       location: q.destination,
       itinerary: itineraryDays,
     } as Trip;
@@ -278,15 +311,40 @@ export default function LuxuryQuotationUI({ q }: { q: Quotation }) {
   const expertPhoto = normalizeImageUrl(q.expert?.photo);
   const expertInitial = (q.expert?.name || "S").charAt(0);
   const expired = timeLeft === "EXPIRED";
+  const rawExpertNumber = (
+    q.expert?.whatsapp ||
+    q.expert?.phone ||
+    whatsappNumber ||
+    "918866699409"
+  ).replace(/\D/g, "");
+
+  const expertTargetNumber =
+    rawExpertNumber.length === 10
+      ? `91${rawExpertNumber}`
+      : rawExpertNumber.startsWith("91")
+        ? rawExpertNumber
+        : rawExpertNumber || "918866699409";
 
   const handleWhatsAppBooking = () => {
+    const expertNameGreeting = q.expert?.name ? ` ${q.expert.name}` : "";
+    const tierName = hasBothTiers
+      ? ` (${selectedTier === "premium" ? "Premium" : "Standard"} Tier)`
+      : "";
+
     const message = encodeURIComponent(
-      `Hi! I've reviewed the quotation for "${q.tripTitle}". I'd like to confirm the booking for ${pax} travellers starting from ${travelDate || "the proposed date"}.`,
+      `Hi${expertNameGreeting}! I've reviewed the quotation for "${q.tripTitle}"${tierName}.\n\n` +
+        `👤 Traveler: ${q.customerName || "Customer"}\n` +
+        `👥 Group: ${pax} Travellers\n` +
+        `📅 Travel Date: ${travelDate || "As proposed"}\n` +
+        `💰 Total: ₹ ${salePrice.toLocaleString()}\n\n` +
+        `I would like to confirm and book my spot. Please share next steps!`,
     );
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
+    window.open(`https://wa.me/${expertTargetNumber}?text=${message}`, "_blank");
   };
 
-  const expertWhatsAppHref = `https://wa.me/${q.expert?.whatsapp?.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi ${q.expert?.name}, I've reviewed the quotation for ${q.tripTitle}. I'd like to discuss further.`)}`;
+  const expertWhatsAppHref = `https://wa.me/${expertTargetNumber}?text=${encodeURIComponent(
+    `Hi ${q.expert?.name || "Expert"}, I've reviewed the quotation for "${q.tripTitle}". I'd like to discuss further.`,
+  )}`;
 
   const travellingItems =
     q.travelling && q.travelling.length > 0

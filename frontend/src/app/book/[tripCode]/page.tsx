@@ -55,6 +55,10 @@ export default function TripBookingPage() {
     e.preventDefault();
     if (!form.fullName || !form.mobile) return;
     if (form.mobile.length !== 10) return alert("Mobile must be 10 digits");
+    if (form.age) {
+      const a = parseInt(form.age, 10);
+      if (isNaN(a) || a < 1 || a > 120) return alert("Please enter a valid age between 1 and 120");
+    }
 
     setSubmitting(true);
     try {
@@ -161,9 +165,23 @@ export default function TripBookingPage() {
               />
               <input
                 type="number"
+                min={1}
+                max={120}
                 placeholder="Age"
                 value={form.age}
-                onChange={(e) => setForm({ ...form, age: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setForm({ ...form, age: "" });
+                    return;
+                  }
+                  const num = parseInt(val, 10);
+                  if (!isNaN(num) && num > 120) {
+                    setForm({ ...form, age: "120" });
+                  } else {
+                    setForm({ ...form, age: val });
+                  }
+                }}
                 className="bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:ring-2 focus:ring-[#D4541A] outline-none"
               />
             </div>

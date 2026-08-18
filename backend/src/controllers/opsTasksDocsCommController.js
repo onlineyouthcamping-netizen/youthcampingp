@@ -461,6 +461,22 @@ exports.getOpsReportData = async (req, res) => {
         departureDate: { gte: startOfDay, lte: endOfDay },
         status: { notIn: ["cancelled", "rejected"] },
       },
+      select: {
+        id: true,
+        bookingId: true,
+        name: true,
+        mobile: true,
+        email: true,
+        numberOfTravelers: true,
+        totalAmount: true,
+        advancePaid: true,
+        status: true,
+        paymentStatus: true,
+        passengers: true,
+        departureDate: true,
+        tripName: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: "asc" },
     });
 

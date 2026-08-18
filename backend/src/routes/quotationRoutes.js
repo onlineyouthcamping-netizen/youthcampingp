@@ -239,21 +239,33 @@ router.post(
       let lineItems = body.lineItems || [];
       let subtotal = 0;
 
-      // Calculate each line item's total amount
-      lineItems = lineItems.map((item) => {
-        const rate = Number(item.rate || 0);
-        const qty = Number(item.qty || item.quantity || 1);
-        const total = rate * qty;
-        subtotal += total;
-        return {
-          ...item,
-          rate,
-          qty,
-          total,
-        };
-      });
+      if (Array.isArray(lineItems) && lineItems.length > 0) {
+        // Calculate each line item's total amount
+        lineItems = lineItems.map((item) => {
+          const rate = Number(item.rate || 0);
+          const qty = Number(item.qty || item.quantity || 1);
+          const total = rate * qty;
+          subtotal += total;
+          return {
+            ...item,
+            rate,
+            qty,
+            total,
+          };
+        });
+      } else {
+        // Fallback to base package price if no itemized breakdown provided
+        subtotal = Number(
+          body.totalPrice ||
+            body.lowLevelPrice ||
+            body.basePrice ||
+            body.finalPrice ||
+            body.price ||
+            0,
+        );
+      }
 
-      const discount = Number(body.discount || 0);
+      const discount = Number(body.discount || body.discountAmount || 0);
       const discountType = body.discountType || "fixed";
       let discountAmount = 0;
       if (discount > 0) {
@@ -265,11 +277,19 @@ router.post(
       }
 
       const serviceCharge = Number(body.serviceCharge || 0);
-      const priceAfterDiscount = subtotal - discountAmount + serviceCharge;
+      const priceAfterDiscount = Math.max(
+        subtotal - discountAmount + serviceCharge,
+        0,
+      );
 
-      const gstRate = Number(body.gstRate !== undefined ? body.gstRate : 5);
+      const gstRate = Number(body.gstRate !== undefined ? body.gstRate : 0);
       const gstAmount = (priceAfterDiscount * gstRate) / 100;
-      const totalAmount = priceAfterDiscount + gstAmount;
+      const totalAmount =
+        body.finalPrice &&
+        Number(body.finalPrice) > 0 &&
+        (!lineItems || lineItems.length === 0)
+          ? Number(body.finalPrice)
+          : priceAfterDiscount + gstAmount;
 
       // Mutate body and final properties to keep database in sync
       body.lineItems = lineItems;

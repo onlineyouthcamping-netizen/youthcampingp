@@ -76,6 +76,14 @@ const DynamicBookingForm: React.FC<DynamicBookingFormProps> = ({ formId }) => {
       return;
     }
 
+    if (formData.age) {
+      const a = parseInt(formData.age, 10);
+      if (isNaN(a) || a < 1 || a > 120) {
+        setError("Please enter a valid age between 1 and 120.");
+        return;
+      }
+    }
+
     setLoading(true);
     setError(null);
 

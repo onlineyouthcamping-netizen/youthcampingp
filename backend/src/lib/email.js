@@ -412,7 +412,96 @@ const templates = {
         booking.passengers?.details?.ticketStatus ||
         (includeTicket ? "CONFIRMED" : "RAC"),
     ).replace(/_/g, " ");
-    const paymentModeText = (booking.paymentMode || "UPI").trim();
+
+    // Smart Payment Mode & Breakdown Resolution
+    const rawMode = String(
+      booking.paymentMode ||
+        booking.payment_method ||
+        booking.sourceMeta?.paymentMode ||
+        booking.sourceMeta?.paymentMethod ||
+        "",
+    ).trim();
+    const rawNotes = String(
+      booking.notes || booking.adminNotes || "",
+    ).toLowerCase();
+    const rawMeta = booking.sourceMeta || {};
+
+    let resolvedPaymentMode = "UPI / Online Transfer";
+    let paymentBadge = "VERIFIED PAYMENT";
+    let isCashPayment = false;
+    let paymentRefDetail = "";
+
+    const upperMode = rawMode.toUpperCase();
+    if (
+      upperMode.includes("CASH") ||
+      upperMode.includes("OFFICE") ||
+      rawNotes.includes("cash") ||
+      rawNotes.includes("office payment") ||
+      rawNotes.includes("in office") ||
+      rawNotes.includes("paid at office") ||
+      rawMeta.paymentMode === "CASH"
+    ) {
+      resolvedPaymentMode = "Cash (Paid at Office)";
+      paymentBadge = "OFFICE CASH";
+      isCashPayment = true;
+      paymentRefDetail =
+        rawMeta.cashReceiptNumber ||
+        rawMeta.receiptNumber ||
+        rawMeta.transactionId ||
+        `OFFICE-CASH-${booking.bookingId}`;
+    } else if (
+      upperMode.includes("BANK") ||
+      upperMode.includes("NEFT") ||
+      upperMode.includes("IMPS") ||
+      upperMode.includes("RTGS") ||
+      upperMode.includes("TRANSFER")
+    ) {
+      resolvedPaymentMode = "Bank Transfer (NEFT / IMPS / RTGS)";
+      paymentBadge = "BANK TRANSFER";
+      paymentRefDetail =
+        booking.upi_reference ||
+        rawMeta.transactionId ||
+        rawMeta.referenceNumber ||
+        "Bank Direct Credit";
+    } else if (
+      upperMode.includes("CARD") ||
+      upperMode.includes("CREDIT") ||
+      upperMode.includes("DEBIT")
+    ) {
+      resolvedPaymentMode = "Debit / Credit Card";
+      paymentBadge = "CARD PAYMENT";
+      paymentRefDetail =
+        booking.upi_reference || rawMeta.transactionId || "Card Payment";
+    } else if (
+      upperMode.includes("UPI") ||
+      upperMode.includes("GPAY") ||
+      upperMode.includes("PHONEPE") ||
+      upperMode.includes("PAYTM") ||
+      booking.upi_reference
+    ) {
+      resolvedPaymentMode = "UPI / Online Transfer";
+      paymentBadge = "UPI VERIFIED";
+      paymentRefDetail = booking.upi_reference || rawMeta.utr || "Online Gateway";
+    } else if (upperMode === "FULL PAYMENT" || upperMode === "PARTIAL PAYMENT") {
+      if (rawNotes.includes("cash")) {
+        resolvedPaymentMode = "Cash (Paid at Office)";
+        paymentBadge = "OFFICE CASH";
+        isCashPayment = true;
+      } else {
+        resolvedPaymentMode = `Online Transfer (${rawMode})`;
+        paymentBadge = "ONLINE TRANSFER";
+      }
+    }
+
+    const advanceAmount = Number(booking.advancePaid || 0);
+    const balanceRemaining = Math.max(
+      0,
+      Number(
+        booking.remainingAmount !== null && booking.remainingAmount !== undefined
+          ? booking.remainingAmount
+          : totalWithGst - advanceAmount,
+      ),
+    );
 
     const emailContent = `
 <!DOCTYPE html>
@@ -451,12 +540,13 @@ const templates = {
       </table>
     </div>
 
-    <!-- 2. Hero Cover Banner with Floating Booking ID -->
-    <div style="position: relative; width: 100%; height: 210px; overflow: hidden; background-color: #0f172a;">
-      <table role="presentation" width="100%" height="210" border="0" cellspacing="0" cellpadding="0" style="background-image: url('${heroImage}'); background-size: cover; background-position: center; border-collapse: collapse;">
+    <!-- 2. Hero Cover Banner with Badge -->
+    <div style="position: relative; background-color: #0f172a; background-image: url('${heroImage}'); background-size: cover; background-position: center; min-height: 170px;">
+      <!-- Dark overlay gradient -->
+      <table role="presentation" width="100%" height="170" border="0" cellspacing="0" cellpadding="0" style="background: linear-gradient(to bottom, rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.85));">
         <tr>
-          <td style="vertical-align: bottom; padding: 18px 20px;">
-            <div style="display: inline-block; background-color: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 12px; padding: 8px 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);">
+          <td style="padding: 24px; vertical-align: bottom;">
+            <div style="background-color: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 10px 16px; display: inline-block; backdrop-filter: blur(8px);">
               <div style="display: inline-block; background-color: #ff5722; color: #ffffff; font-size: 9px; font-weight: 900; padding: 2px 7px; border-radius: 5px; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 4px;">
                 BOOKING ID
               </div>
@@ -583,19 +673,48 @@ const templates = {
       </div>
     </div>
 
-    <!-- 8. Advance Payment Received -->
+    <!-- 8. Advance Payment Received & Balance Statement -->
     <div style="padding: 0 24px 24px 24px; background-color: #ffffff;">
       <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.8px; margin-bottom: 8px;">
-        ADVANCE PAYMENT RECEIVED
+        PAYMENT CONFIRMATION & BREAKDOWN
       </div>
-      <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff; padding: 14px 16px;">
-        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
-          <tr>
-            <td style="color: #334155; font-size: 13px; font-weight: 600;">
-              Payment made by ${paymentModeText}
+      <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background-color: #ffffff;">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+          <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px 16px; color: #334155; font-size: 12px; font-weight: 700;">
+              Payment Method
             </td>
-            <td style="color: #059669; font-size: 14px; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
-              ₹ ${Number(booking.advancePaid || 0).toLocaleString("en-IN")}
+            <td style="padding: 12px 16px; color: #0f172a; font-size: 12px; font-weight: 800; text-align: right;">
+              <span style="display: inline-block; padding: 3px 8px; background-color: ${isCashPayment ? "#ecfdf5" : "#eff6ff"}; border: 1px solid ${isCashPayment ? "#a7f3d0" : "#bfdbfe"}; border-radius: 6px; color: ${isCashPayment ? "#059669" : "#2563eb"}; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; margin-right: 6px;">
+                ${paymentBadge}
+              </span>
+              ${resolvedPaymentMode}
+            </td>
+          </tr>
+          ${paymentRefDetail ? `
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 16px; color: #64748b; font-size: 12px; font-weight: 600;">
+              Reference / Receipt ID
+            </td>
+            <td style="padding: 10px 16px; color: #0f172a; font-size: 12px; font-weight: 700; text-align: right; font-family: 'SF Mono', Consolas, Monaco, monospace;">
+              ${paymentRefDetail}
+            </td>
+          </tr>
+          ` : ""}
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 12px 16px; color: #059669; font-size: 13px; font-weight: 800;">
+              Amount Received (Advance)
+            </td>
+            <td style="padding: 12px 16px; color: #059669; font-size: 15px; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
+              ₹ ${advanceAmount.toLocaleString("en-IN")}
+            </td>
+          </tr>
+          <tr style="background-color: #fffbf7;">
+            <td style="padding: 12px 16px; color: #b45309; font-size: 13px; font-weight: 800;">
+              Remaining Balance Due
+            </td>
+            <td style="padding: 12px 16px; color: #b45309; font-size: 15px; font-weight: 900; text-align: right; white-space: nowrap; font-family: 'SF Mono', Consolas, Monaco, monospace;">
+              ₹ ${balanceRemaining.toLocaleString("en-IN")}
             </td>
           </tr>
         </table>

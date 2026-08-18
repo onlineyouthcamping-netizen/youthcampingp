@@ -721,6 +721,10 @@ function BookingForm() {
           return `Traveler ${i + 1} mobile number must be 10 digits`;
         if (!traveler.age.trim())
           return `Age is required for Traveler ${i + 1}`;
+        const ageNum = parseInt(traveler.age.trim(), 10);
+        if (isNaN(ageNum) || ageNum < 1 || ageNum > 120) {
+          return `Please enter a valid age between 1 and 120 for Traveler ${i + 1}`;
+        }
         if (
           traveler.email &&
           traveler.email.trim() !== "" &&
@@ -1606,16 +1610,24 @@ function BookingForm() {
                             <input
                               required
                               type="number"
+                              min={1}
+                              max={120}
                               placeholder="Age *"
                               className="w-full h-[46px] bg-white border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A] focus:ring-2 focus:ring-[#D4541A]/5"
                               value={traveler.age}
-                              onChange={(e) =>
-                                handleParticipantChange(
-                                  index,
-                                  "age",
-                                  e.target.value,
-                                )
-                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "") {
+                                  handleParticipantChange(index, "age", "");
+                                  return;
+                                }
+                                const num = parseInt(val, 10);
+                                if (!isNaN(num) && num > 120) {
+                                  handleParticipantChange(index, "age", "120");
+                                } else {
+                                  handleParticipantChange(index, "age", val);
+                                }
+                              }}
                             />
                             <select
                               aria-label={`Gender for traveler ${index + 1}`}

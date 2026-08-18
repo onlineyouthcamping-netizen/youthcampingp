@@ -163,10 +163,18 @@ const authenticate = async (req, res, next) => {
     }
 
     const adminRole = (admin.role || "").trim().toLowerCase();
-    const defaultPerms =
-      adminRole === "superadmin"
-        ? [...PERMISSIONS]
-        : getRolePermissions(admin.role);
+    const isFullAdmin =
+      adminRole === "superadmin" ||
+      adminRole === "founder" ||
+      adminRole === "owner" ||
+      adminRole === "super_admin" ||
+      isProtectedSuperadminIdentity({
+        email: admin.email,
+        name: admin.name,
+      });
+    const defaultPerms = isFullAdmin
+      ? [...PERMISSIONS]
+      : getRolePermissions(admin.role);
     const customPerms = Array.isArray(admin.customPermissions)
       ? admin.customPermissions
       : [];
@@ -291,12 +299,22 @@ const enforceOwnership = (modelName) => {
         .json({ success: false, message: "Unauthenticated" });
     }
 
-    const role = req.user.role;
+    const role = (req.user.role || "").trim().toLowerCase();
     const userId = req.user.id;
     const resourceId = req.params.id;
 
-    // Superadmin and Admin bypass ownership restrictions
-    if (role === "superadmin" || role === "admin") {
+    // Superadmin, Admin, Founder, Owner bypass ownership restrictions
+    if (
+      role === "superadmin" ||
+      role === "admin" ||
+      role === "founder" ||
+      role === "owner" ||
+      role === "super_admin" ||
+      isProtectedSuperadminIdentity({
+        email: req.user.email,
+        name: req.user.name,
+      })
+    ) {
       return next();
     }
 
