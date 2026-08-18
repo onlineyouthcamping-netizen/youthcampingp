@@ -177,6 +177,20 @@ exports.addClientPayment = async (req, res) => {
           },
         });
         targetAccountId = cashAcc?.id || null;
+      } else if (!paymentMode || String(paymentMode).toUpperCase().includes("UPI")) {
+        const upiAcc = await prisma.paymentReceivingAccount.findFirst({
+          where: {
+            tenantId,
+            isActive: true,
+            OR: [
+              { accountName: { contains: "Nikul", mode: "insensitive" } },
+              { upiId: { contains: "nikul", mode: "insensitive" } },
+              { accountType: "INDIVIDUAL" },
+              { accountType: "UPI" },
+            ],
+          },
+        });
+        targetAccountId = upiAcc?.id || null;
       }
       if (!targetAccountId) {
         const defaultAcc = await prisma.paymentReceivingAccount.findFirst({

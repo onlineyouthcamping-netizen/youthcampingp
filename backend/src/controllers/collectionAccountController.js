@@ -171,6 +171,14 @@ exports.getAccounts = async (req, res) => {
       (a) => a.accountType === "CASH" || a.accountName.toLowerCase().includes("cash"),
     );
 
+    const upiAccount = accounts.find(
+      (a) =>
+        a.accountName.toLowerCase().includes("nikul") ||
+        (a.upiId && a.upiId.toLowerCase().includes("nikul")) ||
+        a.accountType === "INDIVIDUAL" ||
+        a.accountType === "UPI",
+    );
+
     const collectedMap = {};
     const submittedMap = {};
     const vendorPaidMap = {};
@@ -178,13 +186,17 @@ exports.getAccounts = async (req, res) => {
 
     clientPayments.forEach((p) => {
       let targetAccId = p.collectionAccountId;
-      if (
-        (!targetAccId || !accountIds.includes(targetAccId)) &&
-        p.paymentMode &&
-        p.paymentMode.toUpperCase().includes("CASH") &&
-        cashAccount
-      ) {
-        targetAccId = cashAccount.id;
+      if (!targetAccId || !accountIds.includes(targetAccId)) {
+        if (p.paymentMode && p.paymentMode.toUpperCase().includes("CASH") && cashAccount) {
+          targetAccId = cashAccount.id;
+        } else if (
+          (!p.paymentMode ||
+            p.paymentMode.toUpperCase().includes("UPI") ||
+            p.paymentMode.toUpperCase().includes("BANK")) &&
+          upiAccount
+        ) {
+          targetAccId = upiAccount.id;
+        }
       }
       if (!targetAccId) return;
       collectedMap[targetAccId] =
@@ -492,6 +504,12 @@ exports.getAccountLedger = async (req, res) => {
       account.accountType === "CASH" ||
       account.accountName.toLowerCase().includes("cash");
 
+    const isUpi =
+      account.accountName.toLowerCase().includes("nikul") ||
+      Boolean(account.upiId) ||
+      account.accountType === "INDIVIDUAL" ||
+      account.accountType === "UPI";
+
     const clientPaymentsWhere = {
       tenantId,
       status: { not: "Rejected" },
@@ -502,6 +520,22 @@ exports.getAccountLedger = async (req, res) => {
         { collectionAccountId: id },
         { paymentMode: { contains: "CASH", mode: "insensitive" } },
         { paymentMode: { in: ["CASH", "Cash", "cash", "OFFICE CASH", "Office Cash"] } },
+      ];
+    } else if (isUpi) {
+      clientPaymentsWhere.OR = [
+        { collectionAccountId: id },
+        {
+          AND: [
+            { collectionAccountId: null },
+            {
+              OR: [
+                { paymentMode: { contains: "UPI", mode: "insensitive" } },
+                { paymentMode: null },
+                { paymentMode: "BANK_TRANSFER" },
+              ],
+            },
+          ],
+        },
       ];
     } else {
       clientPaymentsWhere.collectionAccountId = id;
