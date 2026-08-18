@@ -716,7 +716,7 @@ exports.getVendorPaymentDetailsWithAudit = async (req, res) => {
     const tenantId = resolveTenantId(req);
     const cleanId = String(paymentId).replace(/^vnd-/, "").replace(/^adv-/, "");
 
-    const payment = await prisma.opsVendorPayment.findFirst({
+    let payment = await prisma.opsVendorPayment.findFirst({
       where: {
         tenantId,
         OR: [{ id: paymentId }, { id: cleanId }],
@@ -728,6 +728,114 @@ exports.getVendorPaymentDetailsWithAudit = async (req, res) => {
         collectionAccount: true,
       },
     });
+
+    if (!payment) {
+      if (paymentId.startsWith("hb-")) {
+        const hbId = paymentId.replace("hb-", "");
+        const hb = await prisma.opsHotelBooking.findFirst({
+          where: { id: hbId, tenantId },
+          include: { trip: { select: { id: true, title: true, slug: true } } },
+        });
+        if (hb) {
+          payment = {
+            id: paymentId,
+            tenantId,
+            tripId: hb.tripId,
+            vendorName: hb.hotelName,
+            category: "Hotels",
+            serviceDescription: `${hb.roomType || "Hotel"} Stay (${hb.numberOfRooms || 1} Rooms) - ${hb.location || ""}`,
+            agreedAmount: hb.totalAmount || 0,
+            advancePaid: hb.advancePaid || 0,
+            remainingPayable: Math.max(0, (hb.totalAmount || 0) - (hb.advancePaid || 0)),
+            paymentDate: hb.departureDate || hb.createdAt,
+            paymentMode: "BANK_TRANSFER",
+            status: (hb.advancePaid || 0) >= (hb.totalAmount || 0) && (hb.totalAmount || 0) > 0 ? "Paid" : "Pending Approval",
+            approvalStatus: (hb.advancePaid || 0) >= (hb.totalAmount || 0) && (hb.totalAmount || 0) > 0 ? "APPROVED_FOUNDER" : "PENDING",
+            trip: hb.trip,
+            collectionAccount: null,
+            createdAt: hb.createdAt,
+          };
+        }
+      } else if (paymentId.startsWith("fl-")) {
+        const flId = paymentId.replace("fl-", "");
+        const fl = await prisma.opsTransportFleet.findFirst({
+          where: { id: flId, tenantId },
+          include: { trip: { select: { id: true, title: true, slug: true } } },
+        });
+        if (fl) {
+          payment = {
+            id: paymentId,
+            tenantId,
+            tripId: fl.tripId,
+            vendorName: fl.vendorName || fl.driverName || "Transport Fleet",
+            category: "Transport",
+            serviceDescription: `${fl.vehicleType || "Fleet Vehicle"} (${fl.vehicleNumber || "Route Fleet"})`,
+            agreedAmount: fl.totalAmount || 0,
+            advancePaid: fl.advancePaid || 0,
+            remainingPayable: Math.max(0, (fl.totalAmount || 0) - (fl.advancePaid || 0)),
+            paymentDate: fl.departureDate || fl.createdAt,
+            paymentMode: "BANK_TRANSFER",
+            status: (fl.advancePaid || 0) >= (fl.totalAmount || 0) && (fl.totalAmount || 0) > 0 ? "Paid" : "Pending Approval",
+            approvalStatus: (fl.advancePaid || 0) >= (fl.totalAmount || 0) && (fl.totalAmount || 0) > 0 ? "APPROVED_FOUNDER" : "PENDING",
+            trip: fl.trip,
+            collectionAccount: null,
+            createdAt: fl.createdAt,
+          };
+        }
+      } else if (paymentId.startsWith("gp-")) {
+        const gpId = paymentId.replace("gp-", "");
+        const gp = await prisma.opsGuidePayment.findFirst({
+          where: { id: gpId, tenantId },
+          include: { trip: { select: { id: true, title: true, slug: true } } },
+        });
+        if (gp) {
+          payment = {
+            id: paymentId,
+            tenantId,
+            tripId: gp.tripId,
+            vendorName: gp.guideName,
+            category: "Guides",
+            serviceDescription: `${gp.assignmentType || "Trip Leader"} (${gp.daysWorked || 1} Days)`,
+            agreedAmount: gp.agreedAmount || 0,
+            advancePaid: gp.advancePaid || 0,
+            remainingPayable: Math.max(0, (gp.agreedAmount || 0) - (gp.advancePaid || 0)),
+            paymentDate: gp.departureDate || gp.createdAt,
+            paymentMode: "BANK_TRANSFER",
+            status: gp.paymentStatus === "PAID" ? "Paid" : "Pending Approval",
+            approvalStatus: gp.paymentStatus === "PAID" ? "APPROVED_FOUNDER" : "PENDING",
+            trip: gp.trip,
+            collectionAccount: null,
+            createdAt: gp.createdAt,
+          };
+        }
+      } else if (paymentId.startsWith("act-")) {
+        const actId = paymentId.replace("act-", "");
+        const act = await prisma.opsActivity.findFirst({
+          where: { id: actId, tenantId },
+          include: { trip: { select: { id: true, title: true, slug: true } } },
+        });
+        if (act) {
+          payment = {
+            id: paymentId,
+            tenantId,
+            tripId: act.tripId,
+            vendorName: act.vendorName || act.name || "Activity Provider",
+            category: act.type === "MEAL" ? "Meals" : "Activities",
+            serviceDescription: `${act.name} (${act.type || "Activity"})`,
+            agreedAmount: act.actualCost || act.estimatedCost || 0,
+            advancePaid: 0,
+            remainingPayable: act.actualCost || act.estimatedCost || 0,
+            paymentDate: act.departureDate || act.createdAt,
+            paymentMode: "BANK_TRANSFER",
+            status: act.status === "CONFIRMED" ? "Pending Approval" : "Not Paid",
+            approvalStatus: "PENDING",
+            trip: act.trip,
+            collectionAccount: null,
+            createdAt: act.createdAt,
+          };
+        }
+      }
+    }
 
     if (!payment) {
       return res.status(404).json({ success: false, message: "Vendor payment not found" });
