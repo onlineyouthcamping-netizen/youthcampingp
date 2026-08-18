@@ -1006,6 +1006,12 @@ exports.createBooking = async (req, res, next) => {
     } = req.body;
     const targetName = name || fullName;
     const targetPhone = phone || mobile;
+    const leadPassenger =
+      Array.isArray(req.body.passengers) && req.body.passengers.length > 0
+        ? req.body.passengers[0]
+        : {};
+    const leadAge = req.body.age ?? leadPassenger.age ?? null;
+    const leadGender = req.body.gender || leadPassenger.gender || null;
 
     const tenantId = req.user?.tenantId || "default";
 
@@ -1231,8 +1237,11 @@ exports.createBooking = async (req, res, next) => {
               skipDays: calculations.skipDays,
               adjustedPrice: calculations.adjustedPrice,
               joiningDate: joiningDate ? new Date(joiningDate) : null,
-              age: req.body.age ? parseInt(req.body.age) : null,
-              gender: req.body.gender || null,
+              age:
+                leadAge !== null && leadAge !== ""
+                  ? parseInt(leadAge, 10) || null
+                  : null,
+              gender: leadGender,
               numberOfTravelers: req.body.passengers?.length || 1,
               baseAmount: calculations.baseAmount,
               gstAmount: calculations.gstAmount,
@@ -2284,6 +2293,12 @@ exports.submitBookingForm = async (req, res, next) => {
   try {
     const tripCode = req.params.tripCode;
     const tenantId = req.user?.tenantId || "default";
+    const leadPassenger =
+      Array.isArray(req.body.passengers) && req.body.passengers.length > 0
+        ? req.body.passengers[0]
+        : {};
+    const leadAge = req.body.age ?? leadPassenger.age ?? null;
+    const leadGender = req.body.gender || leadPassenger.gender || null;
 
     // Find the trip
     let targetTrip = await prisma.trip.findFirst({
@@ -2345,8 +2360,11 @@ exports.submitBookingForm = async (req, res, next) => {
               joiningDate: req.body.joiningDate
                 ? new Date(req.body.joiningDate)
                 : null,
-              age: req.body.age ? parseInt(req.body.age) : null,
-              gender: req.body.gender || null,
+              age:
+                leadAge !== null && leadAge !== ""
+                  ? parseInt(leadAge, 10) || null
+                  : null,
+              gender: leadGender,
               numberOfTravelers: req.body.passengers?.length || 1,
               baseAmount: calculations.baseAmount,
               gstAmount: calculations.gstAmount,

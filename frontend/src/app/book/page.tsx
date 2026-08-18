@@ -809,6 +809,8 @@ function BookingForm() {
         mobile: formData.phone,
         phone: formData.phone,
         email: validEmail,
+        age: parseInt(formData.participantsList[0]?.age) || null,
+        gender: formData.participantsList[0]?.gender || null,
         numberOfTravelers: formData.participants,
         tripId: tripData?.id || initialParams.tripId || "manual",
         tripName: initialParams.tripName || tripData?.title || "Expedition",
