@@ -595,6 +595,7 @@ exports.getBookings = async (req, res, next) => {
               salesAdminId: true,
               passengers: true,
               pickupCity: true,
+              opsClientPayments: true,
             }
           : {
               id: true,
@@ -643,6 +644,7 @@ exports.getBookings = async (req, res, next) => {
                   shareUrl: true,
                 },
               },
+              opsClientPayments: true,
             },
         skip,
         take: limit,
