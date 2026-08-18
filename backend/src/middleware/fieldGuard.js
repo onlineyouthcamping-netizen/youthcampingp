@@ -6,6 +6,8 @@
  * are REAL security, not UX hiding — the backend is the enforcement point.
  */
 
+const { isProtectedSuperadminIdentity } = require("../config/superadmin");
+
 const FINANCIAL_BOOKING_FIELDS = [
   "totalAmount",
   "amount",
@@ -32,8 +34,18 @@ const guardBookingUpdateFields = (req, res, next) => {
     return res.status(401).json({ success: false, message: "Unauthenticated" });
   }
 
-  const role = req.user.role;
-  if (role === "superadmin" || role === "admin") {
+  const role = (req.user.role || "").trim().toLowerCase();
+  if (
+    role === "superadmin" ||
+    role === "admin" ||
+    role === "founder" ||
+    role === "owner" ||
+    role === "super_admin" ||
+    isProtectedSuperadminIdentity({
+      email: req.user.email,
+      name: req.user.name,
+    })
+  ) {
     return next();
   }
 

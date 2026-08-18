@@ -195,8 +195,13 @@ const PERMISSIONS = [
   "finance.accounting.manage",
 ];
 
+const { isProtectedSuperadminIdentity } = require("./superadmin");
+
 const ROLE_PERMISSIONS = {
   superadmin: [...PERMISSIONS], // Unrestricted access
+  founder: [...PERMISSIONS],
+  owner: [...PERMISSIONS],
+  super_admin: [...PERMISSIONS],
 
   admin: [
     "dashboard.view",
@@ -540,13 +545,25 @@ function hasPermission(roleOrUser, permission) {
 
   const role = (
     typeof roleOrUser === "string" ? roleOrUser : roleOrUser.role || ""
-  ).toLowerCase();
+  ).toLowerCase().trim();
   const custom =
     typeof roleOrUser === "object" ? roleOrUser.customPermissions : null;
   const userPerms =
     typeof roleOrUser === "object" ? roleOrUser.permissions : null;
 
-  if (role === "superadmin") return true;
+  if (
+    role === "superadmin" ||
+    role === "super_admin" ||
+    role === "founder" ||
+    role === "owner" ||
+    (typeof roleOrUser === "object" &&
+      isProtectedSuperadminIdentity({
+        email: roleOrUser?.email,
+        name: roleOrUser?.name,
+      }))
+  ) {
+    return true;
+  }
 
   // Build combined permissions set
   const combined = new Set();
