@@ -431,7 +431,7 @@ export default function CommunityTrips({
   paddingBottom = "60",
   selectedTripIds,
 }: CommunityTripsProps) {
-  const MONTHS = getAutoMonths();
+  const MONTHS = useMemo(() => getAutoMonths(), []);
   const [activeMonth, setActiveMonth] = useState(0); // "All"
   const [currentTripIdx, setCurrentTripIdx] = useState(0);
   const [wordIdx, setWordIdx] = useState(0);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Trip } from "@/types";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,6 +15,37 @@ interface TripCardProps {
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
   activeMonth?: string;
 }
+
+const splitTripTitle = (fullTitle: string) => {
+  const keywords = [
+    "Backpacking Trip",
+    "Road Trip",
+    "Group Trip",
+    "Backpacking",
+    "Roadtrip",
+    "Trek",
+    "Expedition",
+    "Tour",
+    "Trip",
+  ];
+  for (const kw of keywords) {
+    const idx = fullTitle.toLowerCase().lastIndexOf(kw.toLowerCase());
+    if (idx > 0) {
+      return {
+        main: fullTitle.substring(0, idx).trim(),
+        sub: fullTitle.substring(idx).trim(),
+      };
+    }
+  }
+  const words = fullTitle.split(" ");
+  if (words.length > 1) {
+    return {
+      main: words.slice(0, -1).join(" "),
+      sub: words[words.length - 1],
+    };
+  }
+  return { main: fullTitle, sub: "" };
+};
 
 export default function TripCard({
   trip,
@@ -86,16 +117,17 @@ export default function TripCard({
     "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80";
 
   // Build unique images list STRICTLY from Admin uploaded trip.heroImage and trip.images
-  const imagesList = (() => {
+  const imagesList = useMemo(() => {
+    const seen = new Set<string>();
     const list: string[] = [];
 
     const heroNorm = normalizeImageUrl(trip.heroImage);
-    if (heroNorm) list.push(heroNorm);
+    if (heroNorm) { seen.add(heroNorm); list.push(heroNorm); }
 
     if (trip.images && Array.isArray(trip.images)) {
       trip.images.forEach((img) => {
         const norm = normalizeImageUrl(img);
-        if (norm && !list.includes(norm)) list.push(norm);
+        if (norm && !seen.has(norm)) { seen.add(norm); list.push(norm); }
       });
     }
 
@@ -104,7 +136,7 @@ export default function TripCard({
     }
 
     return list;
-  })();
+  }, [trip.heroImage, trip.images, heroImg]);
 
   // Staggered automatic photo slider — stagger start time per card index
   useEffect(() => {
@@ -201,37 +233,6 @@ export default function TripCard({
   })();
 
   const title = trip.title || "Manali Kasol Amritsar Backpacking Trip";
-
-  const splitTripTitle = (fullTitle: string) => {
-    const keywords = [
-      "Backpacking Trip",
-      "Road Trip",
-      "Group Trip",
-      "Backpacking",
-      "Roadtrip",
-      "Trek",
-      "Expedition",
-      "Tour",
-      "Trip",
-    ];
-    for (const kw of keywords) {
-      const idx = fullTitle.toLowerCase().lastIndexOf(kw.toLowerCase());
-      if (idx > 0) {
-        return {
-          main: fullTitle.substring(0, idx).trim(),
-          sub: fullTitle.substring(idx).trim(),
-        };
-      }
-    }
-    const words = fullTitle.split(" ");
-    if (words.length > 1) {
-      return {
-        main: words.slice(0, -1).join(" "),
-        sub: words[words.length - 1],
-      };
-    }
-    return { main: fullTitle, sub: "" };
-  };
 
   const { main: mainTitle, sub: subTitle } = splitTripTitle(title);
   const tagline = (trip.description || "Get ready for an unforgettable...")

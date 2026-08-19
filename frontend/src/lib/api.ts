@@ -23,7 +23,7 @@ const publicRevalidate = (seconds: number): PublicRequestInit => {
     return { cache: "no-store" } as any;
   }
   return {
-    next: { revalidate: Math.min(seconds, 60) },
+    next: { revalidate: Math.min(seconds, 600) },
   };
 };
 
