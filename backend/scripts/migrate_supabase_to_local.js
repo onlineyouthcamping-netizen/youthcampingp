@@ -10,7 +10,10 @@ const LOCAL_URL =
 
 async function runMigration() {
   console.log("Connecting to Supabase (Source)...");
-  const sourcePool = new Pool({ connectionString: SUPABASE_URL });
+  const sourcePool = new Pool({
+    connectionString: SUPABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
 
   console.log("Connecting to Local VPS PostgreSQL (Target)...");
   const targetPool = new Pool({ connectionString: LOCAL_URL });
