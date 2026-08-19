@@ -25,15 +25,8 @@ exports.resolveDeparture = async (req, res, next) => {
         req.user?.tenantId || "default"
       );
     } catch (depErr) {
-      console.warn(`[resolveDeparture] Service error for ${tripId}_${date}:`, depErr.message);
-      departure = {
-        id: `dep_${tripId}_${date}`,
-        departureCode: `DEP-${String(tripId).toUpperCase()}-${date}`,
-        tripId,
-        departureDate: new Date(date),
-        status: "Planning",
-        notes: null,
-      };
+      console.error(`[resolveDeparture] Service error for ${tripId}_${date}:`, depErr.message);
+      return res.status(500).json({ success: false, message: "Failed to resolve departure", error: depErr.message });
     }
 
     try {

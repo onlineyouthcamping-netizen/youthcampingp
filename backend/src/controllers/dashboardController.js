@@ -384,11 +384,7 @@ exports.getStats = async (req, res, next) => {
       .filter((emp) => !emp.isOnline)
       .map((emp) => emp.name);
 
-    if (onlineEmployees.length === 0 && adminWorkloads.length > 0) {
-      onlineEmployees.push(adminWorkloads[0].name);
-      const idx = offlineEmployees.indexOf(adminWorkloads[0].name);
-      if (idx > -1) offlineEmployees.splice(idx, 1);
-    }
+    // Return empty online list if nobody is actually online — do not fabricate presence
 
     const pendingVendorsCost =
       (pendingVendorsResult._sum.agreedCost || 0) -
@@ -578,7 +574,7 @@ exports.getStats = async (req, res, next) => {
         ? adminWorkloads.map((emp) => ({
             name: emp.name,
             state: emp.state,
-            pct: emp.pct || 50,
+            pct: emp.pct ?? 0,
             color: emp.color,
           }))
         : undefined,

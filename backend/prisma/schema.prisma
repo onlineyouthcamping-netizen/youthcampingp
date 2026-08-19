@@ -774,7 +774,6 @@ enum AdminRole {
   operations
   finance
   finance_controller
-  FINANCE_CONTROLLER
   guide
   viewer
   BOOKING_VERIFIER
