@@ -21,21 +21,39 @@ async function runMigration() {
   const targetPool = new Pool({ connectionString: LOCAL_URL });
 
   try {
-    // 1. Get all user tables from public schema
+    // 1. Get all user tables from public schema using pg_tables
     const tablesRes = await sourcePool.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-        AND table_type = 'BASE_TABLE'
-        AND table_name NOT LIKE '_prisma_%'
-      ORDER BY table_name;
+      SELECT tablename AS table_name 
+      FROM pg_tables 
+      WHERE schemaname = 'public' 
+        AND tablename NOT LIKE '_prisma_%'
+      ORDER BY tablename;
     `);
 
     const tables = tablesRes.rows.map((r) => r.table_name);
     console.log(`Found ${tables.length} tables in Supabase public schema.\n`);
 
-    // Disable foreign key checks on target during load
-    await targetPool.query("SET session_replication_role = 'replica';");
+    if (tables.length === 0) {
+      // Fallback table list from Prisma schema
+      console.log("Checking information_schema fallback...");
+      const fbRes = await sourcePool.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_type = 'BASE_TABLE' 
+          AND table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+          AND table_name NOT LIKE '_prisma_%'
+        ORDER BY table_name;
+      `);
+      tables.push(...fbRes.rows.map((r) => r.table_name));
+      console.log(`Resolved ${tables.length} tables from fallback.\n`);
+    }
+
+    // Attempt to disable foreign key constraints on target during copy
+    try {
+      await targetPool.query("SET session_replication_role = 'replica';");
+    } catch (_e) {
+      // Ignore if non-superuser
+    }
 
     for (const table of tables) {
       process.stdout.write(`Migrating table [${table}]... `);
