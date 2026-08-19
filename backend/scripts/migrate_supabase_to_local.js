@@ -1,8 +1,10 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 const { Pool } = require("pg");
 
 const SUPABASE_URL =
   process.env.SOURCE_DB_URL ||
-  "postgresql://postgres.pzcmebgelxkcudtjjwdq:Parth%40315001@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require";
+  "postgresql://postgres.pzcmebgelxkcudtjjwdq:Parth%40315001@aws-1-ap-south-1.pooler.supabase.com:6543/postgres";
 
 const LOCAL_URL =
   process.env.TARGET_DB_URL ||
