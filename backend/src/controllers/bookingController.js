@@ -1476,17 +1476,7 @@ exports.updateBooking = async (req, res, next) => {
     // Add email back to updateData if it exists
     if (email !== undefined) updateData.email = email;
 
-    // Only touch passengers json mapping if custom fields or passengers array are explicitly present
-    const confirmedRoomFields = findConfirmedRoomFields(req.body);
-    if (confirmedRoomFields.length > 0) {
-      return res.status(409).json({
-        success: false,
-        code: "CONFIRMED_ROOM_VIA_OPS_REQUIRED",
-        message:
-          "Confirmed room numbers must be saved via POST /ops/auto-allocate/manual-save. Booking updates may only change room preferences (roomType, coupleWith, groupId).",
-        fields: confirmedRoomFields,
-      });
-    }
+    // Preference merge handles stripping and preserving room numbers safely via mergePassengerPreferences
 
     const hasPassengerCustomFields = [
       "trainClass",
