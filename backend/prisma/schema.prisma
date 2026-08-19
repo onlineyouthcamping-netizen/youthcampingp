@@ -2255,14 +2255,14 @@ model BookingTask {
   description  String    @db.Text
   status       String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
   dueDate      DateTime?
-  assignedById String
-  assignedToId String
+  assignedById String?
+  assignedToId String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  assignedBy Admin   @relation("TaskAssignedBy", fields: [assignedById], references: [id])
-  assignedTo Admin   @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
+  assignedBy Admin?  @relation("TaskAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+  assignedTo Admin?  @relation("TaskAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
 
   @@index([bookingId])
   @@index([assignedById])
