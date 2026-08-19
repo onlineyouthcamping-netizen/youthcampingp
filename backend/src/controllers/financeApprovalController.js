@@ -272,7 +272,7 @@ exports.approveCollectionFounder = async (req, res) => {
         user.role === "owner" ||
         req.user?.isSuperuser;
 
-      if (payment.approvalStatus === "APPROVED_FOUNDER" && payment.status === "Verified") {
+      if (payment.approvalStatus === "APPROVED_FOUNDER" || payment.status === "Verified") {
         return payment;
       }
 
@@ -286,9 +286,9 @@ exports.approveCollectionFounder = async (req, res) => {
       const rawProofUrl = proofFileUrl || payment.proofFileUrl || payment.proofUrl;
       const validProofUrl = sanitizeProofUrl(rawProofUrl);
 
-      // Mandatory Proof Check (Skip for CASH)
+      // Mandatory Proof Check (Skip for CASH or Founder/Admin explicit approval)
       const isCash = payment.paymentMode && payment.paymentMode.toUpperCase().includes("CASH");
-      if (!validProofUrl && !isCash) {
+      if (!validProofUrl && !isCash && !isFounderOrAdmin) {
         throw {
           statusCode: 400,
           message: "Valid receipt/payment proof screenshot is required before Founder approval.",

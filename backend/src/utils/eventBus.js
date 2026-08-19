@@ -114,27 +114,43 @@ async function publishEvent(eventType, context) {
       });
     }
 
-    // 2. Create Activity Event (Timeline)
+    // 2. Create Activity Event (Timeline / Audit)
     if (entityType && entityId) {
-      await prisma.activityEvent.create({
-        data: {
-          tenantId,
-          entityType,
-          entityId,
-          eventType,
-          title,
-          description,
-          actorUserId,
-          actorName,
-          metadata: metadata || null,
-          relatedId: context.relatedId || null,
-          relatedType: context.relatedType || null,
-        },
-      });
+      if (prisma.activityEvent) {
+        await prisma.activityEvent.create({
+          data: {
+            tenantId,
+            entityType,
+            entityId,
+            eventType,
+            title,
+            description,
+            actorUserId,
+            actorName,
+            metadata: metadata || null,
+            relatedId: context.relatedId || null,
+            relatedType: context.relatedType || null,
+          },
+        });
+      } else {
+        // Fallback to audit log if activityEvent model is not defined in Prisma schema
+        await prisma.auditLog.create({
+          data: {
+            tenantId,
+            actorUserId: actorUserId || null,
+            action: eventType,
+            entityType,
+            entityId,
+            changeSummary: title ? `${title}: ${description || ""}` : description,
+            afterData: metadata || null,
+            changedBy: actorName || null,
+          },
+        });
+      }
     }
 
     // 3. Notifications
-    if (notify) {
+    if (notify && prisma.notification) {
       const recipientIds = await resolveRecipients(
         tenantId,
         moduleName,
@@ -156,7 +172,7 @@ async function publishEvent(eventType, context) {
           // Deduplication check
           const existing = await prisma.notification.findFirst({
             where: {
-              recipientUserId: rId,
+              userId: rId,
               title,
               createdAt: { gt: recentTime },
             },
@@ -166,12 +182,10 @@ async function publishEvent(eventType, context) {
             await prisma.notification.create({
               data: {
                 tenantId,
-                recipientUserId: rId,
+                userId: rId,
                 title,
-                message: description,
-                priority,
-                module: moduleName,
-                actionUrl,
+                message: description || title,
+                link: actionUrl || null,
               },
             });
           }
@@ -179,7 +193,7 @@ async function publishEvent(eventType, context) {
       }
     }
   } catch (error) {
-    console.error(
+    console.warn(
       `⚠️ [EventBus] Error publishing event ${eventType}:`,
       error.message,
     );

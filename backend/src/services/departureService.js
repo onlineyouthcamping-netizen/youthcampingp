@@ -94,12 +94,34 @@ async function resolveOrCreateDeparture(tripId, departureDateStr, tenantId = "de
     departureDateStr
   );
 
+  // If trip record does not exist in DB, return synthetic departure directly to avoid FK violation
+  if (!trip || !trip.id) {
+    return {
+      id: `dep_${resolvedTripId}_${departureDateStr}`,
+      tenantId,
+      departureCode,
+      tripId: resolvedTripId,
+      departureDate: dDate,
+      status: "Planning",
+      notes: null,
+      confirmedAt: null,
+      confirmedById: null,
+      trip: {
+        id: resolvedTripId,
+        title: tripId,
+        slug: String(tripId).toLowerCase(),
+        location: "India",
+      },
+      confirmedBy: null,
+    };
+  }
+
   // 3. Upsert departure atomically
   try {
     dep = await prisma.departure.upsert({
       where: {
         tripId_departureDate: {
-          tripId: resolvedTripId,
+          tripId: trip.id,
           departureDate: dDate,
         },
       },
@@ -107,7 +129,7 @@ async function resolveOrCreateDeparture(tripId, departureDateStr, tenantId = "de
       create: {
         tenantId,
         departureCode,
-        tripId: resolvedTripId,
+        tripId: trip.id,
         departureDate: dDate,
         status: "Planning",
       },

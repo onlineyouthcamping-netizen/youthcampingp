@@ -2354,7 +2354,7 @@ exports.initializeChecklist = async (req, res) => {
         },
       });
       if (bookingsCount === 0) {
-        console.error("Departure not found during checklist initialization", {
+        console.warn("[opsController] Departure not found during checklist initialization", {
           tripId: ctx.tripId,
           departureDate: formattedDate,
         });
@@ -2372,8 +2372,8 @@ exports.initializeChecklist = async (req, res) => {
       !Array.isArray(trip.itinerary) ||
       trip.itinerary.length === 0
     ) {
-      console.error(
-        "Trip itinerary is missing during checklist initialization",
+      console.warn(
+        "[opsController] Trip itinerary is missing during checklist initialization",
         { tripId: ctx.tripId },
       );
       return res.status(422).json({
