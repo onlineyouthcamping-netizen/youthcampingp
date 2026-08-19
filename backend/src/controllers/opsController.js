@@ -3516,10 +3516,8 @@ exports.saveManualAllocations = async (req, res) => {
     }
 
     // 2. Validate all fleetIds belong to this departure, or auto-create/map if needed
-    const allFleetIds = [
-      ...new Set(vehicleAllocations.map((v) => v.fleetId)),
-    ].filter(Boolean);
-    if (allFleetIds.length > 0) {
+    let defaultFleet = null;
+    if (vehicleAllocations.length > 0) {
       // Use date-range query to match @db.Date field regardless of timezone/time-part storage
       const fleetDayStart = new Date(departureDate);
       fleetDayStart.setUTCHours(0, 0, 0, 0);
@@ -3548,7 +3546,7 @@ exports.saveManualAllocations = async (req, res) => {
       }
 
       const validFleetMap = new Map(validFleets.map((f) => [f.id, f]));
-      const defaultFleet = validFleets[0];
+      defaultFleet = validFleets[0];
 
       // Map any pseudo-id or non-existent fleetId to a valid departure fleet
       vehicleAllocations = vehicleAllocations.map((v) => {
