@@ -282,6 +282,8 @@ exports.getIncomingPaymentsQueue = async (req, res) => {
       bankName: entry.collectionAccount?.bankName || "HDFC Bank",
       upiId: entry.collectionAccount?.upiId || "—",
       notes: entry.notes,
+      receiptUrl: entry.receiptUrl || null,
+      proofUrl: entry.receiptUrl || null,
       status: entry.status,
       submittedBy: entry.salesperson?.name || "Online / Gateway",
       actionedBy: entry.actionedBy?.name || null,
