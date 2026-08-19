@@ -318,43 +318,86 @@ exports.getIncomingPaymentsQueue = async (req, res) => {
 exports.getVendorPaymentsQueue = async (req, res) => {
   try {
     const tenantId = req.user?.tenantId || "default";
-    const { tripId, vendorType, page = 1, limit = 25 } = req.query;
+    const { tripId, vendorType, page = 1, limit = 50 } = req.query;
     const skip = (Math.max(1, Number(page)) - 1) * Number(limit);
 
-    const where = {
-      trip: { tenantId },
-      ...(tripId ? { tripId } : {}),
-    };
+    // 1. Fetch Departure-level OpsVendorPayment records from Departure Hub
+    const opsPayments = await prisma.opsVendorPayment.findMany({
+      where: {
+        tenantId,
+        ...(tripId ? { tripId } : {}),
+      },
+      include: {
+        trip: { select: { id: true, title: true, slug: true, location: true } },
+        collectionAccount: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-    const [total, tripVendors] = await Promise.all([
-      prisma.tripVendor.count({ where }),
-      prisma.tripVendor.findMany({
-        where,
-        skip,
-        take: Number(limit),
-        orderBy: { createdAt: "desc" },
-        include: {
-          vendor: true,
-          trip: {
-            select: {
-              id: true,
-              title: true,
-              slug: true,
-              location: true,
-              availableDates: true,
-            },
-          },
-        },
-      }),
-    ]);
+    // 2. Fetch TripVendor contract records
+    const tripVendors = await prisma.tripVendor.findMany({
+      where: {
+        trip: { tenantId },
+        ...(tripId ? { tripId } : {}),
+      },
+      include: {
+        vendor: true,
+        trip: { select: { id: true, title: true, slug: true, location: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-    const queue = tripVendors.map((tv) => {
+    const queue = [];
+
+    // Map OpsVendorPayments from Departure Hub
+    opsPayments.forEach((p) => {
+      const agreed = Number(p.agreedAmount || 0);
+      const paid = Number(p.advancePaid || 0);
+      const outstanding = Number(p.remainingPayable ?? Math.max(0, agreed - paid));
+      const cat = (p.category || "Hotels").toUpperCase();
+      const typeStr = cat.includes("HOTEL")
+        ? "Hotels"
+        : cat.includes("TRANS")
+          ? "Transport"
+          : cat.includes("ACT")
+            ? "Activities"
+            : cat.includes("GUIDE")
+              ? "Guides"
+              : "Meals & Misc";
+
+      queue.push({
+        id: p.id,
+        isOperationalPayment: true,
+        tripId: p.tripId,
+        tripTitle: p.trip?.title || "Trip Package",
+        tripLocation: p.trip?.location || "India",
+        departureDate: p.departureDate ? p.departureDate.toISOString().split("T")[0] : null,
+        vendorId: p.id,
+        vendorName: p.vendorName || "Vendor Partner",
+        vendorType: typeStr,
+        vendorPhone: "—",
+        agreedTariff: agreed,
+        paidAmount: paid,
+        outstandingAmount: outstanding,
+        paymentStatus: paid >= agreed && agreed > 0 ? "paid" : paid > 0 ? "partial" : "pending",
+        outgoingPaymentMode: p.paymentMode || "Bank Transfer",
+        depositAccountName: p.collectionAccount?.accountName || "Official Vendor Account",
+        proofUrl: p.invoiceFileUrl || p.invoiceProof || p.advanceProofUrl || null,
+        transactionRef: p.transactionId || null,
+        notes: p.remarks || p.serviceDescription || "",
+        createdAt: p.createdAt,
+      });
+    });
+
+    // Also map TripVendor bindings
+    tripVendors.forEach((tv) => {
       const agreedCost = Number(tv.agreedCost || 0);
       const paidAmount = Number(tv.paidAmount || 0);
       const outstanding = Math.max(0, agreedCost - paidAmount);
 
-      return {
+      queue.push({
         id: tv.id,
+        isOperationalPayment: false,
         tripId: tv.tripId,
         tripTitle: tv.trip?.title || "Trip",
         tripLocation: tv.trip?.location || "India",
@@ -370,12 +413,15 @@ exports.getVendorPaymentsQueue = async (req, res) => {
         depositAccountName: tv.depositAccountName || "Official Vendor Account",
         notes: tv.notes || "",
         createdAt: tv.createdAt,
-      };
+      });
     });
+
+    const total = queue.length;
+    const paginatedQueue = queue.slice(skip, skip + Number(limit));
 
     return res.json({
       success: true,
-      data: queue,
+      data: paginatedQueue,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -960,6 +1006,40 @@ exports.verifyVendorPayment = async (req, res) => {
     const userId = req.user?.id;
     const userName = req.user?.name || "Finance Controller";
 
+    // 1. Try finding OpsVendorPayment (Departure Hub disbursement)
+    const opsPayment = await prisma.opsVendorPayment.findUnique({
+      where: { id },
+      include: { trip: true, collectionAccount: true },
+    });
+
+    if (opsPayment) {
+      const agreed = Number(opsPayment.agreedAmount || 0);
+      let currentPaid = Number(opsPayment.advancePaid || 0);
+      let paymentInc = Number(paidAmount || (agreed - currentPaid));
+      let newPaid = Math.min(agreed, currentPaid + paymentInc);
+      let remaining = Math.max(0, agreed - newPaid);
+      let nextStatus = newPaid >= agreed && agreed > 0 ? "Paid" : newPaid > 0 ? "Advance Paid" : "Pending";
+
+      const updated = await prisma.opsVendorPayment.update({
+        where: { id },
+        data: {
+          advancePaid: newPaid,
+          remainingPayable: remaining,
+          status: nextStatus,
+          paymentMode: paymentMode || opsPayment.paymentMode,
+          transactionId: transactionRef || opsPayment.transactionId,
+          remarks: notes ? `${opsPayment.remarks ? opsPayment.remarks + " | " : ""}${notes}` : opsPayment.remarks,
+        },
+      });
+
+      return res.json({
+        success: true,
+        data: updated,
+        message: `Operational vendor payment updated to ${nextStatus}`,
+      });
+    }
+
+    // 2. Otherwise update TripVendor contract
     const tripVendor = await prisma.tripVendor.findUnique({
       where: { id },
       include: { trip: true, vendor: true },
