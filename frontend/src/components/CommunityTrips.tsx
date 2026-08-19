@@ -785,7 +785,7 @@ export default function CommunityTrips({
             </h2>
 
             <p
-              className={`text-xs sm:text-sm md:text-base font-semibold leading-relaxed max-w-[580px] ${isWhiteOverlay ? "text-[#4b5563]" : "text-zinc-200"}`}
+              className={`text-xs sm:text-sm md:text-base font-semibold leading-relaxed max-w-[580px] ${isWhiteOverlay ? "text-[#1B2A4A]" : "text-zinc-200 drop-shadow-sm"}`}
             >
               {subheadline}
             </p>
