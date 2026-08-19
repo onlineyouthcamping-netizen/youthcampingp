@@ -1195,7 +1195,9 @@ exports.createTransportFleet = async (req, res) => {
         .status(400)
         .json({ success: false, message: "vehicleType is required" });
 
-    // Safe vendor resolution (non-blocking)
+    // Safe vendor resolution — if the ID belongs to the Vendor Directory rather than
+    // OpsVendor (two separate tables), silently drop it so the fleet record is still
+    // created. This prevents a 400 error when the UI passes a directory vendor ID.
     let resolvedVendorId = null;
     if (vendorId) {
       const vendor = await prisma.opsVendor.findFirst({
@@ -1207,6 +1209,7 @@ exports.createTransportFleet = async (req, res) => {
       if (vendor) {
         resolvedVendorId = vendor.id;
       }
+      // If vendor not found in OpsVendor, resolvedVendorId stays null (directory vendor or unknown)
     }
 
     const tot = parseFloat(totalAmount || 0);
@@ -1237,7 +1240,7 @@ exports.createTransportFleet = async (req, res) => {
         tenantId: ctx.tenantId,
         tripId: ctx.tripId,
         departureDate: ctx.departureDate,
-        vendorId: resolvedVendorId || null,
+        vendorId: resolvedVendorId,
         vehicleType,
         vehicleNumber: vehicleNumber || null,
         capacity: cap,
@@ -1314,7 +1317,8 @@ exports.updateTransportFleet = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Transport vehicle not found" });
 
-    // Safe vendor resolution
+    // Safe vendor resolution — if the ID belongs to the Vendor Directory rather than
+    // OpsVendor, silently drop it so the update still succeeds.
     let resolvedVendorId = existing.vendorId;
     if (vendorId !== undefined) {
       if (vendorId === null || vendorId === "") {
@@ -1339,11 +1343,8 @@ exports.updateTransportFleet = async (req, res) => {
               .status(400)
               .json({ success: false, message: "Vendor is inactive" });
           resolvedVendorId = vendor.id;
-        } else {
-          return res
-            .status(400)
-            .json({ success: false, message: "Vendor not found" });
         }
+        // If vendor not found in OpsVendor, keep existing vendorId (directory vendor — ignore)
       }
     }
 
@@ -1377,7 +1378,7 @@ exports.updateTransportFleet = async (req, res) => {
         vehicleType: vehicleType !== undefined ? vehicleType : undefined,
         vehicleNumber: vehicleNumber !== undefined ? vehicleNumber : undefined,
         capacity: capacity !== undefined ? parseInt(capacity) : undefined,
-        vendorId: vendorId !== undefined ? vendorId || null : undefined,
+        vendorId: resolvedVendorId,
         route: route !== undefined ? route : undefined,
         pickupPoints: pickupPoints !== undefined ? pickupPoints : undefined,
         dropPoints: dropPoints !== undefined ? dropPoints : undefined,

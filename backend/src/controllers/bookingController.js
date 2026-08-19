@@ -484,8 +484,7 @@ exports.getBookings = async (req, res, next) => {
 
     const userTenant = req.user?.tenantId || "default";
     const where = {
-      tenantId:
-        userTenant === "default" ? "default" : { in: [userTenant, "default"] },
+      tenantId: { equals: userTenant },
     };
 
     // 2. Map status filters

@@ -56,7 +56,7 @@ router.get("/trip-info/:tripCode", getTripInfo);
 router.post("/submit/:tripCode", submitBookingForm);
 router.get("/my-bookings/search", lookupLimiter, searchByPhone);
 router.get("/lookup/:bookingId", lookupLimiter, getBookingPublic);
-router.patch("/:id", lookupLimiter, updateBookingUpi);
+router.patch("/:id", authenticate, lookupLimiter, updateBookingUpi);
 
 // ── ADMIN: Trip Management ──
 router.get(

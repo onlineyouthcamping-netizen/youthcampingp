@@ -1345,7 +1345,6 @@ exports.verifyExpense = async (req, res) => {
 };
 
 /**
-<<<<<<< HEAD
  * POST /api/finance/control-center/expenses
  * Create a new miscellaneous or activity expense from the Finance Control Center.
  * Supports both opsMiscExpense (type=MISCELLANEOUS) and opsTripExpense (type=ACTIVITY).

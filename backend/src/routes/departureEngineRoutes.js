@@ -30,15 +30,15 @@ router.get(
 );
 
 // Passenger Statistics Endpoint
-router.get("/:tripId/:date/passenger-stats", departureEngineCtrl.getPassengerStatistics);
+router.get("/:tripId/:date/passenger-stats", authenticate, requirePermission("departures.view"), departureEngineCtrl.getPassengerStatistics);
 
 // Room Allocation Engine Endpoint
-router.post("/room-allocation", roomAllocationCtrl.generateRoomAllocation);
+router.post("/room-allocation", authenticate, requirePermission("departures.edit"), roomAllocationCtrl.generateRoomAllocation);
 
 // Accommodation Planner Endpoint
-router.post("/accommodation-plan", accommodationCtrl.generateAccommodationPlan);
+router.post("/accommodation-plan", authenticate, requirePermission("departures.edit"), accommodationCtrl.generateAccommodationPlan);
 
 // Hotel Assignment Endpoint
-router.post("/hotel-assignment", accommodationCtrl.generateHotelAssignments);
+router.post("/hotel-assignment", authenticate, requirePermission("departures.edit"), accommodationCtrl.generateHotelAssignments);
 
 module.exports = router;

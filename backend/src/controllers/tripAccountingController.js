@@ -121,9 +121,8 @@ async function getTripPnL(req, res) {
         where: { tripId: trip.id, tenantId },
         select: {
           id: true,
-          agreedTariff: true,
-          advancePaid: true,
-          vendorType: true,
+          agreedCost: true,
+          paidAmount: true,
         },
       }),
       prisma.opsGuidePayment.findMany({
@@ -137,7 +136,7 @@ async function getTripPnL(req, res) {
       }),
       prisma.opsMiscExpense.findMany({
         where: { tripId: trip.id, tenantId },
-        select: { id: true, amount: true, expenseCategory: true },
+        select: { id: true, amount: true, category: true },
       }),
       prisma.opsTripExpense.findMany({
         where: { tripId: trip.id, tenantId },
@@ -168,20 +167,20 @@ async function getTripPnL(req, res) {
           id: true,
           agreedAmount: true,
           advancePaid: true,
-          balanceAmount: true,
-          paymentCategory: true,
+          remainingPayable: true,
+          category: true,
         },
       }),
     ]);
 
     const vendorContractCost =
-      vendors.reduce((sum, v) => sum + (Number(v.agreedTariff) || 0), 0) +
+      vendors.reduce((sum, v) => sum + (Number(v.agreedCost) || 0), 0) +
       opsVendorPayments.reduce(
         (sum, v) => sum + (Number(v.agreedAmount) || 0),
         0,
       );
     const vendorPaid =
-      vendors.reduce((sum, v) => sum + (Number(v.advancePaid) || 0), 0) +
+      vendors.reduce((sum, v) => sum + (Number(v.paidAmount) || 0), 0) +
       opsVendorPayments.reduce(
         (sum, v) => sum + (Number(v.advancePaid) || 0),
         0,
