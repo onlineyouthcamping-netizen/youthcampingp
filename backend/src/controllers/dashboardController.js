@@ -135,7 +135,6 @@ exports.getStats = async (req, res, next) => {
           paymentStatus: true,
           status: true,
           createdAt: true,
-          numberOfPeople: true,
         },
       }),
       prisma.$queryRaw`
@@ -344,7 +343,6 @@ exports.getStats = async (req, res, next) => {
       paidAmount: b.advancePaid || 0,
       paymentStatus: b.paymentStatus || null,
       status: b.status,
-      numberOfPeople: b.numberOfPeople || 1,
       createdAt: b.createdAt,
     }));
 

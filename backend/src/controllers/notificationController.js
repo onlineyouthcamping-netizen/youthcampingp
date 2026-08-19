@@ -64,13 +64,15 @@ exports.getNotifications = async (req, res, next) => {
     // 2. Fetch pending operational items to synthesize live alerts
     const liveAlerts = [];
 
-    // Check pending cash submissions
-    const pendingCash = await prisma.cashRegisterSubmission.findMany({
-      where: { tenantId, status: "PENDING" },
-      include: { salesperson: { select: { name: true } }, booking: { select: { bookingId: true } } },
-      take: 5,
-      orderBy: { createdAt: "desc" },
-    });
+    // Check pending cash submissions (model may not exist in all tenants)
+    const pendingCash = prisma.cashRegisterSubmission
+      ? await prisma.cashRegisterSubmission.findMany({
+          where: { tenantId, status: "PENDING" },
+          include: { salesperson: { select: { name: true } }, booking: { select: { bookingId: true } } },
+          take: 5,
+          orderBy: { createdAt: "desc" },
+        }).catch(() => [])
+      : [];
 
     pendingCash.forEach((c) => {
       liveAlerts.push({
@@ -87,7 +89,7 @@ exports.getNotifications = async (req, res, next) => {
     // Check pending train tickets
     const pendingTickets = await prisma.trainTicketRequest.findMany({
       where: { tenantId, status: { in: ["PENDING", "UNDER_REVIEW"] } },
-      include: { booking: { select: { bookingId: true, customerName: true } } },
+      include: { booking: { select: { bookingId: true, name: true } } },
       take: 5,
       orderBy: { createdAt: "desc" },
     });
@@ -96,7 +98,7 @@ exports.getNotifications = async (req, res, next) => {
       liveAlerts.push({
         id: `live-ticket-${t.id}`,
         title: "🎫 Train Ticket Queue",
-        message: `${t.numberOfPassengers || 1} Pax for ${t.booking?.customerName || t.trainNumber || "Booking"} awaiting PNR assignment`,
+        message: `${t.numberOfPassengers || 1} Pax for ${t.booking?.name || t.trainNumber || "Booking"} awaiting PNR assignment`,
         link: "/admin/travel-desk/train-tickets",
         type: "TICKETING",
         isRead: false,
