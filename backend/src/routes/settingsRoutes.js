@@ -10,6 +10,7 @@ const {
   toggleHeroVideo,
   getFooterSettings,
   updateFooterSettings,
+  getPublicFooterSettings,
 } = require("../controllers/settingsController");
 const { authenticate, requirePermission } = require("../middleware/auth");
 const multer = require("multer");
@@ -36,6 +37,7 @@ const uploadVideo = multer({
 });
 
 router.get("/public", getPublicSettings);
+router.get("/footer/public", getPublicFooterSettings);
 router.get(
   "/footer",
   authenticate,

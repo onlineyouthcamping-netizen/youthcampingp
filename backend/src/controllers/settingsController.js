@@ -357,6 +357,33 @@ exports.getFooterSettings = async (req, res) => {
   }
 };
 
+// Public (unauthenticated) endpoint — used by the frontend footer
+exports.getPublicFooterSettings = async (req, res) => {
+  try {
+    const cached = settingsCache.get("public_footer");
+    if (cached && Date.now() < cached.expiresAt) {
+      res.set("Cache-Control", "public, max-age=600, stale-while-revalidate=600");
+      return res.json({ success: true, data: cached.data });
+    }
+
+    const setting = await prisma.setting.findUnique({
+      where: { key: SETTINGS_KEY },
+      select: { value: true },
+    });
+    const footerConfig =
+      setting?.value?.footerConfig || defaultFooterConfig;
+
+    settingsCache.set("public_footer", {
+      data: footerConfig,
+      expiresAt: Date.now() + SETTINGS_CACHE_TTL,
+    });
+    res.set("Cache-Control", "public, max-age=600, stale-while-revalidate=600");
+    res.json({ success: true, data: footerConfig });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.updateFooterSettings = async (req, res) => {
   try {
     const existingSetting = await prisma.setting.findUnique({
@@ -373,6 +400,7 @@ exports.updateFooterSettings = async (req, res) => {
       create: { key: SETTINGS_KEY, value: settingsData },
     });
 
+    settingsCache.delete("public_footer");
     res.json({ success: true, data: updatedSetting.value.footerConfig });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
