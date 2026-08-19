@@ -264,11 +264,19 @@ exports.approveCollectionFounder = async (req, res) => {
         throw { statusCode: 404, message: "Collection payment not found or access denied" };
       }
 
-      // Check state machine: Must be REVIEWED_FINANCE_CONTROLLER
-      if (payment.approvalStatus !== "REVIEWED_FINANCE_CONTROLLER") {
-        if (payment.approvalStatus === "APPROVED_FOUNDER" || payment.status === "Verified") {
-          throw { statusCode: 400, message: "Payment is already approved and verified." };
-        }
+      // Check state machine: Allow Founder/Admin to direct-approve from PENDING or REVIEWED_FINANCE_CONTROLLER
+      const isFounderOrAdmin =
+        user.role === "admin" ||
+        user.role === "superadmin" ||
+        user.role === "founder" ||
+        user.role === "owner" ||
+        req.user?.isSuperuser;
+
+      if (payment.approvalStatus === "APPROVED_FOUNDER" && payment.status === "Verified") {
+        return payment;
+      }
+
+      if (payment.approvalStatus !== "REVIEWED_FINANCE_CONTROLLER" && !isFounderOrAdmin) {
         throw {
           statusCode: 400,
           message: "Payment must be reviewed by Finance Controller before Founder approval.",
@@ -297,8 +305,7 @@ exports.approveCollectionFounder = async (req, res) => {
         where: {
           id: payment.id,
           tenantId,
-          approvalStatus: "REVIEWED_FINANCE_CONTROLLER",
-          status: { not: "Verified" },
+          approvalStatus: { in: ["REVIEWED_FINANCE_CONTROLLER", "PENDING", "REJECTED"] },
         },
         data: {
           approvalStatus: "APPROVED_FOUNDER",
@@ -310,7 +317,7 @@ exports.approveCollectionFounder = async (req, res) => {
         },
       });
 
-      if (updateResult.count === 0) {
+      if (updateResult.count === 0 && payment.approvalStatus !== "APPROVED_FOUNDER") {
         throw {
           statusCode: 409,
           message: "Conflict: Payment has already been approved or modified concurrently.",
@@ -1356,8 +1363,14 @@ exports.getPendingApprovals = async (req, res) => {
       tenantId,
       approvalStatus: {
         in: isFounderOrAdmin
-          ? ["PENDING", "REVIEWED_FINANCE_CONTROLLER", "REJECTED"]
-          : ["PENDING", "REJECTED"],
+          ? ["PENDING", "REVIEWED_FINANCE_CONTROLLER"]
+          : ["PENDING"],
+      },
+      NOT: {
+        AND: [
+          { approvalStatus: "APPROVED_FOUNDER" },
+          { status: "Verified" },
+        ],
       },
     };
 
@@ -1365,8 +1378,14 @@ exports.getPendingApprovals = async (req, res) => {
       tenantId,
       approvalStatus: {
         in: isFounderOrAdmin
-          ? ["PENDING", "REVIEWED_FINANCE_CONTROLLER", "REJECTED"]
-          : ["PENDING", "REJECTED"],
+          ? ["PENDING", "REVIEWED_FINANCE_CONTROLLER"]
+          : ["PENDING"],
+      },
+      NOT: {
+        AND: [
+          { approvalStatus: "APPROVED_FOUNDER" },
+          { status: "Paid" },
+        ],
       },
     };
 

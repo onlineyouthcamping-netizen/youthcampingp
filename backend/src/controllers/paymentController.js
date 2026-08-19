@@ -561,6 +561,7 @@ exports.syncTreasuryMappings = async (req, res) => {
             transactionId: b.upi_reference || `SYNC-${b.id.slice(-6).toUpperCase()}`,
             paymentDate: b.createdAt,
             status: "Verified",
+            approvalStatus: "APPROVED_FOUNDER",
             collectedBy: "System Sync",
             remarks: "Advance Paid on Booking (Auto-synced to Treasury)",
           },

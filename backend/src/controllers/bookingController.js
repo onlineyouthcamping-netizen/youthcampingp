@@ -2093,6 +2093,7 @@ exports.confirmBooking = async (req, res, next) => {
             transactionId: transactionId || `PAY-${Date.now()}`,
             paymentDate: new Date(),
             status: "Verified",
+            approvalStatus: "APPROVED_FOUNDER",
             collectedBy: req.user?.name || req.user?.email || "Admin",
             recordedByUserId: req.user?.id || null,
             remarks: notes || `Advance payment on booking confirmation via ${paymentMode || "UPI"}`,
@@ -2101,7 +2102,7 @@ exports.confirmBooking = async (req, res, next) => {
       } else if (!existingClientPayment.collectionAccountId && targetAccountId) {
         await prisma.opsClientPayment.update({
           where: { id: existingClientPayment.id },
-          data: { collectionAccountId: targetAccountId },
+          data: { collectionAccountId: targetAccountId, approvalStatus: "APPROVED_FOUNDER" },
         });
       }
 
