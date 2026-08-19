@@ -35,8 +35,16 @@ async function createRefundRequest(req, res) {
       return res.status(404).json({ success: false, message: "Booking not found" });
     }
 
-    // Use only advancePaid — never fall back to booking.amount (the full trip price)
-    const originalPaid = Number(booking.advancePaid) || 0;
+    // Sum all verified/approved payments to get accurate total paid amount
+    const verifiedPayments = await prisma.opsClientPayment.findMany({
+      where: {
+        bookingId: booking.id,
+        status: { in: ["Verified", "VERIFIED", "APPROVED", "Paid"] },
+      },
+    });
+    const totalPaid = verifiedPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    // Fall back to advancePaid if no OpsClientPayment records exist yet
+    const originalPaid = totalPaid > 0 ? totalPaid : (Number(booking.advancePaid) || 0);
     const numCash = Number(refundAmount) || 0;
     const numCredit = Number(creditNoteAmount) || 0;
     const totalRequested = numCash + numCredit;

@@ -183,12 +183,11 @@ exports.addClientPayment = async (req, res) => {
             tenantId,
             isActive: true,
             OR: [
-              { accountName: { contains: "Nikul", mode: "insensitive" } },
-              { upiId: { contains: "nikul", mode: "insensitive" } },
-              { accountType: "INDIVIDUAL" },
               { accountType: "UPI" },
+              { accountType: "INDIVIDUAL" },
             ],
           },
+          orderBy: { createdAt: "asc" },
         });
         targetAccountId = upiAcc?.id || null;
       }

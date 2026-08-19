@@ -58,7 +58,7 @@ const corsOptions = {
 
     const allowed = getAllowedOrigins();
 
-    if (allowed.includes(origin) || origin.includes("localhost") || origin.includes("127.0.0.1")) {
+    if (allowed.includes(origin) || /^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) {
       return callback(null, true);
     }
     // Subdomains of the primary domain

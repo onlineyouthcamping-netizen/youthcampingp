@@ -305,7 +305,7 @@ router.post(
 );
 
 // Auto Allocation Engine (Draft, Confirm, Override)
-router.get(
+router.post(
   "/auto-allocate/:tripId",
   requirePermission("ops.allocate"),
   generateAllocation,

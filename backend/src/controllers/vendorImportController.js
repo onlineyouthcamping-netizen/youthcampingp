@@ -298,16 +298,10 @@ async function getOrCreateTripBySheet(tx, sheetName, tenantId) {
 
 // Controller Actions
 exports.getImportPreview = async (req, res) => {
-  try {
-    const filePath = "/Users/parthpatel/Downloads/Himachal Trip Details .xlsx";
-    const parsed = parseHimachalWorkbook(filePath);
-    return res.json({ success: true, data: parsed });
-  } catch (err) {
-    console.error("getImportPreview error:", err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to generate preview" });
-  }
+  return res.status(400).json({
+    success: false,
+    message: "File upload required - hardcoded path removed",
+  });
 };
 
 exports.confirmImport = async (req, res) => {

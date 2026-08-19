@@ -212,6 +212,10 @@ exports.getStats = async (req, res, next) => {
           booking: {
             tenantId: tenantId,
           },
+          allocationStatus: "ACTIVE",
+          createdAt: {
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          },
         },
       }),
       prisma.bookingTask.count({
@@ -386,9 +390,11 @@ exports.getStats = async (req, res, next) => {
 
     // Return empty online list if nobody is actually online — do not fabricate presence
 
-    const pendingVendorsCost =
+    const pendingVendorsCost = Math.max(
+      0,
       (pendingVendorsResult._sum.agreedCost || 0) -
-      (pendingVendorsResult._sum.paidAmount || 0);
+      (pendingVendorsResult._sum.paidAmount || 0),
+    );
     const pendingVendorsCount = pendingVendorsCountResult || 0;
 
     // Helper functions for dynamic trip operations

@@ -1,10 +1,11 @@
 const { prisma } = require("../lib/prisma");
 const { sendEmail, templates } = require("../lib/email");
 
-// DEBUG: Confirm SDK API Key is loaded
-console.log("⚙️  BREVO API CONFIG LOADED:", {
-  apiKeyLoaded: !!process.env.BREVO_API_KEY,
-});
+if (process.env.NODE_ENV !== "production") {
+  console.log("⚙️  BREVO API CONFIG LOADED:", {
+    apiKeyLoaded: !!process.env.BREVO_API_KEY,
+  });
+}
 
 const sendBookingEmail = async (req, res) => {
   const {
@@ -75,6 +76,7 @@ const sendBookingEmail = async (req, res) => {
     const MAX_ATTACHMENT_BYTES = 16 * 1024 * 1024; // 16MB base64 cap for Brevo SMTP
     let currentPayloadSize = 0;
     let overflowDownloadLinks = [];
+    const tempFilePaths = [];
 
     const processAttachment = (name, base64Content) => {
       const cleanContent = cleanBase64(base64Content);
@@ -102,6 +104,7 @@ const sendBookingEmail = async (req, res) => {
           const filePath = path.join(uploadDir, safeName);
           const buffer = Buffer.from(cleanContent, "base64");
           fs.writeFileSync(filePath, buffer);
+          tempFilePaths.push(filePath);
           const fileUrl = `https://api.youthcamping.online/uploads/tickets/${safeName}`;
           overflowDownloadLinks.push({ name, url: fileUrl });
           console.log(
@@ -202,15 +205,22 @@ const sendBookingEmail = async (req, res) => {
       );
     });
 
-    await sendEmail({
-      to: booking.email,
-      subject: templateData.subject,
-      html: templateData.html,
-      type,
-      bookingId,
-      prisma,
-      attachments,
-    });
+    try {
+      await sendEmail({
+        to: booking.email,
+        subject: templateData.subject,
+        html: templateData.html,
+        type,
+        bookingId,
+        prisma,
+        attachments,
+      });
+    } finally {
+      const fs = require("fs");
+      for (const p of tempFilePaths) {
+        try { fs.unlinkSync(p); } catch (e) { /* ignore cleanup errors */ }
+      }
+    }
 
     res.json({ message: "Email sent successfully" });
   } catch (error) {
