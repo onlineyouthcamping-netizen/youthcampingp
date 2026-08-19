@@ -1006,6 +1006,8 @@ exports.createVendorPayment = async (req, res) => {
           collectionAccountId: targetAccountId,
           transactionId: transactionId || `TXN-${Date.now()}`,
           invoiceProof: invoiceProof || "",
+          invoiceFileUrl: invoiceProof || "",
+          advanceProofUrl: invoiceProof || "",
           status: status || (advance >= agreed && agreed > 0 ? "Paid" : advance > 0 ? "Advance Paid" : "Pending"),
           paidBy: req.user?.name || req.user?.email || "Operations",
           remarks: remarks || "",
@@ -1133,6 +1135,10 @@ exports.updateVendorPayment = async (req, res) => {
             transactionId !== undefined ? transactionId : existing.transactionId,
           invoiceProof:
             invoiceProof !== undefined ? invoiceProof : existing.invoiceProof,
+          invoiceFileUrl:
+            invoiceProof !== undefined ? invoiceProof : existing.invoiceFileUrl,
+          advanceProofUrl:
+            invoiceProof !== undefined ? invoiceProof : existing.advanceProofUrl,
           status: computedStatus,
           remarks: remarks !== undefined ? remarks : existing.remarks,
         },
@@ -1180,6 +1186,8 @@ exports.updateVendorPayment = async (req, res) => {
           collectionAccountId: targetAccountId,
           transactionId: transactionId || `TXN-${Date.now()}`,
           invoiceProof: invoiceProof || "",
+          invoiceFileUrl: invoiceProof || "",
+          advanceProofUrl: invoiceProof || "",
           status: computedStatus,
           paidBy: req.user?.name || req.user?.email || "Operations",
           remarks: remarks || "",
