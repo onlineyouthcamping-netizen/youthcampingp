@@ -102,7 +102,7 @@ exports.getNotifications = async (req, res, next) => {
       if (prisma.trainTicketRequest) {
         const pendingTickets = await prisma.trainTicketRequest.findMany({
           where: { tenantId, status: { in: ["PENDING", "UNDER_REVIEW"] } },
-          include: { booking: { select: { bookingId: true, customerName: true } } },
+          include: { booking: { select: { bookingId: true, name: true } } },
           take: 5,
           orderBy: { createdAt: "desc" },
         });
@@ -111,7 +111,7 @@ exports.getNotifications = async (req, res, next) => {
           liveAlerts.push({
             id: `live-ticket-${t.id}`,
             title: "🎫 Train Ticket Queue",
-            message: `${t.numberOfPassengers || 1} Pax for ${t.booking?.customerName || t.trainNumber || "Booking"} awaiting PNR assignment`,
+            message: `${t.numberOfPassengers || 1} Pax for ${t.booking?.name || t.trainNumber || "Booking"} awaiting PNR assignment`,
             link: "/admin/travel-desk/train-tickets",
             type: "TICKETING",
             isRead: false,
