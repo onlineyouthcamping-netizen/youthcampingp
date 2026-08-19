@@ -122,12 +122,16 @@ exports.getDashboard = async (req, res) => {
       });
     }
 
-    const depDate = new Date(departureDate);
+    const startOfDay = new Date(departureDate);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(departureDate);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
     const bookings = await prisma.booking.findMany({
       where: {
         tenantId,
         tripId,
-        departureDate: depDate,
+        departureDate: { gte: startOfDay, lte: endOfDay },
         status: { not: "cancelled" },
       },
       include: {
@@ -285,7 +289,11 @@ exports.getDashboard = async (req, res) => {
     }
 
     const handovers = await prisma.stationCashHandover.findMany({
-      where: { tenantId, tripId, departureDate: depDate },
+      where: {
+        tenantId,
+        tripId,
+        departureDate: { gte: startOfDay, lte: endOfDay },
+      },
       include: {
         collector: { select: { id: true, name: true } },
         handoverRecipient: { select: { id: true, name: true } },
