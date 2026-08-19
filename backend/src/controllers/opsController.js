@@ -1064,8 +1064,20 @@ exports.getTransportFleet = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
     const includeRates = req.query.includeRates === 'true';
+
+    // Use a date-range query for departureDate to handle @db.Date field correctly
+    // across different DB timezone configurations and avoid exact-timestamp mismatches.
+    const fleetWhere = { tenantId: ctx.where.tenantId, tripId: ctx.where.tripId };
+    if (ctx.departureDate) {
+      const startOfDay = new Date(ctx.departureDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(ctx.departureDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      fleetWhere.departureDate = { gte: startOfDay, lte: endOfDay };
+    }
+
     const fleet = await prisma.opsTransportFleet.findMany({
-      where: ctx.where,
+      where: fleetWhere,
       include: {
         vendor: true,
       },
@@ -3245,11 +3257,18 @@ exports.getConfirmedAllocations = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
 
+    // Build date range for robust @db.Date field querying
+    const startOfAllocDay = new Date(ctx.departureDate);
+    startOfAllocDay.setUTCHours(0, 0, 0, 0);
+    const endOfAllocDay = new Date(ctx.departureDate);
+    endOfAllocDay.setUTCHours(23, 59, 59, 999);
+    const allocDateRange = { gte: startOfAllocDay, lte: endOfAllocDay };
+
     // Only return ACTIVE allocations (not CANCELLED soft-deletes)
     const rooms = await prisma.opsRoomAllocation.findMany({
       where: {
         tripId: ctx.tripId,
-        departureDate: ctx.departureDate,
+        departureDate: allocDateRange,
         allocationStatus: "ACTIVE",
       },
       orderBy: { roomNumber: "asc" },
@@ -3258,7 +3277,7 @@ exports.getConfirmedAllocations = async (req, res) => {
     const vehicles = await prisma.opsVehicleAllocation.findMany({
       where: {
         tripId: ctx.tripId,
-        departureDate: ctx.departureDate,
+        departureDate: allocDateRange,
         allocationStatus: "ACTIVE",
       },
       orderBy: [{ fleetId: "asc" }, { seatNumber: "asc" }],
