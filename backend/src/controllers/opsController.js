@@ -3515,8 +3515,13 @@ exports.saveManualAllocations = async (req, res) => {
       ...new Set(vehicleAllocations.map((v) => v.fleetId)),
     ].filter(Boolean);
     if (allFleetIds.length > 0) {
+      // Use date-range query to match @db.Date field regardless of timezone/time-part storage
+      const fleetDayStart = new Date(departureDate);
+      fleetDayStart.setUTCHours(0, 0, 0, 0);
+      const fleetDayEnd = new Date(departureDate);
+      fleetDayEnd.setUTCHours(23, 59, 59, 999);
       let validFleets = await prisma.opsTransportFleet.findMany({
-        where: scope,
+        where: { tripId: resolvedTripId, departureDate: { gte: fleetDayStart, lte: fleetDayEnd } },
         select: { id: true, capacity: true },
       });
 
