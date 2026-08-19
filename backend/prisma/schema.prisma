@@ -2033,6 +2033,7 @@ model OpsVehicleAllocation {
   allocationStatus String   @default("ACTIVE") // ACTIVE | CANCELLED
   routeSegment     String?                     // e.g. pickup-point tag
   pickupPoint      String?
+  notes            String?  @db.Text
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

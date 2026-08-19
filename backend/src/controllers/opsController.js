@@ -3651,8 +3651,10 @@ exports.saveManualAllocations = async (req, res) => {
             },
             update: {
               fleetId: v.fleetId,
-              seatNumber: v.seatNumber || null,
+              seatNumber: v.seatNumber ? Number(v.seatNumber) : null,
               allocationStatus: "ACTIVE",
+              routeSegment: v.routeSegment || null,
+              pickupPoint: v.pickupPoint || null,
               notes: v.notes || null,
             },
             create: {
@@ -3661,8 +3663,10 @@ exports.saveManualAllocations = async (req, res) => {
               bookingId: v.bookingId,
               travelerName: v.travelerName,
               fleetId: v.fleetId,
-              seatNumber: v.seatNumber || null,
+              seatNumber: v.seatNumber ? Number(v.seatNumber) : null,
               allocationStatus: "ACTIVE",
+              routeSegment: v.routeSegment || null,
+              pickupPoint: v.pickupPoint || null,
               notes: v.notes || null,
             },
           });
