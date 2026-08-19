@@ -45,11 +45,14 @@ async function runMigration() {
       targetTableMap.set(r.tablename, r.tablename);
     });
 
-    // Disable foreign key constraints during copy
+    // Check out a single client from targetPool so session_replication_role = replica is preserved
+    const targetClient = await targetPool.connect();
+
     try {
-      await targetPool.query("SET session_replication_role = 'replica';");
-    } catch (_e) {
-      // safe fallback
+      await targetClient.query("SET session_replication_role = 'replica';");
+      console.log("✓ Disabled foreign key constraints on target for fast bulk transfer.\n");
+    } catch (fkErr) {
+      console.log("⚠️ Could not set replica role:", fkErr.message);
     }
 
     let totalMigrated = 0;
@@ -85,7 +88,7 @@ async function runMigration() {
       }
 
       // Get columns from target to avoid column mismatch
-      const targetColsRes = await targetPool.query(`
+      const targetColsRes = await targetClient.query(`
         SELECT column_name 
         FROM information_schema.columns 
         WHERE table_schema = 'public' AND table_name = $1
@@ -101,32 +104,38 @@ async function runMigration() {
 
       const colNames = sampleCols.map((c) => `"${c}"`).join(", ");
       let inserted = 0;
+      let lastErr = null;
 
       for (const row of rows) {
         const values = sampleCols.map((c) => row[c]);
         const placeholders = sampleCols.map((_, i) => `$${i + 1}`).join(", ");
 
         try {
-          await targetPool.query(
+          await targetClient.query(
             `INSERT INTO public."${targetTable}" (${colNames}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
             values
           );
           inserted++;
-        } catch (_rowErr) {
-          // Continue on individual duplicate/row conflict
+        } catch (rowErr) {
+          lastErr = rowErr.message;
         }
       }
 
-      console.log(`✓ ${inserted} / ${rows.length} rows`);
+      if (inserted === 0 && rows.length > 0 && lastErr) {
+        console.log(`❌ 0 / ${rows.length} rows (Error: ${lastErr})`);
+      } else {
+        console.log(`✓ ${inserted} / ${rows.length} rows`);
+      }
       totalMigrated += inserted;
     }
 
     // Re-enable constraints
     try {
-      await targetPool.query("SET session_replication_role = 'origin';");
+      await targetClient.query("SET session_replication_role = 'origin';");
     } catch (_e) {
       // safe fallback
     }
+    targetClient.release();
 
     console.log(`\n🎉 Data Migration Complete! Total rows migrated: ${totalMigrated}`);
   } catch (err) {
