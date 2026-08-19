@@ -796,13 +796,18 @@ exports.verifyUpi = async (req, res) => {
       return res
         .status(400)
         .json({ success: false, message: "Invalid station payment mode" });
-    const userRole = (req.user?.role || "").toUpperCase();
+    const userRole = (req.user?.role || "").toUpperCase().replace(/[-\s]/g, "_");
     const isPrivileged = [
       "SUPER_ADMIN",
       "ADMIN",
       "FINANCE",
+      "FINANCE_CONTROLLER",
       "OPS_HEAD",
+      "OPERATIONS",
+      "OPERATIONS_STAFF",
+      "OPS",
       "MANAGER",
+      "FOUNDER",
     ].includes(userRole);
     if (record.collectedByAdminId === req.user?.id && !isPrivileged)
       return res

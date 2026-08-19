@@ -419,13 +419,16 @@ const ROLE_PERMISSIONS = {
     "accounting.submit",
     "payments.view",
     "payments.edit",
-    // Station Payment Collection - ops can collect and handover
+    // Station Payment Collection - ops can collect, verify, handover and reconcile
     "station_payments.view",
     "station_payments.collect",
     "station_payments.edit_before_handover",
     "station_payments.cancel",
     "station_payments.handover",
     "station_payments.resend_receipt",
+    "station_payments.verify_upi",
+    "station_payments.receive",
+    "station_payments.reconcile",
   ],
 
   finance: [
