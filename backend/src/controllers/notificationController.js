@@ -50,68 +50,84 @@ exports.getNotifications = async (req, res, next) => {
     const userId = req.user?.id;
 
     // 1. Fetch user-specific notifications from DB
-    const dbNotifications = await prisma.notification.findMany({
-      where: {
-        tenantId,
-        userId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 40,
-    });
+    let dbNotifications = [];
+    try {
+      dbNotifications = await prisma.notification.findMany({
+        where: {
+          tenantId,
+          userId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 40,
+      });
+    } catch (err) {
+      console.warn("DB notification fetch warn:", err.message);
+    }
 
-    // 2. Fetch pending operational items to synthesize live alerts
+    // 2. Fetch pending operational items to synthesize live alerts safely
     const liveAlerts = [];
 
-    // Check pending cash submissions
-    const pendingCash = await prisma.cashRegisterSubmission.findMany({
-      where: { tenantId, status: "PENDING" },
-      include: { salesperson: { select: { name: true } }, booking: { select: { bookingId: true } } },
-      take: 5,
-      orderBy: { createdAt: "desc" },
-    });
-
-    pendingCash.forEach((c) => {
-      liveAlerts.push({
-        id: `live-cash-${c.id}`,
-        title: "💰 Cash Verification Required",
-        message: `₹${Number(c.amount || 0).toLocaleString("en-IN")} submitted by ${c.salesperson?.name || "Sales"} for Booking ${c.booking?.bookingId || c.bookingId || "—"}`,
-        link: "/admin/approval-center/incoming",
-        type: "PAYMENT",
-        isRead: false,
-        createdAt: c.createdAt,
+    // Check pending client payments needing verification
+    try {
+      const pendingPayments = await prisma.opsClientPayment.findMany({
+        where: {
+          tenantId,
+          status: { in: ["Pending", "PENDING", "Unverified"] },
+        },
+        take: 5,
+        orderBy: { createdAt: "desc" },
       });
-    });
+
+      pendingPayments.forEach((p) => {
+        liveAlerts.push({
+          id: `live-pay-${p.id}`,
+          title: "💰 Payment Verification",
+          message: `₹${Number(p.amount || 0).toLocaleString("en-IN")} via ${p.paymentMode || "Online"} for Booking ${p.bookingId || "—"} awaiting verification`,
+          link: "/admin/approval-center/incoming",
+          type: "PAYMENT",
+          isRead: false,
+          createdAt: p.createdAt,
+        });
+      });
+    } catch (err) {
+      // safe fallback
+    }
 
     // Check pending train tickets
-    const pendingTickets = await prisma.trainTicketRequest.findMany({
-      where: { tenantId, status: { in: ["PENDING", "UNDER_REVIEW"] } },
-      include: { booking: { select: { bookingId: true, customerName: true } } },
-      take: 5,
-      orderBy: { createdAt: "desc" },
-    });
-
-    pendingTickets.forEach((t) => {
-      liveAlerts.push({
-        id: `live-ticket-${t.id}`,
-        title: "🎫 Train Ticket Queue",
-        message: `${t.numberOfPassengers || 1} Pax for ${t.booking?.customerName || t.trainNumber || "Booking"} awaiting PNR assignment`,
-        link: "/admin/travel-desk/train-tickets",
-        type: "TICKETING",
-        isRead: false,
-        createdAt: t.createdAt,
+    try {
+      const pendingTickets = await prisma.trainTicketRequest.findMany({
+        where: { tenantId, status: { in: ["PENDING", "UNDER_REVIEW"] } },
+        include: { booking: { select: { bookingId: true, customerName: true } } },
+        take: 5,
+        orderBy: { createdAt: "desc" },
       });
-    });
+
+      pendingTickets.forEach((t) => {
+        liveAlerts.push({
+          id: `live-ticket-${t.id}`,
+          title: "🎫 Train Ticket Queue",
+          message: `${t.numberOfPassengers || 1} Pax for ${t.booking?.customerName || t.trainNumber || "Booking"} awaiting PNR assignment`,
+          link: "/admin/travel-desk/train-tickets",
+          type: "TICKETING",
+          isRead: false,
+          createdAt: t.createdAt,
+        });
+      });
+    } catch (err) {
+      // safe fallback
+    }
 
     // Merge and sort
     const all = [...dbNotifications, ...liveAlerts].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    res.json(all);
+    return res.json(all);
   } catch (error) {
-    next(error);
+    console.error("getNotifications error:", error);
+    return res.json([]);
   }
 };
 
