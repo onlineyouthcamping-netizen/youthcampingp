@@ -3670,7 +3670,6 @@ exports.saveManualAllocations = async (req, res) => {
               allocationStatus: "ACTIVE",
               routeSegment: v.routeSegment || null,
               pickupPoint: v.pickupPoint || null,
-              notes: v.notes || null,
             },
             create: {
               tripId: resolvedTripId,
@@ -3682,7 +3681,6 @@ exports.saveManualAllocations = async (req, res) => {
               allocationStatus: "ACTIVE",
               routeSegment: v.routeSegment || null,
               pickupPoint: v.pickupPoint || null,
-              notes: v.notes || null,
             },
           });
           savedVehicles.push(record);
