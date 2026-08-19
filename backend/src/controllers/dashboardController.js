@@ -613,7 +613,7 @@ exports.getStats = async (req, res, next) => {
               },
               {
                 label: "Rooming pending",
-                count: Math.max(12 - roomingCount, 0),
+                count: roomingCount || 0,
                 color: "bg-[#D97706]",
                 path: "/admin/departure-workspace",
               },
@@ -656,6 +656,13 @@ exports.getStats = async (req, res, next) => {
             collectionToday,
             paymentsToday,
             netCashInflow,
+          }
+        : undefined,
+      approvalQueue: hasPerm("bookings.verify") || hasPerm("accounting.view")
+        ? {
+            paymentApprovals: payVerifyCount || 0,
+            vendorBills: pendingVendorsCountResult || 0,
+            missingTickets: missingTicketsCount || 0,
           }
         : undefined,
     };
