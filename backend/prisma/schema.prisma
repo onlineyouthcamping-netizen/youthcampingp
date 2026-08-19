@@ -5251,16 +5251,16 @@ model TaskAllotment {
   tripId       String?
   vendorId     String?
   serviceId    String?
-  assignedToId String
-  assignedById String
+  assignedToId String?
+  assignedById String?
   deadline     DateTime?
   completedAt  DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   booking    Booking?      @relation(fields: [bookingId], references: [bookingId], onDelete: SetNull)
-  assignedTo Admin         @relation("TaskAssignedToAdmin", fields: [assignedToId], references: [id])
-  assignedBy Admin         @relation("TaskCreatedByAdmin", fields: [assignedById], references: [id])
+  assignedTo Admin?        @relation("TaskAssignedToAdmin", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedBy Admin?        @relation("TaskCreatedByAdmin", fields: [assignedById], references: [id], onDelete: SetNull)
   comments   TaskComment[]
 
   @@index([tenantId])

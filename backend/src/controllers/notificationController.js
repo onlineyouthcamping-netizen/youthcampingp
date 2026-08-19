@@ -11,10 +11,10 @@ exports.createNotification = async ({
   try {
     if (!userId) {
       const admins = await prisma.admin.findMany({
-        where: { tenantId, status: "ACTIVE" },
+        where: { tenantId, isActive: true },
         select: { id: true },
       });
-      if (admins.length > 0) {
+      if (admins.length > 0 && prisma.notification) {
         return await prisma.notification.createMany({
           data: admins.map((a) => ({
             tenantId,
@@ -28,15 +28,18 @@ exports.createNotification = async ({
       return null;
     }
 
-    return await prisma.notification.create({
-      data: {
-        tenantId,
-        userId,
-        title,
-        message,
-        link,
-      },
-    });
+    if (prisma.notification) {
+      return await prisma.notification.create({
+        data: {
+          tenantId,
+          userId,
+          title,
+          message,
+          link,
+        },
+      });
+    }
+    return null;
   } catch (err) {
     console.error("createNotification error:", err);
     return null;
@@ -52,16 +55,17 @@ exports.getNotifications = async (req, res, next) => {
     // 1. Fetch user-specific notifications from DB
     let dbNotifications = [];
     try {
-      dbNotifications = await prisma.notification.findMany({
-        where: {
-          tenantId,
-          userId,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 40,
-      });
+      if (prisma.notification) {
+        const notifWhere = { tenantId };
+        if (userId) notifWhere.userId = userId;
+        dbNotifications = await prisma.notification.findMany({
+          where: notifWhere,
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 40,
+        });
+      }
     } catch (err) {
       console.warn("DB notification fetch warn:", err.message);
     }
