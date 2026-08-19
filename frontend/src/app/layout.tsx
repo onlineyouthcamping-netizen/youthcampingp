@@ -27,6 +27,7 @@ import {
   fetchPublicSettings,
   fetchWebsiteSettings,
   fetchTheme,
+  fetchPublicFooterSettings,
 } from "@/lib/api";
 
 const settleWithin = async <T,>(
@@ -134,10 +135,12 @@ export default async function RootLayout({
   let settings: any = null;
   let websiteSettings: any = null;
   let theme: any = null;
+  let footerConfig: any = null;
   const siteConfigResults = await Promise.allSettled([
     settleWithin(fetchPublicSettings(), 1500),
     settleWithin(fetchWebsiteSettings(), 1500),
     settleWithin(fetchTheme(), 1500),
+    settleWithin(fetchPublicFooterSettings(), 1500),
   ]);
   if (siteConfigResults[0].status === "fulfilled")
     settings = siteConfigResults[0].value || {};
@@ -153,6 +156,10 @@ export default async function RootLayout({
   if (siteConfigResults[2].status === "fulfilled")
     theme = siteConfigResults[2].value;
   else console.error("Layout theme fetch error:", siteConfigResults[2].reason);
+  if (siteConfigResults[3].status === "fulfilled")
+    footerConfig = siteConfigResults[3].value || null;
+  else
+    console.error("Layout footerConfig fetch error:", siteConfigResults[3].reason);
 
   // Merge key-value websiteSettings into settings
   const mergedSettings = {
@@ -182,13 +189,7 @@ export default async function RootLayout({
             navLinks={mergedSettings?.navbar?.links}
           />
           <main className="flex-grow w-full min-w-0">{children}</main>
-          <Footer
-            logoUrl={
-              mergedSettings?.navbar?.logoUrl || mergedSettings?.footer?.logoUrl
-            }
-            address={mergedSettings?.footer?.address}
-            phone={mergedSettings?.footer?.phone}
-          />
+          <Footer footerConfig={footerConfig} />
           <FloatingWhatsApp settings={mergedSettings} />
         </DynamicThemeProvider>
       </body>

@@ -721,6 +721,23 @@ export async function fetchWebsitePageBySlug(
   }
 }
 
+export async function fetchPublicFooterSettings(
+  init?: PublicRequestInit,
+): Promise<any | null> {
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/settings/footer/public`,
+      init ?? publicRevalidate(600),
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data || null;
+  } catch (err) {
+    console.warn("fetchPublicFooterSettings error:", err);
+    return null;
+  }
+}
+
 export async function fetchWebsiteSettings(
   init?: PublicRequestInit,
 ): Promise<Record<string, any>> {
