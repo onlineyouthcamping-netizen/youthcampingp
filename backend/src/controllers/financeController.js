@@ -1775,3 +1775,366 @@ exports.batchVerifyStationCash = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/finance/control-center/tripwise-vendor-accounts
+ * Comprehensive trip-wise vendor account calculation & management
+ * Aggregates Hotels, Transport, Activities, Guides & Leaders, and Other vendor liabilities
+ */
+exports.getTripWiseVendorAccounts = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId || "default";
+    const { tripId, category, search } = req.query;
+
+    // 1. Fetch all Trips
+    const trips = await prisma.trip.findMany({
+      where: {
+        tenantId,
+        ...(tripId ? { OR: [{ id: tripId }, { slug: tripId }, { shortName: tripId }] } : {}),
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        location: true,
+        shortName: true,
+        availableDates: true,
+      },
+      orderBy: { title: "asc" },
+    });
+
+    const tripMap = new Map();
+    trips.forEach((t) => {
+      tripMap.set(t.id, t);
+      if (t.slug) tripMap.set(t.slug, t);
+    });
+
+    // 2. Fetch OpsVendorPayment
+    const opsVendorPayments = await prisma.opsVendorPayment.findMany({
+      where: {
+        tenantId,
+        ...(tripId ? { tripId } : {}),
+      },
+      include: {
+        trip: { select: { id: true, title: true, slug: true, location: true } },
+        collectionAccount: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // 3. Fetch Hotel Bookings
+    const hotelBookings = await prisma.opsHotelBooking.findMany({
+      where: {
+        tenantId,
+        ...(tripId ? { tripId } : {}),
+      },
+      include: {
+        trip: { select: { id: true, title: true, slug: true, location: true } },
+      },
+    }).catch(() => []);
+
+    // 4. Fetch Transport Fleet
+    const transportFleet = await prisma.opsTransportFleet.findMany({
+      where: {
+        tenantId,
+        ...(tripId ? { tripId } : {}),
+      },
+      include: {
+        vendor: { select: { id: true, name: true, type: true, phone: true } },
+        trip: { select: { id: true, title: true, slug: true, location: true } },
+      },
+    }).catch(() => []);
+
+    // 5. Fetch Guide Payments
+    const guidePayments = await prisma.opsGuidePayment.findMany({
+      where: {
+        tenantId,
+        ...(tripId ? { tripId } : {}),
+      },
+      include: {
+        guideAdmin: { select: { id: true, name: true, email: true, phone: true } },
+      },
+    }).catch(() => []);
+
+    // 6. Fetch TripVendor contracts
+    const tripVendors = await prisma.tripVendor.findMany({
+      where: {
+        trip: { tenantId },
+        ...(tripId ? { tripId } : {}),
+      },
+      include: {
+        vendor: true,
+        trip: { select: { id: true, title: true, slug: true, location: true } },
+      },
+    }).catch(() => []);
+
+    // Normalize and aggregate
+    const allItems = [];
+    const seenKeys = new Set();
+
+    // Add opsVendorPayments
+    opsVendorPayments.forEach((p) => {
+      const tripObj = p.trip || tripMap.get(p.tripId) || { id: p.tripId, title: "Trip", slug: p.tripId };
+      const agreed = Number(p.agreedAmount || 0);
+      const paid = Number(p.advancePaid || 0);
+      const remaining = Number(p.remainingPayable ?? Math.max(0, agreed - paid));
+      const cat = (p.category || "OTHER").toUpperCase();
+
+      const item = {
+        id: p.id,
+        sourceType: "OPS_VENDOR_PAYMENT",
+        tripId: tripObj.id || p.tripId,
+        tripCode: tripObj.slug || tripObj.id?.slice(-5).toUpperCase() || "TRIP",
+        tripTitle: tripObj.title || "Trip Package",
+        tripLocation: tripObj.location || "North India",
+        vendorName: p.vendorName || "Operational Vendor",
+        category: cat.includes("HOTEL") ? "HOTELS" : cat.includes("TRANS") ? "TRANSPORT" : cat.includes("ACT") ? "ACTIVITIES" : cat.includes("GUIDE") ? "GUIDES" : "MEALS_OTHER",
+        categoryLabel: p.category || "Vendor Payout",
+        serviceDescription: p.serviceDescription || `Vendor settlement for ${p.vendorName}`,
+        departureDate: p.departureDate ? p.departureDate.toISOString().split("T")[0] : null,
+        agreedAmount: agreed,
+        advancePaid: paid,
+        remainingPayable: remaining,
+        status: p.status || (paid >= agreed && agreed > 0 ? "Paid" : paid > 0 ? "Advance Paid" : "Not Paid"),
+        approvalStatus: p.approvalStatus || "PENDING",
+        requiresFounderApproval: p.requiresFounderApproval || remaining > 50000,
+        invoiceFileUrl: p.invoiceFileUrl || p.invoiceProof || null,
+        createdAt: p.createdAt,
+      };
+
+      seenKeys.add(`${item.tripId}_${item.vendorName.toLowerCase()}_${item.category}`);
+      allItems.push(item);
+    });
+
+    // Add Hotel Bookings not yet logged in OpsVendorPayment
+    hotelBookings.forEach((h) => {
+      const vName = (h.hotelName || "Hotel Partner").trim();
+      const tripObj = h.trip || tripMap.get(h.tripId) || { id: h.tripId, title: "Trip", slug: h.tripId };
+      const key = `${tripObj.id}_${vName.toLowerCase()}_HOTELS`;
+      if (seenKeys.has(key)) return;
+
+      const total = Number(h.totalAmount || 0);
+      const paid = Number(h.advancePaid || 0);
+      const bal = Number(h.balanceAmount ?? Math.max(0, total - paid));
+
+      allItems.push({
+        id: h.id,
+        sourceType: "OPS_HOTEL_BOOKING",
+        tripId: tripObj.id || h.tripId,
+        tripCode: tripObj.slug || tripObj.id?.slice(-5).toUpperCase() || "HOTEL",
+        tripTitle: tripObj.title || "Hotel Stay",
+        tripLocation: tripObj.location || "Destination",
+        vendorName: vName,
+        category: "HOTELS",
+        categoryLabel: "Hotels & Stays",
+        serviceDescription: `Hotel Booking (${h.roomType || "Standard Rooms"})`,
+        departureDate: h.checkIn ? h.checkIn.toISOString().split("T")[0] : null,
+        agreedAmount: total,
+        advancePaid: paid,
+        remainingPayable: bal,
+        status: paid >= total && total > 0 ? "Paid" : paid > 0 ? "Advance Paid" : "Not Paid",
+        approvalStatus: "PENDING",
+        requiresFounderApproval: bal > 50000,
+        invoiceFileUrl: null,
+        createdAt: h.createdAt || new Date(),
+      });
+      seenKeys.add(key);
+    });
+
+    // Add Transport Fleet
+    transportFleet.forEach((t) => {
+      const vName = (t.vendor?.name || t.driverName || t.notes || "Transport Fleet").trim();
+      const tripObj = t.trip || tripMap.get(t.tripId) || { id: t.tripId, title: "Trip", slug: t.tripId };
+      const key = `${tripObj.id}_${vName.toLowerCase()}_TRANSPORT`;
+      if (seenKeys.has(key)) return;
+
+      const total = Number(t.totalAmount || 0);
+      const paid = Number(t.advancePaid || 0);
+      const bal = Number(t.balanceAmount ?? Math.max(0, total - paid));
+
+      allItems.push({
+        id: t.id,
+        sourceType: "OPS_TRANSPORT_FLEET",
+        tripId: tripObj.id || t.tripId,
+        tripCode: tripObj.slug || tripObj.id?.slice(-5).toUpperCase() || "TRANS",
+        tripTitle: tripObj.title || "Transport Fleet",
+        tripLocation: tripObj.location || "Route",
+        vendorName: vName,
+        category: "TRANSPORT",
+        categoryLabel: "Transport Fleet",
+        serviceDescription: `Vehicle Allocation (${t.vehicleType || "Tempo / Bus"})`,
+        departureDate: t.departureDate ? t.departureDate.toISOString().split("T")[0] : null,
+        agreedAmount: total,
+        advancePaid: paid,
+        remainingPayable: bal,
+        status: paid >= total && total > 0 ? "Paid" : paid > 0 ? "Advance Paid" : "Not Paid",
+        approvalStatus: "PENDING",
+        requiresFounderApproval: bal > 50000,
+        invoiceFileUrl: null,
+        createdAt: t.createdAt || new Date(),
+      });
+      seenKeys.add(key);
+    });
+
+    // Add Guide Payments
+    guidePayments.forEach((g) => {
+      const vName = (g.guideName || g.guideAdmin?.name || "Trek Leader").trim();
+      const tripObj = tripMap.get(g.tripId) || { id: g.tripId || "DEP-GUIDE", title: "Trip Guide", slug: "GUIDE" };
+      const key = `${tripObj.id}_${vName.toLowerCase()}_GUIDES`;
+      if (seenKeys.has(key)) return;
+
+      const total = Number(g.agreedAmount || 0);
+      const paid = Number(g.advancePaid || 0);
+      const bal = Number(g.balanceAmount ?? Math.max(0, total - paid));
+
+      allItems.push({
+        id: g.id,
+        sourceType: "OPS_GUIDE_PAYMENT",
+        tripId: tripObj.id,
+        tripCode: tripObj.slug || "GUIDE",
+        tripTitle: tripObj.title || "Trip Guide",
+        tripLocation: tripObj.location || "Trail",
+        vendorName: vName,
+        category: "GUIDES",
+        categoryLabel: "Guides & Leaders",
+        serviceDescription: `Lead Guide / Trek Leader Fee (${g.assignmentType || "Primary Leader"})`,
+        departureDate: g.departureDate ? g.departureDate.toISOString().split("T")[0] : null,
+        agreedAmount: total,
+        advancePaid: paid,
+        remainingPayable: bal,
+        status: g.paymentStatus || (paid >= total && total > 0 ? "Paid" : paid > 0 ? "Advance Paid" : "Not Paid"),
+        approvalStatus: "PENDING",
+        requiresFounderApproval: false,
+        invoiceFileUrl: null,
+        createdAt: g.createdAt || new Date(),
+      });
+      seenKeys.add(key);
+    });
+
+    // Add Trip Vendors
+    tripVendors.forEach((tv) => {
+      const vName = (tv.vendor?.name || "Vendor Partner").trim();
+      const tripObj = tv.trip || tripMap.get(tv.tripId) || { id: tv.tripId, title: "Trip", slug: tv.tripId };
+      const cat = (tv.vendor?.type || "TRANSPORT").toUpperCase();
+      const key = `${tripObj.id}_${vName.toLowerCase()}_${cat}`;
+      if (seenKeys.has(key)) return;
+
+      const agreed = Number(tv.agreedCost || 0);
+      const paid = Number(tv.paidAmount || 0);
+      const bal = Math.max(0, agreed - paid);
+
+      allItems.push({
+        id: tv.id,
+        sourceType: "TRIP_VENDOR_CONTRACT",
+        tripId: tripObj.id,
+        tripCode: tripObj.slug || "TRIP",
+        tripTitle: tripObj.title || "Trip Vendor",
+        tripLocation: tripObj.location || "Base",
+        vendorName: vName,
+        category: cat.includes("HOTEL") ? "HOTELS" : cat.includes("TRANS") ? "TRANSPORT" : cat.includes("ACT") ? "ACTIVITIES" : cat.includes("GUIDE") ? "GUIDES" : "MEALS_OTHER",
+        categoryLabel: tv.vendor?.type || "Trip Vendor",
+        serviceDescription: `Contracted vendor tariff (${tv.outgoingPaymentMode || "Bank"})`,
+        departureDate: null,
+        agreedAmount: agreed,
+        advancePaid: paid,
+        remainingPayable: bal,
+        status: tv.paymentStatus || (paid >= agreed && agreed > 0 ? "Paid" : paid > 0 ? "Advance Paid" : "Not Paid"),
+        approvalStatus: "PENDING",
+        requiresFounderApproval: bal > 50000,
+        invoiceFileUrl: null,
+        createdAt: tv.createdAt,
+      });
+      seenKeys.add(key);
+    });
+
+    // Filter all items by category / search if passed
+    const filteredItems = allItems.filter((i) => {
+      if (category && category !== "ALL") {
+        if (category === "HOTELS" && i.category !== "HOTELS") return false;
+        if (category === "TRANSPORT" && i.category !== "TRANSPORT") return false;
+        if (category === "ACTIVITIES" && i.category !== "ACTIVITIES") return false;
+        if (category === "GUIDES" && i.category !== "GUIDES") return false;
+      }
+      if (search && search.trim()) {
+        const q = search.toLowerCase();
+        return (
+          i.vendorName.toLowerCase().includes(q) ||
+          i.tripTitle.toLowerCase().includes(q) ||
+          i.tripCode.toLowerCase().includes(q) ||
+          i.category.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+
+    // Trip-wise Grouping with comprehensive category calculations
+    const tripGroupsMap = new Map();
+
+    filteredItems.forEach((item) => {
+      const tripKey = item.tripId || "UNASSIGNED";
+      if (!tripGroupsMap.has(tripKey)) {
+        tripGroupsMap.set(tripKey, {
+          tripId: item.tripId,
+          tripCode: item.tripCode,
+          tripTitle: item.tripTitle,
+          tripLocation: item.tripLocation,
+          totalAgreed: 0,
+          totalPaid: 0,
+          totalDue: 0,
+          pendingApprovals: 0,
+          categories: {
+            hotels: { count: 0, agreed: 0, paid: 0, due: 0 },
+            transport: { count: 0, agreed: 0, paid: 0, due: 0 },
+            activities: { count: 0, agreed: 0, paid: 0, due: 0 },
+            guides: { count: 0, agreed: 0, paid: 0, due: 0 },
+            meals_other: { count: 0, agreed: 0, paid: 0, due: 0 },
+          },
+          items: [],
+        });
+      }
+
+      const grp = tripGroupsMap.get(tripKey);
+      grp.totalAgreed += item.agreedAmount;
+      grp.totalPaid += item.advancePaid;
+      grp.totalDue += item.remainingPayable;
+      if (item.approvalStatus === "PENDING" || item.approvalStatus === "REVIEWED_FINANCE_CONTROLLER") {
+        grp.pendingApprovals += 1;
+      }
+
+      const catKey = item.category === "HOTELS" ? "hotels" : item.category === "TRANSPORT" ? "transport" : item.category === "ACTIVITIES" ? "activities" : item.category === "GUIDES" ? "guides" : "meals_other";
+      grp.categories[catKey].count += 1;
+      grp.categories[catKey].agreed += item.agreedAmount;
+      grp.categories[catKey].paid += item.advancePaid;
+      grp.categories[catKey].due += item.remainingPayable;
+
+      grp.items.push(item);
+    });
+
+    const tripGroups = Array.from(tripGroupsMap.values());
+    const totalAgreedAll = filteredItems.reduce((s, i) => s + i.agreedAmount, 0);
+    const totalPaidAll = filteredItems.reduce((s, i) => s + i.advancePaid, 0);
+    const totalDueAll = filteredItems.reduce((s, i) => s + i.remainingPayable, 0);
+    const pendingBillsCount = filteredItems.filter((i) => i.approvalStatus === "PENDING" || i.approvalStatus === "REVIEWED_FINANCE_CONTROLLER").length;
+
+    return res.json({
+      success: true,
+      summary: {
+        totalAgreed: totalAgreedAll,
+        totalPaid: totalPaidAll,
+        totalDue: totalDueAll,
+        totalTrips: tripGroups.length,
+        totalVendors: filteredItems.length,
+        pendingBillsCount,
+      },
+      tripGroups,
+      items: filteredItems,
+    });
+  } catch (err) {
+    console.error("getTripWiseVendorAccounts error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch trip-wise vendor accounts",
+    });
+  }
+};
+
+

@@ -22,6 +22,7 @@ const {
   assignIncomingPayment,
   getStationCashQueue,
   batchVerifyStationCash,
+  getTripWiseVendorAccounts,
 } = require("../controllers/financeController");
 
 // New Sub-module Controllers
@@ -113,6 +114,12 @@ router.get(
   "/control-center/vendor-queue",
   requirePermission(["accounting.view", "finance.outgoing.verify"]),
   getVendorPaymentsQueue
+);
+
+router.get(
+  "/control-center/tripwise-vendor-accounts",
+  requirePermission(["accounting.view", "finance.outgoing.verify"]),
+  getTripWiseVendorAccounts
 );
 
 router.get(
