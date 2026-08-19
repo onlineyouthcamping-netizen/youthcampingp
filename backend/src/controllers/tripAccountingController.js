@@ -156,7 +156,7 @@ async function getTripPnL(req, res) {
           booking: { tripId: trip.id },
           ticketStatus: { not: "CANCELLED" },
         },
-        select: { id: true, netCost: true, totalCost: true, bookingId: true },
+        select: { id: true, netCost: true, totalCost: true, ticketAmount: true, expectedTicketAmount: true, bookingId: true },
       }),
       prisma.opsVendorPayment.findMany({
         where: {
@@ -181,7 +181,7 @@ async function getTripPnL(req, res) {
         0,
       );
     const vendorPaid =
-      vendors.reduce((sum, v) => sum + (Number(v.paidAmount) || 0), 0) +
+      vendors.reduce((sum, v) => sum + (Number(v.advancePaid) || 0), 0) +
       opsVendorPayments.reduce(
         (sum, v) => sum + (Number(v.advancePaid) || 0),
         0,

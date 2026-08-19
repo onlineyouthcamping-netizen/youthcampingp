@@ -7,7 +7,7 @@ const { logBookingActivity } = require("../utils/bookingActivityLogger");
  */
 exports.getControlCenterStats = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || "default";
+    const tenantId = req.user?.tenantId || "default";
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -112,7 +112,7 @@ exports.getControlCenterStats = async (req, res) => {
  */
 exports.getCashSubmissionsQueue = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || "default";
+    const tenantId = req.user?.tenantId || "default";
     const { status, search, page = 1, limit = 25 } = req.query;
     const skip = (Math.max(1, Number(page)) - 1) * Number(limit);
 
@@ -221,7 +221,7 @@ exports.getCashSubmissionsQueue = async (req, res) => {
  */
 exports.getIncomingPaymentsQueue = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || "default";
+    const tenantId = req.user?.tenantId || "default";
     const { status, paymentMode, search, page = 1, limit = 25 } = req.query;
     const skip = (Math.max(1, Number(page)) - 1) * Number(limit);
 
@@ -315,7 +315,7 @@ exports.getIncomingPaymentsQueue = async (req, res) => {
  */
 exports.getVendorPaymentsQueue = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || "default";
+    const tenantId = req.user?.tenantId || "default";
     const { tripId, vendorType, page = 1, limit = 25 } = req.query;
     const skip = (Math.max(1, Number(page)) - 1) * Number(limit);
 
@@ -396,7 +396,7 @@ exports.getVendorPaymentsQueue = async (req, res) => {
  */
 exports.getTicketingVerificationQueue = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || "default";
+    const tenantId = req.user?.tenantId || "default";
     const { status, page = 1, limit = 25 } = req.query;
     const skip = (Math.max(1, Number(page)) - 1) * Number(limit);
 
@@ -487,7 +487,7 @@ exports.getTicketingVerificationQueue = async (req, res) => {
  */
 exports.getDiscrepanciesQueue = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || "default";
+    const tenantId = req.user?.tenantId || "default";
 
     const entries = await prisma.accountingEntry.findMany({
       where: {
@@ -553,7 +553,7 @@ exports.getDiscrepanciesQueue = async (req, res) => {
  */
 exports.getAuditLog = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || "default";
+    const tenantId = req.user?.tenantId || "default";
     const { limit = 50 } = req.query;
 
     const logs = await prisma.accountingEntryLog.findMany({
@@ -614,8 +614,8 @@ exports.verifyCashSubmission = async (req, res) => {
   try {
     const { id } = req.params;
     const { action, notes, reason, adjustmentAmount, adjustmentNote } = req.body;
-    const userId = req.user.id;
-    const userName = req.user.name || req.user.email || "Finance Controller";
+    const userId = req.user?.id;
+    const userName = req.user?.name || req.user?.email || "Finance Controller";
 
     if (!action || !["APPROVE", "APPROVE_WITH_DISCREPANCY", "REJECT", "REQUEST_CLARIFICATION", "RECORD_ADJUSTMENT", "FLAG_DISCREPANCY"].includes(action)) {
       return res.status(400).json({
@@ -774,8 +774,8 @@ exports.verifyIncomingPayment = async (req, res) => {
   try {
     const { id } = req.params;
     const { action, notes, reason } = req.body;
-    const userId = req.user.id;
-    const userName = req.user.name || "Finance Controller";
+    const userId = req.user?.id;
+    const userName = req.user?.name || "Finance Controller";
 
     const entry = await prisma.accountingEntry.findUnique({
       where: { id },
@@ -892,8 +892,8 @@ exports.assignIncomingPayment = async (req, res) => {
   try {
     const { id } = req.params;
     const { assigneeId } = req.body;
-    const userId = req.user.id;
-    const userName = req.user.name || req.user.email || "Finance Admin";
+    const userId = req.user?.id;
+    const userName = req.user?.name || req.user?.email || "Finance Admin";
 
     const entry = await prisma.accountingEntry.findUnique({
       where: { id },
@@ -955,8 +955,8 @@ exports.verifyVendorPayment = async (req, res) => {
   try {
     const { id } = req.params;
     const { action, paidAmount, paymentMode, transactionRef, notes } = req.body;
-    const userId = req.user.id;
-    const userName = req.user.name || "Finance Controller";
+    const userId = req.user?.id;
+    const userName = req.user?.name || "Finance Controller";
 
     const tripVendor = await prisma.tripVendor.findUnique({
       where: { id },
@@ -1010,8 +1010,8 @@ exports.verifyTicketingPrice = async (req, res) => {
   try {
     const { id } = req.params;
     const { action, auditedCost, notes } = req.body;
-    const userId = req.user.id;
-    const userName = req.user.name || "Finance Controller";
+    const userId = req.user?.id;
+    const userName = req.user?.name || "Finance Controller";
 
     const ticket = await prisma.trainTicketRequest.findUnique({
       where: { id },
@@ -1061,7 +1061,7 @@ exports.verifyTicketingPrice = async (req, res) => {
  */
 exports.getDeparturesQueue = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || "default";
+    const tenantId = req.user?.tenantId || "default";
 
     // 1. Ops guide payments
     const guidePayments = await prisma.opsGuidePayment.findMany({
@@ -1108,7 +1108,7 @@ exports.getDeparturesQueue = async (req, res) => {
  */
 exports.getExpensesQueue = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || "default";
+    const tenantId = req.user?.tenantId || "default";
 
     const [miscExpenses, tripExpenses] = await Promise.all([
       prisma.opsMiscExpense.findMany({
@@ -1173,7 +1173,7 @@ exports.verifyDeparturePayment = async (req, res) => {
   try {
     const { id } = req.params;
     const { action, notes } = req.body;
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     const payment = await prisma.opsGuidePayment.findUnique({
       where: { id },
@@ -1224,8 +1224,8 @@ exports.verifyExpense = async (req, res) => {
   try {
     const { id } = req.params;
     const { action, notes, reason } = req.body;
-    const userId = req.user.id;
-    const userName = req.user.name || "Finance Controller";
+    const userId = req.user?.id;
+    const userName = req.user?.name || "Finance Controller";
 
     const nextStatus = action === "APPROVE" ? "PAID" : "REJECTED";
 

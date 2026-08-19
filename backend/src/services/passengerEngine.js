@@ -116,9 +116,8 @@ exports.calculatePassengerStatistics = async (tripId, departureDateStr) => {
 
       if (p.age > 0) {
         if (p.age <= 12) payload.summary.children += 1;
+        else if (p.age >= 60) payload.summary.seniors += 1;
         else payload.summary.adults += 1;
-        
-        if (p.age >= 60) payload.summary.seniors += 1;
       } else {
         payload.summary.adults += 1;
         payload.warnings.push(`⚠ Passenger ${p.name} missing age/DOB`);

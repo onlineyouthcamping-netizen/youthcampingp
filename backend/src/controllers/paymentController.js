@@ -1307,7 +1307,7 @@ exports.getFinanceVerificationQueue = async (req, res) => {
           isReversed: false,
           OR: [
             { upiVerificationStatus: "PENDING_VERIFICATION" },
-            { paymentMode: "UPI", upiVerificationStatus: { not: "VERIFIED" } },
+            { paymentMode: "UPI", upiVerificationStatus: { notIn: ["VERIFIED", "REJECTED"] } },
             { paymentMode: "CASH", verifiedAt: null, collectionStatus: "COLLECTED" },
           ],
         },

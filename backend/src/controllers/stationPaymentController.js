@@ -860,7 +860,7 @@ exports.verifyUpi = async (req, res) => {
         : booking?.advancePaid || 0;
       const newRemaining = isVerify
         ? Math.max(0, finalAmount - newPaid)
-        : finalAmount - (booking?.advancePaid || 0);
+        : Math.max(0, finalAmount - (booking?.advancePaid || 0));
       await tx.stationPaymentCollection.update({
         where: { id: record.id },
         data: {

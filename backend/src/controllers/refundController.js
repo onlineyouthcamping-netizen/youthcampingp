@@ -35,7 +35,8 @@ async function createRefundRequest(req, res) {
       return res.status(404).json({ success: false, message: "Booking not found" });
     }
 
-    const originalPaid = Number(booking.advancePaid || booking.amount || 0);
+    // Use only advancePaid — never fall back to booking.amount (the full trip price)
+    const originalPaid = Number(booking.advancePaid) || 0;
     const numCash = Number(refundAmount) || 0;
     const numCredit = Number(creditNoteAmount) || 0;
     const totalRequested = numCash + numCredit;
@@ -47,7 +48,14 @@ async function createRefundRequest(req, res) {
       });
     }
 
-    if (originalPaid > 0 && totalRequested > originalPaid) {
+    if (originalPaid <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot create a refund for a booking with ₹0 paid. No payment has been collected.",
+      });
+    }
+
+    if (totalRequested > originalPaid) {
       return res.status(400).json({
         success: false,
         message: `Total refund requested (₹${totalRequested}) exceeds total paid amount (₹${originalPaid})`,
