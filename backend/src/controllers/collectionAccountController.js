@@ -1,4 +1,14 @@
 const { prisma } = require("../lib/prisma");
+const { isProtectedSuperadminEmail, isProtectedSuperadminIdentity } = require("../config/superadmin");
+
+const isFounderOrSuperadmin = (user) => {
+  if (!user) return false;
+  const role = (user.role || "").toLowerCase();
+  if (role === "founder" || role === "superadmin" || user.isSuperuser) return true;
+  if (user.email && isProtectedSuperadminEmail(user.email)) return true;
+  if (isProtectedSuperadminIdentity(user)) return true;
+  return false;
+};
 
 const resolveTenantId = (req) => {
   return req.headers["x-tenant-id"] || req.user?.tenantId || "default";
@@ -300,6 +310,13 @@ exports.getAccounts = async (req, res) => {
  */
 exports.createAccount = async (req, res) => {
   try {
+    if (!isFounderOrSuperadmin(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Treasury account configuration is strictly restricted to Founder / Superadmin only.",
+      });
+    }
+
     const tenantId = resolveTenantId(req);
     const {
       accountName,
@@ -370,6 +387,13 @@ exports.createAccount = async (req, res) => {
  */
 exports.updateAccount = async (req, res) => {
   try {
+    if (!isFounderOrSuperadmin(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Treasury account configuration is strictly restricted to Founder / Superadmin only.",
+      });
+    }
+
     const { id } = req.params;
     const tenantId = resolveTenantId(req);
     const {
@@ -443,6 +467,13 @@ exports.updateAccount = async (req, res) => {
  */
 exports.deleteAccount = async (req, res) => {
   try {
+    if (!isFounderOrSuperadmin(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Treasury account configuration is strictly restricted to Founder / Superadmin only.",
+      });
+    }
+
     const { id } = req.params;
     const tenantId = resolveTenantId(req);
 
@@ -696,6 +727,13 @@ exports.getAccountLedger = async (req, res) => {
  */
 exports.recordAccountSubmission = async (req, res) => {
   try {
+    if (!isFounderOrSuperadmin(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Treasury fund transfers and submissions are strictly restricted to Founder / Superadmin only.",
+      });
+    }
+
     const { id } = req.params;
     const tenantId = resolveTenantId(req);
     const { amount, paymentMode, referenceNumber, notes } = req.body;

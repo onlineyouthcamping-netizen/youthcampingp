@@ -1263,6 +1263,7 @@ exports.verifyExpense = async (req, res) => {
 };
 
 /**
+<<<<<<< HEAD
  * POST /api/finance/control-center/expenses
  * Create a new miscellaneous or activity expense from the Finance Control Center.
  * Supports both opsMiscExpense (type=MISCELLANEOUS) and opsTripExpense (type=ACTIVITY).
@@ -1376,3 +1377,401 @@ exports.createExpense = async (req, res) => {
     });
   }
 };
+
+/**
+ * GET /api/finance/control-center/station-cash-queue
+ * Hierarchical Date-wise Departure & Station Cash Collections queue
+ */
+exports.getStationCashQueue = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId || "default";
+    const { departureDate, tripId, station, status, search } = req.query;
+
+    const where = {
+      tenantId,
+      paymentMode: "CASH",
+      collectionStatus: { not: "CANCELLED" },
+    };
+
+    if (departureDate) {
+      const startOfDay = new Date(departureDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(departureDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      where.departureDate = { gte: startOfDay, lte: endOfDay };
+    }
+
+    if (tripId && tripId !== "ALL") {
+      where.tripId = tripId;
+    }
+
+    if (station && station !== "ALL") {
+      where.station = { contains: station, mode: "insensitive" };
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { receiptNumber: { contains: q, mode: "insensitive" } },
+        { bookingId: { contains: q, mode: "insensitive" } },
+        { station: { contains: q, mode: "insensitive" } },
+        { collectedFrom: { contains: q, mode: "insensitive" } },
+        { collectedFromMobile: { contains: q, mode: "insensitive" } },
+        { booking: { name: { contains: q, mode: "insensitive" } } },
+        { booking: { fullName: { contains: q, mode: "insensitive" } } },
+        { collectedBy: { name: { contains: q, mode: "insensitive" } } },
+      ];
+    }
+
+    const collections = await prisma.stationPaymentCollection.findMany({
+      where,
+      include: {
+        collectedBy: { select: { id: true, name: true, email: true, phone: true } },
+        verifiedBy: { select: { id: true, name: true, role: true } },
+        booking: {
+          select: {
+            id: true,
+            bookingId: true,
+            name: true,
+            fullName: true,
+            phone: true,
+            tripName: true,
+            totalAmount: true,
+            advancePaid: true,
+            remainingAmount: true,
+            departureDate: true,
+            status: true,
+          },
+        },
+        handover: true,
+      },
+      orderBy: [{ departureDate: "desc" }, { collectedAt: "desc" }],
+    });
+
+    // Also fetch accounting entries for these receipts to check verified status
+    const receiptNumbers = collections.map((c) => c.receiptNumber).filter(Boolean);
+    const accountingEntries = await prisma.accountingEntry.findMany({
+      where: {
+        tenantId,
+        referenceNumber: { in: receiptNumbers },
+      },
+      select: {
+        referenceNumber: true,
+        status: true,
+        actionedById: true,
+        actionedBy: { select: { name: true, role: true } },
+        updatedAt: true,
+      },
+    });
+
+    const entryStatusMap = new Map();
+    accountingEntries.forEach((ae) => {
+      if (ae.referenceNumber) {
+        entryStatusMap.set(ae.referenceNumber, ae);
+      }
+    });
+
+    // Structure and format records
+    const formattedRecords = collections.map((c) => {
+      const linkedEntry = entryStatusMap.get(c.receiptNumber);
+      const isVerified =
+        Boolean(c.verifiedByAdminId) ||
+        linkedEntry?.status === "APPROVED" ||
+        linkedEntry?.status === "VERIFIED" ||
+        c.handover?.handoverStatus === "RECONCILED";
+
+      const recordStatus = isVerified
+        ? "VERIFIED"
+        : linkedEntry?.status === "REJECTED"
+        ? "REJECTED"
+        : "PENDING_VERIFICATION";
+
+      const dateStr = c.departureDate
+        ? new Date(c.departureDate).toISOString().split("T")[0]
+        : "Unknown Date";
+
+      return {
+        id: c.id,
+        receiptNumber: c.receiptNumber,
+        bookingId: c.bookingId,
+        tripId: c.tripId,
+        tripName: c.booking?.tripName || "Trip",
+        departureDate: dateStr,
+        station: c.station || "General Station",
+        platform: c.platform,
+        amount: Number(c.amount || 0),
+        previousPaid: Number(c.previousPaid || 0),
+        newTotalPaid: Number(c.newTotalPaid || 0),
+        newRemaining: Number(c.newRemaining || 0),
+        paymentStatus: c.paymentStatus,
+        collectedByAdminId: c.collectedByAdminId,
+        collectorName: c.collectedBy?.name || "Station Lead",
+        collectorPhone: c.collectedBy?.phone || null,
+        collectedAt: c.collectedAt,
+        collectedFrom: c.collectedFrom || c.booking?.fullName || c.booking?.name || "Passenger",
+        collectedFromMobile: c.collectedFromMobile || c.booking?.phone || null,
+        remarks: c.remarks,
+        proofImageUrl: c.proofImageUrl,
+        status: recordStatus,
+        verifiedBy: c.verifiedBy?.name || linkedEntry?.actionedBy?.name || null,
+        verifiedAt: c.verifiedAt || linkedEntry?.updatedAt || null,
+        handoverStatus: c.handover?.handoverStatus || "PENDING",
+      };
+    }).filter((item) => {
+      if (!status || status === "ALL") return true;
+      if (status === "PENDING" && item.status === "PENDING_VERIFICATION") return true;
+      if (status === "VERIFIED" && item.status === "VERIFIED") return true;
+      if (status === "REJECTED" && item.status === "REJECTED") return true;
+      return item.status === status;
+    });
+
+    // Hierarchical grouping: Date -> (Trip + Station)
+    const dateGroupsMap = new Map();
+    let totalCashCollected = 0;
+    let totalCashPending = 0;
+    let totalCashVerified = 0;
+    const stationSet = new Set();
+    const departureSet = new Set();
+
+    formattedRecords.forEach((rec) => {
+      totalCashCollected += rec.amount;
+      if (rec.status === "VERIFIED") {
+        totalCashVerified += rec.amount;
+      } else {
+        totalCashPending += rec.amount;
+      }
+
+      departureSet.add(`${rec.departureDate}__${rec.tripId}`);
+      stationSet.add(rec.station);
+
+      if (!dateGroupsMap.has(rec.departureDate)) {
+        dateGroupsMap.set(rec.departureDate, {
+          departureDate: rec.departureDate,
+          totalAmount: 0,
+          pendingAmount: 0,
+          verifiedAmount: 0,
+          stationsCount: 0,
+          passengersCount: 0,
+          stationGroups: new Map(),
+        });
+      }
+
+      const dateGroup = dateGroupsMap.get(rec.departureDate);
+      dateGroup.totalAmount += rec.amount;
+      dateGroup.passengersCount += 1;
+      if (rec.status === "VERIFIED") dateGroup.verifiedAmount += rec.amount;
+      else dateGroup.pendingAmount += rec.amount;
+
+      const stationKey = `${rec.tripId}___${rec.station}`;
+      if (!dateGroup.stationGroups.has(stationKey)) {
+        dateGroup.stationGroups.set(stationKey, {
+          stationKey,
+          tripId: rec.tripId,
+          tripName: rec.tripName,
+          station: rec.station,
+          departureDate: rec.departureDate,
+          totalAmount: 0,
+          pendingAmount: 0,
+          verifiedAmount: 0,
+          pendingItems: 0,
+          verifiedItems: 0,
+          collectors: new Set(),
+          items: [],
+        });
+      }
+
+      const sg = dateGroup.stationGroups.get(stationKey);
+      sg.totalAmount += rec.amount;
+      if (rec.status === "VERIFIED") {
+        sg.verifiedAmount += rec.amount;
+        sg.verifiedItems += 1;
+      } else {
+        sg.pendingAmount += rec.amount;
+        sg.pendingItems += 1;
+      }
+      if (rec.collectorName) sg.collectors.add(rec.collectorName);
+      sg.items.push(rec);
+    });
+
+    // Convert nested Maps to Arrays
+    const dateGroups = Array.from(dateGroupsMap.values()).map((dg) => ({
+      departureDate: dg.departureDate,
+      totalAmount: dg.totalAmount,
+      pendingAmount: dg.pendingAmount,
+      verifiedAmount: dg.verifiedAmount,
+      passengersCount: dg.passengersCount,
+      stationsCount: dg.stationGroups.size,
+      stationGroups: Array.from(dg.stationGroups.values()).map((sg) => ({
+        stationKey: sg.stationKey,
+        tripId: sg.tripId,
+        tripName: sg.tripName,
+        station: sg.station,
+        departureDate: sg.departureDate,
+        totalAmount: sg.totalAmount,
+        pendingAmount: sg.pendingAmount,
+        verifiedAmount: sg.verifiedAmount,
+        pendingItems: sg.pendingItems,
+        verifiedItems: sg.verifiedItems,
+        collectors: Array.from(sg.collectors),
+        isFullyVerified: sg.pendingItems === 0 && sg.items.length > 0,
+        items: sg.items,
+      })),
+    }));
+
+    return res.json({
+      success: true,
+      data: {
+        summary: {
+          totalCashCollected,
+          totalCashPending,
+          totalCashVerified,
+          totalDepartures: departureSet.size,
+          totalStations: stationSet.size,
+          totalPassengers: formattedRecords.length,
+          pendingCount: formattedRecords.filter((r) => r.status === "PENDING_VERIFICATION").length,
+          verifiedCount: formattedRecords.filter((r) => r.status === "VERIFIED").length,
+        },
+        dateGroups,
+        allCollections: formattedRecords,
+      },
+    });
+  } catch (err) {
+    console.error("getStationCashQueue error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch station cash queue",
+    });
+  }
+};
+
+/**
+ * POST /api/finance/control-center/station-cash/batch-verify
+ * Batch verify or individual verify station cash collections (Founder / Superadmin only)
+ */
+exports.batchVerifyStationCash = async (req, res) => {
+  try {
+    const userRole = (req.user?.role || "").toLowerCase();
+    const isSuperuserFounder =
+      ["superadmin", "founder", "admin"].includes(userRole) ||
+      Boolean(req.user?.isSuperuser) ||
+      (req.user?.email && req.user.email.toLowerCase().includes("hemal"));
+
+    if (!isSuperuserFounder) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Station cash verification is strictly reserved for Founder / Superadmin accounts only.",
+      });
+    }
+
+    const tenantId = req.user?.tenantId || "default";
+    const { collectionIds, tripId, departureDate, station, action = "APPROVE", notes } = req.body;
+    const adminId = req.user?.id;
+    const adminName = req.user?.name || "Founder";
+
+    let targetIds = [];
+
+    if (Array.isArray(collectionIds) && collectionIds.length > 0) {
+      targetIds = collectionIds;
+    } else if (tripId && departureDate && station) {
+      const startOfDay = new Date(departureDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(departureDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      const found = await prisma.stationPaymentCollection.findMany({
+        where: {
+          tenantId,
+          tripId,
+          departureDate: { gte: startOfDay, lte: endOfDay },
+          station,
+          paymentMode: "CASH",
+        },
+        select: { id: true },
+      });
+      targetIds = found.map((f) => f.id);
+    }
+
+    if (targetIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No station cash collections found to verify.",
+      });
+    }
+
+    const collections = await prisma.stationPaymentCollection.findMany({
+      where: { id: { in: targetIds }, tenantId },
+      include: { booking: true },
+    });
+
+    const receiptNumbers = collections.map((c) => c.receiptNumber).filter(Boolean);
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Update station payment collection verification status
+      if (action === "APPROVE") {
+        await tx.stationPaymentCollection.updateMany({
+          where: { id: { in: targetIds } },
+          data: {
+            verifiedByAdminId: adminId,
+            verifiedAt: new Date(),
+          },
+        });
+
+        // 2. Update accounting entries
+        if (receiptNumbers.length > 0) {
+          await tx.accountingEntry.updateMany({
+            where: {
+              tenantId,
+              referenceNumber: { in: receiptNumbers },
+            },
+            data: {
+              status: "APPROVED",
+              actionedById: adminId,
+              notes: notes ? `Station cash batch verified by ${adminName}: ${notes}` : `Station cash verified by ${adminName}`,
+            },
+          });
+        }
+      } else if (action === "REJECT") {
+        if (receiptNumbers.length > 0) {
+          await tx.accountingEntry.updateMany({
+            where: {
+              tenantId,
+              referenceNumber: { in: receiptNumbers },
+            },
+            data: {
+              status: "REJECTED",
+              actionedById: adminId,
+              rejectionReason: notes || "Rejected by Founder",
+            },
+          });
+        }
+      }
+
+      // 3. Log audit activity for each booking
+      for (const col of collections) {
+        if (col.booking?.id) {
+          await tx.bookingActivityLog.create({
+            data: {
+              bookingId: col.booking.id,
+              action: action === "APPROVE" ? "STATION_CASH_VERIFIED" : "STATION_CASH_REJECTED",
+              details: `Station cash ₹${col.amount} at ${col.station} (Receipt: ${col.receiptNumber}) ${action === "APPROVE" ? "verified" : "rejected"} by ${adminName}.${notes ? ` Note: ${notes}` : ""}`,
+              performedByAdminId: adminId,
+            },
+          }).catch(() => {});
+        }
+      }
+    });
+
+    return res.json({
+      success: true,
+      count: targetIds.length,
+      message: `Successfully ${action === "APPROVE" ? "verified" : "rejected"} ${targetIds.length} station cash collection(s).`,
+    });
+  } catch (err) {
+    console.error("batchVerifyStationCash error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to batch verify station cash collections",
+    });
+  }
+};
+

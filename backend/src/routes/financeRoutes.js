@@ -20,6 +20,8 @@ const {
   verifyExpense,
   createExpense,
   assignIncomingPayment,
+  getStationCashQueue,
+  batchVerifyStationCash,
 } = require("../controllers/financeController");
 
 // New Sub-module Controllers
@@ -141,6 +143,18 @@ router.post(
   "/control-center/cash/:id/action",
   requirePermission(["accounting.approve", "finance.cash.approve"]),
   verifyCashSubmission
+);
+
+router.get(
+  "/control-center/station-cash-queue",
+  requirePermission(["accounting.view", "finance.cash.verify", "station_payments.view"]),
+  getStationCashQueue
+);
+
+router.post(
+  "/control-center/station-cash/batch-verify",
+  requirePermission(["accounting.approve", "finance.cash.approve", "station_payments.reconcile"]),
+  batchVerifyStationCash
 );
 
 router.post(
