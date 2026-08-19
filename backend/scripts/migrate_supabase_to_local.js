@@ -21,8 +21,8 @@ async function runMigration() {
   const targetPool = new Pool({ connectionString: LOCAL_URL });
 
   try {
-    // 1. Get all user tables from public schema using pg_tables
-    const tablesRes = await sourcePool.query(`
+    // 1. Get all source tables
+    const sourceTablesRes = await sourcePool.query(`
       SELECT tablename AS table_name 
       FROM pg_tables 
       WHERE schemaname = 'public' 
@@ -30,73 +30,107 @@ async function runMigration() {
       ORDER BY tablename;
     `);
 
-    const tables = tablesRes.rows.map((r) => r.table_name);
-    console.log(`Found ${tables.length} tables in Supabase public schema.\n`);
+    const sourceTables = sourceTablesRes.rows.map((r) => r.table_name);
+    console.log(`Found ${sourceTables.length} tables in Supabase.\n`);
 
-    if (tables.length === 0) {
-      // Fallback table list from Prisma schema
-      console.log("Checking information_schema fallback...");
-      const fbRes = await sourcePool.query(`
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_type = 'BASE_TABLE' 
-          AND table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
-          AND table_name NOT LIKE '_prisma_%'
-        ORDER BY table_name;
-      `);
-      tables.push(...fbRes.rows.map((r) => r.table_name));
-      console.log(`Resolved ${tables.length} tables from fallback.\n`);
-    }
+    // 2. Get all target tables created by Prisma db push
+    const targetTablesRes = await targetPool.query(`
+      SELECT tablename 
+      FROM pg_tables 
+      WHERE schemaname = 'public'
+    `);
+    const targetTableMap = new Map();
+    targetTablesRes.rows.forEach((r) => {
+      targetTableMap.set(r.tablename.toLowerCase(), r.tablename);
+      targetTableMap.set(r.tablename, r.tablename);
+    });
 
-    // Attempt to disable foreign key constraints on target during copy
+    // Disable foreign key constraints during copy
     try {
       await targetPool.query("SET session_replication_role = 'replica';");
     } catch (_e) {
-      // Ignore if non-superuser
+      // safe fallback
     }
 
-    for (const table of tables) {
-      process.stdout.write(`Migrating table [${table}]... `);
-      try {
-        const dataRes = await sourcePool.query(`SELECT * FROM "${table}"`);
-        const rows = dataRes.rows;
+    let totalMigrated = 0;
 
-        if (rows.length === 0) {
-          console.log("0 rows (skipped)");
+    for (const srcTable of sourceTables) {
+      // Find matching table in target
+      const targetTable = targetTableMap.get(srcTable.toLowerCase()) || targetTableMap.get(srcTable);
+      if (!targetTable) {
+        // Skip tables not in prisma schema (e.g. legacy archive tables)
+        continue;
+      }
+
+      process.stdout.write(`Migrating [${srcTable}] -> [${targetTable}]... `);
+
+      // Fetch from source
+      let rows = [];
+      try {
+        const res = await sourcePool.query(`SELECT * FROM "${srcTable}"`);
+        rows = res.rows;
+      } catch (e1) {
+        try {
+          const res = await sourcePool.query(`SELECT * FROM ${srcTable}`);
+          rows = res.rows;
+        } catch (e2) {
+          console.log(`⚠️ Read Error: ${e1.message}`);
           continue;
         }
-
-        // Insert rows into target in batches
-        const columns = Object.keys(rows[0]);
-        const colNames = columns.map((c) => `"${c}"`).join(", ");
-
-        let inserted = 0;
-        for (const row of rows) {
-          const values = columns.map((c) => row[c]);
-          const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
-          
-          try {
-            await targetPool.query(
-              `INSERT INTO "${table}" (${colNames}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
-              values
-            );
-            inserted++;
-          } catch (rowErr) {
-            // Log individual row error without breaking whole table
-          }
-        }
-        console.log(`✓ ${inserted} / ${rows.length} rows migrated`);
-      } catch (tblErr) {
-        console.log(`⚠️ Error: ${tblErr.message}`);
       }
+
+      if (!rows || rows.length === 0) {
+        console.log("0 rows");
+        continue;
+      }
+
+      // Get columns from target to avoid column mismatch
+      const targetColsRes = await targetPool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = $1
+      `, [targetTable]);
+      const validTargetCols = new Set(targetColsRes.rows.map((r) => r.column_name));
+
+      // Filter row keys to only columns existing in target
+      const sampleCols = Object.keys(rows[0]).filter((c) => validTargetCols.has(c));
+      if (sampleCols.length === 0) {
+        console.log("0 matching columns");
+        continue;
+      }
+
+      const colNames = sampleCols.map((c) => `"${c}"`).join(", ");
+      let inserted = 0;
+
+      for (const row of rows) {
+        const values = sampleCols.map((c) => row[c]);
+        const placeholders = sampleCols.map((_, i) => `$${i + 1}`).join(", ");
+
+        try {
+          await targetPool.query(
+            `INSERT INTO "${targetTable}" (${colNames}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
+            values
+          );
+          inserted++;
+        } catch (_rowErr) {
+          // Continue on individual duplicate/row conflict
+        }
+      }
+
+      console.log(`✓ ${inserted} / ${rows.length} rows`);
+      totalMigrated += inserted;
     }
 
-    // Re-enable foreign key checks on target
-    await targetPool.query("SET session_replication_role = 'origin';");
+    // Re-enable constraints
+    try {
+      await targetPool.query("SET session_replication_role = 'origin';");
+    } catch (_e) {
+      // safe fallback
+    }
 
-    console.log("\n🎉 All data successfully migrated from Supabase to Local VPS PostgreSQL!");
+    console.log(`\n🎉 Data Migration Complete! Total rows migrated: ${totalMigrated}`);
   } catch (err) {
-    console.error("Migration failed:", err);
+    console.error("Migration fatal error:", err);
   } finally {
     await sourcePool.end();
     await targetPool.end();
