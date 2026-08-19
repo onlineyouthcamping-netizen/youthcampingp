@@ -64,14 +64,14 @@ async function runMigration() {
 
       process.stdout.write(`Migrating [${srcTable}] -> [${targetTable}]... `);
 
-      // Fetch from source
+      // Fetch from source with explicit public. schema
       let rows = [];
       try {
-        const res = await sourcePool.query(`SELECT * FROM "${srcTable}"`);
+        const res = await sourcePool.query(`SELECT * FROM public."${srcTable}"`);
         rows = res.rows;
       } catch (e1) {
         try {
-          const res = await sourcePool.query(`SELECT * FROM ${srcTable}`);
+          const res = await sourcePool.query(`SELECT * FROM public.${srcTable}`);
           rows = res.rows;
         } catch (e2) {
           console.log(`⚠️ Read Error: ${e1.message}`);
@@ -108,7 +108,7 @@ async function runMigration() {
 
         try {
           await targetPool.query(
-            `INSERT INTO "${targetTable}" (${colNames}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
+            `INSERT INTO public."${targetTable}" (${colNames}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
             values
           );
           inserted++;
