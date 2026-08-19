@@ -3470,7 +3470,7 @@ exports.saveManualAllocations = async (req, res) => {
         where: {
           tripId: resolvedTripId,
         },
-        select: { id: true, bookingId: true, customerName: true },
+        select: { id: true, bookingId: true, name: true, fullName: true },
       });
       // Build a normalization map: any id form (Prisma id or bookingId) → canonical bookingId display string
       const idToBookingId = {};
@@ -3483,11 +3483,11 @@ exports.saveManualAllocations = async (req, res) => {
       // Normalize all allocation bookingId fields to use the FK-compatible bookingId display string
       roomAllocations = roomAllocations.map((r) => ({
         ...r,
-        bookingId: idToBookingId[r.bookingId] || validBookings.find(b => b.customerName === r.travelerName)?.bookingId || defaultBookingId,
+        bookingId: idToBookingId[r.bookingId] || validBookings.find(b => (b.name === r.travelerName || b.fullName === r.travelerName))?.bookingId || defaultBookingId,
       }));
       vehicleAllocations = vehicleAllocations.map((v) => ({
         ...v,
-        bookingId: idToBookingId[v.bookingId] || validBookings.find(b => b.customerName === v.travelerName)?.bookingId || defaultBookingId,
+        bookingId: idToBookingId[v.bookingId] || validBookings.find(b => (b.name === v.travelerName || b.fullName === v.travelerName))?.bookingId || defaultBookingId,
       }));
     }
 
