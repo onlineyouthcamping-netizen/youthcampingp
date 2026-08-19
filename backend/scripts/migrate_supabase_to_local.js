@@ -87,16 +87,20 @@ async function runMigration() {
         continue;
       }
 
-      // Get columns from target to avoid column mismatch
+      // Get columns and data types from target
       const targetColsRes = await targetClient.query(`
-        SELECT column_name 
+        SELECT column_name, data_type, udt_name 
         FROM information_schema.columns 
         WHERE table_schema = 'public' AND table_name = $1
       `, [targetTable]);
-      const validTargetCols = new Set(targetColsRes.rows.map((r) => r.column_name));
+      
+      const targetColMap = new Map();
+      targetColsRes.rows.forEach((r) => {
+        targetColMap.set(r.column_name, r);
+      });
 
       // Filter row keys to only columns existing in target
-      const sampleCols = Object.keys(rows[0]).filter((c) => validTargetCols.has(c));
+      const sampleCols = Object.keys(rows[0]).filter((c) => targetColMap.has(c));
       if (sampleCols.length === 0) {
         console.log("0 matching columns");
         continue;
@@ -104,10 +108,26 @@ async function runMigration() {
 
       const colNames = sampleCols.map((c) => `"${c}"`).join(", ");
       let inserted = 0;
-      let lastErr = null;
+      const errors = new Map();
 
       for (const row of rows) {
-        const values = sampleCols.map((c) => row[c]);
+        const values = sampleCols.map((c) => {
+          const val = row[c];
+          if (val === undefined) return null;
+          const colMeta = targetColMap.get(c);
+          
+          // Serialize objects for JSON/JSONB columns
+          if (
+            val !== null &&
+            typeof val === "object" &&
+            !(val instanceof Date) &&
+            (colMeta?.data_type === "json" || colMeta?.data_type === "jsonb" || colMeta?.udt_name === "json" || colMeta?.udt_name === "jsonb")
+          ) {
+            return JSON.stringify(val);
+          }
+          return val;
+        });
+
         const placeholders = sampleCols.map((_, i) => `$${i + 1}`).join(", ");
 
         try {
@@ -117,12 +137,16 @@ async function runMigration() {
           );
           inserted++;
         } catch (rowErr) {
-          lastErr = rowErr.message;
+          const count = errors.get(rowErr.message) || 0;
+          errors.set(rowErr.message, count + 1);
         }
       }
 
-      if (inserted === 0 && rows.length > 0 && lastErr) {
-        console.log(`❌ 0 / ${rows.length} rows (Error: ${lastErr})`);
+      if (errors.size > 0 && inserted < rows.length) {
+        const errDetails = Array.from(errors.entries())
+          .map(([msg, cnt]) => `(${cnt}x: ${msg})`)
+          .join(", ");
+        console.log(`✓ ${inserted} / ${rows.length} rows [Errors: ${errDetails}]`);
       } else {
         console.log(`✓ ${inserted} / ${rows.length} rows`);
       }
