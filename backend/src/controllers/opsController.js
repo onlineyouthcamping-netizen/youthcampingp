@@ -3285,6 +3285,9 @@ exports.getConfirmedAllocations = async (req, res) => {
         departureDate: allocDateRange,
         allocationStatus: "ACTIVE",
       },
+      include: {
+        fleet: { select: { id: true, driverName: true, vehicleType: true, capacity: true } },
+      },
       orderBy: [{ fleetId: "asc" }, { seatNumber: "asc" }],
     });
 
@@ -3495,47 +3498,83 @@ exports.saveManualAllocations = async (req, res) => {
       ...roomAllocations.map((r) => r.bookingId),
       ...vehicleAllocations.map((v) => v.bookingId),
     ].filter(Boolean);
-    if (allBookingIds.length > 0) {
-      const validBookings = await prisma.booking.findMany({
-        where: {
-          tripId: resolvedTripId,
-        },
-        select: { id: true, bookingId: true, name: true, fullName: true },
-      });
-      // Build a normalization map: any id form (Prisma id or bookingId) → canonical bookingId display string
-      const idToBookingId = {};
-      validBookings.forEach((b) => {
-        if (b.id) idToBookingId[b.id] = b.bookingId;
-        if (b.bookingId) idToBookingId[b.bookingId] = b.bookingId;
-      });
-      const defaultBookingId = validBookings[0]?.bookingId || "BK-DEFAULT";
 
-      // Normalize all allocation bookingId fields to use the FK-compatible bookingId display string
-      roomAllocations = roomAllocations.map((r) => ({
+    const validBookings = await prisma.booking.findMany({
+      where: {
+        OR: [
+          { tripId: { in: [tripId, resolvedTripId, trip.slug, trip.shortName].filter(Boolean) } },
+          ...(allBookingIds.length > 0 ? [{ id: { in: allBookingIds } }, { bookingId: { in: allBookingIds } }] : []),
+        ],
+      },
+      select: { id: true, bookingId: true, name: true, fullName: true },
+    });
+
+    const idToBookingId = {};
+    const nameToBookingId = {};
+    validBookings.forEach((b) => {
+      if (b.id) idToBookingId[b.id] = b.bookingId;
+      if (b.bookingId) idToBookingId[b.bookingId] = b.bookingId;
+      if (b.name) nameToBookingId[b.name.trim().toLowerCase()] = b.bookingId;
+      if (b.fullName) nameToBookingId[b.fullName.trim().toLowerCase()] = b.bookingId;
+    });
+    const defaultBookingId = validBookings[0]?.bookingId || (allBookingIds[0] ? (idToBookingId[allBookingIds[0]] || allBookingIds[0]) : "BK-DEFAULT");
+
+    // Normalize all allocation bookingId fields to use the FK-compatible bookingId display string
+    roomAllocations = roomAllocations.map((r) => {
+      const bKey = r.travelerName ? nameToBookingId[r.travelerName.trim().toLowerCase()] : null;
+      return {
         ...r,
-        bookingId: idToBookingId[r.bookingId] || validBookings.find(b => (b.name === r.travelerName || b.fullName === r.travelerName))?.bookingId || defaultBookingId,
-      }));
-      vehicleAllocations = vehicleAllocations.map((v) => ({
+        bookingId: idToBookingId[r.bookingId] || bKey || defaultBookingId,
+      };
+    });
+    vehicleAllocations = vehicleAllocations.map((v) => {
+      const bKey = v.travelerName ? nameToBookingId[v.travelerName.trim().toLowerCase()] : null;
+      return {
         ...v,
-        bookingId: idToBookingId[v.bookingId] || validBookings.find(b => (b.name === v.travelerName || b.fullName === v.travelerName))?.bookingId || defaultBookingId,
-      }));
-    }
+        bookingId: idToBookingId[v.bookingId] || bKey || defaultBookingId,
+      };
+    });
 
     // 2. Validate all fleetIds belong to this departure, or auto-create/map if needed
     let defaultFleet = null;
     if (vehicleAllocations.length > 0) {
-      // Use date-range query to match @db.Date field regardless of timezone/time-part storage
       const fleetDayStart = new Date(departureDate);
       fleetDayStart.setUTCHours(0, 0, 0, 0);
       const fleetDayEnd = new Date(departureDate);
       fleetDayEnd.setUTCHours(23, 59, 59, 999);
       let validFleets = await prisma.opsTransportFleet.findMany({
-        where: { tripId: resolvedTripId, departureDate: { gte: fleetDayStart, lte: fleetDayEnd } },
-        select: { id: true, capacity: true },
+        where: {
+          tripId: { in: [tripId, resolvedTripId] },
+          departureDate: { gte: fleetDayStart, lte: fleetDayEnd },
+        },
+        select: { id: true, capacity: true, driverName: true, vehicleType: true },
       });
 
-      // Auto-create fleet record if none exists for this departure
+      const distinctInputFleetIds = [...new Set(vehicleAllocations.map((v) => v.fleetId).filter(Boolean))];
+
+      // Auto-create fleet records if none exist for this departure
       if (validFleets.length === 0) {
+        for (let i = 0; i < Math.max(1, distinctInputFleetIds.length); i++) {
+          const fleetNumber = i + 1;
+          const createdFleet = await prisma.opsTransportFleet.create({
+            data: {
+              tripId: resolvedTripId,
+              departureDate,
+              vehicleType: "17 Seater Tempo Traveller",
+              capacity: 17,
+              totalAmount: 0,
+              driverName: `Tempo ${fleetNumber}`,
+              notes: `Auto-created departure fleet ${fleetNumber}`,
+            },
+            select: { id: true, capacity: true, driverName: true, vehicleType: true },
+          });
+          validFleets.push(createdFleet);
+        }
+      }
+
+      // If more fleets were requested (e.g. tempo-1, tempo-2) than exist in DB, auto-create
+      while (validFleets.length < distinctInputFleetIds.length) {
+        const nextIdx = validFleets.length + 1;
         const createdFleet = await prisma.opsTransportFleet.create({
           data: {
             tripId: resolvedTripId,
@@ -3543,26 +3582,39 @@ exports.saveManualAllocations = async (req, res) => {
             vehicleType: "17 Seater Tempo Traveller",
             capacity: 17,
             totalAmount: 0,
-            driverName: "Tempo 1",
-            notes: "Auto-created departure fleet",
+            driverName: `Tempo ${nextIdx}`,
+            notes: `Auto-created departure fleet ${nextIdx}`,
           },
-          select: { id: true, capacity: true },
+          select: { id: true, capacity: true, driverName: true, vehicleType: true },
         });
-        validFleets = [createdFleet];
+        validFleets.push(createdFleet);
       }
 
       const validFleetMap = new Map(validFleets.map((f) => [f.id, f]));
       defaultFleet = validFleets[0];
 
-      // Map any pseudo-id or non-existent fleetId to a valid departure fleet
-      vehicleAllocations = vehicleAllocations.map((v) => {
-        if (!validFleetMap.has(v.fleetId)) {
-          return {
-            ...v,
-            fleetId: defaultFleet.id,
-          };
+      // Map synthetic fleet IDs (tempo-1, tempo-2, Tempo 1, etc.) to database fleet IDs
+      const inputToDbFleetMap = new Map();
+      distinctInputFleetIds.forEach((inId, idx) => {
+        if (validFleetMap.has(inId)) {
+          inputToDbFleetMap.set(inId, inId);
+        } else if (/tempo[ -]?(\d+)/i.test(inId)) {
+          const match = inId.match(/tempo[ -]?(\d+)/i);
+          const tempoNum = parseInt(match[1], 10);
+          const targetFleet = validFleets[tempoNum - 1] || validFleets[idx] || defaultFleet;
+          inputToDbFleetMap.set(inId, targetFleet.id);
+        } else {
+          const targetFleet = validFleets[idx] || defaultFleet;
+          inputToDbFleetMap.set(inId, targetFleet.id);
         }
-        return v;
+      });
+
+      vehicleAllocations = vehicleAllocations.map((v) => {
+        const mappedFleetId = inputToDbFleetMap.get(v.fleetId) || (validFleetMap.has(v.fleetId) ? v.fleetId : defaultFleet.id);
+        return {
+          ...v,
+          fleetId: mappedFleetId,
+        };
       });
     }
 
@@ -3571,7 +3623,7 @@ exports.saveManualAllocations = async (req, res) => {
     const roomSeen = new Set();
     for (const r of roomAllocations) {
       if (!r || !r.travelerName || !r.roomNumber) continue;
-      const bId = r.bookingId || "BK-DEFAULT";
+      const bId = r.bookingId || defaultBookingId;
       const key = `${bId}:${r.travelerName.trim().toLowerCase()}`;
       if (roomSeen.has(key)) continue;
       roomSeen.add(key);
@@ -3583,7 +3635,7 @@ exports.saveManualAllocations = async (req, res) => {
     const vehicleSeen = new Set();
     for (const v of vehicleAllocations) {
       if (!v || !v.travelerName) continue;
-      const bId = v.bookingId || "BK-DEFAULT";
+      const bId = v.bookingId || defaultBookingId;
       const fId = v.fleetId || defaultFleet?.id || "tempo-1";
       const key = `${bId}:${v.travelerName.trim().toLowerCase()}`;
       if (vehicleSeen.has(key)) continue;
@@ -3596,11 +3648,16 @@ exports.saveManualAllocations = async (req, res) => {
     let savedRooms = [];
     let savedVehicles = [];
 
+    const allocDateRange = {
+      gte: new Date(new Date(departureDate).setUTCHours(0, 0, 0, 0)),
+      lte: new Date(new Date(departureDate).setUTCHours(23, 59, 59, 999)),
+    };
+
     await prisma.$transaction(async (tx) => {
       // Soft-cancel existing ACTIVE allocations ONLY for targeted type
       if (target === "all" || target === "rooms") {
         await tx.opsRoomAllocation.updateMany({
-          where: { ...scope, allocationStatus: "ACTIVE" },
+          where: { tripId: resolvedTripId, departureDate: allocDateRange, allocationStatus: "ACTIVE" },
           data: { allocationStatus: "CANCELLED" },
         });
 
@@ -3644,7 +3701,7 @@ exports.saveManualAllocations = async (req, res) => {
 
       if (target === "all" || target === "vehicles") {
         await tx.opsVehicleAllocation.updateMany({
-          where: { ...scope, allocationStatus: "ACTIVE" },
+          where: { tripId: resolvedTripId, departureDate: allocDateRange, allocationStatus: "ACTIVE" },
           data: { allocationStatus: "CANCELLED" },
         });
 
@@ -3676,6 +3733,9 @@ exports.saveManualAllocations = async (req, res) => {
               allocationStatus: "ACTIVE",
               routeSegment: v.routeSegment || null,
               pickupPoint: v.pickupPoint || null,
+            },
+            include: {
+              fleet: { select: { id: true, driverName: true, vehicleType: true, capacity: true } },
             },
           });
           savedVehicles.push(record);
