@@ -24,6 +24,23 @@ const safeParseDate = (dateVal) => {
   return isNaN(d.getTime()) ? null : d;
 };
 
+function normalizeDepartureDateIndia(dateInput) {
+  if (!dateInput) return null;
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return null;
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return formatter.format(d);
+  } catch (e) {
+    return d.toISOString().slice(0, 10);
+  }
+}
+
 // Safe age validation — ensures age is an integer between 1 and 120
 function sanitizeAge(val) {
   if (val === undefined || val === null || val === "" || val === "N/A") return null;
@@ -1694,22 +1711,31 @@ exports.updateBooking = async (req, res, next) => {
         .json({ success: false, message: "Booking not found" });
     }
 
-    if (updateData.departureDate !== undefined) {
+    if (updateData.departureDate !== undefined && updateData.departureDate !== null) {
       const nextDate = safeParseDate(updateData.departureDate);
       const prevDate = beforeBooking.departureDate
         ? new Date(beforeBooking.departureDate)
         : null;
-      const nextKey = nextDate ? nextDate.toISOString().slice(0, 10) : null;
-      const prevKey = prevDate && !isNaN(prevDate.getTime())
-        ? prevDate.toISOString().slice(0, 10)
-        : null;
-      if (nextKey !== prevKey) {
-        return res.status(409).json({
-          success: false,
-          code: "BOOKING_TRANSFER_REQUIRED",
-          message:
-            "Changing a booking departureDate requires a dedicated booking transfer. To reschedule the whole departure, use PUT /api/departures/reschedule.",
-        });
+      if (nextDate && prevDate && !isNaN(prevDate.getTime())) {
+        const nextUtc = nextDate.toISOString().slice(0, 10);
+        const prevUtc = prevDate.toISOString().slice(0, 10);
+        const nextIst = normalizeDepartureDateIndia(nextDate);
+        const prevIst = normalizeDepartureDateIndia(prevDate);
+        const isSameDate =
+          nextUtc === prevUtc ||
+          nextIst === prevIst ||
+          nextUtc === prevIst ||
+          nextIst === prevUtc;
+        if (!isSameDate) {
+          return res.status(409).json({
+            success: false,
+            code: "BOOKING_TRANSFER_REQUIRED",
+            message:
+              "Changing a booking departureDate requires a dedicated booking transfer. To reschedule the whole departure, use PUT /api/departures/reschedule.",
+          });
+        }
+        // If it's the same departure day, keep the existing database departureDate to prevent drift
+        updateData.departureDate = beforeBooking.departureDate;
       }
     }
 
