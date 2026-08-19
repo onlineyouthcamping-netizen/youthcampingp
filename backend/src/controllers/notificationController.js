@@ -1,5 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const { prisma } = require("../lib/prisma");
 
 // Get all notifications for the authenticated user
 exports.getNotifications = async (req, res, next) => {

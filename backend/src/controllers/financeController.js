@@ -286,6 +286,8 @@ exports.getIncomingPaymentsQueue = async (req, res) => {
       submittedBy: entry.salesperson?.name || "Online / Gateway",
       actionedBy: entry.actionedBy?.name || null,
       createdAt: entry.createdAt,
+      bookingDate: entry.createdAt,
+      tripDepartureDate: entry.booking?.departureDate || null,
     }));
 
     return res.json({

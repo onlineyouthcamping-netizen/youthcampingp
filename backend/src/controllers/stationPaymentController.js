@@ -593,10 +593,7 @@ exports.collect = async (req, res) => {
           remarks: finalRemarks || null,
           proofImageUrl: proofImageUrl || null,
           utrNumber: paymentMode === "UPI" ? utrNumber : null,
-          receivingAccountId:
-            paymentMode === "UPI" && receivingAccountId
-              ? receivingAccountId
-              : null,
+          receivingAccountId: receivingAccountId || null,
           upiVerificationStatus:
             paymentMode === "UPI" ? "PENDING_VERIFICATION" : null,
           collectionStatus: "COLLECTED",

@@ -282,7 +282,7 @@ export default function Destinations({
             type="button"
             onClick={() => nudge("r")}
             aria-label="Next Destinations"
-            className="dest-nav dest-nav-next absolute right-1 sm:right-0 top-1/2 z-20 -translate-y-1/2"
+            className="dest-nav dest-nav-next absolute right-1 sm:right-0 top-1/2 z-20 -translate-y-1/2 hidden md:flex"
           >
             <ChevronRight className="w-5 h-5 text-[#0B1528]" strokeWidth={2.25} />
           </button>

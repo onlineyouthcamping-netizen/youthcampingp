@@ -386,7 +386,7 @@ export default function StaySection({ accommodations }: StaySectionProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-6 md:p-8 pt-[72px] sm:pt-6 pb-0 sm:pb-6 overflow-hidden"
+            className="fixed inset-0 z-[100000] flex items-center justify-center p-4 pt-20 sm:p-6 md:p-8 overflow-hidden"
           >
             <div
               className="fixed inset-0 bg-[#0B1528]/75 backdrop-blur-sm"
@@ -398,61 +398,89 @@ export default function StaySection({ accommodations }: StaySectionProps) {
               role="dialog"
               aria-modal="true"
               aria-labelledby="stay-modal-title"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
               transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-              className="relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-t-[20px] border border-zinc-200/80 bg-white shadow-[0_24px_64px_rgba(11,21,40,0.18)] sm:rounded-[22px] max-h-[calc(100vh-72px)] sm:max-h-[min(88vh,820px)]"
+              className={`relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-[20px] border border-zinc-200/80 bg-white shadow-[0_24px_64px_rgba(11,21,40,0.18)] sm:rounded-[22px] ${
+                activeCategory === "All"
+                  ? "max-h-[min(78vh,820px)] sm:max-h-[min(88vh,820px)]"
+                  : "max-h-[min(72vh,640px)]"
+              }`}
             >
-              {/* Hero + header */}
-              <div className="relative shrink-0">
-                <div className="relative h-[140px] sm:h-[168px] w-full overflow-hidden bg-zinc-100">
-                  <OptimizedImage
-                    src={normalizeImageUrl(selectedStay.image)}
-                    alt={selectedStay.name}
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528]/88 via-[#0B1528]/35 to-transparent" />
-                  <button
-                    type="button"
-                    onClick={() => setSelectedStay(null)}
-                    aria-label="Close stay details"
-                    className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#0B1528] shadow-md transition-colors hover:bg-white cursor-pointer"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                    <h3
-                      id="stay-modal-title"
-                      className="font-montserrat text-lg sm:text-xl font-extrabold leading-tight text-white"
-                    >
-                      {selectedStay.name}
-                    </h3>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
-                        <MapPin className="h-3 w-3 shrink-0" />
-                        {selectedStay.location}
-                      </span>
-                      {selectedStay.nights && (
-                        <span className="rounded-full bg-[#D4541A] px-2.5 py-1 text-[11px] font-bold text-white">
-                          {selectedStay.nights}
+              {/* Header */}
+              <div className="relative shrink-0 border-b border-zinc-100">
+                {activeCategory === "All" ? (
+                  <>
+                    <div className="relative h-[112px] sm:h-[128px] w-full overflow-hidden bg-zinc-100">
+                      <OptimizedImage
+                        src={normalizeImageUrl(selectedStay.image)}
+                        alt={selectedStay.name}
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStay(null)}
+                        aria-label="Close stay details"
+                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#0B1528] shadow-md transition-colors hover:bg-white cursor-pointer"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="px-4 py-3 sm:px-5 sm:py-3.5">
+                      <h3
+                        id="stay-modal-title"
+                        className="font-montserrat text-base sm:text-lg font-extrabold leading-snug text-[#0B1528] pr-10"
+                      >
+                        {selectedStay.name}
+                      </h3>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-600">
+                          <MapPin className="h-3 w-3 shrink-0 text-[#D4541A]" />
+                          <span className="truncate">{selectedStay.location}</span>
                         </span>
-                      )}
-                      {selectedStay.type && (
-                        <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-[#0B1528]">
-                          {selectedStay.type}
-                        </span>
-                      )}
-                      {selectedStay.starRating &&
-                        selectedStay.starRating.toLowerCase().trim() !==
-                          (selectedStay.type || "").toLowerCase().trim() && (
+                        {selectedStay.nights && (
                           <span className="rounded-full bg-[#FFF1E8] px-2.5 py-1 text-[11px] font-bold text-[#C2410C]">
-                            {selectedStay.starRating}
+                            {selectedStay.nights}
                           </span>
                         )}
+                        {selectedStay.type && (
+                          <span className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0B1528]">
+                            {selectedStay.type}
+                          </span>
+                        )}
+                        {selectedStay.starRating &&
+                          selectedStay.starRating.toLowerCase().trim() !==
+                            (selectedStay.type || "").toLowerCase().trim() && (
+                            <span className="rounded-full bg-[#FFF7F2] px-2.5 py-1 text-[11px] font-bold text-[#C2410C]">
+                              {selectedStay.starRating}
+                            </span>
+                          )}
+                      </div>
                     </div>
+                  </>
+                ) : (
+                  <div className="flex items-start justify-between gap-3 px-4 py-3 sm:px-5">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">
+                        {selectedStay.name}
+                      </p>
+                      <h3 className="mt-0.5 font-montserrat text-sm font-extrabold text-[#0B1528]">
+                        {activeCategory}
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStay(null)}
+                      aria-label="Close stay details"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-[#0B1528] transition-colors hover:bg-zinc-50 cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Category filters */}
@@ -493,8 +521,14 @@ export default function StaySection({ accommodations }: StaySectionProps) {
               </div>
 
               {/* Scrollable body */}
-              <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-16 sm:px-5 sm:py-5 sm:pb-20 custom-scrollbar space-y-6">
-                {highlightAmenities.length > 0 && (
+              <div
+                className={`overflow-y-auto overscroll-contain custom-scrollbar ${
+                  activeCategory === "All"
+                    ? "flex-1 space-y-6 px-4 py-4 pb-16 sm:px-5 sm:py-5 sm:pb-20"
+                    : "px-3 py-3 pb-4 sm:px-4 sm:py-4"
+                }`}
+              >
+                {activeCategory === "All" && highlightAmenities.length > 0 && (
                   <section>
                     <h4 className="mb-2.5 font-montserrat text-xs font-bold uppercase tracking-wide text-zinc-500">
                       Highlights
@@ -512,8 +546,9 @@ export default function StaySection({ accommodations }: StaySectionProps) {
                   </section>
                 )}
 
-                {((selectedStay as any).mealsBreakdown ||
-                  (selectedStay as any).meals) && (
+                {activeCategory === "All" &&
+                  ((selectedStay as any).mealsBreakdown ||
+                    (selectedStay as any).meals) && (
                   <section>
                     <div className="mb-3 flex items-center gap-2">
                       <Utensils className="h-4 w-4 text-[#D4541A]" />
@@ -561,12 +596,18 @@ export default function StaySection({ accommodations }: StaySectionProps) {
                 )}
 
                 <section>
-                  <h4 className="mb-3 font-montserrat text-sm font-bold text-[#0B1528]">
-                    {activeCategory === "All"
-                      ? "Property photos"
-                      : `${activeCategory} photos`}
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3">
+                  {activeCategory === "All" && (
+                    <h4 className="mb-3 font-montserrat text-sm font-bold text-[#0B1528]">
+                      Property photos
+                    </h4>
+                  )}
+                  <div
+                    className={`grid gap-2.5 sm:gap-3 ${
+                      activeCategory === "All"
+                        ? "grid-cols-2 md:grid-cols-3"
+                        : "grid-cols-2 sm:grid-cols-3"
+                    }`}
+                  >
                     {filteredImages.map((img, idx) => (
                       <figure
                         key={`${img.url}-${idx}`}
@@ -578,13 +619,13 @@ export default function StaySection({ accommodations }: StaySectionProps) {
                             alt={img.title || selectedStay.name}
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                           />
-                          {img.category && (
+                          {activeCategory === "All" && img.category && (
                             <figcaption className="absolute left-2 top-2 rounded-md bg-[#0B1528]/75 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
                               {img.category}
                             </figcaption>
                           )}
                         </div>
-                        {img.title && (
+                        {activeCategory === "All" && img.title && (
                           <p className="truncate px-2 py-1.5 text-[11px] font-semibold text-zinc-600 font-montserrat">
                             {img.title}
                           </p>
