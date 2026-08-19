@@ -618,6 +618,17 @@ exports.getAllRecordedVendorPayments = async (req, res) => {
       const vName = (h.hotelName || "").trim();
       const key = `${vName.toLowerCase()}_${h.tripId}_${dStr}`;
 
+      // Deduplicate: if an explicit OpsVendorPayment exists for this vendor + trip + departure, skip duplicate
+      const alreadyInVendorPayments = vendorPayments.some((vp) => {
+        const vpDate = vp.departureDate ? new Date(vp.departureDate).toISOString().substring(0, 10) : "";
+        return (
+          vp.tripId === h.tripId &&
+          vpDate === dStr &&
+          vp.vendorName?.toLowerCase().trim() === vName.toLowerCase()
+        );
+      });
+      if (alreadyInVendorPayments) return;
+
       if (!groupedHotels[key]) {
         groupedHotels[key] = {
           id: `hb-${h.id}`,
@@ -654,63 +665,91 @@ exports.getAllRecordedVendorPayments = async (req, res) => {
       };
     });
 
-    const mappedFleets = fleets.map((f) => {
-      const agreed = Number(f.totalAmount || 0);
-      const advance = Number(f.advancePaid || 0);
-      const remaining = Math.max(0, agreed - advance);
-      const isPaid = advance >= agreed && agreed > 0;
+    const mappedFleets = fleets
+      .filter((f) => {
+        const dStr = f.departureDate ? new Date(f.departureDate).toISOString().substring(0, 10) : "N/A";
+        const vName = (f.vendorName || f.driverName || "Transport Fleet").trim();
+        const alreadyInVendorPayments = vendorPayments.some((vp) => {
+          const vpDate = vp.departureDate ? new Date(vp.departureDate).toISOString().substring(0, 10) : "";
+          return (
+            vp.tripId === f.tripId &&
+            vpDate === dStr &&
+            vp.vendorName?.toLowerCase().trim() === vName.toLowerCase()
+          );
+        });
+        return !alreadyInVendorPayments;
+      })
+      .map((f) => {
+        const agreed = Number(f.totalAmount || 0);
+        const advance = Number(f.advancePaid || 0);
+        const remaining = Math.max(0, agreed - advance);
+        const isPaid = advance >= agreed && agreed > 0;
 
-      return {
-        id: `fl-${f.id}`,
-        tenantId: f.tenantId,
-        tripId: f.tripId,
-        departureDate: f.departureDate,
-        vendorName: (f.vendorName || f.driverName || "Transport Fleet").trim(),
-        category: "Transport",
-        serviceDescription: `${f.vehicleType || "Fleet"} (${f.vehicleNumber || "Route Fleet"})`,
-        agreedAmount: agreed,
-        advancePaid: advance,
-        remainingPayable: remaining,
-        paymentDate: f.departureDate || f.createdAt,
-        paymentMode: "BANK_TRANSFER",
-        status: isPaid ? "Paid" : advance > 0 ? "Advance Paid" : "Pending Approval",
-        approvalStatus: isPaid ? "APPROVED_FOUNDER" : "PENDING",
-        requiresFounderApproval: remaining > 50000,
-        collectionAccount: companyAcc,
-        trip: f.trip,
-        invoiceProof: null,
-        createdAt: f.createdAt,
-      };
-    });
+        return {
+          id: `fl-${f.id}`,
+          tenantId: f.tenantId,
+          tripId: f.tripId,
+          departureDate: f.departureDate,
+          vendorName: (f.vendorName || f.driverName || "Transport Fleet").trim(),
+          category: "Transport",
+          serviceDescription: `${f.vehicleType || "Fleet"} (${f.vehicleNumber || "Route Fleet"})`,
+          agreedAmount: agreed,
+          advancePaid: advance,
+          remainingPayable: remaining,
+          paymentDate: f.departureDate || f.createdAt,
+          paymentMode: "BANK_TRANSFER",
+          status: isPaid ? "Paid" : advance > 0 ? "Advance Paid" : "Pending Approval",
+          approvalStatus: isPaid ? "APPROVED_FOUNDER" : "PENDING",
+          requiresFounderApproval: remaining > 50000,
+          collectionAccount: companyAcc,
+          trip: f.trip,
+          invoiceProof: null,
+          createdAt: f.createdAt,
+        };
+      });
 
-    const mappedGuides = guides.map((g) => {
-      const agreed = Number(g.agreedAmount || 0);
-      const advance = Number(g.advancePaid || 0);
-      const remaining = Math.max(0, agreed - advance);
-      const isPaid = g.paymentStatus === "PAID" || (advance >= agreed && agreed > 0);
+    const mappedGuides = guides
+      .filter((g) => {
+        const dStr = g.departureDate ? new Date(g.departureDate).toISOString().substring(0, 10) : "N/A";
+        const vName = (g.guideName || "Lead Guide").trim();
+        const alreadyInVendorPayments = vendorPayments.some((vp) => {
+          const vpDate = vp.departureDate ? new Date(vp.departureDate).toISOString().substring(0, 10) : "";
+          return (
+            vp.tripId === g.tripId &&
+            vpDate === dStr &&
+            vp.vendorName?.toLowerCase().trim() === vName.toLowerCase()
+          );
+        });
+        return !alreadyInVendorPayments;
+      })
+      .map((g) => {
+        const agreed = Number(g.agreedAmount || 0);
+        const advance = Number(g.advancePaid || 0);
+        const remaining = Math.max(0, agreed - advance);
+        const isPaid = g.paymentStatus === "PAID" || (advance >= agreed && agreed > 0);
 
-      return {
-        id: `gp-${g.id}`,
-        tenantId: g.tenantId,
-        tripId: g.tripId,
-        departureDate: g.departureDate,
-        vendorName: (g.guideName || "Lead Guide").trim(),
-        category: "Guides",
-        serviceDescription: `${g.assignmentType || "Trip Leader"} (${g.daysWorked || 1} Days)`,
-        agreedAmount: agreed,
-        advancePaid: advance,
-        remainingPayable: remaining,
-        paymentDate: g.departureDate || g.createdAt,
-        paymentMode: "BANK_TRANSFER",
-        status: isPaid ? "Paid" : advance > 0 ? "Advance Paid" : "Pending Approval",
-        approvalStatus: isPaid ? "APPROVED_FOUNDER" : "PENDING",
-        requiresFounderApproval: remaining > 50000,
-        collectionAccount: companyAcc,
-        trip: g.trip,
-        invoiceProof: null,
-        createdAt: g.createdAt,
-      };
-    });
+        return {
+          id: `gp-${g.id}`,
+          tenantId: g.tenantId,
+          tripId: g.tripId,
+          departureDate: g.departureDate,
+          vendorName: (g.guideName || "Lead Guide").trim(),
+          category: "Guides",
+          serviceDescription: `${g.assignmentType || "Trip Leader"} (${g.daysWorked || 1} Days)`,
+          agreedAmount: agreed,
+          advancePaid: advance,
+          remainingPayable: remaining,
+          paymentDate: g.departureDate || g.createdAt,
+          paymentMode: "BANK_TRANSFER",
+          status: isPaid ? "Paid" : advance > 0 ? "Advance Paid" : "Pending Approval",
+          approvalStatus: isPaid ? "APPROVED_FOUNDER" : "PENDING",
+          requiresFounderApproval: remaining > 50000,
+          collectionAccount: companyAcc,
+          trip: g.trip,
+          invoiceProof: null,
+          createdAt: g.createdAt,
+        };
+      });
 
     const allVendorDisbursements = [
       ...vendorPayments,
@@ -728,9 +767,270 @@ exports.getAllRecordedVendorPayments = async (req, res) => {
   }
 };
 
+async function resolveTargetAccountId(tenantId, paymentMode, collectionAccountId) {
+  if (
+    collectionAccountId &&
+    collectionAccountId !== "__someone_else__" &&
+    collectionAccountId !== "__trek_leader__" &&
+    collectionAccountId !== "__driver__" &&
+    collectionAccountId !== "__founder_personal__"
+  ) {
+    return collectionAccountId;
+  }
+  const mode = String(paymentMode || "").toUpperCase();
+  if (mode.includes("CASH")) {
+    const cashAcc = await prisma.paymentReceivingAccount.findFirst({
+      where: {
+        tenantId,
+        isActive: true,
+        OR: [
+          { accountType: "CASH" },
+          { accountName: { contains: "Cash", mode: "insensitive" } },
+        ],
+      },
+    });
+    if (cashAcc) return cashAcc.id;
+  } else if (mode.includes("UPI") || mode.includes("BANK") || mode.includes("NEFT")) {
+    const defaultAcc = await prisma.paymentReceivingAccount.findFirst({
+      where: {
+        tenantId,
+        isActive: true,
+        OR: [
+          { accountType: "COMPANY" },
+          { accountType: "INDIVIDUAL" },
+          { accountName: { contains: "Nikul", mode: "insensitive" } },
+        ],
+      },
+    });
+    if (defaultAcc) return defaultAcc.id;
+  }
+  return null;
+}
+
+async function syncOperationalVendorRecord(tenantId, tripId, depDate, vendorName, category, agreed, advance, targetId) {
+  try {
+    const remaining = Math.max(0, (agreed || 0) - (advance || 0));
+    const catLower = (category || "").toLowerCase();
+
+    // 1. Hotel booking sync
+    if (catLower.includes("hotel") || catLower.includes("stay") || catLower.includes("camp")) {
+      const hotelWhere = { tenantId };
+      if (tripId && tripId !== "default") hotelWhere.tripId = tripId;
+      if (depDate) hotelWhere.departureDate = depDate;
+
+      if (targetId && (targetId.startsWith("hb-") || targetId.length === 24 || targetId.length === 25)) {
+        const rawId = targetId.startsWith("hb-") ? targetId.replace("hb-", "") : targetId;
+        await prisma.opsHotelBooking.updateMany({
+          where: { id: rawId },
+          data: { advancePaid: advance, balanceAmount: remaining },
+        });
+      }
+      if (vendorName) {
+        await prisma.opsHotelBooking.updateMany({
+          where: { ...hotelWhere, hotelName: { equals: vendorName.trim(), mode: "insensitive" } },
+          data: { advancePaid: advance, balanceAmount: remaining },
+        });
+      }
+    }
+
+    // 2. Transport fleet sync
+    if (catLower.includes("transport") || catLower.includes("fleet") || catLower.includes("cab") || catLower.includes("bus")) {
+      const fleetWhere = { tenantId };
+      if (tripId && tripId !== "default") fleetWhere.tripId = tripId;
+      if (depDate) fleetWhere.departureDate = depDate;
+
+      if (targetId && (targetId.startsWith("fl-") || targetId.length === 24 || targetId.length === 25)) {
+        const rawId = targetId.startsWith("fl-") ? targetId.replace("fl-", "") : targetId;
+        await prisma.opsTransportFleet.updateMany({
+          where: { id: rawId },
+          data: { advancePaid: advance, balanceAmount: remaining },
+        });
+      }
+      if (vendorName) {
+        await prisma.opsTransportFleet.updateMany({
+          where: {
+            ...fleetWhere,
+            OR: [
+              { vendorName: { equals: vendorName.trim(), mode: "insensitive" } },
+              { driverName: { equals: vendorName.trim(), mode: "insensitive" } },
+              { notes: { contains: vendorName.trim(), mode: "insensitive" } },
+            ],
+          },
+          data: { advancePaid: advance, balanceAmount: remaining },
+        });
+      }
+    }
+
+    // 3. Guide payment sync
+    if (catLower.includes("guide") || catLower.includes("leader")) {
+      const guideWhere = { tenantId };
+      if (tripId && tripId !== "default") guideWhere.tripId = tripId;
+      if (depDate) guideWhere.departureDate = depDate;
+      const statusLabel = advance >= agreed && agreed > 0 ? "PAID" : advance > 0 ? "PARTIAL" : "PENDING";
+
+      if (targetId && (targetId.startsWith("gp-") || targetId.length === 24 || targetId.length === 25)) {
+        const rawId = targetId.startsWith("gp-") ? targetId.replace("gp-", "") : targetId;
+        await prisma.opsGuidePayment.updateMany({
+          where: { id: rawId },
+          data: { advancePaid: advance, balanceAmount: remaining, paymentStatus: statusLabel },
+        });
+      }
+      if (vendorName) {
+        await prisma.opsGuidePayment.updateMany({
+          where: { ...guideWhere, guideName: { equals: vendorName.trim(), mode: "insensitive" } },
+          data: { advancePaid: advance, balanceAmount: remaining, paymentStatus: statusLabel },
+        });
+      }
+    }
+
+    // 4. Departure Activity sync
+    if (catLower.includes("activit")) {
+      const actWhere = { tenantId };
+      if (tripId && tripId !== "default") actWhere.tripId = tripId;
+      if (depDate) actWhere.departureDate = depDate;
+
+      if (targetId && (targetId.startsWith("act-") || targetId.length === 24 || targetId.length === 25)) {
+        const rawId = targetId.startsWith("act-vendor-") ? targetId.replace("act-vendor-", "") : targetId;
+        await prisma.opsDepartureActivity.updateMany({
+          where: { id: rawId },
+          data: { actualCost: advance },
+        });
+      }
+      if (vendorName) {
+        await prisma.opsDepartureActivity.updateMany({
+          where: {
+            ...actWhere,
+            OR: [
+              { vendorName: { equals: vendorName.trim(), mode: "insensitive" } },
+              { name: { equals: vendorName.trim(), mode: "insensitive" } },
+            ],
+          },
+          data: { actualCost: advance },
+        });
+      }
+    }
+  } catch (syncErr) {
+    console.warn("syncOperationalVendorRecord warning:", syncErr.message);
+  }
+}
+
 exports.createVendorPayment = async (req, res) => {
   try {
-    const { tripId } = req.params;
+    const { tripId: rawTripId } = req.params;
+    const {
+      departureDate,
+      vendorName,
+      category = "Hotels",
+      serviceDescription,
+      agreedAmount,
+      advancePaid,
+      paymentDate,
+      paymentMode,
+      collectionAccountId,
+      transactionId,
+      invoiceProof,
+      status,
+      remarks,
+    } = req.body;
+    const tenantId = req.user?.tenantId || "default";
+
+    // Resolve trip ID if slug or shortName was passed
+    let tripId = rawTripId;
+    if (rawTripId) {
+      const trip = await prisma.trip.findFirst({
+        where: {
+          tenantId,
+          OR: [{ id: rawTripId }, { slug: rawTripId }, { shortName: rawTripId }],
+        },
+        select: { id: true },
+      });
+      if (trip) tripId = trip.id;
+    }
+
+    const depDate = normalizeDepartureDateIndia(departureDate);
+    const agreed = parseFloat(agreedAmount) || 0;
+    const advance = parseFloat(advancePaid) || 0;
+    const remaining = Math.max(0, agreed - advance);
+
+    const targetAccountId = await resolveTargetAccountId(tenantId, paymentMode, collectionAccountId);
+
+    // Check if an existing OpsVendorPayment matches this trip + departureDate + vendorName
+    let payment = null;
+    if (depDate && vendorName) {
+      payment = await prisma.opsVendorPayment.findFirst({
+        where: {
+          tenantId,
+          tripId,
+          departureDate: depDate,
+          vendorName: { equals: vendorName.trim(), mode: "insensitive" },
+        },
+      });
+    }
+
+    if (payment) {
+      payment = await prisma.opsVendorPayment.update({
+        where: { id: payment.id },
+        data: {
+          vendorName: vendorName ? vendorName.trim() : payment.vendorName,
+          category: category || payment.category,
+          serviceDescription: serviceDescription !== undefined ? serviceDescription : payment.serviceDescription,
+          agreedAmount: agreed > 0 ? agreed : payment.agreedAmount,
+          advancePaid: advance,
+          remainingPayable: remaining,
+          paymentDate: paymentDate ? new Date(paymentDate) : payment.paymentDate,
+          paymentMode: paymentMode || payment.paymentMode,
+          collectionAccountId: targetAccountId !== undefined ? targetAccountId : payment.collectionAccountId,
+          transactionId: transactionId || payment.transactionId,
+          invoiceProof: invoiceProof !== undefined ? invoiceProof : payment.invoiceProof,
+          status: status || (advance >= agreed && agreed > 0 ? "Paid" : advance > 0 ? "Advance Paid" : "Pending"),
+          remarks: remarks !== undefined ? remarks : payment.remarks,
+        },
+        include: {
+          collectionAccount: true,
+        },
+      });
+    } else {
+      payment = await prisma.opsVendorPayment.create({
+        data: {
+          tenantId,
+          tripId,
+          departureDate: depDate || new Date(),
+          vendorName: vendorName ? vendorName.trim() : "Vendor Partner",
+          category: category || "Hotels",
+          serviceDescription: serviceDescription || "Trip Service Invoice",
+          agreedAmount: agreed,
+          advancePaid: advance,
+          remainingPayable: remaining,
+          paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
+          paymentMode: paymentMode || "BANK_TRANSFER",
+          collectionAccountId: targetAccountId,
+          transactionId: transactionId || `TXN-${Date.now()}`,
+          invoiceProof: invoiceProof || "",
+          status: status || (advance >= agreed && agreed > 0 ? "Paid" : advance > 0 ? "Advance Paid" : "Pending"),
+          paidBy: req.user?.name || req.user?.email || "Operations",
+          remarks: remarks || "",
+        },
+        include: {
+          collectionAccount: true,
+        },
+      });
+    }
+
+    // Sync with operational models (Hotels, Transport, Guides, Activities)
+    await syncOperationalVendorRecord(tenantId, tripId, depDate, vendorName, category, agreed, advance, null);
+
+    return res.json({ success: true, data: payment });
+  } catch (err) {
+    console.error("createVendorPayment error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to create vendor payment" });
+  }
+};
+
+exports.updateVendorPayment = async (req, res) => {
+  try {
+    const { id, tripId: rawTripId } = req.params;
     const {
       departureDate,
       vendorName,
@@ -748,121 +1048,158 @@ exports.createVendorPayment = async (req, res) => {
     } = req.body;
     const tenantId = req.user?.tenantId || "default";
 
-    const depDate = normalizeDepartureDateIndia(departureDate);
-    const agreed = parseFloat(agreedAmount) || 0;
-    const advance = parseFloat(advancePaid) || 0;
-    const remaining = Math.max(0, agreed - advance);
-
-    const payment = await prisma.opsVendorPayment.create({
-      data: {
-        tenantId,
-        tripId,
-        departureDate: depDate,
-        vendorName,
-        category,
-        serviceDescription,
-        agreedAmount: agreed,
-        advancePaid: advance,
-        remainingPayable: remaining,
-        paymentDate: paymentDate ? new Date(paymentDate) : null,
-        paymentMode,
-        collectionAccountId: collectionAccountId || null,
-        transactionId,
-        invoiceProof,
-        status: status || "Not Paid",
-        paidBy: req.user?.name || req.user?.email || "Operations",
-        remarks,
-      },
-      include: {
-        collectionAccount: {
-          select: {
-            id: true,
-            accountName: true,
-            accountHolderName: true,
-            accountType: true,
-            bankName: true,
-            upiId: true,
-            accountNumber: true,
-            maskedAccountNumber: true,
-          },
+    // Resolve trip ID if slug or shortName was passed
+    let tripId = rawTripId;
+    if (rawTripId) {
+      const trip = await prisma.trip.findFirst({
+        where: {
+          tenantId,
+          OR: [{ id: rawTripId }, { slug: rawTripId }, { shortName: rawTripId }],
         },
-      },
-    });
-
-    return res.json({ success: true, data: payment });
-  } catch (err) {
-    console.error("createVendorPayment error:", err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to create vendor payment" });
-  }
-};
-
-exports.updateVendorPayment = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      vendorName,
-      category,
-      serviceDescription,
-      agreedAmount,
-      advancePaid,
-      paymentDate,
-      paymentMode,
-      collectionAccountId,
-      transactionId,
-      invoiceProof,
-      status,
-      remarks,
-    } = req.body;
-
-    const existing = await prisma.opsVendorPayment.findUnique({
-      where: { id },
-    });
-
-    if (!existing) {
-      return res
-        .status(444)
-        .json({ success: false, message: "Vendor payment not found" });
+        select: { id: true },
+      });
+      if (trip) tripId = trip.id;
     }
 
-    const agreed =
-      agreedAmount !== undefined
-        ? parseFloat(agreedAmount)
-        : existing.agreedAmount;
-    const advance =
-      advancePaid !== undefined
-        ? parseFloat(advancePaid)
-        : existing.advancePaid;
-    const remaining = Math.max(0, agreed - advance);
+    const depDate = departureDate ? normalizeDepartureDateIndia(departureDate) : null;
+    const agreed = agreedAmount !== undefined ? parseFloat(agreedAmount) || 0 : undefined;
+    const advance = advancePaid !== undefined ? parseFloat(advancePaid) || 0 : undefined;
+    const targetAccountId = await resolveTargetAccountId(tenantId, paymentMode, collectionAccountId);
 
-    const updated = await prisma.opsVendorPayment.update({
-      where: { id },
-      data: {
-        vendorName: vendorName || existing.vendorName,
-        category: category || existing.category,
-        serviceDescription:
-          serviceDescription !== undefined
-            ? serviceDescription
-            : existing.serviceDescription,
-        agreedAmount: agreed,
-        advancePaid: advance,
-        remainingPayable: remaining,
-        paymentDate: paymentDate ? new Date(paymentDate) : existing.paymentDate,
-        paymentMode:
-          paymentMode !== undefined ? paymentMode : existing.paymentMode,
-        collectionAccountId:
-          collectionAccountId !== undefined
-            ? collectionAccountId || null
-            : existing.collectionAccountId,
-        transactionId:
-          transactionId !== undefined ? transactionId : existing.transactionId,
-        invoiceProof:
-          invoiceProof !== undefined ? invoiceProof : existing.invoiceProof,
-        status: status !== undefined ? status : existing.status,
-        remarks: remarks !== undefined ? remarks : existing.remarks,
-      },
-    });
+    let existing = null;
+    // 1. Try finding by ID directly in OpsVendorPayment
+    if (
+      id &&
+      !id.startsWith("hb-") &&
+      !id.startsWith("fl-") &&
+      !id.startsWith("gp-") &&
+      !id.startsWith("auto-") &&
+      !id.startsWith("act-vendor-") &&
+      !id.startsWith("VND-")
+    ) {
+      existing = await prisma.opsVendorPayment.findUnique({
+        where: { id },
+      });
+    }
+
+    // 2. If not found by ID, look up by tripId, departureDate, vendorName
+    if (!existing && vendorName) {
+      const searchWhere = {
+        tenantId,
+        vendorName: { equals: vendorName.trim(), mode: "insensitive" },
+      };
+      if (tripId) searchWhere.tripId = tripId;
+      if (depDate) searchWhere.departureDate = depDate;
+
+      existing = await prisma.opsVendorPayment.findFirst({
+        where: searchWhere,
+      });
+    }
+
+    let updated = null;
+    if (existing) {
+      const finalAgreed = agreed !== undefined ? agreed : existing.agreedAmount;
+      const finalAdvance = advance !== undefined ? advance : existing.advancePaid;
+      const remaining = Math.max(0, finalAgreed - finalAdvance);
+      const computedStatus =
+        status !== undefined
+          ? status
+          : finalAdvance >= finalAgreed && finalAgreed > 0
+            ? "Paid"
+            : finalAdvance > 0
+              ? "Advance Paid"
+              : "Pending";
+
+      updated = await prisma.opsVendorPayment.update({
+        where: { id: existing.id },
+        data: {
+          vendorName: vendorName || existing.vendorName,
+          category: category || existing.category,
+          serviceDescription:
+            serviceDescription !== undefined
+              ? serviceDescription
+              : existing.serviceDescription,
+          agreedAmount: finalAgreed,
+          advancePaid: finalAdvance,
+          remainingPayable: remaining,
+          paymentDate: paymentDate ? new Date(paymentDate) : existing.paymentDate,
+          paymentMode:
+            paymentMode !== undefined ? paymentMode : existing.paymentMode,
+          collectionAccountId:
+            targetAccountId !== undefined
+              ? targetAccountId
+              : existing.collectionAccountId,
+          transactionId:
+            transactionId !== undefined ? transactionId : existing.transactionId,
+          invoiceProof:
+            invoiceProof !== undefined ? invoiceProof : existing.invoiceProof,
+          status: computedStatus,
+          remarks: remarks !== undefined ? remarks : existing.remarks,
+        },
+        include: {
+          collectionAccount: true,
+        },
+      });
+
+      await syncOperationalVendorRecord(
+        tenantId,
+        tripId || existing.tripId,
+        depDate || existing.departureDate,
+        vendorName || existing.vendorName,
+        category || existing.category,
+        finalAgreed,
+        finalAdvance,
+        id,
+      );
+    } else {
+      // Create new OpsVendorPayment record if it didn't exist
+      const finalAgreed = agreed || 0;
+      const finalAdvance = advance || 0;
+      const remaining = Math.max(0, finalAgreed - finalAdvance);
+      const computedStatus =
+        status ||
+        (finalAdvance >= finalAgreed && finalAgreed > 0
+          ? "Paid"
+          : finalAdvance > 0
+            ? "Advance Paid"
+            : "Pending");
+
+      updated = await prisma.opsVendorPayment.create({
+        data: {
+          tenantId,
+          tripId: tripId || "default",
+          departureDate: depDate || new Date(),
+          vendorName: vendorName ? vendorName.trim() : "Vendor Partner",
+          category: category || "Hotels",
+          serviceDescription: serviceDescription || "Operational Service",
+          agreedAmount: finalAgreed,
+          advancePaid: finalAdvance,
+          remainingPayable: remaining,
+          paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
+          paymentMode: paymentMode || "BANK_TRANSFER",
+          collectionAccountId: targetAccountId,
+          transactionId: transactionId || `TXN-${Date.now()}`,
+          invoiceProof: invoiceProof || "",
+          status: computedStatus,
+          paidBy: req.user?.name || req.user?.email || "Operations",
+          remarks: remarks || "",
+        },
+        include: {
+          collectionAccount: true,
+        },
+      });
+
+      await syncOperationalVendorRecord(
+        tenantId,
+        tripId || "default",
+        depDate,
+        vendorName,
+        category,
+        finalAgreed,
+        finalAdvance,
+        id,
+      );
+    }
 
     return res.json({ success: true, data: updated });
   } catch (err) {
