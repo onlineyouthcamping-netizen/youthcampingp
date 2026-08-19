@@ -746,7 +746,10 @@ export default function CommunityTrips({
                   )}
 
                   {activeRotatingWords.length > 0 && (
-                    <span className="inline-flex relative overflow-hidden h-[38px] sm:h-[56px] md:h-[72px] items-center whitespace-nowrap pr-2 sm:pr-3">
+                    <span
+                      className="inline-flex relative h-[38px] sm:h-[56px] md:h-[72px] items-center whitespace-nowrap pr-2 sm:pr-3"
+                      style={{ overflow: "hidden", minWidth: "max-content" }}
+                    >
                       <AnimatePresence initial={false}>
                         <motion.span
                           key={
@@ -761,7 +764,7 @@ export default function CommunityTrips({
                             duration: 0.45,
                             ease: [0.25, 0.1, 0.25, 1.0],
                           }}
-                          className="font-black inline-block whitespace-nowrap"
+                          className="font-black inline-block whitespace-nowrap absolute"
                           style={{ color: accentColor }}
                         >
                           {
@@ -771,6 +774,10 @@ export default function CommunityTrips({
                           }
                         </motion.span>
                       </AnimatePresence>
+                      {/* Invisible spacer sized to the longest word to reserve width */}
+                      <span className="font-black whitespace-nowrap invisible pointer-events-none select-none" aria-hidden="true">
+                        {activeRotatingWords.reduce((a, b) => a.length >= b.length ? a : b, "")}
+                      </span>
                     </span>
                   )}
                 </span>
