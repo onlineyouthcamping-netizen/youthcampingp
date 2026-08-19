@@ -53,11 +53,6 @@ function DestinationRow({ location, trips }: { location: string; trips: Trip[] }
       {/* Section Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          {bgImg && (
-            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 hidden sm:block">
-              <img src={bgImg} alt={location} className="w-full h-full object-cover" />
-            </div>
-          )}
           <div className="flex items-baseline gap-2 flex-wrap">
             <h2 className="text-lg sm:text-xl font-black text-[#0B1528] font-montserrat tracking-tight leading-tight">
               {location}
