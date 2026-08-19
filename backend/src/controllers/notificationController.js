@@ -71,50 +71,54 @@ exports.getNotifications = async (req, res, next) => {
 
     // Check pending client payments needing verification
     try {
-      const pendingPayments = await prisma.opsClientPayment.findMany({
-        where: {
-          tenantId,
-          status: { in: ["Pending", "PENDING", "Unverified"] },
-        },
-        take: 5,
-        orderBy: { createdAt: "desc" },
-      });
-
-      pendingPayments.forEach((p) => {
-        liveAlerts.push({
-          id: `live-pay-${p.id}`,
-          title: "💰 Payment Verification",
-          message: `₹${Number(p.amount || 0).toLocaleString("en-IN")} via ${p.paymentMode || "Online"} for Booking ${p.bookingId || "—"} awaiting verification`,
-          link: "/admin/approval-center/incoming",
-          type: "PAYMENT",
-          isRead: false,
-          createdAt: p.createdAt,
+      if (prisma.opsClientPayment) {
+        const pendingPayments = await prisma.opsClientPayment.findMany({
+          where: {
+            tenantId,
+            status: { in: ["Pending", "PENDING", "Unverified"] },
+          },
+          take: 5,
+          orderBy: { createdAt: "desc" },
         });
-      });
+
+        pendingPayments.forEach((p) => {
+          liveAlerts.push({
+            id: `live-pay-${p.id}`,
+            title: "💰 Payment Verification",
+            message: `₹${Number(p.amount || 0).toLocaleString("en-IN")} via ${p.paymentMode || "Online"} for Booking ${p.bookingId || "—"} awaiting verification`,
+            link: "/admin/approval-center/incoming",
+            type: "PAYMENT",
+            isRead: false,
+            createdAt: p.createdAt,
+          });
+        });
+      }
     } catch (err) {
       // safe fallback
     }
 
     // Check pending train tickets
     try {
-      const pendingTickets = await prisma.trainTicketRequest.findMany({
-        where: { tenantId, status: { in: ["PENDING", "UNDER_REVIEW"] } },
-        include: { booking: { select: { bookingId: true, customerName: true } } },
-        take: 5,
-        orderBy: { createdAt: "desc" },
-      });
-
-      pendingTickets.forEach((t) => {
-        liveAlerts.push({
-          id: `live-ticket-${t.id}`,
-          title: "🎫 Train Ticket Queue",
-          message: `${t.numberOfPassengers || 1} Pax for ${t.booking?.customerName || t.trainNumber || "Booking"} awaiting PNR assignment`,
-          link: "/admin/travel-desk/train-tickets",
-          type: "TICKETING",
-          isRead: false,
-          createdAt: t.createdAt,
+      if (prisma.trainTicketRequest) {
+        const pendingTickets = await prisma.trainTicketRequest.findMany({
+          where: { tenantId, status: { in: ["PENDING", "UNDER_REVIEW"] } },
+          include: { booking: { select: { bookingId: true, customerName: true } } },
+          take: 5,
+          orderBy: { createdAt: "desc" },
         });
-      });
+
+        pendingTickets.forEach((t) => {
+          liveAlerts.push({
+            id: `live-ticket-${t.id}`,
+            title: "🎫 Train Ticket Queue",
+            message: `${t.numberOfPassengers || 1} Pax for ${t.booking?.customerName || t.trainNumber || "Booking"} awaiting PNR assignment`,
+            link: "/admin/travel-desk/train-tickets",
+            type: "TICKETING",
+            isRead: false,
+            createdAt: t.createdAt,
+          });
+        });
+      }
     } catch (err) {
       // safe fallback
     }
