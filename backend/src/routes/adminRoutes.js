@@ -109,21 +109,30 @@ router.put("/users/:id/reset-password", protect, resetUserPassword);
 router.delete("/users/:id", protect, deleteUser);
 router.delete("/staff-profiles/:id", protect, deleteUser);
 
-// Hotels & Accommodations Master Directory
-router.get("/hotels", async (req, res) => {
+// Hotels & Accommodations Master Directory (OpsVendor accommodation types)
+const ACCOMMODATION_VENDOR_TYPES = [
+  "HOTEL",
+  "HOMESTAY",
+  "CAMP",
+  "RESORT",
+  "HOSTEL",
+  "GUEST_HOUSE",
+  "VILLA",
+  "COTTAGE",
+  "APARTMENT",
+  "DORMITORY",
+  "LUXURY_TENT",
+  "CAMPING",
+];
+
+router.get("/hotels", protect, async (req, res) => {
   try {
     const { prisma } = require("../lib/prisma");
     const { city } = req.query;
-    const vendors = await prisma.vendor.findMany({
+    const vendors = await prisma.opsVendor.findMany({
       where: {
-        OR: [
-          { category: "ACCOMMODATION" },
-          { category: "HOTEL" },
-          { category: "RESORT" },
-          { category: "CAMPSITE" },
-          { category: "HOMESTAY" },
-          { accommodationType: { not: null } },
-        ],
+        isActive: true,
+        type: { in: ACCOMMODATION_VENDOR_TYPES },
         ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
       },
       include: {
@@ -136,11 +145,11 @@ router.get("/hotels", async (req, res) => {
       id: v.id,
       name: v.name,
       city: v.city || v.location || "Manali",
-      category: v.accommodationType || v.category || "Hotel",
-      rating: v.rating || 4,
+      category: v.accommodationType || v.type || "Hotel",
+      rating: v.rating || v.starRating || 4,
       totalRooms: v.totalRooms || 20,
-      contactPerson: v.contactPerson || v.contactName || "",
-      phone: v.phone || v.contactPhone || "",
+      contactPerson: v.contactPerson || v.primaryContactName || "",
+      phone: v.phone || v.receptionPhone || v.whatsappNumber || "",
       rooms: v.vendorRooms || [],
       roomRates: v.vendorRooms || [],
     }));
@@ -148,7 +157,9 @@ router.get("/hotels", async (req, res) => {
     return res.json({ success: true, data: formatted });
   } catch (err) {
     console.error("GET /api/admin/hotels error:", err);
-    return res.json({ success: true, data: [] });
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch hotels" });
   }
 });
 

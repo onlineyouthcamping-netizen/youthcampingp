@@ -347,8 +347,11 @@ async function verifyAndCalculateBooking(trip, body, isAdmin, tx = prisma) {
     // Generate snapshot item rows for this passenger
     const pName =
       p.name || (index === 0 && (body.name || body.fullName)) || "Lead";
+    const tripDestinationLabel = String(
+      trip.location || trip.departureCity || trip.title || "Destination",
+    ).trim();
     const routeStr = selectedCityObj.cityName
-      ? ` (${selectedCityObj.cityName}→Himachal)`
+      ? ` (${selectedCityObj.cityName}→${tripDestinationLabel})`
       : "";
     bookingItemsSnapshot.push({
       id: `transport-${p.id || index}-${index}`,
@@ -1854,6 +1857,150 @@ exports.updateBooking = async (req, res, next) => {
     }
 
     res.json({ success: true, message: "Booking updated", data: booking });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/bookings/:id/departure-date
+ * Move a single booking (and its passenger allocations) to a new departure date.
+ */
+exports.transferBookingDeparture = async (req, res, next) => {
+  try {
+    const { departureDate, reason } = req.body || {};
+    const trimmedReason = String(reason || "").trim();
+    if (!departureDate) {
+      return res
+        .status(400)
+        .json({ success: false, message: "departureDate is required" });
+    }
+    if (!trimmedReason) {
+      return res
+        .status(400)
+        .json({ success: false, message: "reason is required" });
+    }
+
+    const tenantId = req.user?.tenantId || "default";
+    let booking = await prisma.booking.findFirst({
+      where: { id: req.params.id, tenantId },
+    });
+    if (!booking) {
+      booking = await prisma.booking.findFirst({
+        where: { id: req.params.id },
+      });
+    }
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    const { toDateKey, normalizeUtcDate, resolveOrCreateDeparture } =
+      require("../services/departureService");
+
+    const prevKey = toDateKey(booking.departureDate);
+    const nextKey = toDateKey(departureDate);
+    if (!nextKey) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid departureDate" });
+    }
+    if (prevKey === nextKey) {
+      return res.json({
+        success: true,
+        message: "Departure date unchanged",
+        data: booking,
+      });
+    }
+
+    const oldDate = prevKey ? normalizeUtcDate(prevKey) : null;
+    const newDate = normalizeUtcDate(nextKey);
+
+    let updated;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        const row = await tx.booking.update({
+          where: { id: booking.id },
+          data: { departureDate: newDate },
+        });
+
+        if (booking.tripId && oldDate) {
+          await tx.opsRoomAllocation.updateMany({
+            where: {
+              tripId: booking.tripId,
+              departureDate: oldDate,
+              bookingId: booking.bookingId,
+            },
+            data: { departureDate: newDate },
+          });
+          await tx.opsVehicleAllocation.updateMany({
+            where: {
+              tripId: booking.tripId,
+              departureDate: oldDate,
+              bookingId: booking.bookingId,
+            },
+            data: { departureDate: newDate },
+          });
+        }
+
+        return row;
+      });
+    } catch (err) {
+      if (err.code === "P2002") {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Passenger room/vehicle allocation already exists on the target departure date. Clear conflicting allocations and retry.",
+        });
+      }
+      throw err;
+    }
+
+    if (booking.tripId) {
+      try {
+        await resolveOrCreateDeparture(
+          booking.tripId,
+          nextKey,
+          tenantId,
+        );
+      } catch (depErr) {
+        console.warn(
+          "[transferBookingDeparture] resolveOrCreateDeparture:",
+          depErr.message,
+        );
+      }
+    }
+
+    try {
+      await logAction({
+        tenantId,
+        actorUserId: req.user?.id || "system",
+        action: "booking_departure_transfer",
+        entityType: "booking",
+        entityId: booking.id,
+        beforeData: {
+          departureDate: prevKey,
+          bookingId: booking.bookingId,
+        },
+        afterData: {
+          departureDate: nextKey,
+          reason: trimmedReason,
+        },
+        ipAddress: req.ip || null,
+      });
+    } catch (logErr) {
+      console.error(
+        "Non-critical logging error in transferBookingDeparture:",
+        logErr,
+      );
+    }
+
+    res.json({
+      success: true,
+      message: "Departure date updated",
+      data: updated,
+    });
   } catch (error) {
     next(error);
   }

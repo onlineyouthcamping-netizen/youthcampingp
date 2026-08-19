@@ -19,60 +19,6 @@ interface TripReviewsProps {
   reviews?: Review[];
 }
 
-const MOCK_HOMEPAGE_REVIEWS = [
-  {
-    id: "gr1",
-    name: "Kathan Patel",
-    badge: "Joined Group Trip",
-    tripName: "Spiti Valley Bike Trip",
-    date: "1 month ago",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
-    comment:
-      "I travelled with YouthCamping Spiti Valley Bike Trip this June first week. My experience was very thrilling with them. The management was super awesome. Marshal Abhinav and Dhruvil sir were extremely supportive throughout!",
-    rating: 5,
-    photos: [
-      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80",
-      "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=600&q=80",
-      "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=600&q=80",
-    ],
-  },
-  {
-    id: "gr2",
-    name: "Bhumit Rabadiya",
-    badge: "Joined Group Trip",
-    tripName: "Thailand Explorer Exp",
-    date: "2 weeks ago",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
-    comment:
-      "Thank you for crafting a trip that perfectly matched our style and interests. Your attention to detail made all the difference! Will definitely book another trip soon.",
-    rating: 5,
-    photos: [
-      "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=80",
-      "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&q=80",
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80",
-    ],
-  },
-  {
-    id: "gr3",
-    name: "Janak Chauhan",
-    badge: "Joined Group Trip",
-    tripName: "Hampta Pass Trek",
-    date: "3 weeks ago",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
-    comment:
-      "Just few weeks back I took the trip to Spiti Valley with YouthCamping and believe me I had an amazing expedition of a lifetime. The captains were top class!",
-    rating: 5,
-    photos: [
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-      "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=600&q=80",
-      "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&q=80",
-    ],
-  },
-];
-
 export default function TripReviews({ reviews }: TripReviewsProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [selectedReview, setSelectedReview] = useState<any | null>(null);
@@ -98,21 +44,12 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
 
   const displayList =
     reviews && reviews.length > 0
-      ? reviews.map((r: any, idx: number) => {
-          const fallback =
-            MOCK_HOMEPAGE_REVIEWS[idx % MOCK_HOMEPAGE_REVIEWS.length];
-          const coverPhotos =
-            r.photos && r.photos.length >= 2
-              ? r.photos
-              : r.photo
-                ? [r.photo, fallback.photos[1], fallback.photos[2]]
-                : fallback.photos;
-
-          return {
+      ? reviews
+          .map((r: any, idx: number) => ({
             id: r._id || r.id || `r-${idx}`,
-            name: r.author || r.userName || fallback.name,
-            badge: r.tripType || fallback.badge,
-            tripName: r.tripName || r.trip || r.city || fallback.tripName,
+            name: r.author || r.userName || r.name || "",
+            badge: r.tripType || "Joined Group Trip",
+            tripName: r.tripName || r.trip || r.city || "",
             date:
               r.date ||
               (r.createdAt
@@ -120,13 +57,22 @@ export default function TripReviews({ reviews }: TripReviewsProps) {
                     month: "short",
                     day: "numeric",
                   })
-                : fallback.date),
-            avatar: r.avatar || r.userImage || fallback.avatar,
-            comment: r.text || r.comment || fallback.comment,
+                : ""),
+            avatar: r.avatar || r.userImage || "",
+            comment: r.text || r.comment || "",
             rating: r.rating || 5,
-            photos: r.images && r.images.length > 0 ? r.images : coverPhotos,
-          };
-        })
+            photos:
+              r.images && r.images.length > 0
+                ? r.images
+                : r.photos && r.photos.length > 0
+                  ? r.photos
+                  : r.photo
+                    ? [r.photo]
+                    : [],
+          }))
+          .filter(
+            (r) => r.comment.trim().length > 0 && r.name.trim().length > 0,
+          )
       : [];
 
   return (

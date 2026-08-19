@@ -89,11 +89,11 @@ export default function RecentPhotosSection({
   const displayPhotos = rawPhotos
     .map((p: any, idx: number) => ({
       id: p.id || `photo-${idx}`,
-      url: normalizeImageUrl(p.url || p.image || p.src || ""),
+      url: normalizeImageUrl(p.url || p.image || p.src || "") ?? "",
       caption: p.caption || p.title || "",
       location: p.location || "",
     }))
-    .filter((p) => Boolean(p.url));
+    .filter((p): p is RecentPhoto => Boolean(p.url));
 
   const basePhotos = displayPhotos;
 

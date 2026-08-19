@@ -1,10 +1,6 @@
 const express = require("express");
 const router = express.Router();
 
-// Departure hotel-confirmation + readiness dashboard (no auth — preserved from
-// departureOperationsRoutes; mounted here before authenticate middleware).
-router.use(require("./departureOperationsRoutes"));
-
 const {
   getVendors,
   createVendor,
@@ -69,6 +65,7 @@ const {
 const { authenticate, requirePermission } = require("../middleware/auth");
 
 router.use(authenticate);
+router.use(require("./departureOperationsRoutes"));
 
 // Directory
 router.get("/vendors", requirePermission("ops.view"), getVendors);

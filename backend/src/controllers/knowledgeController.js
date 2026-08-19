@@ -226,14 +226,25 @@ exports.searchKnowledge = async (req, res, next) => {
         },
         take: 5,
       }),
-      prisma.vendor.findMany({
+      prisma.opsVendor.findMany({
         where: {
+          isActive: true,
           OR: [
             { name: { contains: q, mode: "insensitive" } },
-            { type: { contains: q, mode: "insensitive" } },
+            { city: { contains: q, mode: "insensitive" } },
+            { location: { contains: q, mode: "insensitive" } },
+            { accommodationType: { contains: q, mode: "insensitive" } },
           ],
         },
         take: 5,
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          city: true,
+          location: true,
+          phone: true,
+        },
       }),
     ]);
 

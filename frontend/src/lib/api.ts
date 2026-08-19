@@ -575,7 +575,7 @@ export async function fetchPageBySlug(
       `${API_BASE_URL}/page-builder/public/${slug}`,
       init ?? publicRevalidate(60),
     );
-    if (!res.ok) return null;
+    if (!res || !res.ok) return null;
     const json = await res.json();
 
     if (json.success && json.data) {

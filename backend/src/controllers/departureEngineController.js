@@ -127,6 +127,52 @@ exports.getReadiness = async (req, res, next) => {
 };
 
 /**
+ * PUT /api/departures/reschedule
+ * Body: { tripId, oldDate, newDate, reason, dryRun?, expectedDepartureUpdatedAt? }
+ */
+exports.rescheduleDeparture = async (req, res, next) => {
+  try {
+    const {
+      tripId,
+      oldDate,
+      newDate,
+      reason,
+      dryRun = false,
+      expectedDepartureUpdatedAt,
+    } = req.body || {};
+
+    const result = await departureService.rescheduleDeparture({
+      tripId,
+      oldDate,
+      newDate,
+      reason,
+      dryRun: Boolean(dryRun),
+      expectedDepartureUpdatedAt,
+      actorId: req.user?.id || req.user?.adminId,
+      tenantId: req.user?.tenantId || "default",
+    });
+
+    res.json({
+      success: true,
+      message: dryRun
+        ? "Reschedule preview generated"
+        : `Departure rescheduled to ${result.newDate}`,
+      data: result,
+    });
+  } catch (error) {
+    const status = error.statusCode || 500;
+    if (status >= 400 && status < 500) {
+      return res.status(status).json({
+        success: false,
+        code: error.code || "RESCHEDULE_FAILED",
+        message: error.message,
+      });
+    }
+    next(error);
+  }
+};
+
+/**
  * GET /api/departure-engine/:tripId/:date/passenger-stats
  */
 exports.getPassengerStatistics = async (req, res, next) => {

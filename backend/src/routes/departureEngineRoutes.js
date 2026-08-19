@@ -21,6 +21,13 @@ router.put(
   departureEngineCtrl.updateStatus
 );
 
+router.put(
+  "/reschedule",
+  authenticate,
+  requirePermission("departures.edit"),
+  departureEngineCtrl.rescheduleDeparture
+);
+
 // Departure Authoritative Readiness
 router.get(
   "/readiness",

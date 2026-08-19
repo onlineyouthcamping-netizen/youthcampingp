@@ -102,15 +102,23 @@ for (const variableName of ["DATABASE_URL", "DIRECT_URL"]) {
   }
 }
 
-// Sanitize & Fallback JWT_SECRET
+// Sanitize JWT_SECRET — dev-only fallback; production must set a strong secret
 if (process.env.JWT_SECRET) {
   process.env.JWT_SECRET = String(process.env.JWT_SECRET)
     .replace(/^["'\\]+|["'\\]+$/g, "")
     .trim();
 }
+const DEV_JWT_FALLBACK =
+  "yc_super_secure_production_jwt_secret_key_2026_default_fallback_hash";
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  process.env.JWT_SECRET =
-    "yc_super_secure_production_jwt_secret_key_2026_default_fallback_hash";
+  if (nodeEnv === "production") {
+    console.error(
+      "\x1b[31mFATAL:\x1b[0m JWT_SECRET must be set to a strong value (32+ chars) in production.",
+    );
+    process.exit(1);
+  }
+  process.env.JWT_SECRET = DEV_JWT_FALLBACK;
+  failStartup("JWT_SECRET missing or weak — using dev-only fallback.");
 }
 
 module.exports = {

@@ -477,14 +477,62 @@ exports.getTicketingVerificationQueue = async (req, res) => {
       }),
     ]);
 
+    const bookingIds = requests.map((r) => r.bookingId).filter(Boolean);
+    const issuedTickets =
+      bookingIds.length > 0
+        ? await prisma.trainTicket.findMany({
+            where: { bookingId: { in: bookingIds } },
+            select: {
+              bookingId: true,
+              ticketAmount: true,
+              expectedTicketAmount: true,
+              varianceAmount: true,
+            },
+          })
+        : [];
+    const ticketsByBooking = issuedTickets.reduce((acc, ticket) => {
+      if (!acc[ticket.bookingId]) acc[ticket.bookingId] = [];
+      acc[ticket.bookingId].push(ticket);
+      return acc;
+    }, {});
+
     const queue = requests.map((reqItem) => {
       const paxCount = reqItem.travellers?.length || 1;
       const estimatedAmount = Number(reqItem.estimatedAmount || 0);
-      const baseFarePerPax = paxCount > 0 ? Math.round(estimatedAmount / paxCount) : estimatedAmount;
-      const actualTicketCost = estimatedAmount; // or from IRCTC confirmation
-      const packageAllowance = Math.round(actualTicketCost * 1.15); // standard package price component
+      const bookingTickets = ticketsByBooking[reqItem.bookingId] || [];
+      const actualTicketCost =
+        bookingTickets.length > 0
+          ? bookingTickets.reduce(
+              (sum, t) => sum + Number(t.ticketAmount || 0),
+              0,
+            )
+          : estimatedAmount;
+      const expectedTicketCost =
+        bookingTickets.length > 0
+          ? bookingTickets.reduce(
+              (sum, t) =>
+                sum +
+                Number(
+                  t.expectedTicketAmount != null
+                    ? t.expectedTicketAmount
+                    : t.ticketAmount || 0,
+                ),
+              0,
+            )
+          : estimatedAmount;
+      const baseFarePerPax =
+        paxCount > 0
+          ? Math.round(expectedTicketCost / paxCount)
+          : expectedTicketCost;
+      const packageAllowance = Math.round(expectedTicketCost * 1.15);
       const ticketingMargin = packageAllowance - actualTicketCost;
-      const variance = 0; // difference expected vs actual
+      const variance =
+        bookingTickets.length > 0
+          ? bookingTickets.reduce(
+              (sum, t) => sum + Number(t.varianceAmount || 0),
+              0,
+            )
+          : Math.round(actualTicketCost - expectedTicketCost);
 
       return {
         id: reqItem.id,

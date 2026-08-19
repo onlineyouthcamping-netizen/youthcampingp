@@ -30,6 +30,7 @@ const {
   deletePassengerDocument,
   cancelBookingWithRefund,
   updateBookingStatus,
+  transferBookingDeparture,
 } = require("../controllers/bookingController");
 const documentUpload = require("../middleware/documentUpload");
 const {
@@ -142,6 +143,13 @@ router.put(
   requirePermission("bookings.approve"),
   enforceOwnership("booking"),
   confirmBooking,
+);
+router.put(
+  "/:id/departure-date",
+  authenticate,
+  requirePermission("bookings.edit"),
+  enforceOwnership("booking"),
+  transferBookingDeparture,
 );
 router.put(
   "/:id",

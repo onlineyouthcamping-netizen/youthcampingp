@@ -329,7 +329,10 @@ export interface DayItinerary {
   description: string;
   location?: string;
   activities?: string[];
-  photos: string[];
+  photos?: string[];
+  /** Legacy single-image fields from older quotation payloads */
+  image?: string;
+  photo?: string;
   meals?: string;
   stay?: string;
 }

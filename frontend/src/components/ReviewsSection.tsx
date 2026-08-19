@@ -27,77 +27,6 @@ interface GoogleReviewItem {
   photos?: string[];
 }
 
-const MOCK_GOOGLE_REVIEWS: GoogleReviewItem[] = [
-  {
-    id: "gr1",
-    name: "kathan patel",
-    badge: "Joined Group Trip",
-    tripName: "Spiti Valley Bike Trip",
-    date: "1 month ago",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
-    comment:
-      "I travelled with YouthCamping Spiti Valley Bike Trip this June first week. My experience was very thrilling with them. The management was super awesome. Marshal Abhinav and Dhruvil sir were extremely supportive throughout!",
-    rating: 5,
-    photos: [
-      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80", // Tall photo left
-      "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=600&q=80", // Top right photo
-      "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=600&q=80", // Bottom right photo
-    ],
-  },
-  {
-    id: "gr2",
-    name: "Bhumit Rabadiya",
-    badge: "Joined Group Trip",
-    tripName: "Thailand Explorer Expedition",
-    date: "2 weeks ago",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
-    comment:
-      "Thank you for crafting a trip that perfectly matched our style and interests. Your attention to detail made all the difference! Will definitely book another trip soon.",
-    rating: 5,
-    photos: [
-      "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=80",
-      "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&q=80",
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80",
-    ],
-  },
-  {
-    id: "gr3",
-    name: "Janak Chauhan",
-    badge: "Joined Group Trip",
-    tripName: "Hampta Pass Trek",
-    date: "3 weeks ago",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
-    comment:
-      "Just few weeks back I took the trip to Spiti Valley with YouthCamping and believe me I had an amazing expedition of a lifetime. The captains were top class!",
-    rating: 5,
-    photos: [
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-      "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=600&q=80",
-      "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&q=80",
-    ],
-  },
-  {
-    id: "gr4",
-    name: "Utsav Nathvani",
-    badge: "Joined Group Trip",
-    tripName: "Kedarkantha Winter Trek",
-    date: "1 month ago",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
-    comment:
-      "It won't be wrong to say YouthCamping is synonymous with great experiences. And it also won't be wrong to say that you can trust them blindly!",
-    rating: 5,
-    photos: [
-      "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80",
-      "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&q=80",
-      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&q=80",
-    ],
-  },
-];
-
 interface ReviewsSectionProps {
   reviews?: any[];
   title?: string;
@@ -123,28 +52,29 @@ export default function ReviewsSection({
 
   const apiMappedReviews: GoogleReviewItem[] =
     reviews && reviews.length > 0
-      ? reviews.map((r: any, idx: number) => ({
-          id: r._id || r.id || `gr-${idx}`,
-          name: r.userName || r.name || MOCK_GOOGLE_REVIEWS[idx % 4].name,
-          badge: r.tripType || r.badge || "Joined Group Trip",
-          tripName:
-            r.tripName || r.city || MOCK_GOOGLE_REVIEWS[idx % 4].tripName,
-          date: r.createdAt
-            ? new Date(r.createdAt).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })
-            : MOCK_GOOGLE_REVIEWS[idx % 4].date,
-          avatar: r.userImage || MOCK_GOOGLE_REVIEWS[idx % 4].avatar,
-          comment: r.comment || MOCK_GOOGLE_REVIEWS[idx % 4].comment,
-          rating: r.rating || 5,
-          photos:
-            r.photos && r.photos.length > 0
-              ? r.photos
-              : r.photo
-                ? [r.photo]
-                : MOCK_GOOGLE_REVIEWS[idx % 4].photos,
-        }))
+      ? reviews
+          .map((r: any, idx: number) => ({
+            id: r._id || r.id || `gr-${idx}`,
+            name: r.userName || r.name || "",
+            badge: r.tripType || r.badge || "Joined Group Trip",
+            tripName: r.tripName || r.city || "",
+            date: r.createdAt
+              ? new Date(r.createdAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })
+              : r.date || "",
+            avatar: r.userImage || r.avatar || "",
+            comment: r.comment || r.text || "",
+            rating: r.rating || 5,
+            photos:
+              r.photos && r.photos.length > 0
+                ? r.photos
+                : r.photo
+                  ? [r.photo]
+                  : [],
+          }))
+          .filter((r) => r.comment.trim().length > 0 && r.name.trim().length > 0)
       : [];
 
   const displayReviews: GoogleReviewItem[] = apiMappedReviews;

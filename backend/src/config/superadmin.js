@@ -28,14 +28,10 @@ const isProtectedSuperadminEmail = (email) => {
 
 /**
  * Identity-level guard used by the founder-only Staff Profiles module.
- * Matches the protected email exactly (legacy behavior also matched the
- * name "hemal" — kept for backward compatibility with pre-existing admins).
+ * Matches the protected superadmin email list only.
  */
-const isProtectedSuperadminIdentity = ({ email, name } = {}) => {
-  if (isProtectedSuperadminEmail(email)) return true;
-  const nameStr = String(name || "").toLowerCase().trim();
-  return nameStr.includes("hemal");
-};
+const isProtectedSuperadminIdentity = ({ email } = {}) =>
+  isProtectedSuperadminEmail(email);
 
 module.exports = {
   getSuperadminEmails,

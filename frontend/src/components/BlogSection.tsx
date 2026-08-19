@@ -18,53 +18,6 @@ interface BlogCardItem {
   readTime: string;
 }
 
-const MOCK_STORIES: BlogCardItem[] = [
-  {
-    id: "b1",
-    title: "The Winter Beauty of Kashmir",
-    slug: "winter-beauty-of-kashmir",
-    image:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-    authorName: "Aditi Raval",
-    authorAvatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
-    readTime: "7 min read",
-  },
-  {
-    id: "b2",
-    title: "8-Day Dubai Adventure: A Journey of Thrills & Luxury",
-    slug: "dubai-adventure",
-    image:
-      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80",
-    authorName: "Harsh Patel",
-    authorAvatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
-    readTime: "6 min read",
-  },
-  {
-    id: "b3",
-    title: "Winter Spiti Valley Experience",
-    slug: "winter-spiti-valley-experience",
-    image:
-      "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&q=80",
-    authorName: "Avdhesh Patel",
-    authorAvatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
-    readTime: "5 min read",
-  },
-  {
-    id: "b4",
-    title: "Bhrigu Lake Trek – High Altitude Serenity",
-    slug: "bhrigu-lake-trek",
-    image:
-      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80",
-    authorName: "Priya Shah",
-    authorAvatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
-    readTime: "8 min read",
-  },
-];
-
 interface BlogSectionProps {
   blogs?: Blog[];
   title?: string;
@@ -87,23 +40,29 @@ export default function BlogSection({
 
   const apiMappedStories: BlogCardItem[] =
     blogs && blogs.length > 0
-      ? blogs.map((b: any, idx: number) => {
-          const mock = MOCK_STORIES[idx % MOCK_STORIES.length];
-          const rawAuthor = b.author || mock.authorName;
-          const cleanAuthor = rawAuthor.replace(/^by\s+/i, "");
-          return {
-            id: b._id || b.id || `b-${idx}`,
-            title: b.title || mock.title,
-            slug: b.slug || mock.slug,
-            image: b.image && b.image.trim() !== "" ? b.image : mock.image,
-            authorName: cleanAuthor,
-            authorAvatar:
-              b.authorImage && b.authorImage.trim() !== ""
-                ? b.authorImage
-                : mock.authorAvatar,
-            readTime: b.readTime || mock.readTime,
-          };
-        })
+      ? blogs
+          .map((b: any, idx: number) => {
+            const rawAuthor = String(b.author || "YouthCamping Team");
+            const cleanAuthor = rawAuthor.replace(/^by\s+/i, "");
+            return {
+              id: b._id || b.id || `b-${idx}`,
+              title: b.title || "",
+              slug: b.slug || "",
+              image: b.image && b.image.trim() !== "" ? b.image : "",
+              authorName: cleanAuthor,
+              authorAvatar:
+                b.authorImage && b.authorImage.trim() !== ""
+                  ? b.authorImage
+                  : "",
+              readTime: b.readTime || "",
+            };
+          })
+          .filter(
+            (b) =>
+              b.title.trim().length > 0 &&
+              b.slug.trim().length > 0 &&
+              b.image.trim().length > 0,
+          )
       : [];
 
   const displayStories: BlogCardItem[] = apiMappedStories;
