@@ -1195,27 +1195,18 @@ exports.createTransportFleet = async (req, res) => {
         .status(400)
         .json({ success: false, message: "vehicleType is required" });
 
-    // Validate vendor type
+    // Safe vendor resolution (non-blocking)
+    let resolvedVendorId = null;
     if (vendorId) {
-      const vendor = await prisma.opsVendor.findUnique({
-        where: { id: vendorId },
-        select: { type: true, isActive: true },
+      const vendor = await prisma.opsVendor.findFirst({
+        where: {
+          OR: [{ id: vendorId }, { name: vendorId }],
+        },
+        select: { id: true, type: true, isActive: true },
       });
-      if (!vendor)
-        return res
-          .status(400)
-          .json({ success: false, message: "Vendor not found" });
-      if (vendor.type !== "TRANSPORT")
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Vendor type must be TRANSPORT, got ${vendor.type}`,
-          });
-      if (!vendor.isActive)
-        return res
-          .status(400)
-          .json({ success: false, message: "Vendor is inactive" });
+      if (vendor) {
+        resolvedVendorId = vendor.id;
+      }
     }
 
     const tot = parseFloat(totalAmount || 0);
@@ -1246,7 +1237,7 @@ exports.createTransportFleet = async (req, res) => {
         tenantId: ctx.tenantId,
         tripId: ctx.tripId,
         departureDate: ctx.departureDate,
-        vendorId: vendorId || null,
+        vendorId: resolvedVendorId || null,
         vehicleType,
         vehicleNumber: vehicleNumber || null,
         capacity: cap,
@@ -1272,7 +1263,7 @@ exports.createTransportFleet = async (req, res) => {
     console.error("createTransportFleet error:", err);
     return res
       .status(500)
-      .json({ success: false, message: "Failed to create transport fleet" });
+      .json({ success: false, message: "Failed to create transport fleet: " + err.message });
   }
 };
 
@@ -1293,6 +1284,8 @@ exports.deleteTransportFleet = async (req, res) => {
 
 exports.updateTransportFleet = async (req, res) => {
   try {
+    const ctx = await parseDepartureFilter(req, res, true);
+    if (!ctx) return;
     const { id } = req.params;
     const {
       vehicleType,
@@ -1312,35 +1305,46 @@ exports.updateTransportFleet = async (req, res) => {
       driverPhone,
       notes,
     } = req.body;
-    const existing = await prisma.opsTransportFleet.findUnique({
-      where: { id },
+
+    const existing = await prisma.opsTransportFleet.findFirst({
+      where: { id, tripId: ctx.tripId, departureDate: ctx.departureDate },
     });
     if (!existing)
       return res
         .status(404)
         .json({ success: false, message: "Transport vehicle not found" });
 
-    // Validate vendor type if changing vendorId
-    if (vendorId !== undefined && vendorId !== null) {
-      const vendor = await prisma.opsVendor.findUnique({
-        where: { id: vendorId },
-        select: { type: true, isActive: true },
-      });
-      if (!vendor)
-        return res
-          .status(400)
-          .json({ success: false, message: "Vendor not found" });
-      if (vendor.type !== "TRANSPORT")
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Vendor type must be TRANSPORT, got ${vendor.type}`,
-          });
-      if (!vendor.isActive)
-        return res
-          .status(400)
-          .json({ success: false, message: "Vendor is inactive" });
+    // Safe vendor resolution
+    let resolvedVendorId = existing.vendorId;
+    if (vendorId !== undefined) {
+      if (vendorId === null || vendorId === "") {
+        resolvedVendorId = null;
+      } else {
+        const vendor = await prisma.opsVendor.findFirst({
+          where: {
+            OR: [{ id: vendorId }, { name: vendorId }],
+          },
+          select: { id: true, type: true, isActive: true },
+        });
+        if (vendor) {
+          if (vendor.type !== "TRANSPORT")
+            return res
+              .status(400)
+              .json({
+                success: false,
+                message: `Vendor type must be TRANSPORT, got ${vendor.type}`,
+              });
+          if (!vendor.isActive)
+            return res
+              .status(400)
+              .json({ success: false, message: "Vendor is inactive" });
+          resolvedVendorId = vendor.id;
+        } else {
+          return res
+            .status(400)
+            .json({ success: false, message: "Vendor not found" });
+        }
+      }
     }
 
     const tot =
