@@ -304,16 +304,11 @@ router.post(
   restoreTripLeader,
 );
 
-// Auto Allocation Engine (Draft, Confirm, Override)
+// Auto Allocation Engine (Draft, Confirm, Override, Manual Save)
 router.post(
-  "/auto-allocate/:tripId",
+  "/auto-allocate/manual-save",
   requirePermission("ops.allocate"),
-  generateAllocation,
-);
-router.get(
-  "/auto-allocate/:tripId/confirmed",
-  requirePermission("ops.view"),
-  getConfirmedAllocations,
+  saveManualAllocations,
 );
 router.post(
   "/auto-allocate/confirm",
@@ -326,14 +321,24 @@ router.post(
   overrideAllocation,
 );
 router.post(
-  "/auto-allocate/manual-save",
+  "/allocations/manual",
   requirePermission("ops.allocate"),
   saveManualAllocations,
 );
 router.post(
-  "/allocations/manual",
+  "/auto-allocate/:tripId/manual",
   requirePermission("ops.allocate"),
   saveManualAllocations,
+);
+router.get(
+  "/auto-allocate/:tripId/confirmed",
+  requirePermission("ops.view"),
+  getConfirmedAllocations,
+);
+router.post(
+  "/auto-allocate/:tripId",
+  requirePermission("ops.allocate"),
+  generateAllocation,
 );
 
 module.exports = router;
