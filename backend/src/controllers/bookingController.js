@@ -671,14 +671,6 @@ exports.getBookings = async (req, res, next) => {
       },
     };
 
-    if (process.env.ENABLE_PERFORMANCE_METRICS === "true") {
-      const duration = Date.now() - start;
-      const payloadBytes = Buffer.byteLength(JSON.stringify(resBody));
-      console.log(
-        `[METRICS] getBookings - Total: ${duration}ms, Auth: ${authDuration}ms, Query: ${queryDuration}ms, Rows: ${bookings.length}, Payload: ${payloadBytes} bytes`,
-      );
-    }
-
     res.status(200).json(resBody);
   } catch (error) {
     next(error);
@@ -1401,9 +1393,6 @@ exports.createBooking = async (req, res, next) => {
           prisma,
           attachments: [],
         });
-        console.log(
-          `📧 Automatically logged booking confirmation email for booking ${booking.bookingId}`,
-        );
       } catch (emailErr) {
         console.error(
           "Failed to trigger automatic booking confirmation email:",
@@ -1853,9 +1842,6 @@ exports.deleteBooking = async (req, res, next) => {
 
       await prisma.booking.delete({ where: { id: booking.id } });
 
-      if (process.env.NODE_ENV !== "production") {
-        console.log(`[DELETE] Booking ${booking.id} (${booking.bookingId}) permanently deleted by ${req.user?.email}`);
-      }
       return res.json({ success: true, message: "Booking permanently deleted successfully" });
     }
 
@@ -2127,10 +2113,6 @@ exports.updateTrip = async (req, res, next) => {
     const newId = tripCode ? tripCode.toUpperCase() : null;
 
     if (newId && newId !== oldId) {
-      console.log(
-        `🔄 [updateTrip] Migrating Trip ID from ${oldId} to ${newId}`,
-      );
-
       // 2. Perform Migration Transaction
       await prisma.$transaction(async (tx) => {
         const oldTrip = await tx.trip.findFirst({
@@ -2487,9 +2469,6 @@ exports.submitBookingForm = async (req, res, next) => {
           prisma,
           attachments: [],
         });
-        console.log(
-          `📧 Automatically logged booking confirmation email for booking ${booking.bookingId}`,
-        );
       } catch (emailErr) {
         console.error(
           "Failed to trigger automatic booking confirmation email:",
@@ -2560,11 +2539,6 @@ exports.confirmPayment = async (req, res, next) => {
     // Sync to Google Sheets
     syncBookingToSheets(updatedBooking).catch((err) =>
       console.error("[SHEETS_SYNC_SILENT_ERR]", err.message),
-    );
-
-    // Simulated WhatsApp trigger
-    console.log(
-      `📲 [WHATSAPP PAYMENT CONFIRMATION] Sending WhatsApp notification to customer ${booking.name} (${booking.phone}): "Your payment of ₹${booking.advancePaid || booking.totalAmount} has been confirmed! Your booking ${booking.bookingId} is now active."`,
     );
 
     res.json({

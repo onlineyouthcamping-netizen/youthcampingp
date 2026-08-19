@@ -1723,14 +1723,6 @@ exports.getApprovalsQueue = async (req, res) => {
       },
     };
 
-    if (process.env.ENABLE_PERFORMANCE_METRICS === "true") {
-      const duration = Date.now() - start;
-      const payloadBytes = Buffer.byteLength(JSON.stringify(resBody));
-      console.log(
-        `[METRICS] getApprovalsQueue - Total: ${duration}ms, Auth: ${authDuration}ms, Query: ${queryDuration}ms, Rows: ${tickets.length}, Payload: ${payloadBytes} bytes`,
-      );
-    }
-
     return res.json(resBody);
   } catch (err) {
     console.error("getApprovalsQueue error:", err);
@@ -1811,7 +1803,6 @@ async function runAlertScanner(tenantId) {
             ticketId: ticket.id,
           },
         });
-        console.log(`Alert created: PENDING_2_DAYS for ticket ${ticket.id}`);
       }
     }
 
@@ -1846,7 +1837,6 @@ async function runAlertScanner(tenantId) {
             ticketId: ticket.id,
           },
         });
-        console.log(`Alert created: URGENT_10_DAYS for ticket ${ticket.id}`);
       }
     }
   } catch (err) {

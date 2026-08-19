@@ -1,12 +1,6 @@
 const { prisma } = require("../lib/prisma");
 const { sendEmail, templates } = require("../lib/email");
 
-if (process.env.NODE_ENV !== "production") {
-  console.log("⚙️  BREVO API CONFIG LOADED:", {
-    apiKeyLoaded: !!process.env.BREVO_API_KEY,
-  });
-}
-
 const sendBookingEmail = async (req, res) => {
   const {
     bookingId,
@@ -18,16 +12,6 @@ const sendBookingEmail = async (req, res) => {
     ticketFiles,
     trainTicketStatus,
   } = req.body;
-  if (process.env.NODE_ENV !== "production") {
-    console.log("📡 [Backend] Incoming email request:", {
-      bookingId,
-      type,
-      includeTicket,
-      ticketFileName,
-      fileCount: ticketFiles?.length,
-    });
-  }
-
   try {
     if (!bookingId) {
       console.warn("⚠️ [Backend] Missing bookingId in request body");
@@ -40,8 +24,6 @@ const sendBookingEmail = async (req, res) => {
       where: { id: bookingId },
       include: { tripRef: true },
     });
-
-    console.log("🔍 [Backend] Found booking:", booking ? "Yes" : "No");
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found in database" });
@@ -86,9 +68,6 @@ const sendBookingEmail = async (req, res) => {
       if (currentPayloadSize + itemSize <= MAX_ATTACHMENT_BYTES) {
         attachments.push({ content: cleanContent, name });
         currentPayloadSize += itemSize;
-        console.log(
-          `📄 [Backend] Attached directly: ${name} (${Math.round((itemSize * 0.75) / 1024)} KB)`,
-        );
       } else {
         try {
           const fs = require("fs");
@@ -107,9 +86,6 @@ const sendBookingEmail = async (req, res) => {
           tempFilePaths.push(filePath);
           const fileUrl = `https://api.youthcamping.online/uploads/tickets/${safeName}`;
           overflowDownloadLinks.push({ name, url: fileUrl });
-          console.log(
-            `📄 [Backend] Brevo 16MB cap reached. Saved overflow file to URL: ${fileUrl}`,
-          );
         } catch (saveErr) {
           console.error(
             `❌ [Backend] Failed to save overflow file ${name}:`,
@@ -128,7 +104,6 @@ const sendBookingEmail = async (req, res) => {
           `Invoice_${booking.bookingId || "booking"}.pdf`,
           pdfBuffer.toString("base64"),
         );
-        console.log("📄 [Backend] PDF Invoice generated and processed");
       } catch (pdfErr) {
         console.error("❌ [Backend] PDF Generation failed:", pdfErr);
       }
@@ -194,16 +169,6 @@ const sendBookingEmail = async (req, res) => {
       `;
       templateData.html += downloadSection;
     }
-
-    console.log(
-      `Sending email to: ${booking.email} with ${attachments.length} attachments and ${overflowDownloadLinks.length} download links:`,
-    );
-    attachments.forEach((att, idx) => {
-      const approxKB = Math.round(((att.content?.length || 0) * 0.75) / 1024);
-      console.log(
-        `   [Attachment ${idx + 1}] Name: "${att.name}", Approx Size: ${approxKB} KB`,
-      );
-    });
 
     try {
       await sendEmail({
