@@ -128,7 +128,9 @@ export async function fetchHomepageTrips(limit = 50): Promise<Trip[]> {
   }
 }
 
-const MOCK_SLUG_MAP: Record<string, any> = {
+// MOCK_SLUG_MAP removed — mock data must not be served to real users.
+// Use NODE_ENV === 'development' guard if re-adding local dev stubs.
+const MOCK_SLUG_MAP: Record<string, any> = process.env.NODE_ENV === "development" ? {
   "manali-kasol-amritsar": {
     id: "mka-1",
     title: "Manali Kasol Amritsar Backpacking Trip",
@@ -329,7 +331,7 @@ const MOCK_SLUG_MAP: Record<string, any> = {
     ],
     status: "published",
   },
-};
+} : {};
 
 export async function fetchTripBySlug(
   slug: string,
@@ -348,10 +350,12 @@ export async function fetchTripBySlug(
     console.warn(`fetchTripBySlug error slug=${slug}:`, err);
   }
 
-  // Fallback map for demo/mock trip slugs so trip pages always open seamlessly
-  const mockTrip =
-    MOCK_SLUG_MAP[slug] || MOCK_SLUG_MAP[slug.toLowerCase()] || null;
-  return mockTrip;
+  // In production, return null so the page renders a proper 404/error state.
+  if (process.env.NODE_ENV === "development") {
+    const mockTrip = MOCK_SLUG_MAP[slug] || MOCK_SLUG_MAP[slug.toLowerCase()] || null;
+    return mockTrip;
+  }
+  return null;
 }
 
 export async function fetchItinerary(tripId: string): Promise<ItineraryDay[]> {
@@ -509,7 +513,10 @@ export async function fetchBlogBySlug(
     console.warn(`fetchBlogBySlug network error slug=${slug}:`, err);
   }
 
-  // Graceful fallback blog for empty backend/local preview
+  // Return null so the page renders a proper 404/error state instead of fake data.
+  return null;
+
+  // Legacy fallback (unreachable — kept for reference only):
   const formattedTitle = slug
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
