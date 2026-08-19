@@ -81,6 +81,7 @@ export default function Navbar({
           <Link
             href="/"
             className="relative z-[60] flex items-center justify-start shrink-0"
+            onClick={() => { window.scrollTo(0, 0); document.documentElement.scrollTop = 0; }}
           >
             <img
               src="/logo.png"
