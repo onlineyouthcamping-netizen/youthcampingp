@@ -106,16 +106,21 @@ export default function TripCard({
     return list;
   })();
 
-  // Staggered automatic photo slider across Admin-uploaded photos
+  // Staggered automatic photo slider — stagger start time per card index
   useEffect(() => {
     if (imagesList.length <= 1) return;
 
-    const intervalMs = 3000;
-    const intervalId = setInterval(() => {
-      setCurrentImgIdx((prev) => (prev + 1) % imagesList.length);
-    }, intervalMs);
+    let intervalId: ReturnType<typeof setInterval>;
+    const timeoutId = setTimeout(() => {
+      intervalId = setInterval(() => {
+        setCurrentImgIdx((prev) => (prev + 1) % imagesList.length);
+      }, 3000);
+    }, (index % 10) * 300);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(intervalId);
+    };
   }, [imagesList.length, index]);
 
   const activePhotoIndex = currentImgIdx % imagesList.length;

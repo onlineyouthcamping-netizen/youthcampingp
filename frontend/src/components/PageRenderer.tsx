@@ -3,7 +3,6 @@ import { Trip, Review, Blog } from "@/types";
 import Hero from "./Hero";
 import SocialProofBar from "./SocialProofBar";
 import CommunityTrips from "./CommunityTrips";
-import BestieSection from "./BestieSection";
 import RealitySection from "./RealitySection";
 import Destinations from "./Destinations";
 import BlogSection from "./BlogSection";
@@ -104,7 +103,6 @@ export default function PageRenderer({
             ].includes(s.type)
           )
             return "#ffffff";
-          if (s.type === "bestie") return "#BDD5D5";
 
           if (
             [
@@ -162,8 +160,6 @@ export default function PageRenderer({
                 />
               );
             }
-            case "bestie":
-              return <BestieSection key={index} {...commonProps} />;
             case "destinations":
               return <Destinations key={index} {...commonProps} />;
             case "reality":

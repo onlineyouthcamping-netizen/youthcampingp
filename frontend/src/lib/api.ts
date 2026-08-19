@@ -84,7 +84,7 @@ export async function fetchTrips(init?: RequestInit): Promise<Trip[]> {
   try {
     const res = await fetch(
       `${API_BASE_URL}/trips`,
-      init ?? { cache: "no-store" },
+      init ?? publicRevalidate(120),
     );
     if (!res.ok) return [];
     const json = await res.json();
@@ -356,9 +356,9 @@ export async function fetchTripBySlug(
 
 export async function fetchItinerary(tripId: string): Promise<ItineraryDay[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/itinerary/${tripId}`, {
-      cache: "no-store",
-    });
+    const res = await fetch(`${API_BASE_URL}/itinerary/${tripId}`,
+      publicRevalidate(300),
+    );
     if (!res.ok) return [];
     const json = await res.json();
     return json.data || [];
@@ -466,9 +466,9 @@ export async function fetchHomepageBlogs(limit = 8): Promise<any[]> {
 
 export async function fetchAttractions(): Promise<any[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/attractions`, {
-      cache: "no-store",
-    });
+    const res = await fetch(`${API_BASE_URL}/attractions`,
+      publicRevalidate(300),
+    );
     if (!res.ok) return [];
     const json = await res.json();
     return json.data || [];
@@ -480,9 +480,9 @@ export async function fetchAttractions(): Promise<any[]> {
 
 export async function fetchAttractionBySlug(slug: string): Promise<any | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/attractions/slug/${slug}`, {
-      cache: "no-store",
-    });
+    const res = await fetch(`${API_BASE_URL}/attractions/slug/${slug}`,
+      publicRevalidate(300),
+    );
     if (!res.ok) return null;
     const json = await res.json();
     return json.data || null;
@@ -617,7 +617,7 @@ export async function fetchSettings(init?: RequestInit): Promise<any | null> {
   try {
     const res = await fetch(
       `${API_BASE_URL}/settings`,
-      init ?? { cache: "no-store" },
+      init ?? publicRevalidate(300),
     );
     if (!res.ok) return null;
     const json = await res.json();

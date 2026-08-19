@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -130,30 +130,34 @@ export default function Destinations({
       ? destinations
       : DEFAULT_DESTINATIONS;
 
-  const displayItems: Destination[] = sourceList.map((d: any, i: number) => {
-    const fallback = DEFAULT_DESTINATIONS[i % DEFAULT_DESTINATIONS.length];
-    const rawName = typeof d === "string" ? d : d?.name || fallback.name;
-    const customImg =
-      typeof d === "object" && (d?.img || d?.imageUrl)
-        ? normalizeImageUrl(d.img || d.imageUrl)
-        : undefined;
-    const cleanKey = rawName.toLowerCase().replace(/[^a-z0-9]/g, "");
-    const mappedImg =
-      customImg ||
-      Object.entries(DEST_IMAGE_MAP).find(([key]) =>
-        cleanKey.includes(key.replace(/[^a-z0-9]/g, "")),
-      )?.[1] ||
-      fallback.img;
-    return {
-      name: rawName,
-      subtext:
-        typeof d === "object" && d?.subtext
-          ? d.subtext
-          : fallback.subtext || "Explore Group Trip",
-      img: mappedImg,
-      href: destinationHref(d),
-    };
-  });
+  const displayItems: Destination[] = useMemo(
+    () =>
+      sourceList.map((d: any, i: number) => {
+        const fallback = DEFAULT_DESTINATIONS[i % DEFAULT_DESTINATIONS.length];
+        const rawName = typeof d === "string" ? d : d?.name || fallback.name;
+        const customImg =
+          typeof d === "object" && (d?.img || d?.imageUrl)
+            ? normalizeImageUrl(d.img || d.imageUrl)
+            : undefined;
+        const cleanKey = rawName.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const mappedImg =
+          customImg ||
+          Object.entries(DEST_IMAGE_MAP).find(([key]) =>
+            cleanKey.includes(key.replace(/[^a-z0-9]/g, "")),
+          )?.[1] ||
+          fallback.img;
+        return {
+          name: rawName,
+          subtext:
+            typeof d === "object" && d?.subtext
+              ? d.subtext
+              : fallback.subtext || "Explore Group Trip",
+          img: mappedImg,
+          href: destinationHref(d),
+        };
+      }),
+    [sourceList],
+  );
 
   const primaryWord = (
     titlePrimary ||
@@ -278,14 +282,6 @@ export default function Destinations({
             })}
           </div>
 
-          <button
-            type="button"
-            onClick={() => nudge("r")}
-            aria-label="Next Destinations"
-            className="dest-nav dest-nav-next absolute right-1 sm:right-0 top-1/2 z-20 -translate-y-1/2 hidden md:flex"
-          >
-            <ChevronRight className="w-5 h-5 text-[#0B1528]" strokeWidth={2.25} />
-          </button>
         </div>
       </div>
 

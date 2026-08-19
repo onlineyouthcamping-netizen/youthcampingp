@@ -60,13 +60,12 @@ export default function Navbar({
     );
 
   useEffect(() => {
+    const prev = document.body.style.overflow;
     if (isMenuOpen) {
       document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = prev;
     };
   }, [isMenuOpen]);
 

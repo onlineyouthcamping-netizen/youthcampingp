@@ -4,7 +4,6 @@ import React, {
   createContext,
   useContext,
   useEffect,
-  useLayoutEffect,
   useState,
 } from "react";
 import { fetchPublicSettings, fetchTheme } from "@/lib/api";
@@ -294,204 +293,58 @@ export const DynamicThemeProvider = ({
     }
   };
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (initialTheme) {
       applyTheme(initialTheme);
     }
-  }, [initialTheme]);
+  }, [initialTheme]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadTheme = async () => {
       try {
         const config = await fetchTheme();
-        if (config) {
+        if (!cancelled && config) {
           setTheme(config);
           applyTheme(config);
         }
-      } catch (error) {
-        console.error("Failed to load theme:", error);
+      } catch {
+        // silently fail — theme is non-critical
       }
     };
 
     const loadSettings = async () => {
       try {
         const config = await fetchPublicSettings();
-        if (config) setSettings(config);
-      } catch (error) {
-        console.error("Failed to load public settings:", error);
+        if (!cancelled && config) setSettings(config);
+      } catch {
+        // silently fail
       }
     };
 
-    // Server-fetched values are authoritative for the initial render. Only fall
-    // back to a browser request when the bounded server fetch could not finish.
-    if (!initialTheme) {
-      loadTheme();
-    }
-    if (!initialSettings) {
-      loadSettings();
-    }
-  }, [initialTheme, initialSettings]);
+    // Only fetch client-side when SSR fetch didn't complete in time
+    if (!initialTheme) loadTheme();
+    if (!initialSettings) loadSettings();
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    let lastWasMobile = false;
-    let rafId: number | null = null;
-
-    const adjustWrappedHeadings = (forceRestore = false) => {
-      const isMobileSize = window.innerWidth < 768;
-
-      // Prevent repeated full-body DOM queries/scans on desktop size
-      if (!isMobileSize && !forceRestore && !lastWasMobile) {
-        return;
-      }
-
-      lastWasMobile = isMobileSize;
-
-      const headings = document.querySelectorAll(
-        ".hero-title, .section-heading, .main-heading, h1, h2",
-      );
-
-      if (!isMobileSize) {
-        // Restore original font sizes on desktop
-        headings.forEach((node) => {
-          const el = node as HTMLElement;
-          if (el.dataset.originalFontSize) {
-            el.style.removeProperty("font-size");
-            el.removeAttribute("data-original-font-size");
-          }
-        });
-        return;
-      }
-
-      // Phase 1: Read all layout metrics in a single batch (no layout thrashing)
-      const measurements: {
-        el: HTMLElement;
-        originalHeight: number;
-        singleLineHeight: number;
-        originalFontSize: string;
-      }[] = [];
-
-      headings.forEach((node) => {
-        const el = node as HTMLElement;
-        if (!el.textContent || el.textContent.trim() === "") return;
-
-        // Save original font size if not already saved
-        if (!el.dataset.originalFontSize) {
-          el.dataset.originalFontSize =
-            el.style.fontSize || window.getComputedStyle(el).fontSize;
-        }
-
-        const originalFontSize = el.dataset.originalFontSize;
-
-        // Temporarily reset to original size to measure height accurately
-        el.style.setProperty("font-size", originalFontSize, "important");
-        const originalHeight = el.getBoundingClientRect().height;
-
-        // Measure single line height by forcing nowrap
-        const originalWhiteSpace = el.style.whiteSpace;
-        el.style.whiteSpace = "nowrap";
-        const singleLineHeight = el.getBoundingClientRect().height;
-        el.style.whiteSpace = originalWhiteSpace;
-
-        measurements.push({
-          el,
-          originalHeight,
-          singleLineHeight,
-          originalFontSize,
-        });
-      });
-
-      // Phase 2: Batch all style updates inside requestAnimationFrame to prevent thrashing
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        measurements.forEach(
-          ({ el, originalHeight, singleLineHeight, originalFontSize }) => {
-            if (originalHeight > singleLineHeight * 1.2) {
-              const currentSize = parseFloat(originalFontSize);
-              const unit = originalFontSize.replace(/[0-9.]/g, "") || "px";
-
-              // Single-pass reduction fits text in a single line immediately without measuring in a loop
-              const fittedSize = Math.max(currentSize * 0.75, currentSize - 6);
-              el.style.setProperty(
-                "font-size",
-                `${fittedSize}${unit}`,
-                "important",
-              );
-            } else {
-              el.style.setProperty("font-size", originalFontSize, "important");
-            }
-          },
-        );
-      });
-    };
-
-    // Run immediately since we are guaranteed to be mounted/hydrated
-    adjustWrappedHeadings(true);
-
-    // Listen to window resize events with throttling/passive listener
-    let resizeTimeout: any;
-    const handleResize = () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => adjustWrappedHeadings(true), 150);
-    };
-    window.addEventListener("resize", handleResize, { passive: true });
-
-    // Observe only the page content and only react when a heading was added.
-    // This preserves responsive heading fitting without rescanning the body for
-    // unrelated mutations such as button state, overlays, or icon changes.
-    let resizeTimer: any;
-    const contentRoot = document.querySelector("main");
-    const observer = new MutationObserver((mutations) => {
-      const hasNewHeading = mutations.some((mutation) =>
-        Array.from(mutation.addedNodes).some((node) => {
-          if (!(node instanceof Element)) return false;
-          return (
-            node.matches(
-              "h1, h2, .hero-title, .section-heading, .main-heading",
-            ) ||
-            Boolean(
-              node.querySelector(
-                "h1, h2, .hero-title, .section-heading, .main-heading",
-              ),
-            )
-          );
-        }),
-      );
-      if (!hasNewHeading) return;
-
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(() => adjustWrappedHeadings(false));
-      }, 150);
-    });
-
-    if (contentRoot) {
-      observer.observe(contentRoot, {
-        childList: true,
-        subtree: true,
-      });
-    }
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      observer.disconnect();
-      clearTimeout(resizeTimer);
-      clearTimeout(resizeTimeout);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, []);
 
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+    let timer: ReturnType<typeof setTimeout>;
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      clearTimeout(timer);
+      timer = setTimeout(() => setIsMobile(window.innerWidth < 768), 200);
     };
-    checkMobile();
     window.addEventListener("resize", checkMobile, { passive: true });
-    return () => window.removeEventListener("resize", checkMobile);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", checkMobile);
+    };
   }, []);
 
   return (

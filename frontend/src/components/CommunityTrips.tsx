@@ -527,7 +527,8 @@ export default function CommunityTrips({
       if (i === activeMonth) return;
       setIsLoading(true);
       setActiveMonth(i);
-      setTimeout(() => setIsLoading(false), 250);
+      const t = setTimeout(() => setIsLoading(false), 250);
+      return () => clearTimeout(t);
     },
     [activeMonth],
   );
@@ -539,8 +540,10 @@ export default function CommunityTrips({
     });
 
   const md = MONTHS[activeMonth];
-  const filtered = sourceTrips.filter((t) => monthMatch(t, md));
-  const display = filtered.length > 0 ? filtered : sourceTrips;
+  const display = useMemo(() => {
+    const filtered = sourceTrips.filter((t) => monthMatch(t, md));
+    return filtered.length > 0 ? filtered : sourceTrips;
+  }, [sourceTrips, md]);
 
   // Preload upcoming trip images for silky 60 FPS transitions
   useEffect(() => {

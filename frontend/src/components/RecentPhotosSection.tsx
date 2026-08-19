@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, X, ChevronLeft, ChevronRight, Camera } from "lucide-react";
@@ -97,29 +97,21 @@ export default function RecentPhotosSection({
 
   const basePhotos = displayPhotos;
 
-  const marqueePhotos = [
-    ...basePhotos,
-    ...basePhotos,
-    ...basePhotos,
-    ...basePhotos,
-  ];
+  const marqueePhotos = useMemo(
+    () => [...basePhotos, ...basePhotos, ...basePhotos, ...basePhotos],
+    [basePhotos],
+  );
 
   // Hardware-accelerated smooth continuous scroll loop
   useEffect(() => {
+    if (isHovered || isDragging || selectedIndex !== null) return;
+
     let animationId: number;
-
     const step = () => {
-      if (
-        scrollRef.current &&
-        !isHovered &&
-        !isDragging &&
-        selectedIndex === null
-      ) {
+      if (scrollRef.current) {
         scrollRef.current.scrollLeft += 1.2;
-
-        const container = scrollRef.current;
-        if (container.scrollLeft >= container.scrollWidth / 2) {
-          container.scrollLeft = 0;
+        if (scrollRef.current.scrollLeft >= scrollRef.current.scrollWidth / 2) {
+          scrollRef.current.scrollLeft = 0;
         }
       }
       animationId = requestAnimationFrame(step);
