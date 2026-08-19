@@ -62,7 +62,7 @@ function DestinationRow({ location, trips }: { location: string; trips: Trip[] }
             <h2 className="text-lg sm:text-xl font-black text-[#0B1528] font-montserrat tracking-tight leading-tight">
               {location}
             </h2>
-            <span className="text-[#D4541A] font-bold text-lg sm:text-xl font-montserrat leading-tight">
+            <span className="text-[#D4541A] font-bold text-2xl sm:text-3xl font-caveat leading-tight">
               Adventures
             </span>
             <span className="text-xs text-zinc-400 font-semibold ml-1 hidden sm:inline">
