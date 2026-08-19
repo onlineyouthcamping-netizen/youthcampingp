@@ -1123,14 +1123,23 @@ exports.getExpensesQueue = async (req, res) => {
       }).catch(() => []),
     ]);
 
+    // Extract receipt URL from description/remarks (stored as "...\nReceipt: <url>")
+    const extractReceiptUrl = (text) => {
+      if (!text) return null;
+      const match = text.match(/Receipt:\s*(https?:\/\/\S+)/);
+      return match ? match[1] : null;
+    };
+
     const formatted = [
       ...miscExpenses.map((m) => ({
         id: m.id,
+        type: "MISCELLANEOUS",
         category: m.category || "MISCELLANEOUS",
-        title: m.description || "Miscellaneous Expense",
+        title: m.description ? m.description.split("\nReceipt:")[0].trim() : "Miscellaneous Expense",
         amount: Number(m.amount || 0),
         paymentMode: "BANK_TRANSFER",
         receiptNumber: `EXP-${m.id.slice(-6).toUpperCase()}`,
+        receiptUrl: extractReceiptUrl(m.description),
         submittedBy: "Operations Desk",
         submittedById: null,
         submittedAt: m.createdAt ? m.createdAt.toISOString() : new Date().toISOString(),
@@ -1139,16 +1148,18 @@ exports.getExpensesQueue = async (req, res) => {
       })),
       ...tripExpenses.map((t) => ({
         id: t.id,
+        type: "ACTIVITY",
         category: "OPERATIONAL",
         title: t.activity || "Trip Field Expense",
         amount: Number(t.totalAmount || t.amountPaid || 0),
         paymentMode: "BANK_TRANSFER",
         receiptNumber: `OPS-${t.id.slice(-6).toUpperCase()}`,
+        receiptUrl: extractReceiptUrl(t.remarks),
         submittedBy: "Field Operations",
         submittedById: null,
         submittedAt: t.createdAt ? t.createdAt.toISOString() : new Date().toISOString(),
         status: t.paymentStatus || "PENDING",
-        notes: t.remarks || "",
+        notes: t.remarks ? t.remarks.split("\nReceipt:")[0].trim() : "",
       })),
     ];
 
@@ -1247,6 +1258,121 @@ exports.verifyExpense = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to verify expense claim",
+    });
+  }
+};
+
+/**
+ * POST /api/finance/control-center/expenses
+ * Create a new miscellaneous or activity expense from the Finance Control Center.
+ * Supports both opsMiscExpense (type=MISCELLANEOUS) and opsTripExpense (type=ACTIVITY).
+ */
+exports.createExpense = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId || "default";
+    const {
+      type = "MISCELLANEOUS", // "MISCELLANEOUS" | "ACTIVITY"
+      tripId,
+      departureDate,
+      category,
+      description,
+      amount,
+      activity,
+      paymentDate,
+      totalAmount,
+      amountPaid,
+      remarks,
+      receiptUrl,
+      paymentMode,
+    } = req.body;
+
+    if (!tripId) {
+      return res.status(400).json({ success: false, message: "tripId is required" });
+    }
+    if (!departureDate) {
+      return res.status(400).json({ success: false, message: "departureDate is required" });
+    }
+
+    let result;
+
+    if (type === "ACTIVITY") {
+      const tot = parseFloat(totalAmount || amount || 0);
+      const paid = parseFloat(amountPaid || 0);
+      const due = tot - paid;
+      const paymentStatus = due <= 0 ? "Paid" : paid > 0 ? "Partially Paid" : "Due";
+
+      result = await prisma.opsTripExpense.create({
+        data: {
+          tenantId,
+          tripId,
+          departureDate: new Date(departureDate),
+          activity: activity || description || "Activity Expense",
+          serviceDate: paymentDate ? new Date(paymentDate) : null,
+          paymentDate: paymentDate ? new Date(paymentDate) : null,
+          totalAmount: tot,
+          amountPaid: paid,
+          dueAmount: due,
+          paymentStatus,
+          remarks: receiptUrl ? `${remarks || ""}\nReceipt: ${receiptUrl}`.trim() : remarks || undefined,
+        },
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: {
+          id: result.id,
+          category: "OPERATIONAL",
+          title: result.activity,
+          amount: Number(result.totalAmount || 0),
+          paymentMode: paymentMode || "BANK_TRANSFER",
+          receiptNumber: `OPS-${result.id.slice(-6).toUpperCase()}`,
+          receiptUrl: receiptUrl || null,
+          submittedBy: req.user?.name || "Finance Controller",
+          submittedAt: result.createdAt,
+          status: result.paymentStatus || "PENDING",
+          notes: result.remarks || "",
+          type: "ACTIVITY",
+        },
+        message: "Activity expense created",
+      });
+    } else {
+      // MISCELLANEOUS
+      const parsedAmount = parseFloat(amount || totalAmount || 0);
+      result = await prisma.opsMiscExpense.create({
+        data: {
+          tenantId,
+          tripId,
+          departureDate: new Date(departureDate),
+          category: category || "MISCELLANEOUS",
+          description: `${description || "Miscellaneous Expense"}${receiptUrl ? `\nReceipt: ${receiptUrl}` : ""}`,
+          amount: parsedAmount,
+        },
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: {
+          id: result.id,
+          category: result.category,
+          title: description || result.description,
+          amount: Number(result.amount || 0),
+          paymentMode: paymentMode || "BANK_TRANSFER",
+          receiptNumber: `EXP-${result.id.slice(-6).toUpperCase()}`,
+          receiptUrl: receiptUrl || null,
+          submittedBy: req.user?.name || "Finance Controller",
+          submittedAt: result.createdAt,
+          status: "PENDING",
+          notes: result.description || "",
+          type: "MISCELLANEOUS",
+        },
+        message: "Miscellaneous expense created",
+      });
+    }
+  } catch (err) {
+    console.error("createExpense error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create expense",
     });
   }
 };

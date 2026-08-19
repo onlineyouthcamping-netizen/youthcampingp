@@ -18,6 +18,7 @@ const {
   getExpensesQueue,
   verifyDeparturePayment,
   verifyExpense,
+  createExpense,
   assignIncomingPayment,
 } = require("../controllers/financeController");
 
@@ -170,6 +171,12 @@ router.post(
   "/control-center/ticketing/:id/action",
   requirePermission(["accounting.approve", "finance.tickets.approve"]),
   verifyTicketingPrice
+);
+
+router.post(
+  "/control-center/expenses",
+  requirePermission(["accounting.approve", "finance.outgoing.approve"]),
+  createExpense
 );
 
 router.post(
