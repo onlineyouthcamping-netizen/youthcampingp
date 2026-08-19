@@ -561,6 +561,7 @@ exports.getBookings = async (req, res, next) => {
           count: c,
           expiresAt: Date.now() + 30000,
         });
+        if (bookingCountCache.size > 500) bookingCountCache.clear();
         return c;
       });
     }
@@ -1853,7 +1854,9 @@ exports.deleteBooking = async (req, res, next) => {
 
       await prisma.booking.delete({ where: { id: booking.id } });
 
-      console.log(`[DELETE] Booking ${booking.id} (${booking.bookingId}) permanently deleted by ${req.user?.email}`);
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`[DELETE] Booking ${booking.id} (${booking.bookingId}) permanently deleted by ${req.user?.email}`);
+      }
       return res.json({ success: true, message: "Booking permanently deleted successfully" });
     }
 

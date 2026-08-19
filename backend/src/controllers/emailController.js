@@ -17,14 +17,15 @@ const sendBookingEmail = async (req, res) => {
     ticketFiles,
     trainTicketStatus,
   } = req.body;
-  console.log("📡 [Backend] Incoming email request:", {
-    bookingId,
-    type,
-    amount,
-    includeTicket,
-    ticketFileName,
-    fileCount: ticketFiles?.length,
-  });
+  if (process.env.NODE_ENV !== "production") {
+    console.log("📡 [Backend] Incoming email request:", {
+      bookingId,
+      type,
+      includeTicket,
+      ticketFileName,
+      fileCount: ticketFiles?.length,
+    });
+  }
 
   try {
     if (!bookingId) {

@@ -81,9 +81,11 @@ exports.getTrips = async (req, res, next) => {
         tenantId === "default" ? "default" : { in: [tenantId, "default"] },
     };
 
-    console.log(
-      `🔍 [Trips] Fetching trips for tenant: ${tenantId}, status: ${req.query.status || "default"}`,
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `🔍 [Trips] Fetching trips for tenant: ${tenantId}, status: ${req.query.status || "default"}`,
+      );
+    }
 
     if (req.query.status && req.query.status !== "all") {
       where.status = req.query.status;
@@ -106,7 +108,9 @@ exports.getTrips = async (req, res, next) => {
       orderBy: [{ order: "asc" }, { createdAt: "desc" }],
     });
 
-    console.log(`✅ [Trips] Found ${trips.length} trips`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`✅ [Trips] Found ${trips.length} trips`);
+    }
 
     res.json({
       success: true,

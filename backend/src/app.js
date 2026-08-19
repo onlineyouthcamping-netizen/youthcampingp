@@ -58,19 +58,8 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    const authHeader =
-      req.headers.authorization || req.headers["x-access-token"];
     const url = req.originalUrl || req.url || "";
-    if (
-      authHeader ||
-      url.includes("/admin") ||
-      url.includes("/bookings") ||
-      url.includes("/accounting") ||
-      url.includes("/knowledge")
-    ) {
-      return true;
-    }
-    return false;
+    return url.includes("/health");
   },
 });
 

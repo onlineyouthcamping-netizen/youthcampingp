@@ -381,6 +381,7 @@ model Trip {
   departures          Departure[]
 
   @@index([tenantId])
+  @@index([tenantId, slug])
   @@index([category])
   @@index([status])
   @@index([order])

@@ -22,12 +22,6 @@ const ADMIN_CACHE_TTL = 60 * 1000; // 60 seconds
 const authenticate = async (req, res, next) => {
   const authStart = Date.now();
   try {
-    console.log(
-      "[AUTH DEBUG] Path:",
-      req.path,
-      "Authenticated:",
-      !!(req.headers.authorization || req.query.token)
-    );
     let authHeader = req.headers.authorization || "";
     if (!authHeader && req.query.token) {
       authHeader = `Bearer ${req.query.token}`;
