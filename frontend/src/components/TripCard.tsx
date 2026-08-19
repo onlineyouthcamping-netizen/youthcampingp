@@ -259,13 +259,16 @@ export default function TripCard({
             {/* CINEMATIC SLIDE + ZOOM PHOTO CAROUSEL */}
             {imagesList.map((imgUrl, imgIdx) => {
           const isActive = imgIdx === activePhotoIndex;
-          // Alternating slide pan — no zoom, pure horizontal drift
-          const idle = imgIdx % 2 === 0
-            ? "scale-100 translate-x-[4%]"
-            : "scale-100 translate-x-[-4%]";
-          const active = imgIdx % 2 === 0
-            ? "scale-100 translate-x-[-3%]"
-            : "scale-100 translate-x-[3%]";
+          // Premium slow diagonal drift — 4 variants cycling by imgIdx % 4
+          const diagonalVariants = [
+            { idle: "scale-100 translate-x-[3%] translate-y-[2%]",   active: "scale-[1.05] translate-x-[-2%] translate-y-[-1%]" },
+            { idle: "scale-100 translate-x-[-3%] translate-y-[-2%]", active: "scale-[1.05] translate-x-[2%] translate-y-[1%]" },
+            { idle: "scale-100 translate-x-[3%] translate-y-[-2%]",  active: "scale-[1.05] translate-x-[-2%] translate-y-[1%]" },
+            { idle: "scale-100 translate-x-[-3%] translate-y-[2%]",  active: "scale-[1.05] translate-x-[2%] translate-y-[-1%]" },
+          ];
+          const variant = diagonalVariants[imgIdx % 4];
+          const idle = variant.idle;
+          const active = variant.active;
 
           return (
             <div
