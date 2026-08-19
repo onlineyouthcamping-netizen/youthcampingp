@@ -16,6 +16,8 @@ const {
   getAllVendorPayablesQueue,
   getFinanceVerificationQueue,
   getRiyaSummary,
+  updatePaymentAccount,
+  syncTreasuryMappings,
 } = require("../controllers/paymentController");
 const collectionAccountController = require("../controllers/collectionAccountController");
 
@@ -29,6 +31,7 @@ router.delete("/accounts/:id", collectionAccountController.deleteAccount);
 router.get("/accounts/:id/ledger", collectionAccountController.getAccountLedger);
 router.post("/accounts/:id/submit", collectionAccountController.recordAccountSubmission);
 router.post("/accounts/transfer", requirePermission("ops.manage"), collectionAccountController.recordAccountSubmission);
+router.post("/sync-treasury-mappings", requirePermission("ops.manage"), syncTreasuryMappings);
 
 // Global Payables Queue & Recorded Payments
 router.get("/vendor-payables-queue", requirePermission("ops.view"), getAllVendorPayablesQueue);
@@ -49,6 +52,11 @@ router.patch(
   "/client/verify/:id",
   requirePermission("ops.manage"),
   verifyClientPayment,
+);
+router.patch(
+  "/client/:id/account",
+  requirePermission("ops.manage"),
+  updatePaymentAccount,
 );
 router.get("/booking/:bookingId", getBookingPayments);
 

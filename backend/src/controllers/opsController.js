@@ -3311,6 +3311,12 @@ exports.getConfirmedAllocations = async (req, res) => {
       vehicleGroups[v.fleetId].assigned++;
     });
 
+    console.log(`[HYDRATE-SERVER] getConfirmedAllocations tripId=${ctx.tripId} date=${ctx.departureDate?.toISOString()} rooms=${rooms.length} vehicles=${vehicles.length}`);
+    if (vehicles.length > 0) {
+      console.log(`[HYDRATE-SERVER] vehicle fleetIds:`, [...new Set(vehicles.map(v => v.fleetId))]);
+      console.log(`[HYDRATE-SERVER] vehicle travelerNames:`, vehicles.map(v => v.travelerName));
+    }
+
     return res.json({
       success: true,
       data: {

@@ -595,7 +595,20 @@ exports.getBookings = async (req, res, next) => {
               salesAdminId: true,
               passengers: true,
               pickupCity: true,
-              opsClientPayments: true,
+              opsClientPayments: {
+                include: {
+                  collectionAccount: {
+                    select: {
+                      id: true,
+                      accountName: true,
+                      accountHolderName: true,
+                      accountType: true,
+                      bankName: true,
+                      upiId: true,
+                    },
+                  },
+                },
+              },
             }
           : {
               id: true,
@@ -644,7 +657,20 @@ exports.getBookings = async (req, res, next) => {
                   shareUrl: true,
                 },
               },
-              opsClientPayments: true,
+              opsClientPayments: {
+                include: {
+                  collectionAccount: {
+                    select: {
+                      id: true,
+                      accountName: true,
+                      accountHolderName: true,
+                      accountType: true,
+                      bankName: true,
+                      upiId: true,
+                    },
+                  },
+                },
+              },
             },
         skip,
         take: limit,
@@ -701,6 +727,20 @@ exports.getBookingById = async (req, res, next) => {
           },
         },
         documents: true,
+        opsClientPayments: {
+          include: {
+            collectionAccount: {
+              select: {
+                id: true,
+                accountName: true,
+                accountHolderName: true,
+                accountType: true,
+                bankName: true,
+                upiId: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -720,6 +760,20 @@ exports.getBookingById = async (req, res, next) => {
             },
           },
           documents: true,
+          opsClientPayments: {
+            include: {
+              collectionAccount: {
+                select: {
+                  id: true,
+                  accountName: true,
+                  accountHolderName: true,
+                  accountType: true,
+                  bankName: true,
+                  upiId: true,
+                },
+              },
+            },
+          },
         },
       });
     }
@@ -1894,6 +1948,9 @@ exports.confirmBooking = async (req, res, next) => {
       paymentStatus,
       email,
       trainTicketStatus,
+      collectionAccountId,
+      transactionId,
+      notes,
     } = req.body;
 
     let targetTotal, targetAdvance;
@@ -1971,6 +2028,126 @@ exports.confirmBooking = async (req, res, next) => {
     });
 
     if (targetAdvance > 0) {
+      const targetBookingId = beforeBooking.bookingId || beforeBooking.id;
+
+      // 1. Resolve target collection account
+      let targetAccountId = collectionAccountId || null;
+      if (!targetAccountId) {
+        const normMode = String(paymentMode || "UPI").toUpperCase();
+        if (normMode.includes("CASH")) {
+          const cashAcc = await prisma.paymentReceivingAccount.findFirst({
+            where: {
+              tenantId: req.user.tenantId,
+              isActive: true,
+              OR: [{ accountType: "CASH" }, { accountName: { contains: "Cash", mode: "insensitive" } }],
+            },
+          });
+          targetAccountId = cashAcc?.id || null;
+        } else if (normMode.includes("BANK")) {
+          const bankAcc = await prisma.paymentReceivingAccount.findFirst({
+            where: {
+              tenantId: req.user.tenantId,
+              isActive: true,
+              OR: [{ accountType: "COMPANY" }, { accountType: "BANK" }],
+            },
+            orderBy: { createdAt: "asc" },
+          });
+          targetAccountId = bankAcc?.id || null;
+        } else {
+          const upiAcc = await prisma.paymentReceivingAccount.findFirst({
+            where: {
+              tenantId: req.user.tenantId,
+              isActive: true,
+              OR: [{ accountType: "UPI" }, { accountType: "INDIVIDUAL" }, { accountType: "COMPANY" }],
+            },
+            orderBy: { createdAt: "asc" },
+          });
+          targetAccountId = upiAcc?.id || null;
+        }
+        if (!targetAccountId) {
+          const defaultAcc = await prisma.paymentReceivingAccount.findFirst({
+            where: { tenantId: req.user.tenantId, isActive: true },
+            orderBy: { createdAt: "asc" },
+          });
+          targetAccountId = defaultAcc?.id || null;
+        }
+      }
+
+      // 2. Create or sync OpsClientPayment
+      const existingClientPayment = await prisma.opsClientPayment.findFirst({
+        where: {
+          bookingId: targetBookingId,
+          tenantId: req.user.tenantId,
+          amount: targetAdvance,
+        },
+      });
+
+      if (!existingClientPayment) {
+        await prisma.opsClientPayment.create({
+          data: {
+            tenantId: req.user.tenantId,
+            bookingId: targetBookingId,
+            amount: targetAdvance,
+            paymentMode: paymentMode || "UPI",
+            collectionAccountId: targetAccountId,
+            transactionId: transactionId || `PAY-${Date.now()}`,
+            paymentDate: new Date(),
+            status: "Verified",
+            collectedBy: req.user?.name || req.user?.email || "Admin",
+            recordedByUserId: req.user?.id || null,
+            remarks: notes || `Advance payment on booking confirmation via ${paymentMode || "UPI"}`,
+          },
+        });
+      } else if (!existingClientPayment.collectionAccountId && targetAccountId) {
+        await prisma.opsClientPayment.update({
+          where: { id: existingClientPayment.id },
+          data: { collectionAccountId: targetAccountId },
+        });
+      }
+
+      // 3. Auto-sync into AccountingEntry for full accounting / treasury ledger visibility
+      try {
+        const rawMode = String(paymentMode || "UPI").toUpperCase();
+        const normalizedMode = rawMode.includes("CASH")
+          ? "CASH"
+          : rawMode.includes("BANK") || rawMode.includes("NEFT") || rawMode.includes("IMPS")
+            ? "BANK_TRANSFER"
+            : "UPI";
+
+        const existingEntry = await prisma.accountingEntry.findFirst({
+          where: {
+            bookingId: targetBookingId,
+            tenantId: req.user.tenantId,
+            amount: targetAdvance,
+          },
+        });
+
+        if (!existingEntry) {
+          await prisma.accountingEntry.create({
+            data: {
+              tenantId: req.user.tenantId,
+              bookingId: targetBookingId,
+              amount: targetAdvance,
+              paymentMode: normalizedMode,
+              collectionAccountId: targetAccountId,
+              referenceNumber: transactionId || `PAY-${Date.now()}`,
+              notes: notes || `Advance payment on booking confirmation via ${paymentMode || "UPI"}`,
+              status: "APPROVED",
+              salespersonId: req.user?.id || beforeBooking.salesAdminId,
+              actionedById: req.user?.id,
+            },
+          });
+        } else if (!existingEntry.collectionAccountId && targetAccountId) {
+          await prisma.accountingEntry.update({
+            where: { id: existingEntry.id },
+            data: { collectionAccountId: targetAccountId },
+          });
+        }
+      } catch (entryErr) {
+        console.warn("AccountingEntry auto-sync skipped in confirmBooking:", entryErr.message);
+      }
+
+      // 4. Backward compatible Payment model
       const existingPayment = await prisma.payment.findFirst({
         where: { bookingId: req.params.id, tenantId: req.user.tenantId },
       });

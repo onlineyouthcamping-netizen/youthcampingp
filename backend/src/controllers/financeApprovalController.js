@@ -342,6 +342,77 @@ exports.approveCollectionFounder = async (req, res) => {
         },
       });
 
+      // 4. Update booking totals and balance
+      if (payment.booking) {
+        const allVerified = await tx.opsClientPayment.findMany({
+          where: {
+            bookingId: { in: [payment.booking.id, payment.booking.bookingId] },
+            status: "Verified",
+          },
+        });
+
+        const totalVerified = allVerified.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+        const remaining = Math.max(0, Number(payment.booking.totalAmount || 0) - totalVerified);
+        const isFullyPaid = remaining === 0 && totalVerified > 0;
+        const isPartial = totalVerified > 0 && !isFullyPaid;
+
+        await tx.booking.update({
+          where: { id: payment.booking.id },
+          data: {
+            advancePaid: totalVerified,
+            remainingAmount: remaining,
+            paymentStatus: isFullyPaid ? "Paid" : isPartial ? "Partial" : "Pending",
+            payment_status: isFullyPaid ? "paid" : isPartial ? "partial" : "pending",
+          },
+        });
+
+        // Ensure AccountingEntry is approved / created
+        try {
+          const rawMode = String(payment.paymentMode || "UPI").toUpperCase();
+          const normalizedMode = rawMode.includes("CASH")
+            ? "CASH"
+            : rawMode.includes("BANK") || rawMode.includes("NEFT") || rawMode.includes("IMPS")
+              ? "BANK_TRANSFER"
+              : "UPI";
+
+          const existingEntry = await tx.accountingEntry.findFirst({
+            where: {
+              tenantId,
+              bookingId: payment.booking.bookingId || payment.booking.id,
+              amount: payment.amount,
+            },
+          });
+
+          if (existingEntry) {
+            await tx.accountingEntry.update({
+              where: { id: existingEntry.id },
+              data: {
+                status: "APPROVED",
+                collectionAccountId: payment.collectionAccountId || existingEntry.collectionAccountId,
+                actionedById: user.id,
+              },
+            });
+          } else {
+            await tx.accountingEntry.create({
+              data: {
+                tenantId,
+                bookingId: payment.booking.bookingId || payment.booking.id,
+                amount: payment.amount,
+                paymentMode: normalizedMode,
+                collectionAccountId: payment.collectionAccountId,
+                referenceNumber: payment.transactionId || `PAY-${payment.id}`,
+                notes: payment.remarks || "Verified Founder Approval",
+                status: "APPROVED",
+                salespersonId: payment.booking.salesAdminId,
+                actionedById: user.id,
+              },
+            });
+          }
+        } catch (entryErr) {
+          console.warn("AccountingEntry sync in approveCollectionFounder skipped:", entryErr.message);
+        }
+      }
+
       return updated;
     });
 

@@ -321,7 +321,8 @@ exports.addClientPayment = async (req, res) => {
 exports.verifyClientPayment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, remarks } = req.body; // Verified, Rejected, Refunded
+    const { status, remarks, collectionAccountId } = req.body; // Verified, Rejected, Refunded
+    const tenantId = resolveTenantId(req);
 
     const receipt = await prisma.opsClientPayment.findUnique({
       where: { id },
@@ -333,11 +334,19 @@ exports.verifyClientPayment = async (req, res) => {
         .json({ success: false, message: "Payment record not found" });
     }
 
+    const targetAccountId = collectionAccountId !== undefined ? collectionAccountId : receipt.collectionAccountId;
+
     const updated = await prisma.opsClientPayment.update({
       where: { id },
       data: {
         status,
         remarks: remarks || receipt.remarks,
+        collectionAccountId: targetAccountId,
+      },
+      include: {
+        collectionAccount: {
+          select: { id: true, accountName: true, accountHolderName: true, accountType: true, bankName: true, upiId: true },
+        },
       },
     });
 
@@ -374,6 +383,54 @@ exports.verifyClientPayment = async (req, res) => {
                 : "unpaid",
         },
       });
+
+      // Auto-sync into AccountingEntry if verified
+      if (status === "Verified") {
+        try {
+          const rawMode = String(receipt.paymentMode || "UPI").toUpperCase();
+          const normalizedMode = rawMode.includes("CASH")
+            ? "CASH"
+            : rawMode.includes("BANK") || rawMode.includes("NEFT") || rawMode.includes("IMPS")
+              ? "BANK_TRANSFER"
+              : "UPI";
+
+          const existingEntry = await prisma.accountingEntry.findFirst({
+            where: {
+              tenantId,
+              bookingId: receipt.bookingId,
+              amount: receipt.amount,
+            },
+          });
+
+          if (existingEntry) {
+            await prisma.accountingEntry.update({
+              where: { id: existingEntry.id },
+              data: {
+                status: "APPROVED",
+                collectionAccountId: targetAccountId || existingEntry.collectionAccountId,
+                actionedById: req.user?.id,
+              },
+            });
+          } else {
+            await prisma.accountingEntry.create({
+              data: {
+                tenantId,
+                bookingId: receipt.bookingId,
+                amount: receipt.amount,
+                paymentMode: normalizedMode,
+                collectionAccountId: targetAccountId,
+                referenceNumber: receipt.transactionId || `PAY-${receipt.id}`,
+                notes: remarks || receipt.remarks || "Verified via Finance Control",
+                status: "APPROVED",
+                salespersonId: booking.salesAdminId,
+                actionedById: req.user?.id,
+              },
+            });
+          }
+        } catch (entryErr) {
+          console.warn("AccountingEntry auto-sync skipped in verifyClientPayment:", entryErr.message);
+        }
+      }
     }
 
     return res.json({ success: true, data: updated });
@@ -382,6 +439,171 @@ exports.verifyClientPayment = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to verify client payment" });
+  }
+};
+
+exports.updatePaymentAccount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { collectionAccountId } = req.body;
+    const tenantId = resolveTenantId(req);
+
+    const payment = await prisma.opsClientPayment.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: "Payment record not found" });
+    }
+
+    const updated = await prisma.opsClientPayment.update({
+      where: { id },
+      data: { collectionAccountId: collectionAccountId || null },
+      include: {
+        collectionAccount: {
+          select: { id: true, accountName: true, accountHolderName: true, accountType: true, bankName: true, upiId: true },
+        },
+      },
+    });
+
+    // Also update matching AccountingEntry if present
+    try {
+      await prisma.accountingEntry.updateMany({
+        where: {
+          tenantId,
+          bookingId: payment.bookingId,
+          amount: payment.amount,
+        },
+        data: { collectionAccountId: collectionAccountId || null },
+      });
+    } catch (e) {
+      console.warn("AccountingEntry collectionAccount update skipped:", e.message);
+    }
+
+    return res.json({ success: true, data: updated, message: "Receiving account mapped successfully" });
+  } catch (err) {
+    console.error("updatePaymentAccount error:", err);
+    return res.status(500).json({ success: false, message: "Failed to update receiving account" });
+  }
+};
+
+exports.syncTreasuryMappings = async (req, res) => {
+  try {
+    const tenantId = resolveTenantId(req);
+
+    // 1. Fetch active accounts
+    const accounts = await prisma.paymentReceivingAccount.findMany({
+      where: { tenantId, isActive: true },
+    });
+
+    const cashAcc = accounts.find(
+      (a) => a.accountType === "CASH" || a.accountName.toLowerCase().includes("cash"),
+    );
+    const upiAcc =
+      accounts.find(
+        (a) =>
+          a.accountName.toLowerCase().includes("nikul") ||
+          (a.upiId && a.upiId.toLowerCase().includes("nikul")) ||
+          a.accountType === "INDIVIDUAL" ||
+          a.accountType === "UPI",
+      ) ||
+      accounts.find((a) => a.accountType === "COMPANY") ||
+      accounts[0];
+
+    const bankAcc =
+      accounts.find(
+        (a) => a.accountType === "COMPANY" || a.accountType === "BANK" || Boolean(a.accountNumber),
+      ) || upiAcc;
+
+    // 2. Fix unmapped OpsClientPayment records
+    const unmappedPayments = await prisma.opsClientPayment.findMany({
+      where: { tenantId, collectionAccountId: null },
+    });
+
+    let mappedCount = 0;
+    for (const p of unmappedPayments) {
+      const mode = (p.paymentMode || "UPI").toUpperCase();
+      const targetAcc = mode.includes("CASH") ? cashAcc : mode.includes("BANK") ? bankAcc : upiAcc;
+      if (targetAcc) {
+        await prisma.opsClientPayment.update({
+          where: { id: p.id },
+          data: { collectionAccountId: targetAcc.id },
+        });
+        mappedCount++;
+      }
+    }
+
+    // 3. Find confirmed bookings with advancePaid > 0 but NO OpsClientPayment
+    const bookings = await prisma.booking.findMany({
+      where: {
+        tenantId,
+        advancePaid: { gt: 0 },
+      },
+      include: {
+        opsClientPayments: true,
+      },
+    });
+
+    let createdReceiptsCount = 0;
+    for (const b of bookings) {
+      if (!b.opsClientPayments || b.opsClientPayments.length === 0) {
+        const mode = (b.paymentMode || "UPI").toUpperCase();
+        const targetAcc = mode.includes("CASH") ? cashAcc : mode.includes("BANK") ? bankAcc : upiAcc;
+        const targetBookingId = b.bookingId || b.id;
+
+        await prisma.opsClientPayment.create({
+          data: {
+            tenantId,
+            bookingId: targetBookingId,
+            amount: b.advancePaid,
+            paymentMode: b.paymentMode || "UPI",
+            collectionAccountId: targetAcc?.id || null,
+            transactionId: b.upi_reference || `SYNC-${b.id.slice(-6).toUpperCase()}`,
+            paymentDate: b.createdAt,
+            status: "Verified",
+            collectedBy: "System Sync",
+            remarks: "Advance Paid on Booking (Auto-synced to Treasury)",
+          },
+        });
+
+        // Also ensure AccountingEntry exists
+        const normMode = mode.includes("CASH")
+          ? "CASH"
+          : mode.includes("BANK")
+            ? "BANK_TRANSFER"
+            : "UPI";
+
+        const existingEntry = await prisma.accountingEntry.findFirst({
+          where: { tenantId, bookingId: targetBookingId, amount: b.advancePaid },
+        });
+
+        if (!existingEntry) {
+          await prisma.accountingEntry.create({
+            data: {
+              tenantId,
+              bookingId: targetBookingId,
+              amount: b.advancePaid,
+              paymentMode: normMode,
+              collectionAccountId: targetAcc?.id || null,
+              referenceNumber: b.upi_reference || `SYNC-${b.id.slice(-6).toUpperCase()}`,
+              notes: "Advance Paid on Booking (Auto-synced to Treasury)",
+              status: "APPROVED",
+              salespersonId: b.salesAdminId,
+            },
+          });
+        }
+        createdReceiptsCount++;
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Treasury synchronization complete: ${mappedCount} unmapped payments mapped, ${createdReceiptsCount} missing receipts generated.`,
+      data: { mappedCount, createdReceiptsCount },
+    });
+  } catch (err) {
+    console.error("syncTreasuryMappings error:", err);
+    return res.status(500).json({ success: false, message: "Failed to sync treasury mappings" });
   }
 };
 
@@ -400,6 +622,30 @@ exports.getBookingPayments = async (req, res) => {
       ? Array.from(new Set([booking.id, booking.bookingId].filter(Boolean)))
       : [paramBookingId];
 
+    // Load active accounts for auto-resolving missing collection accounts
+    const activeAccounts = await prisma.paymentReceivingAccount.findMany({
+      where: { tenantId, isActive: true },
+    });
+
+    const cashAcc = activeAccounts.find(
+      (a) => a.accountType === "CASH" || a.accountName.toLowerCase().includes("cash"),
+    );
+    const upiAcc =
+      activeAccounts.find(
+        (a) =>
+          a.accountName.toLowerCase().includes("nikul") ||
+          (a.upiId && a.upiId.toLowerCase().includes("nikul")) ||
+          a.accountType === "INDIVIDUAL" ||
+          a.accountType === "UPI",
+      ) ||
+      activeAccounts.find((a) => a.accountType === "COMPANY") ||
+      activeAccounts[0];
+
+    const bankAcc =
+      activeAccounts.find(
+        (a) => a.accountType === "COMPANY" || a.accountType === "BANK" || Boolean(a.accountNumber),
+      ) || upiAcc;
+
     // Query standard Payment records
     const standardPayments = await prisma.payment.findMany({
       where: { bookingId: { in: possibleBookingIds }, tenantId },
@@ -411,42 +657,57 @@ exports.getBookingPayments = async (req, res) => {
       where: { bookingId: { in: possibleBookingIds }, tenantId },
       include: {
         collectionAccount: {
-          select: { id: true, accountName: true, accountHolderName: true, accountType: true },
+          select: { id: true, accountName: true, accountHolderName: true, accountType: true, bankName: true, upiId: true },
         },
       },
       orderBy: { paymentDate: "desc" },
     });
 
-    // Merge both sources together cleanly
-    const allPayments = [
-      ...standardPayments.map((p) => ({
-        id: p.id,
-        amount: p.amount,
-        paymentMode: p.paymentMode || "Online",
-        collectionAccountId: null,
-        collectionAccount: null,
-        notes: p.transactionId
-          ? `Txn ID: ${p.transactionId}`
-          : "Booking payment",
-        status: p.status || "success",
-        createdAt: p.createdAt,
-      })),
-      ...clientReceipts.map((r) => ({
+    // Merge sources cleanly and avoid duplicates
+    const allPayments = [];
+    const seenAmounts = new Set();
+
+    clientReceipts.forEach((r) => {
+      let resolvedAcc = r.collectionAccount;
+      if (!resolvedAcc && activeAccounts.length > 0) {
+        const mode = (r.paymentMode || "UPI").toUpperCase();
+        resolvedAcc = mode.includes("CASH") ? cashAcc : mode.includes("BANK") ? bankAcc : upiAcc;
+      }
+      seenAmounts.add(`${r.amount}-${new Date(r.paymentDate || r.createdAt).toISOString().slice(0, 10)}`);
+      allPayments.push({
         id: r.id,
         amount: r.amount,
-        paymentMode: r.paymentMode,
-        collectionAccountId: r.collectionAccountId || null,
-        collectionAccount: r.collectionAccount || null,
-        notes: r.remarks || "Manual Payment",
+        paymentMode: r.paymentMode || "UPI",
+        collectionAccountId: r.collectionAccountId || resolvedAcc?.id || null,
+        collectionAccount: resolvedAcc || null,
+        notes: r.remarks || "Recorded Payment",
         status:
           r.status === "Verified"
             ? "success"
             : r.status === "Rejected"
               ? "failed"
               : "pending",
-        createdAt: r.paymentDate,
-      })),
-    ];
+        createdAt: r.paymentDate || r.createdAt,
+      });
+    });
+
+    standardPayments.forEach((p) => {
+      const dateKey = `${p.amount}-${new Date(p.createdAt).toISOString().slice(0, 10)}`;
+      if (!seenAmounts.has(dateKey)) {
+        const mode = (p.paymentMode || "UPI").toUpperCase();
+        const resolvedAcc = mode.includes("CASH") ? cashAcc : mode.includes("BANK") ? bankAcc : upiAcc;
+        allPayments.push({
+          id: p.id,
+          amount: p.amount,
+          paymentMode: p.paymentMode || "Online",
+          collectionAccountId: resolvedAcc?.id || null,
+          collectionAccount: resolvedAcc || null,
+          notes: p.transactionId ? `Txn ID: ${p.transactionId}` : "Booking payment",
+          status: p.status || "success",
+          createdAt: p.createdAt,
+        });
+      }
+    });
 
     // Compute basic totals
     const successfulPayments = allPayments.filter(

@@ -753,12 +753,25 @@ exports.verifyCashSubmission = async (req, res) => {
     if (nextStatus === "APPROVED" && entry.booking) {
       const targetBookingId = entry.booking.bookingId || entry.booking.id;
 
+      let targetAccountId = entry.collectionAccountId;
+      if (!targetAccountId) {
+        const cashAcc = await prisma.paymentReceivingAccount.findFirst({
+          where: {
+            tenantId: entry.tenantId || "default",
+            isActive: true,
+            OR: [{ accountType: "CASH" }, { accountName: { contains: "Cash", mode: "insensitive" } }],
+          },
+        });
+        targetAccountId = cashAcc?.id || null;
+      }
+
       await prisma.opsClientPayment.create({
         data: {
           tenantId: entry.tenantId || "default",
           bookingId: targetBookingId,
           amount: entry.amount,
           paymentMode: "CASH",
+          collectionAccountId: targetAccountId,
           transactionId: entry.referenceNumber || `CASH-${entry.id.slice(-6).toUpperCase()}`,
           status: "Verified",
           collectedBy: entry.salesperson?.name || "Sales Executive",
@@ -882,12 +895,39 @@ exports.verifyIncomingPayment = async (req, res) => {
     if (nextStatus === "APPROVED" && entry.booking) {
       const targetBookingId = entry.booking.bookingId || entry.booking.id;
 
+      let targetAccountId = entry.collectionAccountId;
+      if (!targetAccountId) {
+        const normMode = String(entry.paymentMode || "UPI").toUpperCase();
+        if (normMode.includes("BANK")) {
+          const bankAcc = await prisma.paymentReceivingAccount.findFirst({
+            where: {
+              tenantId: entry.tenantId || "default",
+              isActive: true,
+              OR: [{ accountType: "COMPANY" }, { accountType: "BANK" }],
+            },
+            orderBy: { createdAt: "asc" },
+          });
+          targetAccountId = bankAcc?.id || null;
+        } else {
+          const upiAcc = await prisma.paymentReceivingAccount.findFirst({
+            where: {
+              tenantId: entry.tenantId || "default",
+              isActive: true,
+              OR: [{ accountType: "UPI" }, { accountType: "INDIVIDUAL" }, { accountType: "COMPANY" }],
+            },
+            orderBy: { createdAt: "asc" },
+          });
+          targetAccountId = upiAcc?.id || null;
+        }
+      }
+
       await prisma.opsClientPayment.create({
         data: {
           tenantId: entry.tenantId || "default",
           bookingId: targetBookingId,
           amount: entry.amount,
           paymentMode: entry.paymentMode,
+          collectionAccountId: targetAccountId,
           transactionId: entry.referenceNumber || `BNK-${entry.id.slice(-6).toUpperCase()}`,
           status: "Verified",
           collectedBy: "Finance Clearance",
