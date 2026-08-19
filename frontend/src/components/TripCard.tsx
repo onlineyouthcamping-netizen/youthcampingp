@@ -256,36 +256,22 @@ export default function TripCard({
           style={{ aspectRatio: "16/10.5" }}
         >
           <div className="trip-card-photo-zoom absolute inset-0">
-            {/* CINEMATIC KEN BURNS PHOTO CAROUSEL */}
+            {/* CINEMATIC SLIDE + ZOOM PHOTO CAROUSEL */}
             {imagesList.map((imgUrl, imgIdx) => {
           const isActive = imgIdx === activePhotoIndex;
-          // Each photo gets a unique zoom direction for cinematic variety
-          const kenBurnsVariants = [
-            "origin-top-left scale-100", // zoom from top-left
-            "origin-bottom-right scale-100", // zoom from bottom-right
-            "origin-center scale-100", // zoom from center
-            "origin-top-right scale-100", // zoom from top-right
-            "origin-bottom-left scale-100", // zoom from bottom-left
-            "origin-top scale-100", // zoom from top
-            "origin-bottom scale-100", // zoom from bottom
-            "origin-left scale-100", // zoom from left
-          ];
-          const kenBurnsActive = [
-            "origin-top-left scale-[1.12]",
-            "origin-bottom-right scale-[1.12]",
-            "origin-center scale-[1.08]",
-            "origin-top-right scale-[1.12]",
-            "origin-bottom-left scale-[1.12]",
-            "origin-top scale-[1.10]",
-            "origin-bottom scale-[1.10]",
-            "origin-left scale-[1.10]",
-          ];
-          const variantIdx = imgIdx % kenBurnsVariants.length;
+          // Alternating slide directions: odd = pan left→right, even = pan right→left
+          // Combined with subtle zoom for depth
+          const idle = imgIdx % 2 === 0
+            ? "scale-[1.18] translate-x-[4%]"   // start: zoomed in, offset right
+            : "scale-[1.18] translate-x-[-4%]";  // start: zoomed in, offset left
+          const active = imgIdx % 2 === 0
+            ? "scale-[1.06] translate-x-[-3%]"   // pan leftward while zooming out slightly
+            : "scale-[1.06] translate-x-[3%]";   // pan rightward while zooming out slightly
 
           return (
             <div
               key={imgIdx}
-              className={`absolute inset-0 transition-opacity duration-[400ms] ease-in-out ${
+              className={`absolute inset-0 transition-opacity duration-[600ms] ease-in-out ${
                 isActive ? "opacity-100 z-[1]" : "opacity-0 z-0"
               }`}
             >
@@ -293,10 +279,8 @@ export default function TripCard({
                 src={imgUrl}
                 alt={title}
                 fill
-                className={`object-cover transition-transform duration-[3000ms] ease-out will-change-transform ${
-                  isActive
-                    ? kenBurnsActive[variantIdx]
-                    : kenBurnsVariants[variantIdx]
+                className={`object-cover will-change-transform transition-transform duration-[4000ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] ${
+                  isActive ? active : idle
                 }`}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 priority={imgIdx === 0}
