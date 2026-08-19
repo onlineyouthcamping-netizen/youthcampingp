@@ -132,13 +132,26 @@ exports.getDashboard = async (req, res) => {
       },
       include: {
         stationPayments: {
-          where: { collectionStatus: { not: "CANCELLED" } },
           include: {
             receivingAccount: true,
             collectedBy: { select: { id: true, name: true } },
+            verifiedBy: { select: { id: true, name: true } },
           },
+          orderBy: { collectedAt: "desc" },
         },
         salesAdmin: { select: { id: true, name: true } },
+        accountingEntries: {
+          select: {
+            id: true,
+            amount: true,
+            paymentMode: true,
+            referenceNumber: true,
+            notes: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -159,10 +172,16 @@ exports.getDashboard = async (req, res) => {
       const finalAmount = bk.totalAmount || bk.amount || 0;
       const currentAdvancePaid = bk.advancePaid || 0;
       const cashPmts = bk.stationPayments.filter(
-        (p) => p.paymentMode === "CASH" && p.collectionStatus === "COLLECTED",
+        (p) =>
+          p.paymentMode === "CASH" &&
+          p.collectionStatus === "COLLECTED" &&
+          !p.isReversed,
       );
       const upiPmts = bk.stationPayments.filter(
-        (p) => p.paymentMode === "UPI" && p.collectionStatus === "COLLECTED",
+        (p) =>
+          p.paymentMode === "UPI" &&
+          p.collectionStatus !== "CANCELLED" &&
+          !p.isReversed,
       );
       const verifiedUpi = upiPmts.filter(
         (p) => p.upiVerificationStatus === "VERIFIED",
@@ -255,8 +274,13 @@ exports.getDashboard = async (req, res) => {
         grandTotal,
         grandRemaining: remaining,
         paymentStatus: bk.paymentStatus,
+        paymentMode: bk.paymentMode || bk.payment_method || "UPI",
+        paymentMethod: bk.payment_method || bk.paymentMode || "online",
+        upiReference: bk.upi_reference,
+        accountingEntries: bk.accountingEntries || [],
         collectionStatus: collStat,
         stationPayments: bk.stationPayments,
+        createdAt: bk.createdAt,
       });
     }
 
