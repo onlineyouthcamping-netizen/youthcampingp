@@ -3399,6 +3399,7 @@ exports.saveManualAllocations = async (req, res) => {
       roomAllocations: rawRoomAllocations = [],
       vehicleAllocations: rawVehicleAllocations = [],
       clearExisting = false,
+      target = "all",
     } = req.body;
 
     // Mutable working copies so we can normalize bookingId references before FK-constrained upserts
@@ -3414,9 +3415,14 @@ exports.saveManualAllocations = async (req, res) => {
         });
     }
 
-    // Require explicit clearExisting flag when sending empty arrays (prevents silent data loss)
+    // Require explicit clearExisting flag when sending empty arrays for the target
     const isEmpty =
-      roomAllocations.length === 0 && vehicleAllocations.length === 0;
+      target === "rooms"
+        ? roomAllocations.length === 0
+        : target === "vehicles"
+          ? vehicleAllocations.length === 0
+          : roomAllocations.length === 0 && vehicleAllocations.length === 0;
+
     if (isEmpty && !clearExisting) {
       return res.status(400).json({
         success: false,
@@ -3498,22 +3504,16 @@ exports.saveManualAllocations = async (req, res) => {
     }
 
     // 2. Validate all fleetIds belong to this departure
-    const allFleetIds = vehicleAllocations
-      .map((v) => v.fleetId)
-      .filter(Boolean);
+    const allFleetIds = [
+      ...new Set(vehicleAllocations.map((v) => v.fleetId)),
+    ].filter(Boolean);
     if (allFleetIds.length > 0) {
       const validFleets = await prisma.opsTransportFleet.findMany({
-        where: {
-          id: { in: [...new Set(allFleetIds)] },
-          tripId: resolvedTripId,
-          departureDate,
-        },
+        where: scope,
         select: { id: true, capacity: true },
       });
       const validFleetMap = new Map(validFleets.map((f) => [f.id, f]));
-      const invalidFleets = [...new Set(allFleetIds)].filter(
-        (id) => !validFleetMap.has(id),
-      );
+      const invalidFleets = allFleetIds.filter((id) => !validFleetMap.has(id));
       if (invalidFleets.length > 0) {
         return res.status(400).json({
           success: false,
@@ -3587,84 +3587,87 @@ exports.saveManualAllocations = async (req, res) => {
     let savedVehicles = [];
 
     await prisma.$transaction(async (tx) => {
-      // Soft-cancel existing ACTIVE allocations for this departure
-      await tx.opsRoomAllocation.updateMany({
-        where: { ...scope, allocationStatus: "ACTIVE" },
-        data: { allocationStatus: "CANCELLED" },
-      });
-      await tx.opsVehicleAllocation.updateMany({
-        where: { ...scope, allocationStatus: "ACTIVE" },
-        data: { allocationStatus: "CANCELLED" },
-      });
+      // Soft-cancel existing ACTIVE allocations ONLY for targeted type
+      if (target === "all" || target === "rooms") {
+        await tx.opsRoomAllocation.updateMany({
+          where: { ...scope, allocationStatus: "ACTIVE" },
+          data: { allocationStatus: "CANCELLED" },
+        });
 
-      // Upsert new ACTIVE room allocations
-      for (const r of roomAllocations) {
-        const record = await tx.opsRoomAllocation.upsert({
-          where: {
-            tripId_departureDate_bookingId_travelerName: {
+        // Upsert new ACTIVE room allocations
+        for (const r of roomAllocations) {
+          const record = await tx.opsRoomAllocation.upsert({
+            where: {
+              tripId_departureDate_bookingId_travelerName: {
+                tripId: resolvedTripId,
+                departureDate,
+                bookingId: r.bookingId,
+                travelerName: r.travelerName,
+              },
+            },
+            update: {
+              roomNumber: r.roomNumber,
+              roomType: r.roomType || "STANDARD",
+              genderGroup: r.genderGroup || "MIXED",
+              sharingType: r.sharingType || "STANDARD",
+              allocationStatus: "ACTIVE",
+              hotelBookingId: r.hotelBookingId || null,
+              notes: r.notes || null,
+            },
+            create: {
               tripId: resolvedTripId,
               departureDate,
               bookingId: r.bookingId,
               travelerName: r.travelerName,
+              roomNumber: r.roomNumber,
+              roomType: r.roomType || "STANDARD",
+              genderGroup: r.genderGroup || "MIXED",
+              sharingType: r.sharingType || "STANDARD",
+              allocationStatus: "ACTIVE",
+              hotelBookingId: r.hotelBookingId || null,
+              notes: r.notes || null,
             },
-          },
-          update: {
-            roomNumber: r.roomNumber,
-            roomType: r.roomType || "STANDARD",
-            genderGroup: r.genderGroup || "MIXED",
-            sharingType: r.sharingType || "STANDARD",
-            allocationStatus: "ACTIVE",
-            hotelBookingId: r.hotelBookingId || null,
-            notes: r.notes || null,
-          },
-          create: {
-            tripId: resolvedTripId,
-            departureDate,
-            bookingId: r.bookingId,
-            travelerName: r.travelerName,
-            roomNumber: r.roomNumber,
-            roomType: r.roomType || "STANDARD",
-            genderGroup: r.genderGroup || "MIXED",
-            sharingType: r.sharingType || "STANDARD",
-            allocationStatus: "ACTIVE",
-            hotelBookingId: r.hotelBookingId || null,
-            notes: r.notes || null,
-          },
-        });
-        savedRooms.push(record);
+          });
+          savedRooms.push(record);
+        }
       }
 
-      // Upsert new ACTIVE vehicle allocations
-      for (const v of vehicleAllocations) {
-        const record = await tx.opsVehicleAllocation.upsert({
-          where: {
-            tripId_departureDate_bookingId_travelerName: {
+      if (target === "all" || target === "vehicles") {
+        await tx.opsVehicleAllocation.updateMany({
+          where: { ...scope, allocationStatus: "ACTIVE" },
+          data: { allocationStatus: "CANCELLED" },
+        });
+
+        // Upsert new ACTIVE vehicle allocations
+        for (const v of vehicleAllocations) {
+          const record = await tx.opsVehicleAllocation.upsert({
+            where: {
+              tripId_departureDate_bookingId_travelerName: {
+                tripId: resolvedTripId,
+                departureDate,
+                bookingId: v.bookingId,
+                travelerName: v.travelerName,
+              },
+            },
+            update: {
+              fleetId: v.fleetId,
+              seatNumber: v.seatNumber || null,
+              allocationStatus: "ACTIVE",
+              notes: v.notes || null,
+            },
+            create: {
               tripId: resolvedTripId,
               departureDate,
               bookingId: v.bookingId,
               travelerName: v.travelerName,
+              fleetId: v.fleetId,
+              seatNumber: v.seatNumber || null,
+              allocationStatus: "ACTIVE",
+              notes: v.notes || null,
             },
-          },
-          update: {
-            fleetId: v.fleetId,
-            seatNumber: v.seatNumber || null,
-            allocationStatus: "ACTIVE",
-            routeSegment: v.routeSegment || null,
-            pickupPoint: v.pickupPoint || null,
-          },
-          create: {
-            tripId: resolvedTripId,
-            departureDate,
-            fleetId: v.fleetId,
-            bookingId: v.bookingId,
-            travelerName: v.travelerName,
-            seatNumber: v.seatNumber || null,
-            allocationStatus: "ACTIVE",
-            routeSegment: v.routeSegment || null,
-            pickupPoint: v.pickupPoint || null,
-          },
-        });
-        savedVehicles.push(record);
+          });
+          savedVehicles.push(record);
+        }
       }
 
       // ── AUTO-RECALCULATE HOTEL COSTS & ROOM COUNTS FROM SAVED ROOM ALLOCATIONS ──
