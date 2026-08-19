@@ -3269,10 +3269,12 @@ exports.getConfirmedAllocations = async (req, res) => {
     endOfAllocDay.setUTCHours(23, 59, 59, 999);
     const allocDateRange = { gte: startOfAllocDay, lte: endOfAllocDay };
 
+    const possibleTripIds = Array.from(new Set([ctx.tripId, req.params.tripId, req.params.tripId?.toUpperCase(), req.params.tripId?.toLowerCase()].filter(Boolean)));
+
     // Only return ACTIVE allocations (not CANCELLED soft-deletes)
     const rooms = await prisma.opsRoomAllocation.findMany({
       where: {
-        tripId: ctx.tripId,
+        tripId: { in: possibleTripIds },
         departureDate: allocDateRange,
         allocationStatus: "ACTIVE",
       },
@@ -3281,7 +3283,7 @@ exports.getConfirmedAllocations = async (req, res) => {
 
     const vehicles = await prisma.opsVehicleAllocation.findMany({
       where: {
-        tripId: ctx.tripId,
+        tripId: { in: possibleTripIds },
         departureDate: allocDateRange,
         allocationStatus: "ACTIVE",
       },
