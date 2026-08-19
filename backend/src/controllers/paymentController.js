@@ -1332,16 +1332,22 @@ exports.getFinanceVerificationQueue = async (req, res) => {
       prisma.opsVendorPayment.findMany({
         where: {
           tenantId,
-          status: {
-            in: [
-              "Pending Approval",
-              "Pending Verification",
-              "PENDING",
-              "Pending",
-              "Not Paid",
-              "Advance Paid",
-            ],
-          },
+          OR: [
+            { approvalStatus: { in: ["PENDING", "REVIEWED_FINANCE_CONTROLLER"] } },
+            {
+              status: {
+                in: [
+                  "Pending Approval",
+                  "Pending Verification",
+                  "PENDING",
+                  "Pending",
+                  "Not Paid",
+                  "Advance Paid",
+                ],
+              },
+            },
+          ],
+          approvalStatus: { notIn: ["APPROVED_FOUNDER", "REJECTED"] },
         },
         orderBy: { createdAt: "desc" },
         include: {
@@ -1768,3 +1774,6 @@ exports.getAllVendorPayablesQueue = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+exports.syncOperationalVendorRecord = syncOperationalVendorRecord;
+

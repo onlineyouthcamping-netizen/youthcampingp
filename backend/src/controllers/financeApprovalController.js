@@ -928,13 +928,15 @@ exports.reviewVendorPaymentFC = async (req, res) => {
         newStatus = "Paid";
       }
 
+      const finalAdvance = newStatus === "Paid" ? Math.max(agreed, advance) : advance;
+      const finalRemaining = Math.max(0, agreed - finalAdvance);
+
       // Atomic conditional update
       const updateResult = await tx.opsVendorPayment.updateMany({
         where: {
           id: paymentId,
           tenantId,
-          approvalStatus: { in: ["PENDING", "REJECTED"] },
-          status: { not: "Paid" },
+          approvalStatus: { in: ["PENDING", "REJECTED", "REVIEWED_FINANCE_CONTROLLER"] },
         },
         data: {
           approvalStatus: newApprovalStatus,
@@ -942,7 +944,8 @@ exports.reviewVendorPaymentFC = async (req, res) => {
           reviewedByFinanceId: user.id,
           requiresFounderApproval: requiresFounder,
           status: newStatus,
-          remainingPayable: remainingPayable,
+          advancePaid: finalAdvance,
+          remainingPayable: finalRemaining,
         },
       });
 
@@ -975,7 +978,7 @@ exports.reviewVendorPaymentFC = async (req, res) => {
             requiresFounderApproval: requiresFounder,
             status: newStatus,
           }),
-          changeDescription: `Vendor invoice reviewed for ${payment.vendorName} (Category: ${payment.category}, Remaining: ₹${remainingPayable})${
+          changeDescription: `Vendor invoice reviewed for ${payment.vendorName} (Category: ${payment.category}, Remaining: ₹${finalRemaining})${
             requiresFounder ? " [REQUIRES FOUNDER APPROVAL > ₹50,000]" : " [FC CLEARED <= ₹50,000]"
           }`,
           reason: sanitizeReason(reason) || null,
@@ -984,8 +987,27 @@ exports.reviewVendorPaymentFC = async (req, res) => {
         },
       });
 
-      return { updated, requiresFounder, remainingPayable };
+      return { updated, requiresFounder, remainingPayable: finalRemaining };
     });
+
+    // Synchronize underlying operational vendor allocations (Hotels, Transport, Guides, Activities)
+    try {
+      const { syncOperationalVendorRecord } = require("./paymentController");
+      if (typeof syncOperationalVendorRecord === "function") {
+        await syncOperationalVendorRecord(
+          tenantId,
+          result.updated.tripId,
+          result.updated.departureDate,
+          result.updated.vendorName,
+          result.updated.category,
+          result.updated.agreedAmount,
+          result.updated.advancePaid,
+          result.updated.id
+        );
+      }
+    } catch (e) {
+      console.warn("syncOperationalVendorRecord warning:", e);
+    }
 
     return res.json({
       success: true,
@@ -1029,14 +1051,13 @@ exports.approveVendorPaymentFounder = async (req, res) => {
         throw { statusCode: 404, message: "Vendor payment not found or access denied" };
       }
 
-      if (payment.approvalStatus !== "REVIEWED_FINANCE_CONTROLLER") {
+      if (
+        payment.approvalStatus !== "REVIEWED_FINANCE_CONTROLLER" &&
+        payment.approvalStatus !== "PENDING"
+      ) {
         if (payment.approvalStatus === "APPROVED_FOUNDER" && payment.status === "Paid") {
           throw { statusCode: 400, message: "Vendor payout is already approved and paid." };
         }
-        throw {
-          statusCode: 400,
-          message: "Vendor payout must be reviewed by Finance Controller before Founder approval.",
-        };
       }
 
       const invoiceUrl = sanitizeProofUrl(invoiceFileUrl || payment.invoiceFileUrl || payment.invoiceProof);
@@ -1046,19 +1067,23 @@ exports.approveVendorPaymentFounder = async (req, res) => {
         status: payment.status,
       };
 
+      const agreed = Number(payment.agreedAmount || 0);
+      const finalAdvance = Math.max(agreed, Number(payment.advancePaid || 0));
+
       // Atomic conditional update
       const updateResult = await tx.opsVendorPayment.updateMany({
         where: {
           id: paymentId,
           tenantId,
-          approvalStatus: "REVIEWED_FINANCE_CONTROLLER",
-          status: { not: "Paid" },
+          approvalStatus: { in: ["REVIEWED_FINANCE_CONTROLLER", "PENDING"] },
         },
         data: {
           approvalStatus: "APPROVED_FOUNDER",
           approvedByFounderAt: new Date(),
           approvedByFounderId: user.id,
           status: "Paid",
+          advancePaid: finalAdvance,
+          remainingPayable: 0,
           invoiceFileUrl: invoiceUrl || undefined,
         },
       });
@@ -1097,6 +1122,25 @@ exports.approveVendorPaymentFounder = async (req, res) => {
 
       return updated;
     });
+
+    // Synchronize underlying operational vendor allocations (Hotels, Transport, Guides, Activities)
+    try {
+      const { syncOperationalVendorRecord } = require("./paymentController");
+      if (typeof syncOperationalVendorRecord === "function") {
+        await syncOperationalVendorRecord(
+          tenantId,
+          result.tripId,
+          result.departureDate,
+          result.vendorName,
+          result.category,
+          result.agreedAmount,
+          result.advancePaid,
+          result.id
+        );
+      }
+    } catch (e) {
+      console.warn("syncOperationalVendorRecord warning:", e);
+    }
 
     return res.json({
       success: true,
