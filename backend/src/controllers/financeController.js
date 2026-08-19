@@ -1733,9 +1733,8 @@ exports.batchVerifyStationCash = async (req, res) => {
   try {
     const userRole = (req.user?.role || "").toLowerCase();
     const isSuperuserFounder =
-      ["superadmin", "founder", "admin"].includes(userRole) ||
-      Boolean(req.user?.isSuperuser) ||
-      (req.user?.email && req.user.email.toLowerCase().includes("hemal"));
+      ["superadmin", "founder"].includes(userRole) ||
+      Boolean(req.user?.isSuperuser);
 
     if (!isSuperuserFounder) {
       return res.status(403).json({
