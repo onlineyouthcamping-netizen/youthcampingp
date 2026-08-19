@@ -186,12 +186,12 @@ export default function DestinationInquiryModal({
             </button>
 
             {/* Left Column: Premium Destination Visual Card */}
-            <div className="relative w-full md:w-[45%] h-56 md:h-auto flex flex-col justify-between p-6 md:p-8 text-white shrink-0 overflow-hidden bg-[#0B1528]">
+            <div className="relative w-full md:w-[45%] h-56 md:h-auto flex flex-col justify-between p-6 md:p-8 text-white shrink-0 overflow-hidden bg-[#0B1528] rounded-t-[24px] md:rounded-t-none md:rounded-l-[32px]">
               {destination.img && (
                 <OptimizedImage
                   src={normalizeImageUrl(destination.img) || destination.img}
                   alt={destination.name}
-                  className="absolute inset-0 w-full h-full object-cover scale-[1.02]"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-[#0B1528] via-[#0B1528]/50 to-black/30" />
