@@ -1195,27 +1195,30 @@ exports.createTransportFleet = async (req, res) => {
         .status(400)
         .json({ success: false, message: "vehicleType is required" });
 
-    // Validate vendor type
+    // Validate vendor type — if the ID belongs to the Vendor Directory rather than
+    // OpsVendor (two separate tables), silently drop it so the fleet record is still
+    // created.  This prevents a 400 error when the UI passes a directory vendor ID.
+    let resolvedVendorId = vendorId || null;
     if (vendorId) {
       const vendor = await prisma.opsVendor.findUnique({
         where: { id: vendorId },
         select: { type: true, isActive: true },
       });
-      if (!vendor)
-        return res
-          .status(400)
-          .json({ success: false, message: "Vendor not found" });
-      if (vendor.type !== "TRANSPORT")
+      if (!vendor) {
+        // ID is not in OpsVendor — likely a Vendor Directory ID; ignore it
+        resolvedVendorId = null;
+      } else if (vendor.type !== "TRANSPORT") {
         return res
           .status(400)
           .json({
             success: false,
             message: `Vendor type must be TRANSPORT, got ${vendor.type}`,
           });
-      if (!vendor.isActive)
+      } else if (!vendor.isActive) {
         return res
           .status(400)
           .json({ success: false, message: "Vendor is inactive" });
+      }
     }
 
     const tot = parseFloat(totalAmount || 0);
@@ -1246,7 +1249,7 @@ exports.createTransportFleet = async (req, res) => {
         tenantId: ctx.tenantId,
         tripId: ctx.tripId,
         departureDate: ctx.departureDate,
-        vendorId: vendorId || null,
+        vendorId: resolvedVendorId,
         vehicleType,
         vehicleNumber: vehicleNumber || null,
         capacity: cap,
@@ -1320,27 +1323,28 @@ exports.updateTransportFleet = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Transport vehicle not found" });
 
-    // Validate vendor type if changing vendorId
+    // Validate vendor type if changing vendorId.  If the ID belongs to the Vendor
+    // Directory rather than OpsVendor, silently clear it so the update still succeeds.
+    let resolvedUpdateVendorId = vendorId; // undefined = no change
     if (vendorId !== undefined && vendorId !== null) {
       const vendor = await prisma.opsVendor.findUnique({
         where: { id: vendorId },
         select: { type: true, isActive: true },
       });
-      if (!vendor)
-        return res
-          .status(400)
-          .json({ success: false, message: "Vendor not found" });
-      if (vendor.type !== "TRANSPORT")
+      if (!vendor) {
+        resolvedUpdateVendorId = null; // drop directory vendor ID
+      } else if (vendor.type !== "TRANSPORT") {
         return res
           .status(400)
           .json({
             success: false,
             message: `Vendor type must be TRANSPORT, got ${vendor.type}`,
           });
-      if (!vendor.isActive)
+      } else if (!vendor.isActive) {
         return res
           .status(400)
           .json({ success: false, message: "Vendor is inactive" });
+      }
     }
 
     const tot =
@@ -1373,7 +1377,7 @@ exports.updateTransportFleet = async (req, res) => {
         vehicleType: vehicleType !== undefined ? vehicleType : undefined,
         vehicleNumber: vehicleNumber !== undefined ? vehicleNumber : undefined,
         capacity: capacity !== undefined ? parseInt(capacity) : undefined,
-        vendorId: vendorId !== undefined ? vendorId || null : undefined,
+        vendorId: resolvedUpdateVendorId !== undefined ? resolvedUpdateVendorId || null : undefined,
         route: route !== undefined ? route : undefined,
         pickupPoints: pickupPoints !== undefined ? pickupPoints : undefined,
         dropPoints: dropPoints !== undefined ? dropPoints : undefined,
