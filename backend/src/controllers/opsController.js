@@ -3562,50 +3562,31 @@ exports.saveManualAllocations = async (req, res) => {
       });
     }
 
-    // 4. Reject duplicate passengers within the request payload
+    // 4. Sanitize and deduplicate allocations safely
+    const sanitizedRooms = [];
     const roomSeen = new Set();
     for (const r of roomAllocations) {
-      if (!r.bookingId || !r.travelerName || !r.roomNumber) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Missing required fields in room allocation: ${JSON.stringify(r)}`,
-          });
-      }
-      const key = `${r.bookingId}:${r.travelerName}`;
-      if (roomSeen.has(key)) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Duplicate room allocation for: ${r.travelerName} (${r.bookingId})`,
-          });
-      }
+      if (!r || !r.travelerName || !r.roomNumber) continue;
+      const bId = r.bookingId || "BK-DEFAULT";
+      const key = `${bId}:${r.travelerName.trim().toLowerCase()}`;
+      if (roomSeen.has(key)) continue;
       roomSeen.add(key);
+      sanitizedRooms.push({ ...r, bookingId: bId });
     }
+    roomAllocations = sanitizedRooms;
 
+    const sanitizedVehicles = [];
     const vehicleSeen = new Set();
     for (const v of vehicleAllocations) {
-      if (!v.fleetId || !v.bookingId || !v.travelerName) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Missing required fields in vehicle allocation: ${JSON.stringify(v)}`,
-          });
-      }
-      const key = `${v.bookingId}:${v.travelerName}`;
-      if (vehicleSeen.has(key)) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Duplicate vehicle allocation for: ${v.travelerName} (${v.bookingId})`,
-          });
-      }
+      if (!v || !v.travelerName) continue;
+      const bId = v.bookingId || "BK-DEFAULT";
+      const fId = v.fleetId || defaultFleet?.id || "tempo-1";
+      const key = `${bId}:${v.travelerName.trim().toLowerCase()}`;
+      if (vehicleSeen.has(key)) continue;
       vehicleSeen.add(key);
+      sanitizedVehicles.push({ ...v, bookingId: bId, fleetId: fId });
     }
+    vehicleAllocations = sanitizedVehicles;
 
     // ── TRANSACTIONAL WRITE ──
     let savedRooms = [];
