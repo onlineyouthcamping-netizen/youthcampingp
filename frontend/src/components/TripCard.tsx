@@ -259,14 +259,13 @@ export default function TripCard({
             {/* CINEMATIC SLIDE + ZOOM PHOTO CAROUSEL */}
             {imagesList.map((imgUrl, imgIdx) => {
           const isActive = imgIdx === activePhotoIndex;
-          // Alternating slide directions: odd = pan left→right, even = pan right→left
-          // Combined with subtle zoom for depth
+          // Alternating slide pan — no zoom, pure horizontal drift
           const idle = imgIdx % 2 === 0
-            ? "scale-[1.18] translate-x-[4%]"   // start: zoomed in, offset right
-            : "scale-[1.18] translate-x-[-4%]";  // start: zoomed in, offset left
+            ? "scale-100 translate-x-[4%]"
+            : "scale-100 translate-x-[-4%]";
           const active = imgIdx % 2 === 0
-            ? "scale-[1.06] translate-x-[-3%]"   // pan leftward while zooming out slightly
-            : "scale-[1.06] translate-x-[3%]";   // pan rightward while zooming out slightly
+            ? "scale-100 translate-x-[-3%]"
+            : "scale-100 translate-x-[3%]";
 
           return (
             <div
