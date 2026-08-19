@@ -3482,7 +3482,7 @@ exports.saveManualAllocations = async (req, res) => {
           { title: { contains: tripId, mode: "insensitive" } },
         ],
       },
-      select: { id: true },
+      select: { id: true, slug: true, shortName: true },
     });
     if (!trip)
       return res
@@ -3499,14 +3499,57 @@ exports.saveManualAllocations = async (req, res) => {
       ...vehicleAllocations.map((v) => v.bookingId),
     ].filter(Boolean);
 
-    const validBookings = await prisma.booking.findMany({
-      where: {
-        OR: [
-          { tripId: { in: [tripId, resolvedTripId, trip.slug, trip.shortName].filter(Boolean) } },
-          ...(allBookingIds.length > 0 ? [{ id: { in: allBookingIds } }, { bookingId: { in: allBookingIds } }] : []),
-        ],
-      },
-      select: { id: true, bookingId: true, name: true, fullName: true },
+    const tripIdCandidates = [
+      tripId,
+      resolvedTripId,
+      trip.slug,
+      trip.shortName,
+    ].filter(Boolean);
+
+    const [tripBookings, referencedBookings] = await Promise.all([
+      prisma.booking.findMany({
+        where: {
+          tripId: { in: tripIdCandidates },
+        },
+        select: {
+          id: true,
+          bookingId: true,
+          name: true,
+          fullName: true,
+          departureDate: true,
+        },
+      }),
+      allBookingIds.length > 0
+        ? prisma.booking.findMany({
+            where: {
+              OR: [
+                { id: { in: allBookingIds } },
+                { bookingId: { in: allBookingIds } },
+              ],
+            },
+            select: {
+              id: true,
+              bookingId: true,
+              name: true,
+              fullName: true,
+              departureDate: true,
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const bookingMap = new Map();
+    [...tripBookings, ...referencedBookings].forEach((b) => {
+      bookingMap.set(b.id, b);
+      if (b.bookingId) bookingMap.set(b.bookingId, b);
+    });
+
+    const validBookings = [...bookingMap.values()].filter((b) => {
+      const bookingDay = normalizeDepartureDateIndia(b.departureDate);
+      return (
+        bookingDay &&
+        bookingDay.getTime() === departureDate.getTime()
+      );
     });
 
     const idToBookingId = {};
@@ -3517,7 +3560,22 @@ exports.saveManualAllocations = async (req, res) => {
       if (b.name) nameToBookingId[b.name.trim().toLowerCase()] = b.bookingId;
       if (b.fullName) nameToBookingId[b.fullName.trim().toLowerCase()] = b.bookingId;
     });
-    const defaultBookingId = validBookings[0]?.bookingId || (allBookingIds[0] ? (idToBookingId[allBookingIds[0]] || allBookingIds[0]) : "BK-DEFAULT");
+    const defaultBookingId =
+      validBookings[0]?.bookingId ||
+      (allBookingIds[0]
+        ? idToBookingId[allBookingIds[0]] || allBookingIds[0]
+        : null);
+
+    if (
+      (roomAllocations.length > 0 || vehicleAllocations.length > 0) &&
+      !defaultBookingId
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No bookings found for this departure date. Passengers cannot be allocated until bookings match the departure.",
+      });
+    }
 
     // Normalize all allocation bookingId fields to use the FK-compatible bookingId display string
     roomAllocations = roomAllocations.map((r) => {
