@@ -1195,30 +1195,21 @@ exports.createTransportFleet = async (req, res) => {
         .status(400)
         .json({ success: false, message: "vehicleType is required" });
 
-    // Validate vendor type — if the ID belongs to the Vendor Directory rather than
+    // Safe vendor resolution — if the ID belongs to the Vendor Directory rather than
     // OpsVendor (two separate tables), silently drop it so the fleet record is still
-    // created.  This prevents a 400 error when the UI passes a directory vendor ID.
-    let resolvedVendorId = vendorId || null;
+    // created. This prevents a 400 error when the UI passes a directory vendor ID.
+    let resolvedVendorId = null;
     if (vendorId) {
-      const vendor = await prisma.opsVendor.findUnique({
-        where: { id: vendorId },
-        select: { type: true, isActive: true },
+      const vendor = await prisma.opsVendor.findFirst({
+        where: {
+          OR: [{ id: vendorId }, { name: vendorId }],
+        },
+        select: { id: true, type: true, isActive: true },
       });
-      if (!vendor) {
-        // ID is not in OpsVendor — likely a Vendor Directory ID; ignore it
-        resolvedVendorId = null;
-      } else if (vendor.type !== "TRANSPORT") {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Vendor type must be TRANSPORT, got ${vendor.type}`,
-          });
-      } else if (!vendor.isActive) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Vendor is inactive" });
+      if (vendor) {
+        resolvedVendorId = vendor.id;
       }
+      // If vendor not found in OpsVendor, resolvedVendorId stays null (directory vendor or unknown)
     }
 
     const tot = parseFloat(totalAmount || 0);
@@ -1275,7 +1266,7 @@ exports.createTransportFleet = async (req, res) => {
     console.error("createTransportFleet error:", err);
     return res
       .status(500)
-      .json({ success: false, message: "Failed to create transport fleet" });
+      .json({ success: false, message: "Failed to create transport fleet: " + err.message });
   }
 };
 
@@ -1296,6 +1287,8 @@ exports.deleteTransportFleet = async (req, res) => {
 
 exports.updateTransportFleet = async (req, res) => {
   try {
+    const ctx = await parseDepartureFilter(req, res, true);
+    if (!ctx) return;
     const { id } = req.params;
     const {
       vehicleType,
@@ -1315,35 +1308,43 @@ exports.updateTransportFleet = async (req, res) => {
       driverPhone,
       notes,
     } = req.body;
-    const existing = await prisma.opsTransportFleet.findUnique({
-      where: { id },
+
+    const existing = await prisma.opsTransportFleet.findFirst({
+      where: { id, tripId: ctx.tripId, departureDate: ctx.departureDate },
     });
     if (!existing)
       return res
         .status(404)
         .json({ success: false, message: "Transport vehicle not found" });
 
-    // Validate vendor type if changing vendorId.  If the ID belongs to the Vendor
-    // Directory rather than OpsVendor, silently clear it so the update still succeeds.
-    let resolvedUpdateVendorId = vendorId; // undefined = no change
-    if (vendorId !== undefined && vendorId !== null) {
-      const vendor = await prisma.opsVendor.findUnique({
-        where: { id: vendorId },
-        select: { type: true, isActive: true },
-      });
-      if (!vendor) {
-        resolvedUpdateVendorId = null; // drop directory vendor ID
-      } else if (vendor.type !== "TRANSPORT") {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Vendor type must be TRANSPORT, got ${vendor.type}`,
-          });
-      } else if (!vendor.isActive) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Vendor is inactive" });
+    // Safe vendor resolution — if the ID belongs to the Vendor Directory rather than
+    // OpsVendor, silently drop it so the update still succeeds.
+    let resolvedVendorId = existing.vendorId;
+    if (vendorId !== undefined) {
+      if (vendorId === null || vendorId === "") {
+        resolvedVendorId = null;
+      } else {
+        const vendor = await prisma.opsVendor.findFirst({
+          where: {
+            OR: [{ id: vendorId }, { name: vendorId }],
+          },
+          select: { id: true, type: true, isActive: true },
+        });
+        if (vendor) {
+          if (vendor.type !== "TRANSPORT")
+            return res
+              .status(400)
+              .json({
+                success: false,
+                message: `Vendor type must be TRANSPORT, got ${vendor.type}`,
+              });
+          if (!vendor.isActive)
+            return res
+              .status(400)
+              .json({ success: false, message: "Vendor is inactive" });
+          resolvedVendorId = vendor.id;
+        }
+        // If vendor not found in OpsVendor, keep existing vendorId (directory vendor — ignore)
       }
     }
 
@@ -1377,7 +1378,7 @@ exports.updateTransportFleet = async (req, res) => {
         vehicleType: vehicleType !== undefined ? vehicleType : undefined,
         vehicleNumber: vehicleNumber !== undefined ? vehicleNumber : undefined,
         capacity: capacity !== undefined ? parseInt(capacity) : undefined,
-        vendorId: resolvedUpdateVendorId !== undefined ? resolvedUpdateVendorId || null : undefined,
+        vendorId: resolvedVendorId,
         route: route !== undefined ? route : undefined,
         pickupPoints: pickupPoints !== undefined ? pickupPoints : undefined,
         dropPoints: dropPoints !== undefined ? dropPoints : undefined,
