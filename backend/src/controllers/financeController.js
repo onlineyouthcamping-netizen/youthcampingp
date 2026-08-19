@@ -838,12 +838,64 @@ exports.verifyIncomingPayment = async (req, res) => {
     const userId = req.user?.id;
     const userName = req.user?.name || "Finance Controller";
 
-    const entry = await prisma.accountingEntry.findUnique({
+    let entry = await prisma.accountingEntry.findUnique({
       where: { id },
       include: { booking: true },
     });
 
     if (!entry) {
+      // Check OpsClientPayment
+      const clientPayment = await prisma.opsClientPayment.findUnique({
+        where: { id },
+        include: { booking: true },
+      });
+
+      if (clientPayment) {
+        const nextOpsStatus = action === "VERIFY" ? "Verified" : action === "REJECT" ? "Rejected" : "Pending Verification";
+        const nextApprovalStatus = action === "VERIFY" ? "APPROVED_FOUNDER" : action === "REJECT" ? "REJECTED" : "PENDING";
+
+        const updatedOps = await prisma.opsClientPayment.update({
+          where: { id },
+          data: {
+            status: nextOpsStatus,
+            approvalStatus: nextApprovalStatus,
+            reviewedByFinanceAt: new Date(),
+            reviewedByFinanceId: userId,
+            rejectionReason: action === "REJECT" ? reason : undefined,
+          },
+        });
+
+        if (action === "VERIFY" && clientPayment.booking) {
+          const allVerified = await prisma.opsClientPayment.findMany({
+            where: {
+              bookingId: { in: [clientPayment.booking.id, clientPayment.booking.bookingId] },
+              status: "Verified",
+            },
+          });
+
+          const totalVerified = allVerified.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+          const remaining = Math.max(0, Number(clientPayment.booking.totalAmount || 0) - totalVerified);
+          const isFullyPaid = remaining === 0 && totalVerified > 0;
+          const isPartial = totalVerified > 0 && !isFullyPaid;
+
+          await prisma.booking.update({
+            where: { id: clientPayment.booking.id },
+            data: {
+              advancePaid: totalVerified,
+              remainingAmount: remaining,
+              paymentStatus: isFullyPaid ? "Paid" : isPartial ? "Partial" : "Pending",
+              payment_status: isFullyPaid ? "paid" : isPartial ? "partial" : "pending",
+            },
+          });
+        }
+
+        return res.json({
+          success: true,
+          data: updatedOps,
+          message: `Payment ${action.toLowerCase()} completed`,
+        });
+      }
+
       return res.status(404).json({ success: false, message: "Payment entry not found" });
     }
 
@@ -983,14 +1035,6 @@ exports.assignIncomingPayment = async (req, res) => {
     const userId = req.user?.id;
     const userName = req.user?.name || req.user?.email || "Finance Admin";
 
-    const entry = await prisma.accountingEntry.findUnique({
-      where: { id },
-    });
-
-    if (!entry) {
-      return res.status(404).json({ success: false, message: "Payment entry not found" });
-    }
-
     let assigneeName = "Unassigned";
     if (assigneeId) {
       const assigneeUser = await prisma.admin.findUnique({
@@ -1002,30 +1046,101 @@ exports.assignIncomingPayment = async (req, res) => {
       }
     }
 
-    const updated = await prisma.accountingEntry.update({
+    // 1. Try AccountingEntry
+    const entry = await prisma.accountingEntry.findUnique({
       where: { id },
-      data: {
-        actionedById: assigneeId || null,
-      },
-      include: {
-        actionedBy: { select: { id: true, name: true, email: true, role: true } },
-      },
     });
 
-    await prisma.accountingEntryLog.create({
-      data: {
-        accountingEntryId: entry.id,
-        action: "ASSIGN",
-        notes: `Assigned incoming payment verification to ${assigneeName} by ${userName}.`,
-        actorId: userId,
-      },
+    if (entry) {
+      const updated = await prisma.accountingEntry.update({
+        where: { id },
+        data: {
+          actionedById: assigneeId || null,
+        },
+        include: {
+          actionedBy: { select: { id: true, name: true, email: true, role: true } },
+        },
+      });
+
+      await prisma.accountingEntryLog.create({
+        data: {
+          accountingEntryId: entry.id,
+          action: "ASSIGN",
+          notes: `Assigned incoming payment verification to ${assigneeName} by ${userName}.`,
+          actorId: userId,
+        },
+      });
+
+      return res.json({
+        success: true,
+        data: updated,
+        message: `Payment assigned to ${assigneeName}`,
+      });
+    }
+
+    // 2. Try OpsClientPayment
+    const clientPayment = await prisma.opsClientPayment.findUnique({
+      where: { id },
+      include: { booking: true },
     });
 
-    return res.json({
-      success: true,
-      data: updated,
-      message: `Payment assigned to ${assigneeName}`,
+    if (clientPayment) {
+      const matchingEntry = await prisma.accountingEntry.findFirst({
+        where: {
+          bookingId: clientPayment.bookingId,
+          amount: clientPayment.amount,
+        },
+      });
+
+      if (matchingEntry) {
+        await prisma.accountingEntry.update({
+          where: { id: matchingEntry.id },
+          data: { actionedById: assigneeId || null },
+        });
+      }
+
+      await prisma.financeAuditLog.create({
+        data: {
+          tenantId: clientPayment.tenantId || "default",
+          entityType: "CUSTOMER_PAYMENT",
+          entityId: clientPayment.id,
+          tripId: clientPayment.booking?.tripId || null,
+          action: "ASSIGN_APPROVER",
+          performedBy: userId,
+          performedByName: userName,
+          performedAt: new Date(),
+          changeDescription: `Assigned payment verification to ${assigneeName}`,
+        },
+      });
+
+      return res.json({
+        success: true,
+        data: clientPayment,
+        message: `Payment assigned to ${assigneeName}`,
+      });
+    }
+
+    // 3. Try StationPaymentCollection
+    const stationCollection = await prisma.stationPaymentCollection.findUnique({
+      where: { id },
     });
+
+    if (stationCollection) {
+      const updated = await prisma.stationPaymentCollection.update({
+        where: { id },
+        data: {
+          verifiedByAdminId: assigneeId || null,
+        },
+      });
+
+      return res.json({
+        success: true,
+        data: updated,
+        message: `Station collection assigned to ${assigneeName}`,
+      });
+    }
+
+    return res.status(404).json({ success: false, message: "Payment entry not found" });
   } catch (err) {
     console.error("assignIncomingPayment error:", err);
     return res.status(500).json({
