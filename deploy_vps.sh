@@ -32,8 +32,8 @@ node src/scripts/seedRealTripSops.js || true
 node src/scripts/syncChecklistsWithSops.js || true
 cd ..
 
-echo "🔁 [6/6] Reloading PM2 services with zero downtime..."
-pm2 reload all || pm2 restart all
+echo "🔁 [6/6] Reloading PM2 services with updated bundle..."
+pm2 restart all --update-env || pm2 reload all
 
 echo "=============================================================================="
 echo "✅ VPS Update Completed Successfully!"
