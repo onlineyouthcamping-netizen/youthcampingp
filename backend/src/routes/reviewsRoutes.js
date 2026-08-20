@@ -137,4 +137,168 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+// GET Single Review by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const review = await prisma.review.findUnique({
+      where: { id },
+    });
+
+    if (!review) {
+      return res.status(404).json({
+        status: "error",
+        message: "Review not found",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      data: review,
+    });
+  } catch (error) {
+    console.error("GET /api/reviews/:id error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to fetch review",
+    });
+  }
+});
+
+// CREATE Review
+router.post("/", async (req, res) => {
+  try {
+    const {
+      userName,
+      author,
+      name,
+      comment,
+      text,
+      userImage,
+      avatar,
+      city,
+      tripName,
+      tripType,
+      rating,
+      isFeatured,
+      photos,
+      images,
+      tripId,
+      isActive,
+    } = req.body;
+
+    const finalName = userName || author || name;
+    const finalComment = comment || text;
+
+    if (!finalName || !finalComment) {
+      return res.status(400).json({
+        status: "error",
+        message: "Author name and review comment are required",
+      });
+    }
+
+    const created = await prisma.review.create({
+      data: {
+        userName: finalName,
+        comment: finalComment,
+        userImage: userImage || avatar || null,
+        city: city || null,
+        tripName: tripName || null,
+        tripType: tripType || "Joined Group Trip",
+        rating: rating !== undefined ? Number(rating) : 5,
+        isFeatured: isFeatured !== undefined ? Boolean(isFeatured) : true,
+        photos: photos || images || [],
+        tripId: tripId || null,
+        isActive: isActive !== undefined ? Boolean(isActive) : true,
+      },
+    });
+
+    return res.status(201).json({
+      status: "success",
+      data: created,
+    });
+  } catch (error) {
+    console.error("POST /api/reviews error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to create review",
+    });
+  }
+});
+
+// UPDATE Review
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      userName,
+      author,
+      name,
+      comment,
+      text,
+      userImage,
+      avatar,
+      city,
+      tripName,
+      tripType,
+      rating,
+      isFeatured,
+      photos,
+      images,
+      tripId,
+      isActive,
+    } = req.body;
+
+    const data = {};
+    if (userName || author || name) data.userName = userName || author || name;
+    if (comment !== undefined || text !== undefined) data.comment = comment || text;
+    if (userImage !== undefined || avatar !== undefined) data.userImage = userImage || avatar;
+    if (city !== undefined) data.city = city;
+    if (tripName !== undefined) data.tripName = tripName;
+    if (tripType !== undefined) data.tripType = tripType;
+    if (rating !== undefined) data.rating = Number(rating);
+    if (isFeatured !== undefined) data.isFeatured = Boolean(isFeatured);
+    if (photos !== undefined || images !== undefined) data.photos = photos || images;
+    if (tripId !== undefined) data.tripId = tripId;
+    if (isActive !== undefined) data.isActive = Boolean(isActive);
+
+    const updated = await prisma.review.update({
+      where: { id },
+      data,
+    });
+
+    return res.status(200).json({
+      status: "success",
+      data: updated,
+    });
+  } catch (error) {
+    console.error("PUT /api/reviews/:id error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to update review",
+    });
+  }
+});
+
+// DELETE Review
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.review.delete({
+      where: { id },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Review deleted successfully",
+    });
+  } catch (error) {
+    console.error("DELETE /api/reviews/:id error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to delete review",
+    });
+  }
+});
+
 module.exports = router;
