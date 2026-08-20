@@ -1,8 +1,11 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'isolated_api_test_secret_with_32_characters';
+
+const TEST_PASSWORD_HASH = bcrypt.hashSync('isolated-test-password', 10);
 
 jest.mock('../../backend/src/lib/prisma', () => ({
   prisma: {
@@ -22,6 +25,7 @@ jest.mock('../../backend/src/lib/prisma', () => ({
 
 jest.mock('../../backend/src/utils/auditLogger', () => ({
   logAction: jest.fn().mockResolvedValue(null),
+  redactSensitive: jest.fn((data) => data),
 }));
 
 const { prisma } = require('../../backend/src/lib/prisma');
@@ -39,7 +43,7 @@ describe('YouthCamping API Tests', () => {
         ? Promise.resolve({
             id: 'isolated-test-admin',
             email: TEST_EMAIL,
-            password: '$2a$10$AztTcqtGm9FiywzdSz0W9.Ra1yx.XIAPItszeiiBg8G2/7EcCw5.2',
+            password: TEST_PASSWORD_HASH,
             name: 'Isolated Test Admin',
             role: 'admin',
             tenantId: 'test',

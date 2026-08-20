@@ -1,6 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const DOMPurify = require("isomorphic-dompurify");
+const { sanitizeHtml } = require("../utils/sanitizeHtml");
 const {
   createAuditLog,
   calculateReadiness,
@@ -159,7 +159,7 @@ exports.createArticle = async (req, res, next) => {
         .json({ success: false, message: "Workspace not found" });
 
     // Sanitize Rich Text
-    const cleanContent = DOMPurify.sanitize(content || "");
+    const cleanContent = sanitizeHtml(content || "");
 
     const article = await prisma.travelDeskArticle.create({
       data: {
@@ -228,7 +228,7 @@ exports.updateArticle = async (req, res, next) => {
     } = req.body;
 
     // Sanitize Rich Text
-    const cleanContent = DOMPurify.sanitize(content || oldArticle.content);
+    const cleanContent = sanitizeHtml(content || oldArticle.content);
 
     // If editing a published article, create a snapshot of the published one, and revert the main article to DRAFT/bump version
     let newStatus = status || oldArticle.status;

@@ -1,7 +1,3 @@
-const { generateHotelAssignments } = require("../src/services/hotelAssignmentEngine");
-const { prisma } = require("../src/lib/prisma");
-
-// Mock prisma
 jest.mock("../src/lib/prisma", () => ({
   prisma: {
     opsVendor: {
@@ -9,6 +5,9 @@ jest.mock("../src/lib/prisma", () => ({
     }
   }
 }));
+
+const { generateHotelAssignments } = require("../src/services/hotelAssignmentEngine");
+const { prisma } = require("../src/lib/prisma");
 
 describe("Hotel Assignment Engine", () => {
   beforeEach(() => {
@@ -79,7 +78,6 @@ describe("Hotel Assignment Engine", () => {
     expect(result.assignments[0].vendorId).toBe("V1");
     expect(result.assignments[1].vendorId).toBe("V2");
     
-    // First hotel gets 15 rooms (probably 12 Twin, 3 Triple depending on iteration order)
     const totalAllocatedV1 = Object.values(result.assignments[0].allocatedRooms).reduce((a,b)=>a+b,0);
     const totalAllocatedV2 = Object.values(result.assignments[1].allocatedRooms).reduce((a,b)=>a+b,0);
     

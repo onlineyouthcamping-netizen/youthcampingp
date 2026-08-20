@@ -529,7 +529,9 @@ exports.getBookings = async (req, res, next) => {
     }
 
     const authCheckTime = Date.now();
-    if (salesAdminId && salesAdminId !== "all") {
+    if (req.user?.role === "sales" && !req.user?.permissions?.includes("bookings.view_all")) {
+      where.salesAdminId = req.user.id;
+    } else if (salesAdminId && salesAdminId !== "all") {
       where.salesAdminId = salesAdminId;
     }
     const authDuration = Date.now() - authCheckTime;
@@ -665,7 +667,7 @@ exports.getBookings = async (req, res, next) => {
               baseAmount: true,
               gstAmount: true,
               sourceMeta: true,
-              passengers: true,
+              passengers: status !== "confirmed",
               trainTicketStatus: true,
               trainTicketRequired: true,
               sourceBookingLink: {

@@ -2,10 +2,11 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   testMatch: [
-    '**/tests/unit/**/*.[jt]s?(x)',
-    '**/tests/api/**/*.[jt]s?(x)',
-    '**/backend/tests/**/*.[jt]s?(x)'
+    '**/tests/unit/**/*.test.[jt]s?(x)',
+    '**/tests/api/**/*.test.[jt]s?(x)',
+    '**/backend/tests/**/*.test.[jt]s?(x)'
   ],
+  setupFiles: ['<rootDir>/tests/setupTests.js'],
   verbose: true,
   forceExit: true,
   clearMocks: true,

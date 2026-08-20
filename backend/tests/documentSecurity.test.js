@@ -1,6 +1,3 @@
-const { getDocumentAccessUrl } = require('../src/controllers/erpController');
-const { prisma } = require('../src/lib/prisma');
-
 jest.mock('../src/lib/prisma', () => ({
   prisma: {
     companyDocument: {
@@ -18,8 +15,11 @@ jest.mock('cloudinary', () => ({
 }));
 
 jest.mock('../src/utils/eventBus', () => ({
-  publishEvent: jest.fn()
+  publishEvent: jest.fn().mockResolvedValue(true)
 }));
+
+const { prisma } = require('../src/lib/prisma');
+const { getDocumentAccessUrl } = require('../src/controllers/erpController');
 
 describe('Document Security - Cloudinary Delivery', () => {
   let req, res, next;

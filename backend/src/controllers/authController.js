@@ -76,26 +76,28 @@ exports.adminLogin = async (req, res, next) => {
       if (match) {
         // Fire lastLoginAt update and audit log in background (non-blocking for fast login response)
         const now = new Date();
-        prisma.admin
-          .update({
+        Promise.resolve(
+          prisma.admin.update({
             where: { id: admin.id },
             data: { lastLoginAt: now },
           })
-          .catch((err) =>
-            console.error(
-              "⚠️ [Auth] Failed to update lastLoginAt:",
-              err.message,
-            ),
-          );
+        ).catch((err) =>
+          console.error(
+            "⚠️ [Auth] Failed to update lastLoginAt:",
+            err.message,
+          ),
+        );
 
-        logAction({
-          tenantId: admin.tenantId,
-          actorUserId: admin.id,
-          action: "login",
-          entityType: "admin",
-          entityId: admin.id,
-          ipAddress,
-        }).catch((err) =>
+        Promise.resolve(
+          logAction({
+            tenantId: admin.tenantId,
+            actorUserId: admin.id,
+            action: "login",
+            entityType: "admin",
+            entityId: admin.id,
+            ipAddress,
+          })
+        ).catch((err) =>
           console.error("⚠️ [Auth] Failed to log action:", err.message),
         );
 

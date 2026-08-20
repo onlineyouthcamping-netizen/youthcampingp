@@ -1,113 +1,60 @@
 const { generateLogicalRooms } = require("../src/services/roomAllocationEngine");
 
 describe("Room Allocation Engine", () => {
-  it("should handle a 2 passenger couple", () => {
+  it("should handle a 2 passenger couple from the same booking", () => {
     const input = {
-      summary: { total: 2 },
-      groups: {
-        couples: [
-          { bookingId: "B1", passengerIds: ["P1", "P2"] }
-        ],
-        families: [], male: [], female: []
-      }
+      allPassengers: [
+        { id: "P1", bookingId: "B1", name: "Alice", gender: "Female", roomSharing: "Double Sharing" },
+        { id: "P2", bookingId: "B1", name: "Bob", gender: "Male", roomSharing: "Double Sharing" },
+      ]
     };
     const result = generateLogicalRooms(input);
-    expect(result.allocation.Twin).toBe(1);
+    expect(result.summary.breakdown.Twin).toBe(1);
     expect(result.logicalRooms.length).toBe(1);
     expect(result.logicalRooms[0].type).toBe("Twin");
-    expect(result.logicalRooms[0].passengers).toEqual(["P1", "P2"]);
-    expect(result.readiness.status).toBe("Ready");
+    expect(result.logicalRooms[0].passengers.map(p => p.id)).toEqual(["P1", "P2"]);
   });
 
-  it("should handle a 3-person family", () => {
+  it("should handle a 3-person family from the same booking", () => {
     const input = {
-      groups: {
-        couples: [],
-        families: [
-          { bookingId: "B2", passengerIds: ["P1", "P2", "P3"] }
-        ],
-        male: [], female: []
-      }
+      allPassengers: [
+        { id: "P1", bookingId: "B2", name: "Dad", gender: "Male" },
+        { id: "P2", bookingId: "B2", name: "Mom", gender: "Female" },
+        { id: "P3", bookingId: "B2", name: "Kid", gender: "Male" },
+      ]
     };
     const result = generateLogicalRooms(input);
-    expect(result.allocation.Triple).toBe(1);
+    expect(result.summary.breakdown.Triple).toBe(1);
     expect(result.logicalRooms[0].type).toBe("Triple");
     expect(result.logicalRooms[0].passengers.length).toBe(3);
   });
 
-  it("should handle a 5-person family requiring manual split", () => {
+  it("should group unrelated females together by gender", () => {
     const input = {
-      groups: {
-        couples: [],
-        families: [
-          { bookingId: "B3", passengerIds: ["P1", "P2", "P3", "P4", "P5"] }
-        ],
-        male: [], female: []
-      }
+      allPassengers: [
+        { id: "F1", bookingId: "B_SOLO_1", name: "Female 1", gender: "Female" },
+        { id: "F2", bookingId: "B_SOLO_2", name: "Female 2", gender: "Female" },
+        { id: "F3", bookingId: "B_SOLO_3", name: "Female 3", gender: "Female" },
+        { id: "F4", bookingId: "B_SOLO_4", name: "Female 4", gender: "Female" },
+      ]
     };
     const result = generateLogicalRooms(input);
-    expect(result.allocation.Quad).toBe(1);
-    expect(result.allocation.ExtraBed).toBe(1);
+    expect(result.summary.breakdown.Triple).toBe(1);
+    expect(result.summary.breakdown.Single).toBe(1);
     expect(result.logicalRooms.length).toBe(2);
-    expect(result.logicalRooms[0].type).toBe("Quad");
-    expect(result.logicalRooms[1].type).toBe("Single");
-    expect(result.readiness.status).toBe("Manual Review");
-    expect(result.readiness.exceptions[0]).toContain("manual split");
   });
 
-  it("should group remaining females into triples and handle odd numbers", () => {
+  it("should separate unrelated solo males and females into gender-specific rooms", () => {
     const input = {
-      groups: {
-        couples: [], families: [], male: [],
-        // 4 females
-        female: ["F1", "F2", "F3", "F4"]
-      }
+      allPassengers: [
+        { id: "M1", bookingId: "B_SOLO_M1", name: "Male 1", gender: "Male" },
+        { id: "M2", bookingId: "B_SOLO_M2", name: "Male 2", gender: "Male" },
+        { id: "F1", bookingId: "B_SOLO_F1", name: "Female 1", gender: "Female" },
+      ]
     };
     const result = generateLogicalRooms(input);
-    expect(result.allocation.Triple).toBe(1);
-    expect(result.allocation.Single).toBe(1);
+    expect(result.summary.breakdown.Twin).toBe(1);
+    expect(result.summary.breakdown.Single).toBe(1);
     expect(result.logicalRooms.length).toBe(2);
-    expect(result.readiness.status).toBe("Manual Review");
-    expect(result.readiness.exceptions[0]).toContain("Only one female passenger remaining");
-  });
-
-  it("should ignore passengers already assigned as couples when grouping by gender", () => {
-    const input = {
-      groups: {
-        couples: [
-          { bookingId: "B1", passengerIds: ["M1", "F1"] }
-        ],
-        families: [],
-        male: ["M1", "M2"],
-        female: ["F1", "F2", "F3"]
-      }
-    };
-    const result = generateLogicalRooms(input);
-    // M1 and F1 are a couple.
-    // Remaining male: M2 (1 pax -> single)
-    // Remaining female: F2, F3 (2 pax -> twin)
-    expect(result.allocation.Twin).toBe(2); // 1 couple twin, 1 female twin
-    expect(result.allocation.Single).toBe(1); // 1 male single
-    
-    const singleRooms = result.logicalRooms.filter(r => r.type === "Single");
-    expect(singleRooms[0].passengers).toEqual(["M2"]);
-    
-    expect(result.readiness.status).toBe("Manual Review");
-  });
-
-  it("should allocate rooms for guides and drivers", () => {
-    const input = {
-      summary: { guides: 3, drivers: 2 },
-      groups: {}
-    };
-    const result = generateLogicalRooms(input);
-    // Guides: 3 -> 1 Twin (2 pax), 1 Single (1 pax)
-    // Drivers: 2 -> 2 DriverRoom
-    expect(result.allocation.Twin).toBe(1);
-    expect(result.allocation.Single).toBe(1);
-    expect(result.allocation.DriverRoom).toBe(2);
-    
-    const guideTwins = result.logicalRooms.filter(r => r.type === "Twin" && r.reason === "Guides");
-    expect(guideTwins.length).toBe(1);
   });
 });

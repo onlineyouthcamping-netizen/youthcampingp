@@ -1,6 +1,3 @@
-const { generateAccommodationPlan } = require("../src/services/accommodationPlanner");
-const { prisma } = require("../src/lib/prisma");
-
 jest.mock("../src/lib/prisma", () => ({
   prisma: {
     itinerary: {
@@ -8,6 +5,9 @@ jest.mock("../src/lib/prisma", () => ({
     }
   }
 }));
+
+const { prisma } = require("../src/lib/prisma");
+const { generateAccommodationPlan } = require("../src/services/accommodationPlanner");
 
 describe("Accommodation Planner", () => {
   beforeEach(() => {

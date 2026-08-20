@@ -1,36 +1,36 @@
-const { confirmHotel } = require("../src/services/hotelConfirmationService");
-const { prisma } = require("../src/lib/prisma");
-
 jest.mock("../src/lib/prisma", () => ({
   prisma: {
     opsHotelBooking: {
       findUnique: jest.fn(),
       update: jest.fn()
     },
-    opsVendorLedger: {
+    opsHotelCommunication: {
       create: jest.fn()
     }
   }
 }));
+
+const { confirmHotel } = require("../src/services/hotelConfirmationService");
+const { prisma } = require("../src/lib/prisma");
 
 describe("Hotel Confirmation Service", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("should confirm hotel and create vendor ledger invoice", async () => {
+  it("should confirm hotel and create system communication log", async () => {
     const mockBooking = {
       id: "b1",
       vendorId: "v1",
       hotelName: "Mock Hotel",
       totalAmount: 10000,
       tripId: "t1",
-      metadata: { communicationLog: [] }
+      isLocked: false
     };
 
     prisma.opsHotelBooking.findUnique.mockResolvedValue(mockBooking);
-    prisma.opsHotelBooking.update.mockResolvedValue({ ...mockBooking, confirmed: "CONFIRMED" });
-    prisma.opsVendorLedger.create.mockResolvedValue({ id: "ledger1" });
+    prisma.opsHotelBooking.update.mockResolvedValue({ ...mockBooking, confirmed: "CONFIRMED", isLocked: true });
+    prisma.opsHotelCommunication.create.mockResolvedValue({ id: "comm1" });
 
     const result = await confirmHotel("b1", {
       confirmationNumber: "REF123",
@@ -43,28 +43,26 @@ describe("Hotel Confirmation Service", () => {
         where: { id: "b1" },
         data: expect.objectContaining({
           confirmed: "CONFIRMED",
-          metadata: expect.objectContaining({
-            confirmationNumber: "REF123",
-            confirmedBy: "Ops User",
-            communicationLog: expect.arrayContaining([
-              expect.objectContaining({ action: "Hotel Confirmed" })
-            ])
-          })
+          confirmationNumber: "REF123",
+          confirmedBy: "Ops User",
+          remarks: "All good",
+          isLocked: true
         })
       })
     );
 
-    expect(prisma.opsVendorLedger.create).toHaveBeenCalledWith(
+    expect(prisma.opsHotelCommunication.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: {
-          vendorId: "v1",
-          entryType: "INVOICE",
-          amount: 10000,
-          balance: 10000,
-          referenceNo: "REF123",
-          remarks: "Hotel Confirmation for Trip t1 - Mock Hotel"
-        }
+        data: expect.objectContaining({
+          hotelBookingId: "b1",
+          type: "SYSTEM",
+          message: "Hotel Confirmed",
+          reference: "REF123",
+          createdBy: "Ops User"
+        })
       })
     );
+
+    expect(result.confirmed).toBe("CONFIRMED");
   });
 });
