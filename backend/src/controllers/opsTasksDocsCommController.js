@@ -229,13 +229,34 @@ exports.getAllOperationsTasks = async (req, res) => {
 
     let checklistTasks = [];
     if (source !== "BOOKING") {
-      checklistTasks = await prisma.opsTripChecklist.findMany({
+      // Find departures that have non-cancelled bookings to avoid showing tasks for empty/abandoned test dates
+      const activeBookings = await prisma.booking.findMany({
+        where: {
+          tenantId: tenantId && tenantId !== "default" ? tenantId : undefined,
+          status: { notIn: ["CANCELLED", "REFUNDED"] },
+        },
+        select: { tripId: true, departureDate: true },
+      });
+
+      const activeDepKeys = new Set(
+        activeBookings
+          .filter((b) => b.departureDate)
+          .map((b) => `${b.tripId}_${new Date(b.departureDate).toISOString().substring(0, 10)}`)
+      );
+
+      const allChecklistTasks = await prisma.opsTripChecklist.findMany({
         where: checklistWhere,
         orderBy: [
           { isCompleted: "asc" },
           { dueDate: "asc" },
           { id: "desc" },
         ],
+      });
+
+      checklistTasks = allChecklistTasks.filter((c) => {
+        if (!c.departureDate) return true;
+        const depKey = `${c.tripId}_${new Date(c.departureDate).toISOString().substring(0, 10)}`;
+        return activeDepKeys.has(depKey);
       });
     }
 
