@@ -23,6 +23,7 @@ cd backend
 npm install --no-audit
 npx prisma generate
 node src/scripts/seedRealTripSops.js || true
+node src/scripts/syncChecklistsWithSops.js || true
 cd ..
 
 echo "🔁 [5/5] Reloading PM2 services with zero downtime..."

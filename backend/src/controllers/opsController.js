@@ -2419,79 +2419,55 @@ exports.initializeChecklist = async (req, res) => {
       });
     }
 
-    const destination = trip.destination || trip.title || "";
-
-    // Fetch active SOP templates for this destination
-    const templates = await prisma.opsSOPTemplate.findMany({
+    // Fetch active SOP template for this trip
+    const sopTemplate = await prisma.opsSopTemplate.findFirst({
       where: {
         tenantId: ctx.tenantId,
-        destination: { contains: destination, mode: "insensitive" },
+        OR: [
+          { tripId: trip.id },
+          { tripId: ctx.tripId },
+        ],
+      },
+      include: {
+        versions: {
+          include: {
+            taskTemplates: {
+              where: { active: true },
+              orderBy: [{ relativeOffset: "asc" }, { sortOrder: "asc" }],
+            },
+          },
+        },
       },
     });
 
-    const defaults = [
-      {
-        stage: "PRE_TRIP_30D",
-        tasks: [
-          "Hotel booking confirmed",
-          "Train tickets reviewed",
-          "Guide confirmed",
-          "WhatsApp group created",
-        ],
-      },
-      {
-        stage: "PRE_TRIP_7D",
-        tasks: [
-          "Packing list sent",
-          "SIM/mobile advisory sent",
-          "Emergency contact collected",
-        ],
-      },
-      {
-        stage: "PRE_TRIP_1D",
-        tasks: [
-          "Vehicle reconfirmed",
-          "Hotel reconfirmed",
-          "Trip leader briefed",
-        ],
-      },
-      {
-        stage: "DEPARTURE_DAY",
-        tasks: [
-          "Headcount completed",
-          "Documents checked",
-          "Group photo completed",
-        ],
-      },
-      {
-        stage: "DURING_TRIP",
-        tasks: ["Daily check-in logged", "Incident review completed"],
-      },
-      {
-        stage: "POST_TRIP",
-        tasks: [
-          "Feedback form sent",
-          "Photos collected",
-          "Next-trip follow-up created",
-        ],
-      },
-    ];
+    const activeVersion =
+      sopTemplate?.versions?.find((v) => v.id === sopTemplate.activeVersionId) ||
+      sopTemplate?.versions?.[0];
+
+    const sopTasks = activeVersion?.taskTemplates || [];
 
     const tasksToCreate = [];
-    if (templates.length > 0) {
-      templates.forEach((tpl) => {
+    if (sopTasks.length > 0) {
+      sopTasks.forEach((t) => {
+        let taskDueDate = null;
+        if (ctx.departureDate && t.relativeOffset !== undefined && t.relativeOffset !== null) {
+          const d = new Date(ctx.departureDate);
+          d.setDate(d.getDate() + Number(t.relativeOffset));
+          taskDueDate = d;
+        }
+
         tasksToCreate.push({
-          stage: tpl.stage,
-          taskName: tpl.taskName,
-        });
-      });
-    } else {
-      defaults.forEach((dGroup) => {
-        dGroup.tasks.forEach((tName) => {
-          tasksToCreate.push({
-            stage: dGroup.stage,
-            taskName: tName,
-          });
+          sopTemplateId: sopTemplate.id,
+          sopVersionId: activeVersion.id,
+          sopTaskTemplateId: t.id,
+          stage: t.stage || "DURING_TRIP",
+          taskName: t.taskName,
+          notes: t.instructions || null,
+          priority: t.priority || "HIGH",
+          assignedTo: t.defaultAssignee || "OPERATIONS",
+          relativeOffset: t.relativeOffset,
+          dueDate: taskDueDate,
+          source: "SOP & CHECKLIST",
         });
       });
     }
@@ -2499,22 +2475,32 @@ exports.initializeChecklist = async (req, res) => {
     // Idempotent creation: get existing tasks
     const existing = await prisma.opsTripChecklist.findMany({
       where: ctx.where,
-      select: { stage: true, taskName: true },
+      select: { id: true, stage: true, taskName: true, sopTaskTemplateId: true },
     });
 
     const seedData = [];
     tasksToCreate.forEach((task) => {
       const alreadyExists = existing.some(
-        (e) => e.stage === task.stage && e.taskName === task.taskName,
+        (e) => (task.sopTaskTemplateId && e.sopTaskTemplateId === task.sopTaskTemplateId) || (e.stage === task.stage && e.taskName === task.taskName),
       );
       if (!alreadyExists) {
         seedData.push({
           tenantId: ctx.tenantId,
           tripId: ctx.tripId,
           departureDate: ctx.departureDate,
+          sopTemplateId: task.sopTemplateId,
+          sopVersionId: task.sopVersionId,
+          sopTaskTemplateId: task.sopTaskTemplateId,
           stage: task.stage,
           taskName: task.taskName,
+          notes: task.notes,
+          priority: task.priority,
+          assignedTo: task.assignedTo,
+          relativeOffset: task.relativeOffset,
+          dueDate: task.dueDate,
+          source: task.source,
           isCompleted: false,
+          status: "Pending",
         });
       }
     });
