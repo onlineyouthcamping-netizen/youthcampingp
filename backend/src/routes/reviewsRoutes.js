@@ -15,33 +15,17 @@ const {
 
 router.get("/", async (req, res, next) => {
   try {
-    const paginationVal = validatePagination(req.query);
-    if (!paginationVal.valid) {
-      return res.status(400).json({
-        status: "error",
-        message: paginationVal.error,
-        code: "BAD_REQUEST",
-        statusCode: 400,
-      });
-    }
-
-    const limit = req.query.limit !== undefined ? paginationVal.limit : 3;
-
+    const limit = req.query.limit !== undefined ? Number(req.query.limit) : undefined;
     const featuredVal = validateBooleanParam(req.query.featured, "featured");
-    if (!featuredVal.valid) {
-      return res.status(400).json({
-        status: "error",
-        message: featuredVal.error,
-        code: "BAD_REQUEST",
-        statusCode: 400,
-      });
+
+    const where = {};
+    if (req.query.featured !== undefined && featuredVal.valid && featuredVal.value !== undefined) {
+      where.isFeatured = featuredVal.value;
     }
 
     // Fetch from primary Review table (CMS)
     const primaryReviews = await prisma.review.findMany({
-      where: {
-        isActive: true,
-      },
+      where,
       orderBy: { createdAt: "desc" },
       take: limit,
     });
@@ -49,6 +33,7 @@ router.get("/", async (req, res, next) => {
     if (primaryReviews && primaryReviews.length > 0) {
       const formattedData = primaryReviews.map((r) => ({
         id: r.id,
+        _id: r.id,
         author: r.userName,
         name: r.userName,
         userName: r.userName,
@@ -56,14 +41,17 @@ router.get("/", async (req, res, next) => {
         userImage: r.userImage || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300",
         trip: r.tripName || "YouthCamping Trip",
         tripName: r.tripName || "YouthCamping Trip",
+        tripId: r.tripId || "",
         badge: r.tripType || "Joined Group Trip",
         tripType: r.tripType || "Joined Group Trip",
-        city: r.city,
+        city: r.city || "",
         date: r.createdAt ? new Date(r.createdAt).toISOString().substring(0, 10) : "",
         createdAt: r.createdAt,
         rating: r.rating || 5,
         text: r.comment,
         comment: r.comment,
+        isFeatured: r.isFeatured !== false,
+        isActive: r.isActive !== false,
         images: r.photos || [],
         photos: r.photos || [],
       }));
