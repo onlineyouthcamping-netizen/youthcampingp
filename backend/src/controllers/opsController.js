@@ -449,39 +449,44 @@ exports.upsertTripExpense = async (req, res) => {
 
     let result;
     if (id && !id.startsWith("MISC-") && !id.startsWith("ADJ-") && !id.startsWith("TEMP-")) {
-      const existing = await prisma.opsTripExpense.findFirst({
+      const existingExpense = await prisma.opsTripExpense.findFirst({
         where: { id, tenantId: ctx.tenantId },
       });
-      if (existing) {
+      if (existingExpense) {
         result = await prisma.opsTripExpense.update({
           where: { id },
           data: {
             serviceDate: serviceDate ? new Date(serviceDate) : null,
-            activity: activity || existing.activity,
+            activity: activity || existingExpense.activity,
             paymentDate: paymentDate ? new Date(paymentDate) : null,
             totalAmount: tot,
             amountPaid: paid,
             dueAmount: due,
             paymentStatus,
-            remarks: remarks !== undefined ? remarks : existing.remarks,
+            remarks: remarks !== undefined ? remarks : existingExpense.remarks,
           },
         });
-      } else {
-        result = await prisma.opsTripExpense.create({
+        return res.json({ success: true, data: result });
+      }
+
+      // Check if this ID belongs to an OpsVendorPayment record
+      const existingVp = await prisma.opsVendorPayment.findFirst({
+        where: { id, tenantId: ctx.tenantId },
+      });
+      if (existingVp) {
+        result = await prisma.opsVendorPayment.update({
+          where: { id },
           data: {
-            tenantId: ctx.tenantId,
-            tripId: ctx.tripId,
-            departureDate: ctx.departureDate,
-            serviceDate: serviceDate ? new Date(serviceDate) : null,
-            activity: activity || "Miscellaneous Expense",
-            paymentDate: paymentDate ? new Date(paymentDate) : null,
-            totalAmount: tot,
-            amountPaid: paid,
-            dueAmount: due,
-            paymentStatus,
-            remarks,
+            agreedAmount: tot,
+            advancePaid: paid,
+            remainingPayable: due,
+            status: due <= 0 ? "Paid" : paid > 0 ? "Advance Paid" : "Pending",
+            paymentStatus: due <= 0 ? "Paid" : paid > 0 ? "Advance Paid" : "Pending",
+            approvalStatus: due <= 0 || (remarks && remarks.includes("APPROVED")) ? "APPROVED" : existingVp.approvalStatus,
+            remarks: remarks !== undefined ? remarks : existingVp.remarks,
           },
         });
+        return res.json({ success: true, data: result });
       }
     } else {
       result = await prisma.opsTripExpense.create({
