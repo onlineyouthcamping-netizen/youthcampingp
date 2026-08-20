@@ -178,13 +178,11 @@ export default function BlogSection({
                   className="absolute inset-0 z-10"
                   aria-label={story.title}
                 />
-                <Image
+                <img
                   src={story.image}
                   alt={story.title}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 768px) 270px, 310px"
-                  className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
 
                 {/* BOOK ICON BADGE AT TOP-RIGHT */}
@@ -198,13 +196,11 @@ export default function BlogSection({
                 <div className="flex gap-2.5 items-start w-full">
                   {/* AUTHOR AVATAR PHOTO */}
                   <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden shrink-0 border border-zinc-200 shadow-2xs">
-                    <Image
+                    <img
                       src={story.authorAvatar}
                       alt={story.authorName}
-                      fill
-                      unoptimized
-                      sizes="36px"
-                      className="object-cover"
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                   </div>
 

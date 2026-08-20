@@ -160,6 +160,7 @@ export default function UpcomingTripsClient({ trips: propTrips = [] }: Props) {
             src="https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=1800&q=80"
             alt="Adventure trips"
             fill
+            unoptimized
             className="object-cover object-center opacity-20"
             priority
           />

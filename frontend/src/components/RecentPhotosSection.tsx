@@ -183,13 +183,11 @@ export default function RecentPhotosSection({
                 onClick={() => setSelectedIndex(actualIndex)}
                 className="group relative shrink-0 flex-none w-[130px] sm:w-[155px] md:w-[175px] aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden bg-zinc-100 shadow-2xs hover:shadow-md hover:scale-[1.02] transition-all duration-300 cursor-pointer isolate"
               >
-                <Image
+                <img
                   src={photo.url}
                   alt={photo.caption || "YouthCamping photo"}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 640px) 160px, 230px"
-                  className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src =
@@ -256,15 +254,11 @@ export default function RecentPhotosSection({
                 <ChevronLeft className="w-6 h-6" />
               </button>
 
-              <div className="relative w-full h-full max-w-5xl max-h-[75vh]">
-                <Image
+              <div className="relative w-full h-full max-w-5xl max-h-[75vh] flex items-center justify-center">
+                <img
                   src={basePhotos[selectedIndex].url}
                   alt={basePhotos[selectedIndex].caption}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 1280px) 100vw, 1280px"
-                  className="object-contain"
-                  priority
+                  className="max-w-full max-h-[75vh] object-contain"
                 />
               </div>
 

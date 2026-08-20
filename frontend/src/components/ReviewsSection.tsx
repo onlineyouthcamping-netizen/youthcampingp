@@ -182,13 +182,11 @@ export default function ReviewsSection({
                   {/* USER HEADER ROW */}
                   <div className="flex items-start gap-3.5">
                     <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden shrink-0 border border-zinc-100 shadow-2xs">
-                      <Image
+                      <img
                         src={rev.avatar}
                         alt={rev.name}
-                        fill
-                        unoptimized
-                        sizes="44px"
-                        className="object-cover"
+                        loading="lazy"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
                     </div>
 
@@ -255,13 +253,11 @@ export default function ReviewsSection({
                         onClick={() => setSelectedPhoto(photoList[0])}
                         className="relative aspect-[16/10] overflow-hidden bg-zinc-100 cursor-pointer group/img"
                       >
-                        <Image
+                        <img
                           src={photoList[0]}
                           alt={`Review photo by ${rev.name}`}
-                          fill
-                          unoptimized
-                          sizes="400px"
-                          className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                           onError={(e) => {
                             const target = e.currentTarget as HTMLImageElement;
                             target.src = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200";
@@ -277,13 +273,11 @@ export default function ReviewsSection({
                             onClick={() => setSelectedPhoto(imgUrl)}
                             className="relative aspect-[4/3] overflow-hidden bg-zinc-100 cursor-pointer group/img"
                           >
-                            <Image
+                            <img
                               src={imgUrl}
                               alt={`Review photo by ${rev.name}`}
-                              fill
-                              unoptimized
-                              sizes="200px"
-                              className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                              className="absolute inset-0 w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                               onError={(e) => {
                                 const target = e.currentTarget as HTMLImageElement;
                                 target.src = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200";
@@ -299,13 +293,11 @@ export default function ReviewsSection({
                           onClick={() => setSelectedPhoto(photoList[0])}
                           className="relative aspect-[3/4] sm:aspect-[3/3.8] overflow-hidden bg-zinc-100 cursor-pointer group/img"
                         >
-                          <Image
+                          <img
                             src={photoList[0]}
                             alt={`Review photo by ${rev.name}`}
-                            fill
-                            unoptimized
-                            sizes="200px"
-                            className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                            className="absolute inset-0 w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                             onError={(e) => {
                               const target = e.currentTarget as HTMLImageElement;
                               target.src = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200";
@@ -318,13 +310,11 @@ export default function ReviewsSection({
                             onClick={() => setSelectedPhoto(photoList[1])}
                             className="relative aspect-[16/9.5] overflow-hidden bg-zinc-100 cursor-pointer group/img flex-1"
                           >
-                            <Image
+                            <img
                               src={photoList[1]}
                               alt={`Review photo 2 by ${rev.name}`}
-                              fill
-                              unoptimized
-                              sizes="200px"
-                              className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                              className="absolute inset-0 w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                               onError={(e) => {
                                 const target = e.currentTarget as HTMLImageElement;
                                 target.src = "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200";
@@ -336,13 +326,11 @@ export default function ReviewsSection({
                             onClick={() => setSelectedPhoto(photoList[2])}
                             className="relative aspect-[16/9.5] overflow-hidden bg-zinc-100 cursor-pointer group/img flex-1"
                           >
-                            <Image
+                            <img
                               src={photoList[2]}
                               alt={`Review photo 3 by ${rev.name}`}
-                              fill
-                              unoptimized
-                              sizes="200px"
-                              className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                              className="absolute inset-0 w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                               onError={(e) => {
                                 const target = e.currentTarget as HTMLImageElement;
                                 target.src = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1200";
@@ -375,13 +363,11 @@ export default function ReviewsSection({
             onClick={() => setSelectedPhoto(null)}
             className="fixed inset-0 z-[10000] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
           >
-            <div className="relative max-w-4xl max-h-[85vh] w-full h-full">
-              <Image
+            <div className="relative max-w-4xl max-h-[85vh] w-full h-full flex items-center justify-center">
+              <img
                 src={selectedPhoto}
                 alt="Enlarged review photo"
-                fill
-                unoptimized
-                className="object-contain"
+                className="max-w-full max-h-[85vh] object-contain"
               />
               <button
                 onClick={() => setSelectedPhoto(null)}
@@ -420,12 +406,10 @@ export default function ReviewsSection({
 
               <div className="flex items-start gap-4 mb-4">
                 <div className="relative w-14 h-14 rounded-full overflow-hidden shrink-0 border border-zinc-200">
-                  <Image
+                  <img
                     src={selectedReview.avatar}
                     alt={selectedReview.name}
-                    fill
-                    unoptimized
-                    className="object-cover"
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <div>
@@ -473,12 +457,11 @@ export default function ReviewsSection({
                       key={i}
                       className="relative aspect-[4/3] rounded-[18px] overflow-hidden bg-zinc-100"
                     >
-                      <Image
+                      <img
                         src={img}
                         alt="Photo"
-                        fill
-                        unoptimized
-                        className="object-cover"
+                        loading="lazy"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   ))}

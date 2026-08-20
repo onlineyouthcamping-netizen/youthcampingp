@@ -278,16 +278,13 @@ export default function TripCard({
                 isActive ? "opacity-100 z-[1]" : "opacity-0 z-0"
               }`}
             >
-              <Image
+              <img
                 src={imgUrl}
                 alt={title}
-                fill
-                unoptimized
-                className={`object-cover will-change-transform transition-transform duration-[4000ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] ${
+                loading={imgIdx === 0 ? "eager" : "lazy"}
+                className={`absolute inset-0 w-full h-full object-cover will-change-transform transition-transform duration-[4000ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] ${
                   isActive ? active : idle
                 }`}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                priority={imgIdx === 0}
               />
             </div>
           );

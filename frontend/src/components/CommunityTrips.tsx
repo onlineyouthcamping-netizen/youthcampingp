@@ -374,16 +374,11 @@ export default function CommunityTrips({
                   className="w-full h-full object-cover object-center"
                 />
               ) : (
-                <Image
+                <img
                   src={currentBgPhoto}
                   alt="Group of young travellers"
-                  fill
-                  priority
-                  unoptimized
-                  fetchPriority="high"
                   loading="eager"
-                  sizes="100vw"
-                  className="object-cover object-center carousel-image-cinematic"
+                  className="absolute inset-0 w-full h-full object-cover object-center carousel-image-cinematic"
                 />
               )}
             </motion.div>

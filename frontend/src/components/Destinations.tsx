@@ -229,13 +229,11 @@ export default function Destinations({
                 "dest-photo-card group relative block w-full aspect-[9/14] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF4D00]";
               const inner = (
                 <>
-                  <Image
+                  <img
                     src={item.img}
                     alt={item.name}
-                    fill
-                    unoptimized
-                    sizes="(max-width: 640px) 48vw, 216px"
-                    className="dest-photo-img object-cover"
+                    loading="lazy"
+                    className="dest-photo-img absolute inset-0 w-full h-full object-cover"
                   />
                   <div
                     className="dest-photo-fade pointer-events-none absolute inset-0 z-[1]"
