@@ -9,8 +9,8 @@
 
 const express = require("express");
 const router = express.Router({ mergeParams: true });
-const { prisma, queryWithTimeout } = require("../../utils/database");
-const { validatePagination } = require("../../utils/validators");
+const { prisma, queryWithTimeout } = require("../utils/database");
+const { validatePagination } = require("../utils/validators");
 
 router.get("/:id/reviews", async (req, res, next) => {
   try {

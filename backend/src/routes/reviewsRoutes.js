@@ -7,11 +7,11 @@
 
 const express = require("express");
 const router = express.Router();
-const { prisma, queryWithTimeout } = require("../../utils/database");
+const { prisma, queryWithTimeout } = require("../utils/database");
 const {
   validatePagination,
   validateBooleanParam,
-} = require("../../utils/validators");
+} = require("../utils/validators");
 
 router.get("/", async (req, res, next) => {
   try {

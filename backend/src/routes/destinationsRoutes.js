@@ -7,7 +7,7 @@
 
 const express = require("express");
 const router = express.Router();
-const { prisma, queryWithTimeout } = require("../../utils/database");
+const { prisma, queryWithTimeout } = require("../utils/database");
 
 router.get("/", async (req, res, next) => {
   try {

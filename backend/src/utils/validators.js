@@ -1,11 +1,3 @@
-/**
- * Request Query Validation Utilities
- */
-
-/**
- * Validates pagination parameters (page, limit).
- * Returns { valid: true, page, limit } or { valid: false, error }
- */
 function validatePagination(query) {
   let page = 1;
   let limit = 10;
@@ -35,9 +27,6 @@ function validatePagination(query) {
   return { valid: true, page, limit };
 }
 
-/**
- * Validates optional month query filter.
- */
 function validateMonth(month) {
   if (!month) return { valid: true, month: null };
   const validMonths = [
@@ -54,9 +43,6 @@ function validateMonth(month) {
   return { valid: true, month: normalized };
 }
 
-/**
- * Validates optional boolean query parameter (e.g. featured).
- */
 function validateBooleanParam(param, paramName = 'featured') {
   if (param === undefined || param === null || param === '') {
     return { valid: true, value: undefined };

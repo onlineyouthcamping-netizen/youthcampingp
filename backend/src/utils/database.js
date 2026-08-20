@@ -1,12 +1,5 @@
-/**
- * Database Utility Wrapper using Prisma Client
- */
+const { prisma } = require('../lib/prisma');
 
-const { prisma } = require('../src/lib/prisma');
-
-/**
- * Execute database queries with error handling & performance logging
- */
 async function queryWithTimeout(queryPromise, timeoutMs = 3000) {
   let timer;
   const timeoutPromise = new Promise((_, reject) => {
