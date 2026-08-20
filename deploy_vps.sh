@@ -30,6 +30,7 @@ npm install --no-audit
 npx prisma generate
 node src/scripts/seedRealTripSops.js || true
 node src/scripts/syncChecklistsWithSops.js || true
+node src/scripts/fixMediaAssets.js || true
 cd ..
 
 echo "🔁 [6/6] Reloading PM2 services with updated bundle..."
