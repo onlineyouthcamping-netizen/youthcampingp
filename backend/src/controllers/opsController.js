@@ -448,20 +448,41 @@ exports.upsertTripExpense = async (req, res) => {
       due <= 0 ? "Paid" : paid > 0 ? "Partially Paid" : "Due";
 
     let result;
-    if (id) {
-      result = await prisma.opsTripExpense.update({
-        where: { id },
-        data: {
-          serviceDate: serviceDate ? new Date(serviceDate) : null,
-          activity,
-          paymentDate: paymentDate ? new Date(paymentDate) : null,
-          totalAmount: tot,
-          amountPaid: paid,
-          dueAmount: due,
-          paymentStatus,
-          remarks,
-        },
+    if (id && !id.startsWith("MISC-") && !id.startsWith("ADJ-") && !id.startsWith("TEMP-")) {
+      const existing = await prisma.opsTripExpense.findFirst({
+        where: { id, tenantId: ctx.tenantId },
       });
+      if (existing) {
+        result = await prisma.opsTripExpense.update({
+          where: { id },
+          data: {
+            serviceDate: serviceDate ? new Date(serviceDate) : null,
+            activity: activity || existing.activity,
+            paymentDate: paymentDate ? new Date(paymentDate) : null,
+            totalAmount: tot,
+            amountPaid: paid,
+            dueAmount: due,
+            paymentStatus,
+            remarks: remarks !== undefined ? remarks : existing.remarks,
+          },
+        });
+      } else {
+        result = await prisma.opsTripExpense.create({
+          data: {
+            tenantId: ctx.tenantId,
+            tripId: ctx.tripId,
+            departureDate: ctx.departureDate,
+            serviceDate: serviceDate ? new Date(serviceDate) : null,
+            activity: activity || "Miscellaneous Expense",
+            paymentDate: paymentDate ? new Date(paymentDate) : null,
+            totalAmount: tot,
+            amountPaid: paid,
+            dueAmount: due,
+            paymentStatus,
+            remarks,
+          },
+        });
+      }
     } else {
       result = await prisma.opsTripExpense.create({
         data: {
@@ -469,7 +490,7 @@ exports.upsertTripExpense = async (req, res) => {
           tripId: ctx.tripId,
           departureDate: ctx.departureDate,
           serviceDate: serviceDate ? new Date(serviceDate) : null,
-          activity,
+          activity: activity || "Miscellaneous Expense",
           paymentDate: paymentDate ? new Date(paymentDate) : null,
           totalAmount: tot,
           amountPaid: paid,
