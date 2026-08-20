@@ -14,7 +14,7 @@ describe('Unit Tests: Env Loader & Safety Guard', () => {
   });
 
   it('Test 1: isApprovedLocalDatabaseHost recognizes local database hosts', () => {
-    const { isApprovedLocalDatabaseHost } = require('../../backend/src/lib/env');
+    const { isApprovedLocalDatabaseHost } = require('../../src/lib/env');
     expect(isApprovedLocalDatabaseHost('localhost')).toBe(true);
     expect(isApprovedLocalDatabaseHost('127.0.0.1')).toBe(true);
     expect(isApprovedLocalDatabaseHost('host.docker.internal')).toBe(true);
@@ -22,7 +22,7 @@ describe('Unit Tests: Env Loader & Safety Guard', () => {
 
   it('Test 2: Environment safety loader loads without crashing', () => {
     expect(() => {
-      require('../../backend/src/lib/env');
+      require('../../src/lib/env');
     }).not.toThrow();
   });
 });

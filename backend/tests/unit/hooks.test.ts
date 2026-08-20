@@ -2,8 +2,8 @@
  * @jest-environment jsdom
  */
 import { renderHook, act } from '@testing-library/react';
-import { useLocalStorage } from '../../frontend/src/hooks/use-local-storage';
-import { useDebounce } from '../../frontend/src/hooks/use-debounce';
+import { useLocalStorage } from '../../../frontend/src/hooks/use-local-storage';
+import { useDebounce } from '../../../frontend/src/hooks/use-debounce';
 
 describe('useLocalStorage Hook', () => {
   beforeEach(() => {

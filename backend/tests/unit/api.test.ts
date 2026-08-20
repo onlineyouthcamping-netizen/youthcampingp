@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
-import { PrismaClient } from '../../backend/node_modules/@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
-const { assertMutatingTestSafety } = require('../../backend/src/utils/testSafety');
+const { assertMutatingTestSafety } = require('../../src/utils/testSafety');
 assertMutatingTestSafety();
 
-const app = require('../../backend/src/app');
+const app = require('../../src/app');
 const prisma = new PrismaClient();
 let adminToken: string;
 let travelerToken: string;

@@ -1,4 +1,4 @@
-import { parseTripDate } from '../../frontend/src/lib/parseTripDate';
+import { parseTripDate } from '../../../frontend/src/lib/parseTripDate';
 
 describe('parseTripDate', () => {
   it('should parse incomplete dates and derive upcoming year correctly', () => {

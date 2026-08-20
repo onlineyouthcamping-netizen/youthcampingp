@@ -1,4 +1,4 @@
-const { generateBookingId } = require('../../backend/src/utils/bookingIdGenerator');
+const { generateBookingId } = require('../../src/utils/bookingIdGenerator');
 
 describe('Unit Tests: Booking ID Generator & Retry Logic', () => {
   it('should generate IDs with prefix BK- followed by 12 uppercase alphanumeric characters', () => {

@@ -1,4 +1,4 @@
-const { makeShutdownHandler, resetShutdownState } = require('../../backend/src/utils/shutdownHandler');
+const { makeShutdownHandler, resetShutdownState } = require('../../src/utils/shutdownHandler');
 
 describe('Unit Tests: Graceful Shutdown Handler', () => {
   let mockServer: any;

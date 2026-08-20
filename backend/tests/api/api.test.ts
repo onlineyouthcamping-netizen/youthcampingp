@@ -7,7 +7,7 @@ process.env.JWT_SECRET = 'isolated_api_test_secret_with_32_characters';
 
 const TEST_PASSWORD_HASH = bcrypt.hashSync('isolated-test-password', 10);
 
-jest.mock('../../backend/src/lib/prisma', () => ({
+jest.mock('../../src/lib/prisma', () => ({
   prisma: {
     trip: {
       findMany: jest.fn().mockResolvedValue([]),
@@ -23,13 +23,13 @@ jest.mock('../../backend/src/lib/prisma', () => ({
   },
 }));
 
-jest.mock('../../backend/src/utils/auditLogger', () => ({
+jest.mock('../../src/utils/auditLogger', () => ({
   logAction: jest.fn().mockResolvedValue(null),
   redactSensitive: jest.fn((data) => data),
 }));
 
-const { prisma } = require('../../backend/src/lib/prisma');
-const app = require('../../backend/src/app');
+const { prisma } = require('../../src/lib/prisma');
+const app = require('../../src/app');
 
 const TEST_EMAIL = 'security-test-admin@example.test';
 
