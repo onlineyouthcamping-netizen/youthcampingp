@@ -158,7 +158,15 @@ export default function ReviewsSection({
           className="carousel-track w-full max-w-full flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-2 scroll-smooth snap-x snap-mandatory"
         >
           {displayReviews.map((rev, idx) => {
-            const photoList = rev.photos || [];
+            const rawPhotos = rev.photos || [];
+            const photoList = rawPhotos
+              .filter(
+                (p: string) =>
+                  p &&
+                  typeof p === "string" &&
+                  !p.includes("res.cloudinary.com") &&
+                  (p.startsWith("http") || p.startsWith("/")),
+              );
             const extraCount = photoList.length > 3 ? photoList.length - 3 : 0;
 
             return (
@@ -254,6 +262,10 @@ export default function ReviewsSection({
                           unoptimized
                           sizes="400px"
                           className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.src = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200";
+                          }}
                         />
                       </div>
                     ) : photoList.length === 2 ? (
@@ -272,6 +284,10 @@ export default function ReviewsSection({
                               unoptimized
                               sizes="200px"
                               className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                              onError={(e) => {
+                                const target = e.currentTarget as HTMLImageElement;
+                                target.src = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200";
+                              }}
                             />
                           </div>
                         ))}
@@ -290,6 +306,10 @@ export default function ReviewsSection({
                             unoptimized
                             sizes="200px"
                             className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement;
+                              target.src = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200";
+                            }}
                           />
                         </div>
 
@@ -305,6 +325,10 @@ export default function ReviewsSection({
                               unoptimized
                               sizes="200px"
                               className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                              onError={(e) => {
+                                const target = e.currentTarget as HTMLImageElement;
+                                target.src = "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200";
+                              }}
                             />
                           </div>
 
@@ -319,6 +343,10 @@ export default function ReviewsSection({
                               unoptimized
                               sizes="200px"
                               className="object-cover group-hover/img:scale-105 transition-transform duration-500"
+                              onError={(e) => {
+                                const target = e.currentTarget as HTMLImageElement;
+                                target.src = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1200";
+                              }}
                             />
                             {extraCount > 0 && (
                               <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center text-white font-extrabold text-xs sm:text-sm font-montserrat">
