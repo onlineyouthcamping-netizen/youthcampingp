@@ -97,28 +97,31 @@ exports.getStats = async (req, res, next) => {
       todayInflow,
       todayOutflow,
     ] = await Promise.all([
-      prisma.trip.count({ where: tripWhere }),
-      prisma.booking.count({ where: bookingWhere }),
-      prisma.booking.aggregate({
+      prisma.trip.count({ where: { tenantId, isActive: true } }),
+      prisma.booking.count({
         where: {
-          ...bookingWhere,
-          paymentStatus: {
-            in: ["PAID", "Paid", "paid", "Confirmed", "confirmed"],
-          },
-        },
-        _sum: {
-          amount: true,
+          tenantId,
+          status: { notIn: ["cancelled", "CANCELLED", "Cancelled", "rejected", "REJECTED"] },
         },
       }),
       prisma.booking.aggregate({
         where: {
-          ...bookingWhere,
-          paymentStatus: {
-            in: ["PARTIAL", "UNPAID", "Partial", "partial", "Pending", "pending", "Pending / Manual Verification"],
-          },
+          tenantId,
+          status: { notIn: ["cancelled", "CANCELLED", "Cancelled", "rejected", "REJECTED"] },
         },
         _sum: {
+          advancePaid: true,
+        },
+      }),
+      prisma.booking.findMany({
+        where: {
+          tenantId,
+          status: { notIn: ["cancelled", "CANCELLED", "Cancelled", "rejected", "REJECTED"] },
+        },
+        select: {
+          totalAmount: true,
           amount: true,
+          advancePaid: true,
         },
       }),
       prisma.booking.findMany({
@@ -137,22 +140,17 @@ exports.getStats = async (req, res, next) => {
           createdAt: true,
         },
       }),
-      prisma.$queryRaw`
-        SELECT 
-          TO_CHAR(DATE_TRUNC('month', "createdAt"), 'YYYY-MM') AS month,
-          SUM(amount) AS revenue
-        FROM "Booking"
-        WHERE "tenantId" = ${tenantId}
-          AND "paymentStatus" IN ('PAID', 'Paid', 'paid', 'Confirmed', 'confirmed')
-          AND "createdAt" >= NOW() - INTERVAL '12 months'
-        GROUP BY DATE_TRUNC('month', "createdAt")
-        ORDER BY DATE_TRUNC('month', "createdAt") ASC
-      `.catch((err) => {
-        console.warn(
-          "⚠️ Raw SQL monthly revenue failed, falling back to empty array:",
-          err.message,
-        );
-        return [];
+      prisma.booking.findMany({
+        where: {
+          tenantId,
+          status: { notIn: ["cancelled", "CANCELLED", "Cancelled", "rejected", "REJECTED"] },
+          createdAt: { gte: new Date(now.getFullYear() - 1, now.getMonth(), 1) },
+        },
+        select: {
+          advancePaid: true,
+          amount: true,
+          createdAt: true,
+        },
       }),
       prisma.bookingTask.count({ where: taskWhere }),
       prisma.bookingTask.count({
@@ -327,14 +325,24 @@ exports.getStats = async (req, res, next) => {
       }),
     ]);
 
-    const totalRevenue = totalRevenueResult._sum.amount || 0;
-    const pendingPayments = pendingPaymentsResult._sum.amount || 0;
+    const totalRevenue = totalRevenueResult?._sum?.advancePaid || 0;
+    const pendingPayments = (pendingPaymentsResult || []).reduce((sum, b) => {
+      const tot = b.totalAmount || b.amount || 0;
+      const adv = b.advancePaid || 0;
+      return sum + Math.max(0, tot - adv);
+    }, 0);
     const vendorDueCount = pendingVendorsCountResult || 0;
 
-    const formattedMonthlyRevenue = (monthlyRevenue || []).map((r) => ({
-      month: r.month,
-      revenue: Number(r.revenue) || 0,
-    }));
+    const monthMap = {};
+    for (const b of (monthlyRevenue || [])) {
+      const mKey = b.createdAt ? new Date(b.createdAt).toISOString().substring(0, 7) : "";
+      if (mKey) {
+        monthMap[mKey] = (monthMap[mKey] || 0) + (b.advancePaid || 0);
+      }
+    }
+    const formattedMonthlyRevenue = Object.entries(monthMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, revenue]) => ({ month, revenue }));
 
     const mappedRecentBookings = (recentBookings || []).map((b) => ({
       id: b.id,
