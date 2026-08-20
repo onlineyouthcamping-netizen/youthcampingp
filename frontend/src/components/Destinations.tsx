@@ -233,6 +233,7 @@ export default function Destinations({
                     src={item.img}
                     alt={item.name}
                     fill
+                    unoptimized
                     sizes="(max-width: 640px) 48vw, 216px"
                     className="dest-photo-img object-cover"
                   />

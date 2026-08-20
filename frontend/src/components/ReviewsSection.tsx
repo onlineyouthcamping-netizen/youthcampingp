@@ -178,6 +178,7 @@ export default function ReviewsSection({
                         src={rev.avatar}
                         alt={rev.name}
                         fill
+                        unoptimized
                         sizes="44px"
                         className="object-cover"
                       />
@@ -250,6 +251,7 @@ export default function ReviewsSection({
                           src={photoList[0]}
                           alt={`Review photo by ${rev.name}`}
                           fill
+                          unoptimized
                           sizes="400px"
                           className="object-cover group-hover/img:scale-105 transition-transform duration-500"
                         />
@@ -267,6 +269,7 @@ export default function ReviewsSection({
                               src={imgUrl}
                               alt={`Review photo by ${rev.name}`}
                               fill
+                              unoptimized
                               sizes="200px"
                               className="object-cover group-hover/img:scale-105 transition-transform duration-500"
                             />
@@ -284,6 +287,7 @@ export default function ReviewsSection({
                             src={photoList[0]}
                             alt={`Review photo by ${rev.name}`}
                             fill
+                            unoptimized
                             sizes="200px"
                             className="object-cover group-hover/img:scale-105 transition-transform duration-500"
                           />
@@ -298,6 +302,7 @@ export default function ReviewsSection({
                               src={photoList[1]}
                               alt={`Review photo 2 by ${rev.name}`}
                               fill
+                              unoptimized
                               sizes="200px"
                               className="object-cover group-hover/img:scale-105 transition-transform duration-500"
                             />
@@ -311,6 +316,7 @@ export default function ReviewsSection({
                               src={photoList[2]}
                               alt={`Review photo 3 by ${rev.name}`}
                               fill
+                              unoptimized
                               sizes="200px"
                               className="object-cover group-hover/img:scale-105 transition-transform duration-500"
                             />
@@ -346,6 +352,7 @@ export default function ReviewsSection({
                 src={selectedPhoto}
                 alt="Enlarged review photo"
                 fill
+                unoptimized
                 className="object-contain"
               />
               <button
@@ -389,6 +396,7 @@ export default function ReviewsSection({
                     src={selectedReview.avatar}
                     alt={selectedReview.name}
                     fill
+                    unoptimized
                     className="object-cover"
                   />
                 </div>
@@ -441,6 +449,7 @@ export default function ReviewsSection({
                         src={img}
                         alt="Photo"
                         fill
+                        unoptimized
                         className="object-cover"
                       />
                     </div>

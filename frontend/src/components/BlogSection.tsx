@@ -182,6 +182,7 @@ export default function BlogSection({
                   src={story.image}
                   alt={story.title}
                   fill
+                  unoptimized
                   sizes="(max-width: 768px) 270px, 310px"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
@@ -201,6 +202,7 @@ export default function BlogSection({
                       src={story.authorAvatar}
                       alt={story.authorName}
                       fill
+                      unoptimized
                       sizes="36px"
                       className="object-cover"
                     />

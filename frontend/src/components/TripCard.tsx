@@ -282,6 +282,7 @@ export default function TripCard({
                 src={imgUrl}
                 alt={title}
                 fill
+                unoptimized
                 className={`object-cover will-change-transform transition-transform duration-[4000ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] ${
                   isActive ? active : idle
                 }`}

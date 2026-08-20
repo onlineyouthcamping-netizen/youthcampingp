@@ -187,6 +187,7 @@ export default function RecentPhotosSection({
                   src={photo.url}
                   alt={photo.caption || "YouthCamping photo"}
                   fill
+                  unoptimized
                   sizes="(max-width: 640px) 160px, 230px"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   onError={(e) => {
@@ -260,6 +261,7 @@ export default function RecentPhotosSection({
                   src={basePhotos[selectedIndex].url}
                   alt={basePhotos[selectedIndex].caption}
                   fill
+                  unoptimized
                   sizes="(max-width: 1280px) 100vw, 1280px"
                   className="object-contain"
                   priority

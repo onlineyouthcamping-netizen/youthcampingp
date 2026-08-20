@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Trip } from "@/types";
@@ -379,6 +379,7 @@ export default function CommunityTrips({
                   alt="Group of young travellers"
                   fill
                   priority
+                  unoptimized
                   fetchPriority="high"
                   loading="eager"
                   sizes="100vw"
