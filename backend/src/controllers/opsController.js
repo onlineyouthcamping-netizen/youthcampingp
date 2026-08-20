@@ -3837,49 +3837,7 @@ exports.saveManualAllocations = async (req, res) => {
         }
       }
 
-      const totalPhysicalRooms = Object.keys(roomPaxMap).length;
-
-      // Find and update all existing hotel bookings for this departure
-      const existingHotelBookings = await tx.opsHotelBooking.findMany({
-        where: {
-          tripId: resolvedTripId,
-          departureDate,
-        },
-      });
-
-      for (const hb of existingHotelBookings) {
-        const dRate = hb.doubleRate ?? 1200;
-        const tRate = hb.tripleRate ?? 1200;
-        const qRate = hb.quadRate ?? 1200;
-        const exRate = hb.extraBedRate ?? 800;
-        const nights = hb.nightsCount || 1;
-
-        const isPerPerson = (hb.pricingMethod || "per-person").toLowerCase() === "per-person";
-        const dMult = isPerPerson ? 2 : 1;
-        const tMult = isPerPerson ? 3 : 1;
-        const qMult = isPerPerson ? 4 : 1;
-
-        const calculatedStayCost = ((dCount * dMult * dRate) +
-                                    (tCount * tMult * tRate) +
-                                    (qCount * qMult * qRate) +
-                                    (exCount * exRate)) * nights;
-
-        const newTotalAmount = calculatedStayCost > 0 ? calculatedStayCost : hb.totalAmount;
-        const newBalanceAmount = newTotalAmount - (hb.advancePaid || 0);
-
-        await tx.opsHotelBooking.update({
-          where: { id: hb.id },
-          data: {
-            doubleRoomsCount: dCount,
-            tripleRoomsCount: tCount,
-            quadRoomsCount: qCount,
-            extraPersonsCount: exCount,
-            numberOfRooms: totalPhysicalRooms > 0 ? totalPhysicalRooms : hb.numberOfRooms,
-            totalAmount: newTotalAmount,
-            balanceAmount: newBalanceAmount,
-          },
-        });
-      }
+      // Preserving individual hotel bookings and custom room configurations (e.g. 4-sharing campsites)
 
       // Write audit record
       await tx.opsAllocationAudit.create({
