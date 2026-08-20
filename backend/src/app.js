@@ -26,8 +26,8 @@ app.use("/api", require("./middleware/metrics"));
 app.use("/api", apiNoStore);
 
 // Health Check (Before all other routes)
-app.use("/health", require("../routes/health"));
-app.use("/api/health", require("../routes/health"));
+app.use("/health", require("./routes/health"));
+app.use("/api/health", require("./routes/health"));
 
 // 2. Security & Middleware
 app.use(
@@ -177,7 +177,7 @@ app.post("/api/revalidate", (req, res) => {
 });
 
 // 4. Global Error Handler
-const errorHandler = require("../middleware/errorHandler");
+const errorHandler = require("./middleware/errorHandler");
 app.use(errorHandler);
 
 // 5. 404 Handler
