@@ -11,12 +11,7 @@ dist/
 *.log
 .agents/
 scratch/
-**/check-db.js
-**/check_db.js
-**/inspect_booking.js
-backend/scripts/migrations/legacy-youthcamping/raw/*.html
-youthcamping_os.zip
-ziwq4pAE
-cleanup_garbage.js
+*.zip
 *.archive/
-
+/uploads/
+/public/
