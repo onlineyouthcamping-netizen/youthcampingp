@@ -22,6 +22,7 @@ echo "⚙️ [4/5] Updating Backend & Prisma Client..."
 cd backend
 npm install --no-audit
 npx prisma generate
+node src/scripts/seedRealTripSops.js || true
 cd ..
 
 echo "🔁 [5/5] Reloading PM2 services with zero downtime..."

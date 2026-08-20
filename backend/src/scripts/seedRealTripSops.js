@@ -162,7 +162,9 @@ async function seedSops() {
           activatedAt: new Date(),
         },
       });
+    }
 
+    if (template.activeVersionId !== version.id) {
       await prisma.opsSopTemplate.update({
         where: { id: template.id },
         data: { activeVersionId: version.id },
