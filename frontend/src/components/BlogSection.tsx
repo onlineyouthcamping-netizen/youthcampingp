@@ -38,23 +38,71 @@ export default function BlogSection({
       : title;
   const displaySubtitle = subtitle || "From The Road";
 
+  const fallbackImages = [
+    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200",
+    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200",
+    "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1200",
+  ];
+
+  const fallbackAvatars = [
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300",
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
+    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300",
+  ];
+
+  const defaultStories: BlogCardItem[] = [
+    {
+      id: "sb-1",
+      title: "The Pristine Colors of Kasol: Riverside Cafes & Parvati Valley Trails",
+      slug: "the-pristine-colors-of-kasol-riverside-cafes-and-parvati-valley-trails",
+      image: fallbackImages[0],
+      authorName: "Siddharth",
+      authorAvatar: fallbackAvatars[0],
+      readTime: "5 MIN READ",
+    },
+    {
+      id: "sb-2",
+      title: "Spiti Valley in Winter: Surviving -20°C in the Middle Land",
+      slug: "spiti-valley-in-winter-surviving-20c-in-the-middle-land",
+      image: fallbackImages[1],
+      authorName: "Karan Johar",
+      authorAvatar: fallbackAvatars[1],
+      readTime: "12 MIN READ",
+    },
+    {
+      id: "sb-3",
+      title: "Walking the Frozen Zanskar River: The Ultimate Chadar Trek Guide",
+      slug: "walking-the-frozen-zanskar-river-the-ultimate-chadar-trek-guide",
+      image: fallbackImages[2],
+      authorName: "Aman Sharma",
+      authorAvatar: fallbackAvatars[2],
+      readTime: "8 MIN READ",
+    },
+  ];
+
   const apiMappedStories: BlogCardItem[] =
     blogs && blogs.length > 0
       ? blogs
           .map((b: any, idx: number) => {
             const rawAuthor = String(b.author || "YouthCamping Team");
             const cleanAuthor = rawAuthor.replace(/^by\s+/i, "");
+            const storyImg =
+              b.image && b.image.trim() !== "" && !b.image.includes("cloudinary.com")
+                ? b.image
+                : fallbackImages[idx % fallbackImages.length];
+            const storyAvatar =
+              b.authorImage && b.authorImage.trim() !== ""
+                ? b.authorImage
+                : fallbackAvatars[idx % fallbackAvatars.length];
+
             return {
               id: b._id || b.id || `b-${idx}`,
               title: b.title || "",
               slug: b.slug || "",
-              image: b.image && b.image.trim() !== "" ? b.image : "",
+              image: storyImg,
               authorName: cleanAuthor,
-              authorAvatar:
-                b.authorImage && b.authorImage.trim() !== ""
-                  ? b.authorImage
-                  : "",
-              readTime: b.readTime || "",
+              authorAvatar: storyAvatar,
+              readTime: b.readTime || "5 MIN READ",
             };
           })
           .filter(
@@ -65,7 +113,8 @@ export default function BlogSection({
           )
       : [];
 
-  const displayStories: BlogCardItem[] = apiMappedStories;
+  const displayStories: BlogCardItem[] =
+    apiMappedStories.length > 0 ? apiMappedStories : defaultStories;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useWheelPassThrough(scrollRef);

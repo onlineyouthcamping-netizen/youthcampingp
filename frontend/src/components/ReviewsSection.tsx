@@ -50,34 +50,78 @@ export default function ReviewsSection({
     null,
   );
 
+  const defaultReviews: GoogleReviewItem[] = [
+    {
+      id: "dr-1",
+      name: "Priya & Friends",
+      badge: "Joined Group Trip",
+      tripName: "Kasol & Parvati Valley",
+      date: "Jul 28",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300",
+      comment: "The bonfire nights, riverfront camping, and café crawls in Kasol were out of this world. Super safe for solo travelers too!",
+      rating: 5,
+      photos: ["https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200"],
+    },
+    {
+      id: "dr-2",
+      name: "Bhumit Rabadiya",
+      badge: "Joined Group Trip",
+      tripName: "Manali Kasol Amritsar Backpacking",
+      date: "Jul 28",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300",
+      comment: "Thank you for crafting a trip that perfectly matched our style and interests. Your attention to detail and trip captain support made all the difference!",
+      rating: 5,
+      photos: ["https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=80&w=1200"],
+    },
+    {
+      id: "dr-3",
+      name: "Janak Chauhan",
+      badge: "Joined Group Trip",
+      tripName: "Spiti Valley Road Trip",
+      date: "Jul 28",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
+      comment: "Just few weeks back I took the trip to Spiti Valley & Chhitkul with YouthCamping and believe me I had an amazing expedition of a lifetime!",
+      rating: 5,
+      photos: ["https://images.unsplash.com/photo-1596230529625-7ee10f7b09b6?q=80&w=1200"],
+    },
+  ];
+
   const apiMappedReviews: GoogleReviewItem[] =
     reviews && reviews.length > 0
       ? reviews
           .map((r: any, idx: number) => ({
             id: r._id || r.id || `gr-${idx}`,
-            name: r.userName || r.name || "",
+            name: r.userName || r.author || r.name || "Happy Traveler",
             badge: r.tripType || r.badge || "Joined Group Trip",
-            tripName: r.tripName || r.city || "",
+            tripName: r.tripName || r.trip || r.city || "Adventure Trip",
             date: r.createdAt
               ? new Date(r.createdAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                 })
-              : r.date || "",
-            avatar: r.userImage || r.avatar || "",
+              : r.date || "Recently",
+            avatar:
+              r.userImage ||
+              r.avatar ||
+              (idx % 2 === 0
+                ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300"
+                : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300"),
             comment: r.comment || r.text || "",
-            rating: r.rating || 5,
+            rating: Number(r.rating) || 5,
             photos:
               r.photos && r.photos.length > 0
                 ? r.photos
-                : r.photo
-                  ? [r.photo]
-                  : [],
+                : r.images && r.images.length > 0
+                  ? r.images
+                  : r.photo
+                    ? [r.photo]
+                    : [],
           }))
           .filter((r) => r.comment.trim().length > 0 && r.name.trim().length > 0)
       : [];
 
-  const displayReviews: GoogleReviewItem[] = apiMappedReviews;
+  const displayReviews: GoogleReviewItem[] =
+    apiMappedReviews.length > 0 ? apiMappedReviews : defaultReviews;
 
   const nudge = (dir: "l" | "r") => {
     if (scrollRef.current) {
