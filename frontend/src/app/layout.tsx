@@ -174,9 +174,13 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${montserrat.variable} ${playfair.variable} ${caveat.variable} h-full antialiased`}
     >
-      <body className="min-h-full w-full flex flex-col font-montserrat relative">
+      <body
+        suppressHydrationWarning
+        className="min-h-full w-full flex flex-col font-montserrat relative"
+      >
         <DynamicThemeProvider
           initialTheme={theme}
           initialSettings={mergedSettings}
