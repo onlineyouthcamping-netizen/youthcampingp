@@ -1546,7 +1546,10 @@ exports.getGuidePayments = async (req, res) => {
     const ctx = await parseDepartureFilter(req, res, true);
     if (!ctx) return;
     const payments = await prisma.opsGuidePayment.findMany({
-      where: ctx.where,
+      where: {
+        ...ctx.where,
+        assignmentStatus: { not: "CANCELLED" },
+      },
       include: {
         guideAdmin: { select: { id: true, name: true } },
         vendor: true,
@@ -1767,20 +1770,27 @@ exports.deleteGuidePayment = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Guide payment not found" });
-    // Soft-cancel to preserve history; actual delete only if no financial data
-    const hasFinancials = existing.agreedAmount > 0 || existing.advancePaid > 0;
-    if (hasFinancials) {
-      await prisma.opsGuidePayment.update({
-        where: { id },
-        data: { assignmentStatus: "CANCELLED" },
-      });
-      return res.json({
-        success: true,
-        message: "Guide assignment cancelled (financial record preserved)",
-      });
+    
+    // If no money was actually paid out, hard-delete to completely clear the guide assignment
+    const paidAmount = Number(existing.advancePaid) || 0;
+    if (paidAmount === 0) {
+      await prisma.opsGuidePayment.delete({ where: { id } });
+      return res.json({ success: true, message: "Guide assignment deleted" });
     }
-    await prisma.opsGuidePayment.delete({ where: { id } });
-    return res.json({ success: true, message: "Guide payment deleted" });
+
+    // If money was paid out, preserve audit history with zeroed balance
+    await prisma.opsGuidePayment.update({
+      where: { id },
+      data: {
+        agreedAmount: paidAmount,
+        balanceAmount: 0,
+        assignmentStatus: "CANCELLED",
+      },
+    });
+    return res.json({
+      success: true,
+      message: "Guide assignment cancelled (financial record preserved)",
+    });
   } catch (err) {
     console.error("deleteGuidePayment error:", err);
     return res
@@ -1811,7 +1821,7 @@ exports.getOpsAccountingSummary = async (req, res) => {
           prisma.opsTransportFleet
             .findMany({ where: ctx.where })
             .catch(() => []),
-          prisma.opsGuidePayment.findMany({ where: ctx.where }).catch(() => []),
+          prisma.opsGuidePayment.findMany({ where: { ...ctx.where, assignmentStatus: { not: "CANCELLED" } } }).catch(() => []),
           prisma.opsMiscExpense.findMany({ where: ctx.where }).catch(() => []),
           prisma.opsTripExpense.findMany({ where: ctx.where }).catch(() => []),
           prisma.booking.findMany({ where: bookingWhere }).catch(() => []),
