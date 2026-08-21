@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { normalizeImageUrl } from "@/lib/api";
 import { useWheelPassThrough } from "@/lib/useWheelPassThrough";
 
 interface GoogleReviewItem {
@@ -98,11 +99,11 @@ export default function ReviewsSection({
               ? new Date(r.createdAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
+                  timeZone: "UTC",
                 })
               : r.date || "Recently",
             avatar:
-              r.userImage ||
-              r.avatar ||
+              normalizeImageUrl(r.userImage || r.avatar) ||
               (idx % 2 === 0
                 ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300"
                 : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300"),
@@ -160,12 +161,12 @@ export default function ReviewsSection({
           {displayReviews.map((rev, idx) => {
             const rawPhotos = rev.photos || [];
             const photoList = rawPhotos
+              .map((p: string) =>
+                typeof p === "string" ? normalizeImageUrl(p) || p : "",
+              )
               .filter(
                 (p: string) =>
-                  p &&
-                  typeof p === "string" &&
-                  !p.includes("res.cloudinary.com") &&
-                  (p.startsWith("http") || p.startsWith("/")),
+                  Boolean(p) && (p.startsWith("http") || p.startsWith("/")),
               );
             const extraCount = photoList.length > 3 ? photoList.length - 3 : 0;
 

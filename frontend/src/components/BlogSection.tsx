@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { Blog } from "@/types";
+import { normalizeImageUrl } from "@/lib/api";
 import { useWheelPassThrough } from "@/lib/useWheelPassThrough";
 
 interface BlogCardItem {
@@ -87,13 +87,11 @@ export default function BlogSection({
             const rawAuthor = String(b.author || "YouthCamping Team");
             const cleanAuthor = rawAuthor.replace(/^by\s+/i, "");
             const storyImg =
-              b.image && b.image.trim() !== "" && !b.image.includes("cloudinary.com")
-                ? b.image
-                : fallbackImages[idx % fallbackImages.length];
+              normalizeImageUrl(b.image) ||
+              fallbackImages[idx % fallbackImages.length];
             const storyAvatar =
-              b.authorImage && b.authorImage.trim() !== ""
-                ? b.authorImage
-                : fallbackAvatars[idx % fallbackAvatars.length];
+              normalizeImageUrl(b.authorImage) ||
+              fallbackAvatars[idx % fallbackAvatars.length];
 
             return {
               id: b._id || b.id || `b-${idx}`,
