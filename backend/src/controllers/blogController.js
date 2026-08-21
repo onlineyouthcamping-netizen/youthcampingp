@@ -117,6 +117,7 @@ exports.getBlogs = async (req, res, next) => {
 
 /**
  * Lightweight published blog cards for public list and homepage rendering.
+ * Keep Cache-Control short so admin image/title edits show up quickly.
  */
 exports.getPublicBlogCards = async (req, res, next) => {
   try {
@@ -182,61 +183,12 @@ exports.getPublicBlogCards = async (req, res, next) => {
       authorImage: blog.authorImage,
       readTime: blog.readTime || "5 min read",
       hasVideo: hasEmbeddedVideo(blog),
-      createdAt: blog.createdAt,
-    }));
-
-    res.set("Cache-Control", "public, max-age=600, stale-while-revalidate=600");
-    res.json({ success: true, data });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Lightweight published blog cards for public list and homepage rendering.
- * The existing /api/blogs response remains unchanged.
- */
-exports.getPublicBlogCards = async (req, res, next) => {
-  try {
-    const requestedLimit = Number.parseInt(req.query.limit, 10);
-    const take = Number.isFinite(requestedLimit)
-      ? Math.max(1, Math.min(requestedLimit, 100))
-      : undefined;
-    const blogs = await prisma.blog.findMany({
-      where: { tenantId: "default", isActive: true, status: "published" },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        content: true,
-        image: true,
-        author: true,
-        authorImage: true,
-        readTime: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take,
-    });
-
-    const data = blogs.map((blog) => ({
-      id: blog.id,
-      title: blog.title,
-      slug: blog.slug,
-      excerpt: stripHtml(blog.content).slice(0, 160),
-      image: blog.image,
-      author: blog.author,
-      authorImage: blog.authorImage,
-      readTime: blog.readTime,
-      hasVideo: hasEmbeddedVideo(blog),
       status: blog.status,
       createdAt: blog.createdAt,
       updatedAt: blog.updatedAt,
     }));
 
-    res.set("Cache-Control", "public, max-age=600, stale-while-revalidate=600");
+    res.set("Cache-Control", "public, max-age=30, stale-while-revalidate=60");
     res.json({ success: true, data });
   } catch (error) {
     next(error);
@@ -268,7 +220,7 @@ exports.getPublicBlogDetail = async (req, res, next) => {
       blog.content = sanitizeHtml(blog.content);
     }
 
-    res.set("Cache-Control", "public, max-age=600, stale-while-revalidate=600");
+    res.set("Cache-Control", "public, max-age=30, stale-while-revalidate=60");
     res.json({ success: true, data: blog });
   } catch (error) {
     next(error);

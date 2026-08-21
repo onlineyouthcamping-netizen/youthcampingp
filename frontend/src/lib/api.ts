@@ -393,7 +393,7 @@ export async function fetchPublicReviews(
   try {
     const res = await fetch(
       `${API_BASE_URL}/reviews`,
-      init ?? publicRevalidate(600),
+      init ?? publicRevalidate(30),
     );
     if (!res.ok) return [];
     const json = await res.json();
@@ -409,7 +409,7 @@ export async function fetchHomepageReviews(limit = 8): Promise<any[]> {
     const safeLimit = Math.max(1, Math.min(16, Math.trunc(limit)));
     const res = await fetch(
       `${API_BASE_URL}/reviews?limit=${safeLimit}`,
-      publicRevalidate(600),
+      publicRevalidate(30),
     );
     if (!res.ok) return [];
     const json = await res.json();
@@ -441,7 +441,7 @@ export async function fetchPublicBlogs(
   try {
     const res = await fetch(
       `${API_BASE_URL}/blogs/public/cards`,
-      init ?? publicRevalidate(600),
+      init ?? publicRevalidate(30),
     );
     if (!res.ok) return [];
     const json = await res.json();
@@ -457,7 +457,7 @@ export async function fetchHomepageBlogs(limit = 8): Promise<any[]> {
     const safeLimit = Math.max(1, Math.min(16, Math.trunc(limit)));
     const res = await fetch(
       `${API_BASE_URL}/blogs/public/cards?limit=${safeLimit}`,
-      publicRevalidate(600),
+      publicRevalidate(30),
     );
     if (!res.ok) return [];
     const json = await res.json();
@@ -503,7 +503,7 @@ export async function fetchBlogBySlug(
   try {
     const res = await fetch(
       `${API_BASE_URL}/blogs/public/slug/${slug}`,
-      init ?? publicRevalidate(600),
+      init ?? publicRevalidate(30),
     );
     if (res.ok) {
       const json = await res.json();
