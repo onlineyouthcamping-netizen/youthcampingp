@@ -360,13 +360,15 @@ canvas,
   pointer-events: auto;
 }
 
-/* Popular Destinations — photo cards on a frameless grey canvas */
+/* Popular Destinations — flat photo cards on full-bleed grey */
 .page-section-wrapper:has(> .popular-destinations),
 .popular-destinations,
 .popular-section.destinations-grid {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
+  background-color: #e2e7ed;
+  width: 100%;
 }
 
 .popular-destinations .dest-photo-card {
@@ -384,8 +386,8 @@ canvas,
   overflow: hidden;
   isolation: isolate;
   cursor: pointer;
-  background: #0b1528;
-  box-shadow: 0 10px 24px rgba(11, 21, 40, 0.1);
+  background: transparent;
+  box-shadow: none;
   outline: none;
 }
 
@@ -398,33 +400,14 @@ canvas,
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1);
-  transition: transform 450ms ease-out;
-  will-change: transform;
 }
 
 .popular-destinations .dest-photo-fade {
   background: linear-gradient(
     to bottom,
-    rgba(11, 21, 40, 0.5) 0%,
-    rgba(11, 21, 40, 0.22) 45%,
+    rgba(11, 21, 40, 0.35) 0%,
+    rgba(11, 21, 40, 0.12) 45%,
     rgba(11, 21, 40, 0) 72%
-  );
-  transition: background 450ms ease-out;
-}
-
-.popular-destinations .dest-photo-card:hover .dest-photo-img,
-.popular-destinations .dest-photo-card:focus-visible .dest-photo-img {
-  transform: scale(1.04);
-}
-
-.popular-destinations .dest-photo-card:hover .dest-photo-fade,
-.popular-destinations .dest-photo-card:focus-visible .dest-photo-fade {
-  background: linear-gradient(
-    to bottom,
-    rgba(11, 21, 40, 0.72) 0%,
-    rgba(11, 21, 40, 0.34) 50%,
-    rgba(11, 21, 40, 0) 78%
   );
 }
 
@@ -460,15 +443,8 @@ canvas,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .popular-destinations .dest-photo-img,
-  .popular-destinations .dest-photo-fade,
   .popular-destinations .dest-nav {
     transition: none !important;
-  }
-
-  .popular-destinations .dest-photo-card:hover .dest-photo-img,
-  .popular-destinations .dest-photo-card:focus-visible .dest-photo-img {
-    transform: none !important;
   }
 }
 

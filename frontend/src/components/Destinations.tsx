@@ -183,8 +183,7 @@ export default function Destinations({
 
   return (
     <section
-      className="popular-destinations popular-section destinations-grid pt-4 pb-2 sm:pt-5 sm:pb-2 font-montserrat overflow-hidden border-0 outline-none shadow-none"
-      style={{ backgroundColor: "#E2E7ED" }}
+      className="popular-destinations popular-section destinations-grid w-full pt-4 pb-2 sm:pt-5 sm:pb-2 font-montserrat overflow-hidden border-0 outline-none shadow-none bg-[#E2E7ED]"
     >
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 md:px-12 min-w-0 w-full">
         <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-nowrap">
@@ -240,7 +239,7 @@ export default function Destinations({
                     aria-hidden
                   />
                   <span
-                    className={`absolute top-0 inset-x-0 z-[2] px-3 pt-5 sm:pt-6 text-center text-white [text-shadow:0_1px_8px_rgba(11,21,40,0.35)] ${
+                    className={`absolute top-0 inset-x-0 z-[2] px-3 pt-5 sm:pt-6 text-center text-white ${
                       useScript
                         ? "font-caveat font-bold text-[28px] sm:text-[32px] leading-none"
                         : "font-montserrat font-extrabold text-[16px] sm:text-[18px] tracking-[0.06em] uppercase leading-tight"
