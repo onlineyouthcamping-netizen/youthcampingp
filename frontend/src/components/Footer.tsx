@@ -194,7 +194,10 @@ export default function Footer({ footerConfig }: FooterProps = {}) {
   const phone = cfg.phone || "+91-99242 46267";
   const email = cfg.email || "";
   const copyright = cfg.copyright || "All Rights Reserved.";
-  const logoUrl = cfg.logoUrl || "/footer-wordmark.png";
+  // Dark navy footer needs a white wordmark. CMS logoUrl often points at
+  // light-bg assets (dark glyphs) that disappear on #0B1528 — keep the
+  // previous white-text treatment (footer-wordmark + invert).
+  const logoUrl = "/footer-wordmark.png";
   const showSocial = cfg.showSocial !== false;
   const showAddress = cfg.showAddress !== false;
   const showCopyright = cfg.showCopyright !== false;
@@ -229,7 +232,7 @@ export default function Footer({ footerConfig }: FooterProps = {}) {
               <img
                 src={logoUrl}
                 alt={brandName}
-                className="h-8 w-auto object-contain object-left sm:h-9"
+                className="h-8 w-auto object-contain object-left brightness-0 invert sm:h-9"
               />
             </Link>
 

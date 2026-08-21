@@ -288,7 +288,7 @@ export default function PageRenderer({
             key={index}
             className={`page-section-wrapper ${getBackgroundClass(index)} transition-colors duration-500 ${
               type === "destinations"
-                ? "border-0 outline-none shadow-none"
+                ? "w-full border-0 outline-none shadow-none"
                 : ""
             }`}
           >
