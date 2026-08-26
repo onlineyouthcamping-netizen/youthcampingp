@@ -36,6 +36,18 @@ import { API_BASE_URL, normalizeImageUrl } from "@/lib/api";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import { cn } from "@/lib/utils";
 
+/** Shared selectable-card language (Route / Payment / traveler options). */
+const choiceCardClass = (active: boolean, compact = false) =>
+  cn(
+    "relative w-full text-left border-2 transition-all rounded-xl",
+    compact
+      ? "px-2.5 py-2.5 min-h-[44px] flex items-center justify-center"
+      : "p-3 min-h-[72px] flex flex-col justify-between gap-1.5",
+    active
+      ? "border-[#D4541A] bg-[#D4541A]/5 shadow-sm text-slate-900"
+      : "border-slate-200/80 bg-white text-slate-600 hover:border-slate-300",
+  );
+
 // No fallback joining points. Strictly use API variants/pickupCities.
 
 const parseTripDate = (dateStr?: string) => {
@@ -1107,14 +1119,14 @@ function BookingForm() {
     : initialParams.pickupCity || tripData?.location || "Delhi";
 
   return (
-    <div className="bg-[#F3F1EE] min-h-screen text-slate-900 pb-24 lg:pb-10 pt-[72px] md:pt-[80px] font-montserrat">
+    <div className="bg-[#F3F1EE] min-h-screen text-slate-900 pb-32 lg:pb-10 pt-[72px] md:pt-[80px] font-montserrat">
       <div
         className="max-w-[1180px] mx-auto px-3 sm:px-4 md:px-5 py-3 sm:py-4"
         id="booking-form-container"
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4">
           {/* Left Area: Compact trip strip + form */}
-          <div className="lg:col-span-8 space-y-2.5">
+          <div className="lg:col-span-8 space-y-3">
             {/* Single trip context strip (replaces banner + summary bar) */}
             <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm">
               <div className="flex items-stretch gap-0 min-h-[72px] sm:min-h-[88px]">
@@ -1393,13 +1405,13 @@ function BookingForm() {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 8 }}
-                  className="space-y-2.5"
+                  className="space-y-3"
                 >
                   {/* Joining Point Selection */}
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-3 shadow-sm">
-                    <div className="border-b border-slate-100 pb-2">
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-sm">
+                    <div className="border-b border-slate-100 pb-2.5">
                       <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#D4541A]">
-                        Route
+                        Step 2 of 4 · Route
                       </p>
                       <h2 className="text-base font-extrabold tracking-tight text-slate-900">
                         {tripData?.bookingFormLabels?.joiningPoint ||
@@ -1410,7 +1422,7 @@ function BookingForm() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {joiningPoints.map((city: any) => {
                         const active = selectedCity?.cityName === city.cityName;
                         return (
@@ -1428,31 +1440,29 @@ function BookingForm() {
                                 city.cityName,
                               );
                             }}
-                            className={cn(
-                              "text-left p-3 rounded-xl border-2 transition-all flex flex-col justify-between min-h-[82px] h-auto w-full gap-1.5",
-                              active
-                                ? "border-[#D4541A] bg-[#D4541A]/5 shadow-sm"
-                                : "border-slate-100 bg-slate-50/50 hover:border-slate-300",
-                            )}
+                            className={choiceCardClass(active)}
                           >
-                            <div className="flex justify-between w-full items-start gap-1.5 min-w-0">
+                            <div className="flex justify-between w-full items-start gap-2 min-w-0">
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-bold capitalize text-slate-800 whitespace-normal break-words">
                                   {city.cityName}
                                 </p>
-                                <p className="text-[9px] text-slate-500 font-medium capitalize tracking-wider mt-0.5 whitespace-normal break-words leading-tight">
+                                <p className="text-[10px] text-slate-500 font-medium capitalize tracking-wide mt-0.5 whitespace-normal break-words leading-snug">
                                   {city.pickupPoint}
                                 </p>
                               </div>
                               {active && (
-                                <Check
-                                  size={12}
-                                  className="text-[#D4541A] shrink-0 mt-0.5"
-                                />
+                                <span className="shrink-0 w-5 h-5 rounded-full bg-[#D4541A] flex items-center justify-center mt-0.5">
+                                  <Check
+                                    size={11}
+                                    strokeWidth={3}
+                                    className="text-white"
+                                  />
+                                </span>
                               )}
                             </div>
                             {city.price !== undefined && (
-                              <div className="mt-auto pt-1.5 border-t border-slate-100/50 w-full flex justify-between items-center text-[9px]">
+                              <div className="mt-auto pt-2 border-t border-slate-100/80 w-full flex justify-between items-center text-[10px]">
                                 <span className="uppercase tracking-wider text-slate-400 font-bold">
                                   Package Price
                                 </span>
@@ -1468,8 +1478,8 @@ function BookingForm() {
                   </div>
 
                   {/* Travelers Manifest Inputs */}
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-3 shadow-sm">
-                    <div className="border-b border-slate-100 pb-2">
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-sm">
+                    <div className="border-b border-slate-100 pb-2.5">
                       <p className="text-[9px] font-extrabold uppercase tracking-widest text-[#D4541A]">
                         Manifest
                       </p>
@@ -1487,25 +1497,39 @@ function BookingForm() {
 
                     {/* Quick Traveler Count Select */}
                     <div className="space-y-2">
-                      <label className="text-[9px] font-bold capitalize tracking-wider text-slate-500 block">
+                      <label className="text-[9px] font-bold uppercase tracking-wider text-slate-500 block">
                         Number of Travelers
                       </label>
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <button
-                            key={n}
-                            type="button"
-                            onClick={() => syncParticipantsCount(n)}
-                            className={cn(
-                              "py-2 rounded-lg font-bold text-xs transition-all border",
-                              formData.participants === n
-                                ? "bg-[#D4541A] border-[#D4541A] text-white shadow-xs"
-                                : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300",
-                            )}
-                          >
-                            {n} {n === 1 ? "Traveller" : "Travellers"}
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-3 gap-2">
+                        {[1, 2, 3, 4, 5].map((n) => {
+                          const active = formData.participants === n;
+                          return (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => syncParticipantsCount(n)}
+                              className={choiceCardClass(active, true)}
+                            >
+                              {active && (
+                                <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#D4541A] flex items-center justify-center">
+                                  <Check
+                                    size={9}
+                                    strokeWidth={3}
+                                    className="text-white"
+                                  />
+                                </span>
+                              )}
+                              <span className="flex flex-col items-center justify-center gap-0.5 pr-1">
+                                <span className="text-base font-black tabular-nums leading-none text-slate-900">
+                                  {n}
+                                </span>
+                                <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">
+                                  {n === 1 ? "Traveler" : "Travelers"}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        })}
                         <button
                           type="button"
                           onClick={() => {
@@ -1513,21 +1537,35 @@ function BookingForm() {
                               syncParticipantsCount(6);
                             }
                           }}
-                          className={cn(
-                            "py-2 rounded-lg font-bold text-xs transition-all border",
-                            formData.participants > 5
-                              ? "bg-[#D4541A] border-[#D4541A] text-white shadow-xs"
-                              : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300",
+                          className={choiceCardClass(
+                            formData.participants > 5,
+                            true,
                           )}
                         >
-                          More than 5
+                          {formData.participants > 5 && (
+                            <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#D4541A] flex items-center justify-center">
+                              <Check
+                                size={9}
+                                strokeWidth={3}
+                                className="text-white"
+                              />
+                            </span>
+                          )}
+                          <span className="flex flex-col items-center justify-center gap-0.5 pr-1">
+                            <span className="text-base font-black leading-none text-slate-900">
+                              6+
+                            </span>
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">
+                              More
+                            </span>
+                          </span>
                         </button>
                       </div>
 
                       {/* Dropdown for More than 5 selection */}
                       {formData.participants > 5 && (
-                        <div className="pt-1.5 max-w-xs">
-                          <label className="text-[8px] font-extrabold uppercase tracking-wider text-[#D4541A] block mb-1">
+                        <div className="pt-1 max-w-xs">
+                          <label className="text-[9px] font-extrabold uppercase tracking-wider text-[#D4541A] block mb-1.5">
                             Select count (6 to 12)
                           </label>
                           <select
@@ -1535,11 +1573,11 @@ function BookingForm() {
                             onChange={(e) =>
                               syncParticipantsCount(Number(e.target.value))
                             }
-                            className="w-full h-10 bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A]"
+                            className="w-full h-11 bg-white border-2 border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A]"
                           >
                             {[6, 7, 8, 9, 10, 11, 12].map((cnt) => (
                               <option key={cnt} value={cnt}>
-                                {cnt} Travellers
+                                {cnt} Travelers
                               </option>
                             ))}
                           </select>
@@ -1548,20 +1586,20 @@ function BookingForm() {
                     </div>
 
                     {/* Participant detail loops */}
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-3.5 pt-1">
                       {formData.participantsList.map((traveler, index) => (
                         <div
                           key={index}
-                          className="p-3.5 bg-slate-50/50 border border-slate-200 rounded-xl space-y-2.5"
+                          className="p-3.5 sm:p-4 bg-slate-50/40 border border-slate-200/90 rounded-2xl space-y-3"
                         >
                           <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#D4541A]">
-                            TRAVELER {index + 1} DETAILS
+                            Traveler {index + 1}
                           </span>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                             <input
                               required
                               placeholder="Full Name *"
-                              className="w-full h-[46px] bg-white border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A] focus:ring-2 focus:ring-[#D4541A]/5"
+                              className="w-full h-11 bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A] focus:ring-2 focus:ring-[#D4541A]/5"
                               value={traveler.name}
                               onChange={(e) =>
                                 handleParticipantChange(
@@ -1574,7 +1612,7 @@ function BookingForm() {
                             <input
                               required
                               placeholder="Mobile Number *"
-                              className="w-full h-[46px] bg-white border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A] focus:ring-2 focus:ring-[#D4541A]/5"
+                              className="w-full h-11 bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A] focus:ring-2 focus:ring-[#D4541A]/5"
                               value={traveler.phone}
                               onChange={(e) =>
                                 handleParticipantChange(
@@ -1592,7 +1630,7 @@ function BookingForm() {
                               min={1}
                               max={120}
                               placeholder="Age *"
-                              className="w-full h-[46px] bg-white border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A] focus:ring-2 focus:ring-[#D4541A]/5"
+                              className="w-full h-11 bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A] focus:ring-2 focus:ring-[#D4541A]/5"
                               value={traveler.age}
                               onChange={(e) => {
                                 const val = e.target.value;
@@ -1610,7 +1648,7 @@ function BookingForm() {
                             />
                             <select
                               aria-label={`Gender for traveler ${index + 1}`}
-                              className="w-full h-[46px] bg-white border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A]"
+                              className="w-full h-11 bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-[#D4541A]"
                               value={traveler.gender}
                               onChange={(e) =>
                                 handleParticipantChange(
@@ -1627,12 +1665,12 @@ function BookingForm() {
                           </div>
 
                           {/* Room Sharing Option for this traveler */}
-                          <div className="space-y-1 pt-0.5">
+                          <div className="space-y-1.5 pt-0.5">
                             <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500 block">
                               {tripData?.bookingFormLabels?.roomSharing ||
                                 "Room Sharing Option"}
                             </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                               {(tripData?.roomOptions?.length > 0
                                 ? tripData.roomOptions
                                 : [
@@ -1640,38 +1678,48 @@ function BookingForm() {
                                     { label: "Triple Sharing" },
                                     { label: "Quad Sharing" },
                                   ]
-                              ).map((room: any) => (
-                                <button
-                                  key={room.label}
-                                  type="button"
-                                  onClick={() =>
-                                    handleParticipantChange(
-                                      index,
-                                      "roomSharing",
-                                      room.label,
-                                    )
-                                  }
-                                  className={cn(
-                                    "py-1.5 rounded-md font-bold text-[9px] border text-center transition-all min-h-[34px] flex items-center justify-center whitespace-normal break-words px-2 w-full",
-                                    traveler.roomSharing === room.label
-                                      ? "bg-[#D4541A]/10 border-[#D4541A] text-[#D4541A]"
-                                      : "bg-white border-slate-200 text-slate-500",
-                                  )}
-                                >
-                                  {room.label}
-                                </button>
-                              ))}
+                              ).map((room: any) => {
+                                const active =
+                                  traveler.roomSharing === room.label;
+                                return (
+                                  <button
+                                    key={room.label}
+                                    type="button"
+                                    onClick={() =>
+                                      handleParticipantChange(
+                                        index,
+                                        "roomSharing",
+                                        room.label,
+                                      )
+                                    }
+                                    className={choiceCardClass(active, true)}
+                                  >
+                                    {active && (
+                                      <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#D4541A] flex items-center justify-center">
+                                        <Check
+                                          size={9}
+                                          strokeWidth={3}
+                                          className="text-white"
+                                        />
+                                      </span>
+                                    )}
+                                    <span className="text-[11px] font-bold text-center leading-snug whitespace-normal break-words px-1 pr-3">
+                                      {room.label}
+                                    </span>
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
 
                           {/* Train Class Option for this traveler */}
                           {!isDirectJoin && (
-                            <div className="space-y-1 pt-0.5">
+                            <div className="space-y-1.5 pt-0.5">
                               <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500 block">
                                 {tripData?.bookingFormLabels?.travelOption ||
                                   "Train Ticket Option"}
                               </label>
-                              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-1.5">
+                              <div className="grid grid-cols-2 gap-2">
                                 {(tripData?.travelOptions?.length > 0
                                   ? tripData.travelOptions
                                   : [
@@ -1679,67 +1727,87 @@ function BookingForm() {
                                       { label: "3AC" },
                                       { label: "No Train" },
                                     ]
-                                ).map((train: any) => (
-                                  <button
-                                    key={train.label}
-                                    type="button"
-                                    onClick={() =>
-                                      handleParticipantChange(
-                                        index,
-                                        "trainOption",
-                                        train.label,
-                                      )
-                                    }
-                                    className={cn(
-                                      "py-1.5 rounded-md font-bold text-[9px] border text-center transition-all min-h-[34px] flex items-center justify-center whitespace-normal break-words px-2 w-full",
-                                      traveler.trainOption === train.label
-                                        ? "bg-[#D4541A]/10 border-[#D4541A] text-[#D4541A]"
-                                        : "bg-white border-slate-200 text-slate-500",
-                                    )}
-                                  >
-                                    {train.label}
-                                  </button>
-                                ))}
+                                ).map((train: any) => {
+                                  const active =
+                                    traveler.trainOption === train.label;
+                                  return (
+                                    <button
+                                      key={train.label}
+                                      type="button"
+                                      onClick={() =>
+                                        handleParticipantChange(
+                                          index,
+                                          "trainOption",
+                                          train.label,
+                                        )
+                                      }
+                                      className={choiceCardClass(active, true)}
+                                    >
+                                      {active && (
+                                        <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#D4541A] flex items-center justify-center">
+                                          <Check
+                                            size={9}
+                                            strokeWidth={3}
+                                            className="text-white"
+                                          />
+                                        </span>
+                                      )}
+                                      <span className="text-[11px] font-bold text-center leading-snug whitespace-normal break-words px-1 pr-3 uppercase tracking-wide">
+                                        {train.label}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
 
                           {/* Food Option for this traveler */}
-                          <div className="space-y-1 pt-0.5">
+                          <div className="space-y-1.5 pt-0.5">
                             <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500 block">
                               Food Option
                             </label>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              {["Normal Food", "Jain Food"].map((food) => (
-                                <button
-                                  key={food}
-                                  type="button"
-                                  onClick={() =>
-                                    handleParticipantChange(
-                                      index,
-                                      "foodPreference",
-                                      food,
-                                    )
-                                  }
-                                  className={cn(
-                                    "py-1.5 rounded-md font-bold text-[9px] border text-center transition-all min-h-[34px] flex items-center justify-center whitespace-normal break-words px-2 w-full",
-                                    (traveler.foodPreference ||
-                                      "Normal Food") === food
-                                      ? "bg-[#D4541A]/10 border-[#D4541A] text-[#D4541A]"
-                                      : "bg-white border-slate-200 text-slate-500",
-                                  )}
-                                >
-                                  {food}
-                                </button>
-                              ))}
+                            <div className="grid grid-cols-2 gap-2">
+                              {["Normal Food", "Jain Food"].map((food) => {
+                                const active =
+                                  (traveler.foodPreference || "Normal Food") ===
+                                  food;
+                                return (
+                                  <button
+                                    key={food}
+                                    type="button"
+                                    onClick={() =>
+                                      handleParticipantChange(
+                                        index,
+                                        "foodPreference",
+                                        food,
+                                      )
+                                    }
+                                    className={choiceCardClass(active, true)}
+                                  >
+                                    {active && (
+                                      <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#D4541A] flex items-center justify-center">
+                                        <Check
+                                          size={9}
+                                          strokeWidth={3}
+                                          className="text-white"
+                                        />
+                                      </span>
+                                    )}
+                                    <span className="text-[11px] font-bold text-center leading-snug px-1 pr-3">
+                                      {food}
+                                    </span>
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
 
                           {/* Aadhaar Card / ID Proof Upload (Required) */}
-                          <div className="space-y-1.5 pt-1.5 border-t border-slate-100 mt-2">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-700 block">
-                                Aadhaar Card / Govt ID Proof{" "}
+                          <div className="space-y-2 pt-2 border-t border-slate-200/70">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-700">
+                                ID proof{" "}
                                 <span className="text-rose-600 normal-case tracking-normal font-black">
                                   *
                                 </span>
@@ -1748,34 +1816,32 @@ function BookingForm() {
                                 </span>
                               </label>
                               {travelerHasIdProof(traveler) && (
-                                <span className="text-emerald-600 font-bold flex items-center gap-1 normal-case text-[10px]">
-                                  <CheckCircle2 className="w-3.5 h-3.5" /> Uploaded
+                                <span className="text-emerald-600 font-bold flex items-center gap-1 normal-case text-[10px] shrink-0">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />{" "}
+                                  Uploaded
                                 </span>
                               )}
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
                               <label
                                 className={cn(
-                                  "flex-1 h-[42px] px-3 bg-white border border-dashed rounded-lg flex items-center justify-between cursor-pointer transition-all hover:bg-slate-50/80",
+                                  "flex-1 min-w-0 rounded-xl border-2 border-dashed px-3 py-3 flex items-center gap-2.5 cursor-pointer transition-all hover:bg-white",
                                   travelerHasIdProof(traveler)
-                                    ? "border-emerald-500/60 bg-emerald-50/20"
-                                    : error &&
-                                        !travelerHasIdProof(traveler)
-                                      ? "border-rose-400 bg-rose-50/30"
-                                      : "border-slate-300",
+                                    ? "border-emerald-500/50 bg-emerald-50/40"
+                                    : error && !travelerHasIdProof(traveler)
+                                      ? "border-rose-400 bg-rose-50/40"
+                                      : "border-slate-300 bg-white",
                                 )}
                               >
-                                <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                                  <CreditCard className="w-4 h-4 text-[#D4541A] shrink-0" />
-                                  <span className="text-xs font-medium text-slate-600 truncate">
-                                    {(traveler as any).aadhaarFileName ||
-                                      (travelerHasIdProof(traveler)
-                                        ? "Aadhaar_Card.jpg"
-                                        : "Upload Aadhaar Card / ID Proof (JPG, PNG, PDF) *")}
-                                  </span>
-                                </div>
-                                <span className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded shrink-0">
+                                <CreditCard className="w-4 h-4 text-[#D4541A] shrink-0" />
+                                <span className="flex-1 min-w-0 text-[11px] font-semibold text-slate-600 leading-snug">
+                                  {(traveler as any).aadhaarFileName ||
+                                    (travelerHasIdProof(traveler)
+                                      ? "ID proof uploaded"
+                                      : "Upload Aadhaar / ID (JPG, PNG, PDF)")}
+                                </span>
+                                <span className="shrink-0 text-[10px] font-extrabold uppercase tracking-wider bg-slate-100 text-slate-700 px-2.5 py-1.5 rounded-lg">
                                   Browse
                                 </span>
                                 <input
@@ -1783,7 +1849,9 @@ function BookingForm() {
                                   accept="image/*,.pdf"
                                   className="hidden"
                                   required={!travelerHasIdProof(traveler)}
-                                  onChange={(e) => handleAadhaarUpload(index, e)}
+                                  onChange={(e) =>
+                                    handleAadhaarUpload(index, e)
+                                  }
                                 />
                               </label>
 
@@ -1791,7 +1859,7 @@ function BookingForm() {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveAadhaar(index)}
-                                  className="h-[42px] px-2.5 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 rounded-lg text-xs font-bold transition-all shrink-0"
+                                  className="h-11 sm:h-auto px-3 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 rounded-xl text-xs font-bold transition-all shrink-0"
                                   title="Remove file"
                                 >
                                   Remove
@@ -1800,13 +1868,14 @@ function BookingForm() {
                             </div>
                             {!travelerHasIdProof(traveler) &&
                               error?.toLowerCase().includes("aadhaar") && (
-                              <p className="text-[10px] font-bold text-rose-600 pt-0.5">
-                                Upload Aadhaar / Govt ID proof to continue
-                              </p>
-                            )}
+                                <p className="text-[11px] font-bold text-rose-600">
+                                  Upload Aadhaar / Govt ID proof to continue
+                                </p>
+                              )}
                             {uploadingAadhaarIndex === index && (
-                              <div className="flex items-center gap-1.5 text-[10px] text-amber-600 font-bold animate-pulse pt-0.5">
-                                <Loader2 className="w-3 h-3 animate-spin" /> Uploading document...
+                              <div className="flex items-center gap-1.5 text-[11px] text-amber-600 font-bold animate-pulse">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />{" "}
+                                Uploading document...
                               </div>
                             )}
                           </div>
@@ -1816,12 +1885,17 @@ function BookingForm() {
                   </div>
 
                   {/* Special Requests textarea (optional) */}
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-2 shadow-sm">
-                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500 block">
-                      Special Requests
-                    </span>
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-2.5 shadow-sm">
+                    <div>
+                      <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500 block">
+                        Special Requests
+                      </span>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        Optional — allergies, room notes, or other details
+                      </p>
+                    </div>
                     <textarea
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-[#D4541A] min-h-[56px] transition-all"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs font-semibold text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-[#D4541A] min-h-[88px] resize-y transition-all"
                       placeholder="Food allergies, room requests, or other details..."
                       value={formData.specialRequests}
                       onChange={(e) =>
@@ -1869,22 +1943,25 @@ function BookingForm() {
                         <button
                           type="button"
                           onClick={() => setPaymentMode("Full Payment")}
-                          className={cn(
-                            "text-left p-3.5 rounded-xl border-2 transition-all flex flex-col justify-between min-h-[76px]",
-                            paymentMode === "Full Payment"
-                              ? "border-[#D4541A] bg-[#D4541A]/5"
-                              : "border-slate-100 bg-slate-50/50 hover:border-slate-300",
+                          className={choiceCardClass(
+                            paymentMode === "Full Payment",
                           )}
                         >
-                          <div className="flex justify-between w-full items-center">
+                          <div className="flex justify-between w-full items-center gap-2">
                             <span className="text-xs font-bold capitalize text-slate-800">
                               Pay In Full
                             </span>
                             {paymentMode === "Full Payment" && (
-                              <Check size={14} className="text-[#D4541A]" />
+                              <span className="shrink-0 w-5 h-5 rounded-full bg-[#D4541A] flex items-center justify-center">
+                                <Check
+                                  size={11}
+                                  strokeWidth={3}
+                                  className="text-white"
+                                />
+                              </span>
                             )}
                           </div>
-                          <span className="text-[9px] text-slate-400 font-bold capitalize mt-1">
+                          <span className="text-[10px] text-slate-500 font-medium mt-1">
                             Get immediate confirmation of booking
                           </span>
                         </button>
@@ -1892,22 +1969,25 @@ function BookingForm() {
                         <button
                           type="button"
                           onClick={() => setPaymentMode("Partial Payment")}
-                          className={cn(
-                            "text-left p-3.5 rounded-xl border-2 transition-all flex flex-col justify-between min-h-[76px]",
-                            paymentMode === "Partial Payment"
-                              ? "border-[#D4541A] bg-[#D4541A]/5"
-                              : "border-slate-100 bg-slate-50/50 hover:border-slate-300",
+                          className={choiceCardClass(
+                            paymentMode === "Partial Payment",
                           )}
                         >
-                          <div className="flex justify-between w-full items-center">
+                          <div className="flex justify-between w-full items-center gap-2">
                             <span className="text-xs font-bold capitalize text-slate-800">
                               Partial Payment (Deposit)
                             </span>
                             {paymentMode === "Partial Payment" && (
-                              <Check size={14} className="text-[#D4541A]" />
+                              <span className="shrink-0 w-5 h-5 rounded-full bg-[#D4541A] flex items-center justify-center">
+                                <Check
+                                  size={11}
+                                  strokeWidth={3}
+                                  className="text-white"
+                                />
+                              </span>
                             )}
                           </div>
-                          <span className="text-[9px] text-slate-400 font-bold capitalize mt-1">
+                          <span className="text-[10px] text-slate-500 font-medium mt-1">
                             Pay only ₹
                             {(customDepositPerPax && customDepositPerPax > 0
                               ? customDepositPerPax
@@ -2092,25 +2172,31 @@ function BookingForm() {
             )}
 
             {/* Nav buttons */}
-            <div className="flex items-center justify-between gap-3 pt-2">
-              {currentStep > 1 ? (
-                <button
-                  onClick={handlePrev}
-                  type="button"
-                  className="bg-white border border-slate-200 text-slate-700 rounded-xl py-2.5 px-5 font-bold capitalize tracking-widest text-xs flex items-center gap-2 hover:bg-slate-50 transition-all active:scale-95 shadow-xs min-h-[44px]"
-                >
-                  <ChevronLeft size={16} /> Back
-                </button>
-              ) : (
-                <div />
-              )}
-
-              <div className="flex flex-col items-end gap-1">
-                {isAadhaarBlockingContinue && (
-                  <span className="text-[10px] font-bold text-rose-600">
-                    Upload ID proof for every traveler to continue
+            <div className="flex flex-col gap-2.5 pt-1">
+              {isAadhaarBlockingContinue && (
+                <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-[12px] font-semibold text-rose-700 leading-snug">
+                  <AlertCircle
+                    size={16}
+                    className="shrink-0 mt-0.5 text-rose-600"
+                  />
+                  <span>
+                    Upload ID proof for every traveler before continuing.
                   </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-3">
+                {currentStep > 1 ? (
+                  <button
+                    onClick={handlePrev}
+                    type="button"
+                    className="bg-white border border-slate-200 text-slate-700 rounded-xl py-3 px-5 font-bold tracking-wide text-xs flex items-center gap-2 hover:bg-slate-50 transition-all active:scale-95 shadow-xs min-h-[48px]"
+                  >
+                    <ChevronLeft size={16} /> Back
+                  </button>
+                ) : (
+                  <div />
                 )}
+
                 {currentStep < 4 ? (
                   <button
                     onClick={handleNext}
@@ -2121,7 +2207,7 @@ function BookingForm() {
                         ? "Upload Aadhaar / Govt ID for every traveler"
                         : undefined
                     }
-                    className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-2.5 px-5 font-extrabold uppercase tracking-widest text-xs flex items-center gap-1.5 shadow-md shadow-[#D4541A]/15 transition-all active:scale-95 min-h-[44px] disabled:opacity-45 disabled:cursor-not-allowed disabled:active:scale-100"
+                    className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-3 px-6 font-extrabold uppercase tracking-widest text-xs flex items-center gap-1.5 shadow-md shadow-[#D4541A]/15 transition-all active:scale-95 min-h-[48px] disabled:opacity-45 disabled:cursor-not-allowed disabled:active:scale-100"
                   >
                     Continue <ChevronRight size={14} strokeWidth={3} />
                   </button>
@@ -2130,7 +2216,7 @@ function BookingForm() {
                     onClick={handleFinalSubmit}
                     disabled={loading}
                     type="button"
-                    className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-2.5 px-5 font-extrabold uppercase tracking-widest text-xs flex items-center gap-1.5 shadow-md shadow-[#D4541A]/25 transition-all active:scale-95 disabled:opacity-50 min-h-[44px]"
+                    className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-3 px-6 font-extrabold uppercase tracking-widest text-xs flex items-center gap-1.5 shadow-md shadow-[#D4541A]/25 transition-all active:scale-95 disabled:opacity-50 min-h-[48px]"
                   >
                     {loading ? (
                       <Loader2 className="animate-spin w-4 h-4" />
@@ -2169,8 +2255,16 @@ function BookingForm() {
       </div>
 
       {/* Sticky Live Price Bar (Mobile) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] py-2.5 px-4 z-40">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-40 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        {isAadhaarBlockingContinue && (
+          <div className="px-4 pt-2 pb-0">
+            <div className="flex items-center gap-1.5 rounded-lg bg-rose-50 border border-rose-200 px-2.5 py-1.5 text-[11px] font-semibold text-rose-700">
+              <AlertCircle size={13} className="shrink-0" />
+              <span>Upload ID proof for every traveler</span>
+            </div>
+          </div>
+        )}
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 py-2.5 px-4">
           <div className="min-w-0">
             <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#D4541A] block">
               Pay now
@@ -2184,12 +2278,7 @@ function BookingForm() {
               </span>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-0.5 shrink-0">
-            {isAadhaarBlockingContinue && (
-              <span className="text-[9px] font-bold text-rose-600 max-w-[140px] text-right leading-tight">
-                ID upload required
-              </span>
-            )}
+          <div className="shrink-0">
             {currentStep < 4 ? (
               <button
                 onClick={handleNext}
@@ -2200,21 +2289,21 @@ function BookingForm() {
                     ? "Upload Aadhaar / Govt ID for every traveler"
                     : undefined
                 }
-                className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-2.5 px-4 font-extrabold uppercase tracking-widest text-[10px] flex items-center gap-1 shadow-lg shadow-[#D4541A]/25 transition-all active:scale-95 min-h-[44px] disabled:opacity-45 disabled:cursor-not-allowed"
+                className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-3 px-5 font-extrabold uppercase tracking-widest text-[11px] flex items-center gap-1 shadow-lg shadow-[#D4541A]/25 transition-all active:scale-95 min-h-[48px] disabled:opacity-45 disabled:cursor-not-allowed"
               >
-                Continue <ChevronRight size={12} strokeWidth={3} />
+                Continue <ChevronRight size={14} strokeWidth={3} />
               </button>
             ) : (
               <button
                 onClick={handleFinalSubmit}
                 disabled={loading}
                 type="button"
-                className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-2.5 px-4 font-extrabold uppercase tracking-widest text-[10px] flex items-center gap-1 shadow-lg shadow-[#D4541A]/35 transition-all active:scale-95 disabled:opacity-50 min-h-[44px]"
+                className="bg-[#D4541A] hover:bg-[#E65200] text-white rounded-xl py-3 px-5 font-extrabold uppercase tracking-widest text-[11px] flex items-center gap-1 shadow-lg shadow-[#D4541A]/35 transition-all active:scale-95 disabled:opacity-50 min-h-[48px]"
               >
                 {loading ? (
-                  <Loader2 className="animate-spin w-3 h-3" />
+                  <Loader2 className="animate-spin w-3.5 h-3.5" />
                 ) : (
-                  <ShieldCheck size={12} strokeWidth={3} />
+                  <ShieldCheck size={14} strokeWidth={3} />
                 )}
                 {loading ? "Processing..." : "Confirm"}
               </button>
@@ -2228,16 +2317,16 @@ function BookingForm() {
 
 export default function BookPage() {
   return (
-    <main className="bg-[#FAFAFA]">
+    <div className="bg-[#F3F1EE]">
       <Suspense
         fallback={
-          <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
+          <div className="min-h-screen flex items-center justify-center bg-[#F3F1EE]">
             <Loader2 className="animate-spin text-[#D4541A] w-10 h-10" />
           </div>
         }
       >
         <BookingForm />
       </Suspense>
-    </main>
+    </div>
   );
 }
