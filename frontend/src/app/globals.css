@@ -1706,3 +1706,18 @@ article h3 {
   padding: 6px 14px !important;
   white-space: nowrap;
 }
+
+/* Hide Safari/Chrome native video play overlay on mobile ambient videos */
+@media (max-width: 767px) {
+  video.hide-native-video-play::-webkit-media-controls,
+  video.hide-native-video-play::-webkit-media-controls-enclosure,
+  video.hide-native-video-play::-webkit-media-controls-start-playback-button,
+  video.hide-native-video-play::-webkit-media-controls-overlay-play-button {
+    display: none !important;
+    -webkit-appearance: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}

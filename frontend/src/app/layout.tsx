@@ -24,28 +24,11 @@ const FloatingWhatsApp = dynamic(
 );
 import { DynamicThemeProvider } from "@/components/DynamicThemeProvider";
 import {
-  fetchPublicSettings,
-  fetchWebsiteSettings,
-  fetchTheme,
-  fetchPublicFooterSettings,
+  fetchPublicSettingsResult,
+  fetchWebsiteSettingsResult,
+  fetchThemeResult,
+  fetchPublicFooterSettingsResult,
 } from "@/lib/api";
-
-const settleWithin = async <T,>(
-  promise: Promise<T>,
-  milliseconds: number,
-): Promise<T | null> => {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<null>((resolve) => {
-        timeoutId = setTimeout(() => resolve(null), milliseconds);
-      }),
-    ]);
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-  }
-};
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -132,39 +115,24 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let settings: any = null;
-  let websiteSettings: any = null;
-  let theme: any = null;
-  let footerConfig: any = null;
-  const siteConfigResults = await Promise.allSettled([
-    settleWithin(fetchPublicSettings(), 1500),
-    settleWithin(fetchWebsiteSettings(), 1500),
-    settleWithin(fetchTheme(), 1500),
-    settleWithin(fetchPublicFooterSettings(), 1500),
-  ]);
-  if (siteConfigResults[0].status === "fulfilled")
-    settings = siteConfigResults[0].value || {};
-  else
-    console.error("Layout settings fetch error:", siteConfigResults[0].reason);
-  if (siteConfigResults[1].status === "fulfilled")
-    websiteSettings = siteConfigResults[1].value || {};
-  else
-    console.error(
-      "Layout websiteSettings fetch error:",
-      siteConfigResults[1].reason,
-    );
-  if (siteConfigResults[2].status === "fulfilled")
-    theme = siteConfigResults[2].value;
-  else console.error("Layout theme fetch error:", siteConfigResults[2].reason);
-  if (siteConfigResults[3].status === "fulfilled")
-    footerConfig = siteConfigResults[3].value || null;
-  else
-    console.error("Layout footerConfig fetch error:", siteConfigResults[3].reason);
+  const [settingsResult, websiteSettingsResult, themeResult, footerResult] =
+    await Promise.all([
+      fetchPublicSettingsResult(),
+      fetchWebsiteSettingsResult(),
+      fetchThemeResult(),
+      fetchPublicFooterSettingsResult(),
+    ]);
 
-  // Merge key-value websiteSettings into settings
+  const settings = settingsResult.ok ? settingsResult.data : null;
+  const websiteSettings = websiteSettingsResult.ok
+    ? websiteSettingsResult.data
+    : null;
+  const theme = themeResult.ok ? themeResult.data : null;
+  const footerConfig = footerResult.ok ? footerResult.data : null;
+
   const mergedSettings = {
-    ...settings,
-    ...websiteSettings,
+    ...(settings || {}),
+    ...(websiteSettings || {}),
     navbar: {
       ...settings?.navbar,
       links: websiteSettings?.navigation || settings?.navbar?.links,
@@ -183,7 +151,11 @@ export default async function RootLayout({
       >
         <DynamicThemeProvider
           initialTheme={theme}
-          initialSettings={mergedSettings}
+          initialSettings={
+            settingsResult.ok || websiteSettingsResult.ok
+              ? mergedSettings
+              : null
+          }
         >
           <Suspense fallback={null}>
             <ScrollToTop />
