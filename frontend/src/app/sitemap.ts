@@ -1,23 +1,13 @@
 import { MetadataRoute } from "next";
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
 import {
   fetchPublicTrips,
   fetchPublicBlogs,
   fetchAttractions,
 } from "@/lib/api";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const headersList = await headers();
-  const host = headersList.get("host") || "";
-  const isStaging = host.includes("youthcamping.online");
-
-  if (isStaging) {
-    // Disable sitemap generation on staging
-    notFound();
-  }
-
-  const baseUrl = "https://youthcamping.in";
+  const baseUrl = PUBLIC_SITE_ORIGIN;
 
   // Define static routes
   const staticRoutes = [
@@ -25,13 +15,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/about-us",
     "/contact",
     "/privacy",
+    "/privacy-policy",
     "/terms",
+    "/terms-and-conditions",
+    "/cancellation-policy",
     "/questions",
     "/reviews",
     "/trips",
     "/blogs",
   ].map((route) => ({
-    url: `${baseUrl}${route}`,
+    url: route === "" ? `${baseUrl}/` : `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: "daily" as const,
     priority: route === "" ? 1.0 : 0.8,

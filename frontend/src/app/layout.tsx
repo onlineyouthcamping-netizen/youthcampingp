@@ -29,6 +29,7 @@ import {
   fetchTheme,
   fetchPublicFooterSettings,
 } from "@/lib/api";
+import { PUBLIC_SITE_ORIGIN, PUBLIC_SITE_URL } from "@/lib/site";
 
 const settleWithin = async <T,>(
   promise: Promise<T>,
@@ -72,45 +73,28 @@ const caveat = Caveat({
 export const revalidate = 600;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const canonicalUrl = "./";
-  const isStaging = false;
-
   return {
     title: "YouthCamping — Adventure Tours for Young India",
     description:
       "Book Himachal Pradesh, Ladakh, Kashmir, Kerala group tours. Best adventure trips for young adults from Gujarat.",
-    metadataBase: new URL("https://youthcamping.in"),
+    metadataBase: new URL(PUBLIC_SITE_URL),
     verification: {
       google: "Hy949F--o_wnmU-WH5arwK1zE038hpIyxYIauQQv-FA",
     },
-    alternates: {
-      canonical: canonicalUrl,
+    robots: {
+      index: true,
+      follow: true,
     },
-    robots: isStaging
-      ? {
-          index: false,
-          follow: false,
-          nocache: true,
-          googleBot: {
-            index: false,
-            follow: false,
-          },
-        }
-      : {
-          index: true,
-          follow: true,
-        },
     icons: {
       icon: "/favicon.ico",
     },
     openGraph: {
       title: "YouthCamping — Adventure Tours for Young India",
       description: "Book group adventure tours across India.",
-      url: canonicalUrl,
       siteName: "YouthCamping",
       images: [
         {
-          url: "https://youthcamping.in/og-image.jpg",
+          url: `${PUBLIC_SITE_ORIGIN}/logo.png`,
           width: 1200,
           height: 630,
         },
@@ -122,7 +106,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title: "YouthCamping — Adventure Tours for Young India",
       description: "Book group adventure tours across India.",
-      images: ["https://youthcamping.in/og-image.jpg"],
+      images: [`${PUBLIC_SITE_ORIGIN}/logo.png`],
     },
   };
 }
@@ -181,6 +165,27 @@ export default async function RootLayout({
         suppressHydrationWarning
         className="min-h-full w-full flex flex-col font-montserrat relative"
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  name: "YouthCamping",
+                  url: PUBLIC_SITE_URL,
+                  logo: `${PUBLIC_SITE_ORIGIN}/logo.png`,
+                },
+                {
+                  "@type": "WebSite",
+                  name: "YouthCamping",
+                  url: PUBLIC_SITE_URL,
+                },
+              ],
+            }),
+          }}
+        />
         <DynamicThemeProvider
           initialTheme={theme}
           initialSettings={mergedSettings}

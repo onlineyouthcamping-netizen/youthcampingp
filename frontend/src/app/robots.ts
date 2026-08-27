@@ -1,25 +1,21 @@
 import { MetadataRoute } from "next";
-import { headers } from "next/headers";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site";
 
-export default async function robots(): Promise<MetadataRoute.Robots> {
-  const headersList = await headers();
-  const host = headersList.get("host") || "";
-  const isStaging = host.includes("youthcamping.online");
-
-  if (isStaging) {
-    return {
-      rules: {
-        userAgent: "*",
-        disallow: "/",
-      },
-    };
-  }
-
+export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: [
+        "/login",
+        "/my-bookings",
+        "/master-booking",
+        "/book/link/",
+        "/b/",
+        "/preview/",
+      ],
     },
-    sitemap: "https://youthcamping.in/sitemap.xml",
+    sitemap: `${PUBLIC_SITE_ORIGIN}/sitemap.xml`,
+    host: PUBLIC_SITE_ORIGIN,
   };
 }

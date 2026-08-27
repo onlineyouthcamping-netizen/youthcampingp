@@ -1,4 +1,5 @@
 import React from "react";
+import { Metadata } from "next";
 import SocialProofBar from "@/components/SocialProofBar";
 import PageRenderer from "@/components/PageRenderer";
 import FloatingSocialBar from "@/components/FloatingSocialBar";
@@ -18,8 +19,25 @@ import {
   fetchTheme,
 } from "@/lib/api";
 import { Trip, Review, Blog } from "@/types";
+import { PUBLIC_SITE_ORIGIN, PUBLIC_SITE_URL } from "@/lib/site";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: PUBLIC_SITE_URL,
+  },
+  openGraph: {
+    url: PUBLIC_SITE_URL,
+    images: [
+      {
+        url: `${PUBLIC_SITE_ORIGIN}/logo.png`,
+        width: 1200,
+        height: 630,
+      },
+    ],
+  },
+};
 
 async function settleWithin<T>(
   promise: Promise<T>,
